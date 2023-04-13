@@ -11,7 +11,22 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
+  "dependencies": {
+    "@nuxtjs/i18n-edge": "^8.0.0-beta.11-28023078.39cf21b",
+    "@pinia/nuxt": "^0.4.8",
+    "pinia": "^2.0.34",
+    "verovio": "^3.15.0",
+    "vue-verovio-canvas": "^1.2.4"
+  },
   "devDependencies": {
-    "nuxt": "^3.4.0"
+    "@nuxt/content": "^2.5.2",
+    "@nuxtjs/google-fonts": "^3.0.0",
+    "@nuxtjs/tailwindcss": "^6.6.6",
+    "js-yaml": "^4.1.0",
+    "nuxt": "^3.4.0",
+    "nuxt-icon": "^0.3.3"
+  },
+  "overrides": {
+    "vite": "4.3.0-beta.5"
   }
 }
