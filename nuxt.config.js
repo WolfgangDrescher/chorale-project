@@ -52,6 +52,10 @@ export default defineNuxtConfig({
         ],
         defaultLocale: 'de',
         langDir: 'locales/',
-        vueI18n: './i18n.config.js',
+        config: {
+            fallbackLocale: 'de',
+            legacy: false,
+            locale: 'en',
+        },
     },
 });
