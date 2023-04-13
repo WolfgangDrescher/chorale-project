@@ -19,8 +19,8 @@ execSync(`mkdir -p ${yamlPath}`);
 
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const id = getIdFromFilePath(file);
-    const yamlFile = `${yamlPath}/${id}.yaml`;
     console.log(id);
+    const yamlFile = `${yamlPath}/${id}.yaml`;
     const kern = readFile(file);
     const referenceRecords = parseHumdrumReferenceRecords(kern);
 
