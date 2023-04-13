@@ -28,6 +28,20 @@ export default defineNuxtConfig({
             format: 'es',
         },
     },
+    nitro: {
+        publicAssets: [
+            {
+                baseURL: 'bach-370-chorales',
+                dir: fileURLToPath(new URL('./bach-370-chorales/kern', import.meta.url)),
+                maxAge: 3600,
+            },
+            {
+                baseURL: 'kittel-24-chorales',
+                dir: fileURLToPath(new URL('./kittel-24-chorales/kern', import.meta.url)),
+                maxAge: 3600,
+            },
+        ],
+    },
     googleFonts: {
         stylePath: 'css/fonts.css',
         download: true,
