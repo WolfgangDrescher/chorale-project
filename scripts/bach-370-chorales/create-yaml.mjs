@@ -15,7 +15,7 @@ function getIdFromFilePath(path) {
 const yamlPath = `${__dirname}/../../content/bach-370-chorales`;
 
 execSync(`rm -rf ${yamlPath}/*`);
-execSync(`mkdir ${yamlPath}`);
+execSync(`mkdir -p ${yamlPath}`);
 
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const id = getIdFromFilePath(file);
