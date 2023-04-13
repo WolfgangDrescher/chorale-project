@@ -23,6 +23,7 @@ export default defineNuxtConfig({
         '@nuxtjs/google-fonts',
         '@nuxtjs/i18n-edge',
         '@nuxt/content',
+        '@pinia/nuxt',
         'nuxt-icon',
     ],
     vite: {
