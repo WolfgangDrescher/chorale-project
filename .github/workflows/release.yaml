@@ -1,0 +1,50 @@
+name: Create release
+
+on:
+    push:
+        tags:
+            - 'v*.*.*'
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            -
+                name: Create release
+                id: create_release
+                uses: actions/create-release@v1
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                with:
+                    tag_name: ${{ github.ref }}
+                    release_name: Release ${{ github.ref }}
+                    draft: false
+                    prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+
+    docker:
+        runs-on: ubuntu-latest
+        env:
+            SCHEME: chorale-project
+        steps:
+            -
+                uses: actions/checkout@v2
+                with:
+                    submodules: true
+            -
+                name: Build docker image
+                run: docker build -t $SCHEME -f Dockerfile .
+            -
+                name: Set release version tag variable
+                run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+            -
+                name: Push docker image to ghcr.io
+                run: |
+                    TAG="ghcr.io/wolfgangdrescher/$SCHEME"
+                    VERSION="${RELEASE_VERSION//v/}"
+                    docker tag $SCHEME $TAG:$VERSION
+                    docker tag $SCHEME $TAG:latest
+                    docker images $TAG
+                    echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+                    docker push $TAG:$VERSION
+                    docker push $TAG:latest
+

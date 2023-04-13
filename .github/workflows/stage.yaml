@@ -1,0 +1,54 @@
+name: Deploy to stage
+
+on:
+    push:
+        branches:
+            - master
+    workflow_dispatch: ~
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            -
+                name: Checkout
+                uses: actions/checkout@v3
+                with:
+                    submodules: true
+
+            -
+                name: Setup node env
+                uses: actions/setup-node@v3
+                with:
+                    node-version: 18
+
+            -
+                name: Cache node_modules
+                uses: actions/cache@v3
+                with:
+                    path: ~/.npm
+                    key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+                    restore-keys: |
+                        ${{ runner.os }}-node-
+
+            -
+                name: Install dependencies
+                run: npm ci
+
+            -
+                name: Generate
+                env:
+                    BASE_URL: https://choral.wolfgangdrescher.ch
+                run: npm run generate
+
+            -
+                name: Deploy
+                env:
+                    HOST: ${{ secrets.HOST }}
+                    USERNAME: ${{ secrets.USERNAME }}
+                    SSH_KEY: ${{ secrets.SSH_KEY }}
+                    PORT: ${{ secrets.PORT }}
+                run: |
+                    echo "$SSH_KEY" > ssh.key
+                    chmod 600 ssh.key
+                    rsync -rvzP -e 'ssh -i ssh.key -p ${{ env.PORT }} -o StrictHostKeyChecking=no' dist/ $USERNAME@$HOST:choral.wolfgangdrescher.ch --delete
