@@ -1,3 +1,6 @@
 [submodule "bach-370-chorales"]
 	path = bach-370-chorales
 	url = https://github.com/craigsapp/bach-370-chorales.git
+[submodule "kittel-24-chorales"]
+	path = kittel-24-chorales
+	url = https://github.com/WolfgangDrescher/kittel-24-chorales.git
