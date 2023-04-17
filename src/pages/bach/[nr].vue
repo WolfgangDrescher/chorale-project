@@ -27,7 +27,7 @@ onMounted(() => {
     });
 });
 
-const scoreFormatter = useHumdrumScoreFormatter(data);
+const scoreFormatter = useHumdrumScoreFormatter();
 </script>
 
 <template>
