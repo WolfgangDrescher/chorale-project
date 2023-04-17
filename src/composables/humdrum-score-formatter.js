@@ -1,6 +1,6 @@
-export function useHumdrumScoreFormatter(dataProp, filtersProp) {
-    const data = ref(dataProp);
-    const filters = filtersProp || ref([]);
+export function useHumdrumScoreFormatter(kernScore) {
+    const data = ref(kernScore);
+    const filters = ref([]);
     // When using exportMode filters are ignored and manualFilters will be used instead
     const manualFilters = ref('');
 
