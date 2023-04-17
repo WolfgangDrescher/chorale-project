@@ -4,6 +4,7 @@ defineProps({
         type: Object,
         required: true,
     },
+    hrefBuilder: Function
 });
 </script>
 
@@ -17,9 +18,12 @@ defineProps({
                 <div class="flex items-start justify-between w-full">
                     <div class="pl-3 w-full">
                         <div class="text-xl font-medium leading-5 text-gray-800">
-                            <NuxtLink :href="`/chorale/${chorale.id}`">
+                            <NuxtLink v-if="typeof hrefBuilder === 'function'" :href="hrefBuilder(chorale)">
                                 {{ chorale.title }}
                             </NuxtLink>
+                            <template v-else>
+                                {{ chorale.title }}
+                            </template>
                         </div>
                     </div>
                     <div>
