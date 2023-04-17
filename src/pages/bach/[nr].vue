@@ -6,11 +6,7 @@ const route = useRoute();
 const { data } = await useAsyncData(`/bach-370-chorales/${route.params.nr}`, () => queryContent('/bach-370-chorales').where({nr: parseInt(route.params.nr, 10)}).findOne())
 const chorale = createBachChorale(data.value);
 
-const { data: surroundData } = await useAsyncData(`/bach-370-chorales/${route.params.nr}/surround`, () => queryContent().only(['_path', 'id', 'nr']).where({
-    _path: {
-        $contains: '/bach-370-chorales/',
-    },
-}).findSurround(data.value._path))
+const { data: surroundData } = await useAsyncData(`/bach-370-chorales/${route.params.nr}/surround`, () => queryContent('/bach-370-chorales').only(['_path', 'id', 'nr']).findSurround(data.value._path))
 const [prevChorale, nextChorale] = surroundData.value;
 
 useHead({
