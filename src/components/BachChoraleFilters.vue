@@ -1,4 +1,6 @@
 <script setup>
+import { storeToRefs } from 'pinia';
+
 const props = defineProps({
     scoreFormatter: {
         type: Object,
@@ -6,66 +8,53 @@ const props = defineProps({
     },
 });
 
-const { addFilter, removeFilter } = props.scoreFormatter;
+const { scoreFilters } = storeToRefs(useBachViewOptionsStore());
+const { filters, addFilter, removeFilter } = props.scoreFormatter;
 
-const satb2gs = ref(false);
+scoreFilters.value.forEach(filter => addFilter(filter));
+
+watch(filters, (value) => {
+    scoreFilters.value = [...value];
+}, {deep: true});
+
+function hasFilter(filter) {
+    return scoreFilters.value.map(f => f.className).includes(filter.className);
+}
+
 const satb2gsFilter = new Satb2gsFilter();
-watch(satb2gs, (value) => {
-    if (value) {
-        addFilter(satb2gsFilter);
-    } else {
-        removeFilter(satb2gsFilter.id);
-    }
+const satb2gs = computed({
+    get: () => hasFilter(satb2gsFilter),
+    set: (value) => value ? addFilter(satb2gsFilter) : removeFilter(satb2gsFilter),
 });
 
-const intervallsatzPreset = ref(false);
 const intervallsatzPresetFilter = new IntervallsatzPresetFilter();
-watch(intervallsatzPreset, (value) => {
-    if (value) {
-        addFilter(intervallsatzPresetFilter);
-    } else {
-        removeFilter(intervallsatzPresetFilter.id);
-    }
+const intervallsatzPreset = computed({
+    get: () => hasFilter(intervallsatzPresetFilter),
+    set: (value) => value ? addFilter(intervallsatzPresetFilter) : removeFilter(intervallsatzPresetFilter),
 });
 
-const extendedFiguredbassPreset = ref(false);
 const extendedFiguredbassPresetFilter = new ExtendedFiguredbassPresetFilter();
-watch(extendedFiguredbassPreset, (value) => {
-    if (value) {
-        addFilter(extendedFiguredbassPresetFilter);
-    } else {
-        removeFilter(extendedFiguredbassPresetFilter.id);
-    }
+const extendedFiguredbassPreset = computed({
+    get: () => hasFilter(extendedFiguredbassPresetFilter),
+    set: (value) => value ? addFilter(extendedFiguredbassPresetFilter) : removeFilter(extendedFiguredbassPresetFilter),
 });
 
-const bassScaleDegree = ref(false);
 const bassScaleDegreeFilter = new BassScaleDegreeFilter();
-watch(bassScaleDegree, (value) => {
-    if (value) {
-        addFilter(bassScaleDegreeFilter);
-    } else {
-        removeFilter(bassScaleDegreeFilter.id);
-    }
+const bassScaleDegree = computed({
+    get: () => hasFilter(bassScaleDegreeFilter),
+    set: (value) => value ? addFilter(bassScaleDegreeFilter) : removeFilter(bassScaleDegreeFilter),
 });
 
-const scaleDegreePreset = ref(false);
 const scaleDegreePresetFilter = new ScaleDegreePresetFilter();
-watch(scaleDegreePreset, (value) => {
-    if (value) {
-        addFilter(scaleDegreePresetFilter);
-    } else {
-        removeFilter(scaleDegreePresetFilter.id);
-    }
+const scaleDegreePreset = computed({
+    get: () => hasFilter(scaleDegreePresetFilter),
+    set: (value) => value ? addFilter(scaleDegreePresetFilter) : removeFilter(scaleDegreePresetFilter),
 });
 
-const hideMiddleVoices = ref(false);
 const hideMiddleVoicesFilter = new HideMiddleVoicesFilter();
-watch(hideMiddleVoices, (value) => {
-    if (value) {
-        addFilter(hideMiddleVoicesFilter);
-    } else {
-        removeFilter(hideMiddleVoicesFilter.id);
-    }
+const hideMiddleVoices = computed({
+    get: () => hasFilter(hideMiddleVoicesFilter),
+    set: (value) => value ? addFilter(hideMiddleVoicesFilter) : removeFilter(hideMiddleVoicesFilter),
 });
 </script>
 
