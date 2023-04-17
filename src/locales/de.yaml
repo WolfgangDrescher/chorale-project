@@ -4,3 +4,9 @@ bach: Bach
 bachChorales: Bach Choräle
 kittel: Kittel
 kittelChorales: Kittel 24 Choräle
+humdrumFilter.Satb2gsFilter: Klaviersatz anzeigen
+humdrumFilter.IntervallsatzPresetFilter: Intervallsatz anzeigen
+humdrumFilter.ExtendedFiguredbassPresetFilter: Bezifferung anzeigen
+humdrumFilter.BassScaleDegreeFilter: Bassstufen anzeigen
+humdrumFilter.ScaleDegreePresetFilter: Skalenstufen anzeigen
+humdrumFilter.HideMiddleVoicesFilter: Mittelstimmen ausblenden
