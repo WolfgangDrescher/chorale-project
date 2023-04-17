@@ -1,5 +1,6 @@
 <script setup>
 const { t } = useI18n();
+const localePath = useLocalePath();
 
 useHead({
     title: t('bachChorales'),
@@ -8,6 +9,10 @@ useHead({
 const { data } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
 const chorales = createBachChorales(data.value);
 const { items, addItems } = useArrayLoader(chorales);
+
+function hrefBuilder(chorale) {
+    return localePath({name: 'bach-nr', params: { nr: chorale.nr }});
+}
 </script>
 
 <template>
@@ -18,7 +23,7 @@ const { items, addItems } = useArrayLoader(chorales);
         <InfiniteScroll @load="addItems()" :all="items.length === chorales.length">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div v-for="chorale in items" :key="chorales.id">
-                    <ChoraleListItem :chorale="chorale" />
+                    <ChoraleListItem :chorale="chorale" :href-builder="hrefBuilder" />
                 </div>
             </div>
         </InfiniteScroll>
