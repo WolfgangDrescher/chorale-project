@@ -19,7 +19,7 @@ const emit = defineEmits([
 ]);
 
 const verovioCanvas = ref(null);
-const { setData, formattedScoreData, filtersAsString } = props.scoreFormatter;
+const { setData, formattedScoreData } = props.scoreFormatter;
 
 const response = await fetch(props.url);
 if (!response.ok) {
@@ -52,7 +52,6 @@ defineExpose({
 </script>
 
 <template>
-    <pre v-text="filtersAsString"></pre>
     <div class="flex flex-col gap-4">
         <div>
             <div class="mt-4 flex flex-col gap-4">
