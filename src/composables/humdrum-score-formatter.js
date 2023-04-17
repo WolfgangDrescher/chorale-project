@@ -17,12 +17,17 @@ export function useHumdrumScoreFormatter(kernScore) {
         filters.value.push(filter);
     }
 
-    function removeFilter(filterId) {
-        const filter = filters.value.find(f => f.id === filterId);
-        if (filter) {
-            filter.beforeRemove();
+    function removeFilter(filter) {
+        let found;
+        if (filter.unique) {
+            found = filters.value.find(f => f.className === filter.className);
+        } else {
+            found = filters.value.find(f => f.id === filter.id);
         }
-        filters.value = filters.value.filter(f => f.id !== filterId);
+        if (found) {
+            found.beforeRemove();
+        }
+        filters.value = filters.value.filter(f => f.id !== found.id);
     }
 
     const filtersAsString = computed(() => {
