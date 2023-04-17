@@ -22,7 +22,7 @@ function hrefBuilder(chorale) {
 
         <InfiniteScroll @load="addItems()" :all="items.length === chorales.length">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div v-for="chorale in items" :key="chorales.id">
+                <div v-for="chorale in items" :key="chorale.id">
                     <ChoraleListItem :chorale="chorale" :href-builder="hrefBuilder" />
                 </div>
             </div>
