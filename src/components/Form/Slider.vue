@@ -15,6 +15,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 
 const progressBarElem = ref();
+const isDragging = ref(false);
 
 function seekHandler(e) {
     const rect = e.target.getBoundingClientRect();
@@ -24,11 +25,13 @@ function seekHandler(e) {
 function whileMoveMouse(e) {
     e.stopPropagation();
     setValueFromClientX(e.clientX);
+    isDragging.value = true;
 }
 
 function whileMoveTouch(e) {
     e.stopPropagation();
     setValueFromClientX(e.touches[0].clientX);
+    isDragging.value = true;
 }
 
 function setValueFromClientX(clientX) {
@@ -43,6 +46,7 @@ function endMove(event) {
     window.removeEventListener('mouseup', endMove, true);
     window.removeEventListener('touchmove', whileMoveTouch);
     window.removeEventListener('touchend', endMove, true);
+    isDragging.value = false;
 }
 
 function onMousedownEvent(event) {
@@ -51,6 +55,7 @@ function onMousedownEvent(event) {
     window.addEventListener('mouseup', endMove, true);
     window.addEventListener('touchmove', whileMoveTouch);
     window.addEventListener('touchend', endMove, true);
+    isDragging.value = false;
 }
 
 function getValue(value) {
@@ -80,15 +85,26 @@ onMounted(() => {
             class="relative flex-grow h-1 bg-gray-200 cursor-pointer rounded"
             :style="`--progress: ${progress}%`"
             @mouseup="seekHandler"
+            :class="{'is-dragging': isDragging}"
         >
             <div class="pointer-events-none bg-primary-500 rounded h-full" style="width: var(--progress)"></div>
             <div
-                class="cursor-grab absolute top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 rounded-full bg-primary-500 shadow"
+                class="group cursor-grab absolute top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 rounded-full bg-primary-500 shadow"
                 :class="touchDevice ? 'touch-device' : 'no-touch-device'"
                 style="left: var(--progress)"
                 @mousedown="onMousedownEvent"
                 @touchstart="onMousedownEvent"
-            ></div>
+            >
+            <div class="progress-number hidden group-hover:block absolute bg-primary-500 text-white text-xs leading-4 px-1 rounded bottom-full -translate-x-1/2 left-1/2 mb-1">
+                {{ Math.round(modelValue) }}
+            </div>
+        </div>
         </div>
     </FormGroup>
 </template>
+
+<style scoped>
+.is-dragging .progress-number {
+    @apply block;
+}
+</style>
