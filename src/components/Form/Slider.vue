@@ -89,7 +89,7 @@ onMounted(() => {
         >
             <div class="pointer-events-none bg-primary-500 rounded h-full" style="width: var(--progress)"></div>
             <div
-                class="group cursor-grab absolute top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 rounded-full bg-primary-500 shadow"
+                class="group touch-none cursor-grab absolute top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 rounded-full bg-primary-500 shadow"
                 :class="touchDevice ? 'touch-device' : 'no-touch-device'"
                 style="left: var(--progress)"
                 @mousedown="onMousedownEvent"
