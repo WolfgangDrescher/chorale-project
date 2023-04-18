@@ -58,7 +58,7 @@ watch(bassSelector, (value) => {
 </script>
 
 <template>
-    <div class="grid grid-cols-3 gap-4 items-center">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 items-center">
         <div>
             <FormKittelBassSelector v-model="bassSelector" />
         </div>

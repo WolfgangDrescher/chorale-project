@@ -59,7 +59,7 @@ const hideMiddleVoices = computed({
 </script>
 
 <template>
-    <div class="grid grid-cols-3 gap-4 items-center">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 items-center">
         <div>
             <FormCheckbox v-model="satb2gs" :label="$t('humdrumFilter.Satb2gsFilter')" />
         </div>
