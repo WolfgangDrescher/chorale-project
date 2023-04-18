@@ -58,7 +58,7 @@ const scoreFormatter = useHumdrumScoreFormatter();
         <NuxtErrorBoundary>
             <Suspense>
                 <HumdrumInteractiveScore :url="chorale.localRawFile" :score-formatter="scoreFormatter" :verovio-options="verovioOptions">
-                    <BachChoraleFilters :score-formatter="scoreFormatter" />
+                    <KittelChoraleFilters :score-formatter="scoreFormatter" />
                 </HumdrumInteractiveScore>
                 <template #error="{ error }">
                     <AlertMessage>
