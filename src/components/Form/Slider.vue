@@ -77,11 +77,11 @@ onMounted(() => {
     <FormGroup :label="groupLabel">
         <div
             ref="progressBarElem"
-            class="relative flex-grow h-1 bg-gray-200 cursor-pointer"
+            class="relative flex-grow h-1 bg-gray-200 cursor-pointer rounded"
             :style="`--progress: ${progress}%`"
             @mouseup="seekHandler"
         >
-            <div class="pointer-events-none bg-primary-500 h-full" style="width: var(--progress)"></div>
+            <div class="pointer-events-none bg-primary-500 rounded h-full" style="width: var(--progress)"></div>
             <div
                 class="cursor-grab absolute top-1/2 -translate-y-1/2 -translate-x-1.5 w-3 h-3 rounded-full bg-primary-500 shadow"
                 :class="touchDevice ? 'touch-device' : 'no-touch-device'"
