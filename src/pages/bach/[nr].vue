@@ -15,6 +15,9 @@ useHead({
 
 const verovioOptions = {
     spacingSystem: 24,
+    spacingStaff: 20,
+    topMarginHarm: 2,
+    bottomMarginHarm: 2,
 };
 
 const kern = ref('');
