@@ -18,6 +18,7 @@ const verovioOptions = {
     spacingStaff: 20,
     topMarginHarm: 2,
     bottomMarginHarm: 2,
+    // harmDist: 3,
 };
 
 const kern = ref('');
