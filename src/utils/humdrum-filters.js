@@ -163,3 +163,26 @@ export class HideMiddleVoicesFilter extends HumdrumFilter {
         new Line('extract -f 1,$'),
     ];
 }
+
+export class ExtractSpineFilter extends HumdrumFilter {
+    static NAME = 'ExtractSpineFilter';
+    priority = 2;
+    unique = true;
+    changeable = true;
+    configurable = true;
+
+    constructor(value) {
+        super();
+        this.value = value;
+        this.addLine(`extract -f ${this.value}`);
+    }
+}
+
+export class HideFiguredbassFilter extends HumdrumFilter {
+    static NAME = 'HideFiguredbassFilter';
+    unique = true;
+    lines = [
+        new Line('extract -I **fb'),
+        new Line('extract -I **fba'),
+    ];
+}
