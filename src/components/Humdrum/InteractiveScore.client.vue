@@ -27,6 +27,7 @@ if (!response.ok) {
 }
 setData(await response.text())
 
+const scale = ref(40);
 const verovioCanvasOptions = computed(() => {
     return Object.assign({
         pageMargin: 50,
@@ -35,6 +36,7 @@ const verovioCanvasOptions = computed(() => {
             svgBoundingBoxes: true,
             svgViewBox: true,
         },
+        scale: scale.value,
         data: formattedScoreData.value,
     });
 });
@@ -59,6 +61,11 @@ defineExpose({
             </div>
         </div>
         <div>
+            <div class="grid md:grid-cols-3 gap-4 my-4">
+                <div>
+                    <FormSlider v-model="scale" :min="20" :max="60" :group-label="$t('zoom')"></FormSlider>
+                </div>
+            </div>
             <VerovioCanvas ref="verovioCanvas" v-bind="verovioCanvasOptions" @score-is-ready="verovioCanvasScoreIsReady" />
         </div>
     </div>
