@@ -9,9 +9,9 @@ const localePath = useLocalePath();
                 <div>
                     <h4 class="text-lg font-bold mb-2">Sitemap</h4>
                     <ul class="grid grid-cols-2 gap-x-2">
-                        <li>
-                            <NuxtLink :href="localePath('index')">{{ $t('home') }}</NuxtLink>
-                        </li>
+                        <li><NuxtLink :href="localePath('index')">{{ $t('home') }}</NuxtLink></li>
+                        <li><NuxtLink :href="localePath('bach')">{{ $t('bach') }}</NuxtLink></li>
+                        <li><NuxtLink :href="localePath('kittel')">{{ $t('kittel') }}</NuxtLink></li>
                     </ul>
                 </div>
                 <div></div>
