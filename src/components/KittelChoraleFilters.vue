@@ -9,7 +9,7 @@ const props = defineProps({
 });
 
 const { scoreFilters } = storeToRefs(useKittelViewOptionsStore());
-const { filters, addFilter, removeFilter, filtersAsString } = props.scoreFormatter;
+const { filters, addFilter, removeFilter } = props.scoreFormatter;
 
 scoreFilters.value.forEach(filter => addFilter(filter));
 
@@ -58,7 +58,6 @@ watch(bassSelector, (value) => {
 </script>
 
 <template>
-    <pre v-text="filtersAsString"></pre>
     <div class="grid grid-cols-3 gap-4 items-center">
         <div>
             <FormKittelBassSelector v-model="bassSelector" />
