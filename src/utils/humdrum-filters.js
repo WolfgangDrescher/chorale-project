@@ -115,6 +115,7 @@ export class Satb2gsFilter extends HumdrumFilter {
 }
 
 export class IntervallsatzPresetFilter extends HumdrumFilter {
+    priority = -1;
     static NAME = 'IntervallsatzPresetFilter';
     unique = true;
     lines = [
