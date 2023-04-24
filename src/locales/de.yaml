@@ -12,5 +12,6 @@ humdrumFilter.BassScaleDegreeFilter: Bassstufen anzeigen
 humdrumFilter.ScaleDegreePresetFilter: Skalenstufen anzeigen
 humdrumFilter.HideMiddleVoicesFilter: Mittelstimmen ausblenden
 humdrumFilter.HideFiguredbassFilter: Generalbass ausblenden
+humdrumFilter.FiguresWithoutSlashesFilter: Ziffern ohne Schrägstriche anzeigen
 allBasses: Alle
 zoom: Zoom

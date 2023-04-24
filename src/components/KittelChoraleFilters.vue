@@ -55,6 +55,12 @@ watch(bassSelector, (value) => {
         addFilter(new ExtractSpineFilter(`${num * 2 - 1},${num * 2},$`));
     }
 }, {immediate: true});
+
+const figuresWithoutSlashesFilter = new FiguresWithoutSlashesFilter();
+const figuresWithoutSlashes = computed({
+    get: () => hasFilter(figuresWithoutSlashesFilter),
+    set: (value) => value ? addFilter(figuresWithoutSlashesFilter) : removeFilter(figuresWithoutSlashesFilter),
+});
 </script>
 
 <template>
@@ -73,6 +79,9 @@ watch(bassSelector, (value) => {
         </div>
         <div>
             <FormCheckbox v-model="scaleDegreePreset" :label="$t('humdrumFilter.ScaleDegreePresetFilter')" />
+        </div>
+        <div>
+            <FormCheckbox v-model="figuresWithoutSlashes" :label="$t('humdrumFilter.FiguresWithoutSlashesFilter')" />
         </div>
     </div>
 </template>

@@ -186,3 +186,11 @@ export class HideFiguredbassFilter extends HumdrumFilter {
         new Line('extract -I **fba'),
     ];
 }
+
+export class FiguresWithoutSlashesFilter extends HumdrumFilter {
+    static NAME = 'FiguresWithoutSlashesFilter';
+    unique = true;
+    lines = [
+        new Line('shed -X **fb -e "s/slash/Xslash/I"'),
+    ];
+}
