@@ -27,8 +27,5 @@
     "js-yaml": "^4.1.0",
     "nuxt": "^3.4.0",
     "nuxt-icon": "^0.3.3"
-  },
-  "overrides": {
-    "vite": "4.3.0-beta.6"
   }
 }
