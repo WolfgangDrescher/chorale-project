@@ -45,14 +45,16 @@ const scaleDegreePreset = computed({
     set: (value) => value ? addFilter(scaleDegreePresetFilter) : removeFilter(scaleDegreePresetFilter),
 });
 
-const bassSelector = ref('all');
-watch(bassSelector, (value) => {
-    if (value === 'all') {
+const bassSelector = ref(['all']);
+watch(bassSelector, (values) => {
+    removeFilter(new ExtractSpineFilter());
+    if (!values.includes('all')) {
         removeFilter(new ExtractSpineFilter());
-    } else {
-        const num = 8 - parseInt(value, 10) + 1;
-        removeFilter(new ExtractSpineFilter());
-        addFilter(new ExtractSpineFilter(`${num * 2 - 1},${num * 2},$`));
+        const spines = values.map(value => {
+            const num = 8 - parseInt(value, 10) + 1;
+            return `${num * 2 - 1},${num * 2}`;
+        });
+        addFilter(new ExtractSpineFilter(`${spines},$`));
     }
 }, {immediate: true});
 

@@ -1,9 +1,28 @@
 <script setup>
-defineProps(['label', 'modelValue', 'groupLabel']);
+const props = defineProps(['label', 'modelValue', 'groupLabel']);
 const emit = defineEmits(['update:modelValue']);
 
-function onChange(value) {
-    emit('update:modelValue', value);
+function onChange(value, event) {
+    if (value === 'all') {
+        emit('update:modelValue', ['all']);
+    } else if (Array.isArray(props.modelValue)) {
+        if(props.modelValue.includes(value)) {
+            const newValue =  props.modelValue.filter(o => o !== value);
+            if(newValue.length === 0) {
+                newValue.push('all');
+            }
+            emit('update:modelValue', newValue);
+        } else {
+            let newValue = [value];
+            if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+                newValue = [...props.modelValue.filter(o => o !== 'all')]
+                newValue.push(value);
+            }
+            emit('update:modelValue', newValue.sort().reverse());
+        }
+    } else {
+        emit('update:modelValue', value);
+    }
 }
 
 const options = ['all', ...Array.from({ length: 8 }, (_, i) => i + 1)];
@@ -16,8 +35,8 @@ const options = ['all', ...Array.from({ length: 8 }, (_, i) => i + 1)];
                 v-for="option in options"
                 :key="option"
                 class="grow text-center"
-                :class="{'bg-primary-500 text-white': modelValue == option}"
-                @click="onChange(option)"
+                :class="{'bg-primary-500 text-white': Array.isArray(modelValue) ? modelValue.includes(option) : modelValue == option}"
+                @click="onChange(option, $event)"
             >
                 {{ Number.isInteger(option) ? option : $t('allBasses')  }}
             </button>
