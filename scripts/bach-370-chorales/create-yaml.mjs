@@ -17,6 +17,13 @@ const yamlPath = `${__dirname}/../../content/bach-370-chorales`;
 execSync(`rm -rf ${yamlPath}/*`);
 execSync(`mkdir -p ${yamlPath}`);
 
+function getKey(file) {
+    const stdout = execSync(`extract -f 1 ${file} | grep '^\\*\\([A-Ha-h]\\)\\([#-]*\\):'`).toString();
+    const regex = new RegExp(/^\*([a-hA-H])([#-]*):(\w{3})?$/);
+    const matches = regex.exec(stdout.trim());
+    return matches ? `${matches[1]}${matches[2]}` : null;
+}
+
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const id = getIdFromFilePath(file);
     console.log(id);
@@ -27,6 +34,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const chorale = {};
     
     chorale.id = id;
+
+    chorale.key = getKey(file);
 
     chorale.nr = parseInt(id.replace('chor', ''), 10);
 
