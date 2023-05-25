@@ -30,6 +30,18 @@ export class BachChorale {
     get vhvHref() {
         return `https://verovio.humdrum.org/?file=${this.rawFile}`;
     }
+
+    get key() {
+        return this.chorale.key;
+    }
+
+    get isMajor() {
+        return /[A-Z]/.test(this.key);
+    }
+
+    get isMinor() {
+        return this.isMajor === false;
+    }
 }
 
 export function createBachChorale(chorale) {
