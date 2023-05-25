@@ -6,6 +6,9 @@ const route = useRoute();
 const { data } = await useAsyncData(`/bach-370-chorales/${route.params.nr}`, () => queryContent('/bach-370-chorales').where({nr: parseInt(route.params.nr, 10)}).findOne())
 const chorale = createBachChorale(data.value);
 
+const { data: similarChoralesData } = await useAsyncData(`/bach-370-chorales/${route.params.nr}/similar`, () => queryContent('/bach-370-chorales').where({ cantusFirmusMint: chorale.cantusFirmusMint, id: { $ne: chorale.id } }).find())
+const similarChorales = createBachChorales(similarChoralesData.value);
+
 const { data: surroundData } = await useAsyncData(`/bach-370-chorales/${route.params.nr}/surround`, () => queryContent('/bach-370-chorales').only(['_path', 'id', 'nr']).findSurround(data.value._path))
 const [prevChorale, nextChorale] = surroundData.value;
 
@@ -91,6 +94,19 @@ const scoreFormatter = useHumdrumScoreFormatter();
                     }
                 }" />
             </div>
+        </section>
+
+        <section v-if="similarChorales.length">
+            <Subheading>
+                {{ $t('choralesWithSameCantusFirmus') }}
+            </Subheading>
+            <ul>
+                <li v-for="similarChorale in similarChorales">
+                    <NuxtLink :to="localePath({ name: 'bach-nr', params: { nr: similarChorale.nr } })">
+                        {{ `${similarChorale.nr}. ${similarChorale.title}` }}
+                    </NuxtLink>
+                </li>
+            </ul>
         </section>
 
     </Container>
