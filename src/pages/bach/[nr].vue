@@ -1,14 +1,28 @@
 <script setup>
+import levenshtein from 'js-levenshtein';
 const { t } = useI18n();
 const localePath = useLocalePath();
-
 const route = useRoute();
+
+// get chorale by nr url param
 const { data } = await useAsyncData(`/bach-370-chorales/${route.params.nr}`, () => queryContent('/bach-370-chorales').where({nr: parseInt(route.params.nr, 10)}).findOne())
 const chorale = createBachChorale(data.value);
 
-const { data: similarChoralesData } = await useAsyncData(`/bach-370-chorales/${route.params.nr}/similar`, () => queryContent('/bach-370-chorales').where({ cantusFirmusMint: chorale.cantusFirmusMint, id: { $ne: chorale.id } }).find())
+// get all chorales to compare cantus firmi
+const { data: choralesData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
+const chorales = createBachChorales(choralesData.value);
+
+// check for similar cantus firmi with levenshtein distance
+const similarities = chorales.map((c) => ({
+    id: c.id,
+    distance: levenshtein(chorale.cantusFirmusMint, c.cantusFirmusMint),
+})).filter(s => s.distance <= 20);
+
+// get similar chorales
+const { data: similarChoralesData } = await useAsyncData(`/bach-370-chorales/${route.params.nr}/similar`, () => queryContent('/bach-370-chorales').where({ id: { $ne: chorale.id, $in: similarities.map(s => s.id) } }).find())
 const similarChorales = createBachChorales(similarChoralesData.value);
 
+// get next and pevious chorales
 const { data: surroundData } = await useAsyncData(`/bach-370-chorales/${route.params.nr}/surround`, () => queryContent('/bach-370-chorales').only(['_path', 'id', 'nr']).findSurround(data.value._path))
 const [prevChorale, nextChorale] = surroundData.value;
 
