@@ -42,6 +42,10 @@ export class BachChorale {
     get isMinor() {
         return this.isMajor === false;
     }
+
+    get cantusFirmusMint() {
+        return this.chorale.cantusFirmusMint;
+    }
 }
 
 export function createBachChorale(chorale) {
