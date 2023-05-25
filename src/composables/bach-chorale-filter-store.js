@@ -10,7 +10,6 @@ export const useBachChoraleFilterStore = defineStore('bach_chorale_filter', {
     state: () => ({ ...defaultFilter }),
     actions: {
         update(prop, value) {
-            console.log(prop, value);
             this[prop] = value;
         },
         reset() {

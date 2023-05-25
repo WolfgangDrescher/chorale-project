@@ -19,7 +19,6 @@ const filterBySearchText = (searchText, element) => {
 };
 
 const filterByMajorMinor = (majorMinor, element) => {
-    console.log(majorMinor, element);
     switch (majorMinor) {
         case 'major':
             return element.isMajor;
@@ -35,7 +34,6 @@ export function useBachChoraleFilter(elements) {
     const filter = useBachChoraleFilterStore();
 
     const filteredElements = computed(() => {
-        console.log('compute', filter.$state);
         const filteredElements = elements.filter(element => {
             const searchTextMatched = filterBySearchText(filter.searchText, element);
             const keysMatched = filterByKeys(filter.keys, element);
