@@ -18,6 +18,7 @@ execSync(`rm -rf ${yamlPath}/*`);
 execSync(`mkdir -p ${yamlPath}`);
 
 function getKey(file) {
+    // get first occurence of key designations such as *E-:
     const stdout = execSync(`extractxx -f 1 ${file} | grep '^\\*\\([A-Ha-h]\\)\\([#-]*\\):'`).toString();
     const regex = new RegExp(/^\*([a-hA-H])([#-]*):(\w{3})?$/);
     const matches = regex.exec(stdout.trim());
