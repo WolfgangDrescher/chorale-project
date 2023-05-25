@@ -73,23 +73,25 @@ const scoreFormatter = useHumdrumScoreFormatter();
             </Suspense>
         </NuxtErrorBoundary>
 
-        <Subheading>
-            {{ $t('kern') }}
-        </Subheading>
+        <section>
+            <Subheading>
+                {{ $t('kern') }}
+            </Subheading>
 
-        <div class="h-[300px] overflow-hidden">
-            <MonacoEditor :model-value="kern" :options="{
-                readOnly: true,
-                fontSize: 14,
-                // theme: 'vs-light',
-                tabSize: 12,
-                scrollBeyondLastLine: false,
-                automaticLayout: true,
-                scrollbar: {
-                    alwaysConsumeMouseWheel: false,
-                }
-            }" />
-        </div>
+            <div class="h-[300px] overflow-hidden">
+                <MonacoEditor :model-value="kern" :options="{
+                    readOnly: true,
+                    fontSize: 14,
+                    // theme: 'vs-light',
+                    tabSize: 12,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    scrollbar: {
+                        alwaysConsumeMouseWheel: false,
+                    }
+                }" />
+            </div>
+        </section>
 
     </Container>
 </template>
