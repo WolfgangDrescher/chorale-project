@@ -15,3 +15,11 @@ humdrumFilter.HideFiguredbassFilter: Generalbass ausblenden
 humdrumFilter.FiguresWithoutSlashesFilter: Ziffern ohne Schrägstriche anzeigen
 allBasses: Alle
 zoom: Zoom
+choralesWithSameCantusFirmus: Choräle mit gleichem Cantus firmus
+searchText: Suchtext
+majorMinor: Tongeschlecht
+key: Tonart
+noItemsSelected: Keine Auswahl
+all: Alles
+major: Dur
+minor: Moll
