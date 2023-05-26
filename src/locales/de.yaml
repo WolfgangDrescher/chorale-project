@@ -25,3 +25,4 @@ all: Alles
 major: Dur
 minor: Moll
 levenshteinDistance: Levenshtein distance
+nOutOfTotalChoralesFoundForSerachParams: '{n} von {total} Chorälen gefunden'

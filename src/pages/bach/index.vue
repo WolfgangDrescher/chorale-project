@@ -23,6 +23,12 @@ function hrefBuilder(chorale) {
 
         <BachChoraleSearchFilter />
 
+        <div class="my-4 flex flex-col md:flex-row gap-4">
+            <div class="flex items-center">
+                {{ $t('nOutOfTotalChoralesFoundForSerachParams', { n: filteredElements.length, total: chorales.length }) }}
+            </div>
+        </div>
+
         <InfiniteScroll @load="addItems()" :all="items.length === filteredElements.length">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div v-for="chorale in items" :key="chorale.id">
