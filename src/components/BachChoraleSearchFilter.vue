@@ -43,7 +43,7 @@ const majMinOptions = [
             </div>
             <div>
                 <FormGroup :label="''">
-                    <FormButton @click="resetFilter" block>{{ $t('reset') }}</FormButton>
+                    <FormButton @click="resetFilter" block>{{ $t('clear') }}</FormButton>
                 </FormGroup>
             </div>
         </div>
