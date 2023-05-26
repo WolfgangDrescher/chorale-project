@@ -1,6 +1,6 @@
 export function useArrayLoader(elements, numberOfItemsToAdd = 10) {
     const items = ref([]);
-    watch(() => elements, () => {
+    watch(elements, () => {
         items.value = [];
         addItems(numberOfItemsToAdd);
     });
