@@ -24,3 +24,4 @@ noItemsSelected: Keine Auswahl
 all: Alles
 major: Dur
 minor: Moll
+levenshteinDistance: Levenshtein distance

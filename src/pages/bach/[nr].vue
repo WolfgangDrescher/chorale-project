@@ -118,6 +118,9 @@ const scoreFormatter = useHumdrumScoreFormatter();
                 <li v-for="similarChorale in similarChorales">
                     <NuxtLink :to="localePath({ name: 'bach-nr', params: { nr: similarChorale.nr } })">
                         {{ `${similarChorale.nr}. ${similarChorale.title}` }}
+                        <span class="text-xs">
+                            ({{ $t('levenshteinDistance') }}: {{ similarities.find(c => c.id === similarChorale.id)?.distance || 0 }})
+                        </span>
                     </NuxtLink>
                 </li>
             </ul>
