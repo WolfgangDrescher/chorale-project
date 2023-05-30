@@ -13,6 +13,7 @@ humdrumFilter.ScaleDegreePresetFilter: Skalenstufen anzeigen
 humdrumFilter.HideMiddleVoicesFilter: Mittelstimmen ausblenden
 humdrumFilter.HideFiguredbassFilter: Generalbass ausblenden
 humdrumFilter.FiguresWithoutSlashesFilter: Ziffern ohne Schrägstriche anzeigen
+humdrumFilter.ExtractCantusFirmusFilter: Cantus firmus isolieren
 allBasses: Alle
 clear: Zurücksetzen
 zoom: Zoom

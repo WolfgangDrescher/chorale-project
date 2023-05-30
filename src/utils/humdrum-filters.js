@@ -164,6 +164,15 @@ export class HideMiddleVoicesFilter extends HumdrumFilter {
     ];
 }
 
+export class ExtractCantusFirmusFilter extends HumdrumFilter {
+    static NAME = 'ExtractCantusFirmusFilter';
+    priority = 2;
+    unique = true;
+    lines = [
+        new Line('extract -f $'),
+    ];
+}
+
 export class ExtractSpineFilter extends HumdrumFilter {
     static NAME = 'ExtractSpineFilter';
     priority = 2;
