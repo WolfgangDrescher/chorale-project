@@ -62,6 +62,12 @@ const extractCantusFirmus = computed({
     get: () => hasFilter(extractCantusFirmusFilter),
     set: (value) => value ? addFilter(extractCantusFirmusFilter) : removeFilter(extractCantusFirmusFilter),
 });
+
+const hideNonCantusFirmusVoicesFilter = new HideNonCantusFirmusVoicesFilter();
+const hideNonCantusFirmusVoices = computed({
+    get: () => hasFilter(hideNonCantusFirmusVoicesFilter),
+    set: (value) => value ? addFilter(hideNonCantusFirmusVoicesFilter) : removeFilter(hideNonCantusFirmusVoicesFilter),
+});
 </script>
 
 <template>
@@ -86,6 +92,9 @@ const extractCantusFirmus = computed({
         </div>
         <div>
             <FormCheckbox v-model="extractCantusFirmus" :label="$t('humdrumFilter.ExtractCantusFirmusFilter')" />
+        </div>
+        <div>
+            <FormCheckbox v-model="hideNonCantusFirmusVoices" :label="$t('humdrumFilter.HideNonCantusFirmusVoicesFilter')" />
         </div>
     </div>
 </template>

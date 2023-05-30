@@ -173,6 +173,15 @@ export class ExtractCantusFirmusFilter extends HumdrumFilter {
     ];
 }
 
+export class HideNonCantusFirmusVoicesFilter extends HumdrumFilter {
+    static NAME = 'HideNonCantusFirmusVoicesFilter';
+    priority = 2;
+    unique = true;
+    lines = [
+        new Line(`shed -s 1-3 -e "s/.*/$0yy/D s/.*//L s/^[^I].*//I"`),
+    ];
+}
+
 export class ExtractSpineFilter extends HumdrumFilter {
     static NAME = 'ExtractSpineFilter';
     priority = 2;
