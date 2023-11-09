@@ -71,7 +71,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
                 }
             }
             data.cadences.push(cadence);
-            writeYaml(`${yamlPath}/${id}.yaml`, data);
         }
     }
+
+    writeYaml(`${yamlPath}/${id}.yaml`, data);
 });
