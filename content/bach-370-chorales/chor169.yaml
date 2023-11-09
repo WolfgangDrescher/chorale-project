@@ -1,6 +1,7 @@
 cantusFirmusMint: '-3,+2,1,+2,+2,+2,-4,+2,+2,-2,-2,-2,+2,1,+4,1,-2,1,-2,-2,1,-2,-2,-2,-2,+4,1,+4,1,-2,1,-2,-2,1,1,1,+2,-5,+8,-2,-2,-2,-2,-2,-2,+4,-2,+4,-2,-2,-2'
 id: chor169
 key: A
+measures: 16
 nr: 169
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor169.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor169.krn

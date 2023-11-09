@@ -1,6 +1,7 @@
 cantusFirmusMint: '-2,-2,+2,+2,+3,-2,-2,+3,-3,+2,-2,-3,+3,-2,-2,+5,+2,+3,1,-2,-3,+2,-2,1,+2,+3,1,-2,-3,+2,-2,-4,+2,+2,1,-2,+2,-3,1,+4,-3,+2,-2,-3,+3,-2,-2'
 id: chor022
 key: E-
+measures: 15
 nr: 22
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor022.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor022.krn

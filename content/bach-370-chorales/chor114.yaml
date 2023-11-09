@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,+2,+2,+2,-3,-3,1,+2,1,+2,1,-5,+8,-2,-2,-2,-2,+2,1,+2,+2,+2,1,-2,-3,+3,-2,-2,-2,1,+2,-3,-2,-2,+4,+3,-2,-2
 id: chor114
 key: a
+measures: 12
 nr: 114
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor114.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor114.krn

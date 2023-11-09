@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,1,-2,-3,+4,+2,+2,1,+2,-2,-2,1,+2,+2,+2,-3,+4,1,-2,-3,+2,-2,1,-2,-2,-2,-3,+3,1,+2,-2,-2,-2,+8,-2,-2,-2,-2
 id: chor111
 key: a
+measures: 11
 nr: 111
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor111.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor111.krn

@@ -1,6 +1,7 @@
 cantusFirmusMint: +5,1,-2,+2,-5,+3,1,1,-2,-2,+3,1,1,-3,+3,+2,+2,-2,-2,-2,-2,+3,1,1,-3,+3,+2,+2,-2,-2,r,+5,+2,-2,-3,-3,+3,-2,-2,-2,-2,r
 id: chor030
 key: e
+measures: 12
 nr: 30
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor030.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor030.krn

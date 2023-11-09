@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,-2,+2,+2,+2,-2,-2,1,+2,1,+4,-2,-2,-2,+4,-2,-2,-2,+3,-2,-2,-2,+3,-2,-2,-2,-3,+3,+2,+2,1,+2,+2,+2,-3,+2,-3,-2
 id: chor073
 key: g
+measures: 11
 nr: 73
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor073.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor073.krn

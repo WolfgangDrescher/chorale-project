@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,1,-2,-3,+2,+2,+2,1,-2,-2,-2,-2,-2,-2,+2,1,-2,+2,+3,+2,-2,-2,+2,1,+2,+2,+2,-2,-2,1,-2,1,-2,-2,+4,-2,-2,-2,-2,1,+2,+2,+2,+2,-2,-2,+2
 id: chor284
 key: C
+measures: 12
 nr: 284
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor284.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor284.krn

@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,-2,+2,-3,-2,1,-2,1,+3,+2,+2,-2,+4,-2,-2,1,+4,+2,-2,-4,+2,-2,-2,1,+3,+2,+2,-2,-2,1,-2
 id: chor295
 key: e
+measures: 8
 nr: 295
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor295.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor295.krn

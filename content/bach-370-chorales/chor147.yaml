@@ -1,6 +1,7 @@
 cantusFirmusMint: +5,1,+2,+2,+2,r,-2,+2,-2,-2,1,-2,r,1,+2,-2,-2,-2,-2,r,+2,-3,+2,+2,+3,-2,-2,+5,+2,-2,-2,1,-2,r,+4,-2,-2,-2,+2,-2,-2,-2,+3,-2,-2,-2,-2
 id: chor147
 key: E-
+measures: 14
 nr: 147
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor147.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor147.krn

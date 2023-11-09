@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,-4,+2,+2,-2,-2,-2,+3,1,-2,-2,-2,+2,+2,1,+2,+2,-3,+2,-2,-2,-2,+4,+2,+2,-3,+4,-2,-2,-2,-2,+2,+2,+2,-2,-2,-2,-2,+2,+2,+2,-3,-2
 id: chor369
 key: b-
+measures: 12
 nr: 369
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor369.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor369.krn

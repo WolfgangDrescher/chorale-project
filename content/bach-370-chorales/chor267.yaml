@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,-3,+2,+2,-3,-2,-2,+5,1,-2,+4,-3,-3,+2,+2,1,+3,+2,+3,-2,-2,-2,+2,1,+2,-2,-2,-2,-2,+2,-2,+4,-2,-2,+2,-3,1,-2,-2,+3,+2,-2,1,-2,-2,-2,-2
 id: chor267
 key: d
+measures: 12
 nr: 267
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor267.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor267.krn

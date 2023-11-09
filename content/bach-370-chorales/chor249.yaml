@@ -1,6 +1,7 @@
 cantusFirmusMint: +3,+2,+2,-2,-2,-2,+2,1,1,-2,+3,-3,-2,-2,+2,1,+2,+2,+2,-2,-2,+2,-2,1,+2,+2,+2,-2,-2,-2,+2,-3,+2,+2,+2,-3,-2,-2,+2
 id: chor249
 key: G
+measures: 10
 nr: 249
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor249.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor249.krn

@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,-2,-2,-2,+4,+2,+2,1,1,1,-2,+2,+2,-2,-2,-2,+2,+2,-2,-2,-3,+2,+2,+5,-3,-3,+2,+3,-2,-2,-2
 id: chor164
 key: B-
+measures: 16
 nr: 164
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor164.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor164.krn

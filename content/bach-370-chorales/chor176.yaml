@@ -1,6 +1,7 @@
 cantusFirmusMint: 1,+3,+3,-4,+2,+2,+2,-2,-2,1,+3,-2,-2,-2,+2,1,+3,-2,-2,-2,-2,-2,+2,1,+2,1,+3,-2,-2,-2,-2,+2
 id: chor176
 key: F
+measures: 16
 nr: 176
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor176.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor176.krn
