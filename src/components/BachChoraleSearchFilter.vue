@@ -47,6 +47,9 @@ const majMinOptions = [
                 <FormRangeSlider :group-label="$t('countCadences')" :model-value="filter.countCadences" @update:model-value="updateFilter('countCadences', $event)" :min="0" :max="23" />
             </div>
             <div>
+                <FormRangeSlider :group-label="$t('numberOfMeasures')" :model-value="filter.numberOfMeasures" @update:model-value="updateFilter('numberOfMeasures', $event)" :min="0" :max="48" />
+            </div>
+            <div>
                 <FormGroup :label="''">
                     <FormButton @click="resetFilter" block>{{ $t('clear') }}</FormButton>
                 </FormGroup>

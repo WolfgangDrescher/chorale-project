@@ -5,6 +5,7 @@ const defaultFilter = {
     keys: [],
     majorMinor: null,
     countCadences: [0, 23],
+    numberOfMeasures: [0, 48]
 };
 
 export const useBachChoraleFilterStore = defineStore('bach_chorale_filter', {

@@ -48,6 +48,10 @@ export class BachChorale {
         return this._chorale.cantusFirmusMint;
     }
 
+    get measures() {
+        return this._chorale.measures;
+    }
+
     get cadences() {
         if (!this._cadencesItem) throw new Error(`${this.id} does not have cadences assigned.`);
         return this._cadencesItem.cadences;
