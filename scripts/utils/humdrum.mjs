@@ -51,7 +51,7 @@ export function lineIsFermataEnd(lines, lineIndex, kernSpineIndices) {
     return kernSpineIndices.every(checkTokenForFermata);
 }
 
-function resolveToken(lineIndex, spineIndex, lines) {
+export function resolveToken(lineIndex, spineIndex, lines) {
     for (let i = lineIndex; i >= 0; i--) {
         const token = lines[i].split('\t')[spineIndex];
         if (tokenIsDataRecord(token)) {
