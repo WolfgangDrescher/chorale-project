@@ -36,7 +36,6 @@ const filterByCountCadences = ([min, max], element) => {
 };
 
 const filterNumberOfMeasures = ([min, max], element) => {
-    console.log(min, max);
     if (typeof min !== 'number' || typeof max !== 'number') return true;
     const count = element.measures ?? 0;
     // if (isNaN(count)) return false;
