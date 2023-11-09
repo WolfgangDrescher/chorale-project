@@ -104,7 +104,9 @@ const totalTableItems = computed(() => {
             <DataTable small :items="tableItems" :headers="tableHeaders">
                 <template v-for="i in 23" #[`item.${i}`]="{ item }">
                     <div class="text-center">
-                        {{ item[`${i}`] }}
+                        <template v-if="item[`${i}`]">
+                            {{ item[`${i}`] }} / {{ item[`${i}.fb`] }}
+                        </template>
                     </div>
                 </template>
                 <template #[`item.id`]="{ item }">
