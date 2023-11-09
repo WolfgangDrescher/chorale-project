@@ -12,12 +12,12 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxtjs/i18n-edge": "^8.0.0-beta.11-28023078.39cf21b",
-    "@pinia/nuxt": "^0.4.8",
+    "@nuxtjs/i18n-edge": "^8.0.0-rc.5-28274558.b818011",
+    "@pinia/nuxt": "^0.5.1",
     "js-levenshtein": "^1.1.6",
-    "monaco-editor": "^0.38.0",
+    "monaco-editor": "^0.44.0",
     "pinia": "^2.0.34",
-    "verovio": "^3.15.0",
+    "verovio": "^4.0.1",
     "vue-verovio-canvas": "^1.2.4"
   },
   "devDependencies": {
@@ -27,6 +27,6 @@
     "html-entities": "^2.3.3",
     "js-yaml": "^4.1.0",
     "nuxt": "^3.8.1",
-    "nuxt-icon": "^0.4.1"
+    "nuxt-icon": "^0.6.5"
   }
 }
