@@ -28,6 +28,12 @@ const filterByMajorMinor = (majorMinor, element) => {
     return true;
 };
 
+const filterByCountCadences = ([min, max], element) => {
+    if (typeof min !== 'number' || typeof max !== 'number') return true;
+    const count = element.countCadences ?? 0;
+    // if (isNaN(count)) return false;
+    return count >= min && count <= max;
+};
 
 export function useBachChoraleFilter(elements) {
 
@@ -38,11 +44,13 @@ export function useBachChoraleFilter(elements) {
             const searchTextMatched = filterBySearchText(filter.searchText, element);
             const keysMatched = filterByKeys(filter.keys, element);
             const majorMinorMatched = filterByMajorMinor(filter.majorMinor, element);
+            const countCadencesMatched = filterByCountCadences(filter.countCadences, element);
 
             return (
                 searchTextMatched &&
                 keysMatched &&
-                majorMinorMatched
+                majorMinorMatched &&
+                countCadencesMatched
             );
         });
 
