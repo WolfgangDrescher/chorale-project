@@ -53,7 +53,7 @@ const majMinOptions = [
                 <FormDropdown :model-value="filter.majorMinor" @update:model-value="updateFilter('majorMinor', $event)" :label="$t('majorMinor')" :options="majMinOptions" :search-enabled="false" />
             </div>
             <div>
-                <FormDropdown :model-value="filter.keys" @update:model-value="updateFilter('keys', $event)" :label="$t('key')" :options="keyOptions" :search-enabled="false" :multiple="true"/>
+                <FormDropdown :model-value="filter.keys" @update:model-value="updateFilter('keys', $event)" :label="$t('key')" :options="keyOptions" :search-enabled="false" :multiple="true" />
             </div>
             <div>
                 <FormDropdown :model-value="filter.timeSignature" @update:model-value="updateFilter('timeSignature', $event)" :label="$t('timeSignature')" :options="timeSignatureOptions" :search-enabled="false" :multiple="false" />
