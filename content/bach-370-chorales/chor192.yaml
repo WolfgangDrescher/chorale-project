@@ -5,4 +5,5 @@ measures: 16
 nr: 192
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor192.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor192.krn
+timeSignature: 3/4
 title: Gottlob, es geht nunmehr zu Ende

@@ -5,4 +5,5 @@ measures: 12
 nr: 123
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor123.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor123.krn
+timeSignature: 4/4
 title: Helft mir Gotts Güte preisen

@@ -5,4 +5,5 @@ measures: 10
 nr: 125
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor125.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor125.krn
+timeSignature: 4/4
 title: Allein Gott in der Höh sei Ehr

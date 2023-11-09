@@ -5,4 +5,5 @@ measures: 12
 nr: 50
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor050.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor050.krn
+timeSignature: 4/4
 title: In allen meinen Taten

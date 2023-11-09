@@ -5,4 +5,5 @@ measures: 15
 nr: 200
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor200.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor200.krn
+timeSignature: 4/4
 title: Christus ist erstanden, hat überwunden
