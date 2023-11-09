@@ -1,6 +1,7 @@
 export class BachChorale {
-    constructor(chorale) {
+    constructor(chorale, cadences) {
         this._chorale = chorale;
+        this._cadencesItem = cadences;
     }
 
     get id() {
@@ -48,13 +49,16 @@ export class BachChorale {
     }
 }
 
-export function createBachChorale(chorale) {
-    return new BachChorale(chorale);
+export function createBachChorale(chorale, cadences) {
+    return new BachChorale(chorale, cadences);
 }
 
-export function createBachChorales(chorales) {
+export function createBachChorales(chorales, choralCadences) {
     if (Array.isArray(chorales)) {
-        return chorales.map(chorale => createBachChorale(chorale));
+        return chorales.map(chorale => {
+            const cadences = choralCadences?.find(e => e.choraleId === chorale.id);
+            return createBachChorale(toRaw(chorale), toRaw(cadences));
+        });
     }
     throw new Error('Cannot convert passsed argument to Chorale objects');
 }
