@@ -43,9 +43,23 @@ const tableItems = computed(() => {
     });
 });
 
-const totalTableHeaders = Array.from({ length: 7 }, (_, i) => i + 1).map((n) => ({ text: romanizeDeg(n), value: n }));
+const totalTableHeaders = computed(() => {
+    return filteredElements.value.reduce((accumulator, chorale) => {
+        chorale.cadences.forEach(cadence => {
+            if (!accumulator.includes(cadence.degree)) {
+                accumulator.push(cadence.degree);
+            }
+        });
+        return accumulator;
+    }, []).sort((a, b) => {
+        if (parseInt(a.replaceAll(/\D/g, ''), 10) > parseInt(b.replaceAll(/\D/g, ''), 10)) return 1;
+        if (parseInt(a.replaceAll(/\D/g, ''), 10) < parseInt(b.replaceAll(/\D/g, ''), 10)) return -1;
+        if (a.includes('+') && !b.includes('+')) return 1;
+        if (a.includes('-') && !b.includes('-')) return -1;
+    }).map(n => ({text: romanizeDeg(n), value: n}));
+});
 const totalTableItems = computed(() => {
-    const items = Array.from({ length: 7 }, (_, i) => i + 1).map((n) => {
+    const items = totalTableHeaders.value.map(({value: n}) => {
         const count = filteredElements.value.reduce((accumulator, chorale) => {
             const num = chorale.cadences.filter(cadence => cadence.degree === n).length;
             return accumulator + num;
