@@ -47,6 +47,15 @@ export class BachChorale {
     get cantusFirmusMint() {
         return this._chorale.cantusFirmusMint;
     }
+
+    get cadences() {
+        if (!this._cadencesItem) throw new Error(`${this.id} does not have cadences assigned.`);
+        return this._cadencesItem.cadences;
+    }
+
+    get countCadences() {
+        return this.cadences.length;
+    }
 }
 
 export function createBachChorale(chorale, cadences) {
