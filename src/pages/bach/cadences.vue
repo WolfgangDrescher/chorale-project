@@ -13,10 +13,15 @@ const { filteredElements } = useBachChoraleFilter(chorales);
 
 
 const maxCadences = computed(() => {
-    const maxCadenceItem = filteredElements.value.reduce((prev, current) => {
-        return (prev && prev.countCadences > current.countCadences) ? prev : current;
-    });
-    return maxCadenceItem?.countCadences ?? 0;
+    if (filteredElements.value.length === 1) {
+        return filteredElements.value[0].countCadences
+    } else if (filteredElements.value.length >= 2) {
+        const maxCadenceItem = filteredElements.value?.reduce((prev, current) => {
+            return (prev && prev.countCadences > current.countCadences) ? prev : current;
+        });
+        return maxCadenceItem?.countCadences;
+    }
+    return 0;
 });
 
 const tableHeaders = computed(() => {
@@ -83,10 +88,12 @@ const totalTableItems = computed(() => {
             </div>
         </div>
 
-        <Subheading>{{ $t('totalDegreeCount') }}</Subheading>
-        <DataTable small :items="totalTableItems" :headers="totalTableHeaders" />
-        
-        <Subheading>{{ $t('degreesOfAllChorales') }}</Subheading>
-        <DataTable small :items="tableItems" :headers="tableHeaders" />
+        <template v-if="filteredElements.length > 0">
+            <Subheading>{{ $t('totalDegreeCount') }}</Subheading>
+            <DataTable small :items="totalTableItems" :headers="totalTableHeaders" />
+            
+            <Subheading>{{ $t('degreesOfAllChorales') }}</Subheading>
+            <DataTable small :items="tableItems" :headers="tableHeaders" />
+        </template>
     </Container>
 </template>
