@@ -39,6 +39,7 @@ const tableItems = computed(() => {
     return filteredElements.value.map(chorale => {
         const result = {
             id: chorale.id,
+            nr: chorale.nr,
         };
         chorale.cadences.forEach((cadence, index) => {
             result[index + 1] = romanizeDeg(cadence.degree);
@@ -93,7 +94,13 @@ const totalTableItems = computed(() => {
             <DataTable small :items="totalTableItems" :headers="totalTableHeaders" />
             
             <Subheading>{{ $t('degreesOfAllChorales') }}</Subheading>
-            <DataTable small :items="tableItems" :headers="tableHeaders" />
+            <DataTable small :items="tableItems" :headers="tableHeaders">
+                <template #[`item.id`]="{ item }">
+                    <NuxtLink :href="localePath({ name: 'bach-nr', params: { nr: item.nr } })">
+                        {{ item.id }}
+                    </NuxtLink>
+                </template>
+            </DataTable>
         </template>
     </Container>
 </template>
