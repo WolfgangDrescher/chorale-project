@@ -53,8 +53,8 @@ const fields = computed(() => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="(item, j) in items" :key="j" class="bg-white border-b border-gray-200">
-                                    <td v-for="(field, k) in fields" :key="k" class="whitespace-nowrap" :class="small ? 'py-2 px-3 ' : 'py-4 px-6'">
+                                <tr v-for="(item, j) in items" :key="j" class="bg-white border-b border-gray-200" :style="`--row-bg-color: ${item._rowBgColor ?? 'inherit'};`">
+                                    <td v-for="(field, k) in fields" :key="k" class="whitespace-nowrap" :style="`--cell-bg-color: ${field.cellBgColor ?? 'inherit'}; background-color: var(--cell-bg-color, var(--row-bg-color, transparent));`" :class="small ? 'py-2 px-3 ' : 'py-4 px-6'">
                                         <slot :name="`item.${field.value}`" :item="item">
                                             <span v-text="item[field.value]"></span>
                                         </slot>
