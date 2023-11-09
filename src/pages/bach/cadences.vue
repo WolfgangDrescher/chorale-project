@@ -30,7 +30,7 @@ const tableHeaders = computed(() => {
 const tableItems = computed(() => {
     return filteredElements.value.map(chorale => {
         const result = {
-            id: chorale.nr,
+            id: chorale.id,
         };
         chorale.cadences.forEach((cadence, index) => {
             result[index + 1] = romanize(cadence.degree);
