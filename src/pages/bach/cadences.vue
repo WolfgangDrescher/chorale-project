@@ -26,20 +26,24 @@ const tableHeaders = computed(() => {
     }, ...Array.from({ length: maxCadences.value }, (_, i) => i + 1).map((n) => ({ text: n, value: n }))];
 });
 
+function romanizeDeg(deg) {
+    return `${deg.replaceAll(/\d/g, '').replace('-', '♭').replace('+', '♯')}${romanize(deg.replaceAll(/\D/g, ''))}`
+}
+
 const tableItems = computed(() => {
     return filteredElements.value.map(chorale => {
         const result = {
             id: chorale.id,
         };
         chorale.cadences.forEach((cadence, index) => {
-            result[index + 1] = romanize(cadence.degree);
+            result[index + 1] = romanizeDeg(cadence.degree);
         });
         return result;
 
     });
 });
 
-const totalTableHeaders = Array.from({ length: 7 }, (_, i) => i + 1).map((n) => ({ text: romanize(n), value: n }));
+const totalTableHeaders = Array.from({ length: 7 }, (_, i) => i + 1).map((n) => ({ text: romanizeDeg(n), value: n }));
 const totalTableItems = computed(() => {
     const items = Array.from({ length: 7 }, (_, i) => i + 1).map((n) => {
         const count = filteredElements.value.reduce((accumulator, chorale) => {
