@@ -42,7 +42,10 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const key = getKey(id);
     const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | fb -cai | fb -acon3 | beat -ca`).toString();
     const lines = output.trim().split('\n');
-    const cadences = [];
+    const data = {
+        choraleId: id,
+        cadences: [],
+    };
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -67,8 +70,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
                     },
                 }
             }
-            cadences.push(cadence);
-            writeYaml(`${yamlPath}/${id}.yaml`, cadences);
+            data.cadences.push(cadence);
+            writeYaml(`${yamlPath}/${id}.yaml`, data);
         }
     }
 });
