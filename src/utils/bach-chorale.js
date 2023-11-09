@@ -1,18 +1,18 @@
 export class BachChorale {
     constructor(chorale) {
-        this.chorale = chorale;
+        this._chorale = chorale;
     }
 
     get id() {
-        return this.chorale.id;
+        return this._chorale.id;
     }
 
     get nr() {
-        return this.chorale.nr;
+        return this._chorale.nr;
     }
 
     get title() {
-        return this.chorale.title;
+        return this._chorale.title;
     }
 
     get localRawFile() {
@@ -20,11 +20,11 @@ export class BachChorale {
     }
 
     get rawFile() {
-        return this.chorale.rawFile;
+        return this._chorale.rawFile;
     }
 
     get sourceFile() {
-        return this.chorale.sourceFile;
+        return this._chorale.sourceFile;
     }
 
     get vhvHref() {
@@ -32,7 +32,7 @@ export class BachChorale {
     }
 
     get key() {
-        return this.chorale.key;
+        return this._chorale.key;
     }
 
     get isMajor() {
@@ -44,7 +44,7 @@ export class BachChorale {
     }
 
     get cantusFirmusMint() {
-        return this.chorale.cantusFirmusMint;
+        return this._chorale.cantusFirmusMint;
     }
 }
 
