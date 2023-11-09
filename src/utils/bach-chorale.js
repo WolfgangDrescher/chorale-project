@@ -52,6 +52,10 @@ export class BachChorale {
         return this._chorale.measures;
     }
 
+    get timeSignature() {
+        return this._chorale.timeSignature;
+    }
+
     get cadences() {
         if (!this._cadencesItem) throw new Error(`${this.id} does not have cadences assigned.`);
         return this._cadencesItem.cadences;

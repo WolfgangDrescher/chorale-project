@@ -24,6 +24,18 @@ const keyOptions = [...new Set(bachChorales.map(chorale => chorale.key).filter(n
     text: key,
 }));
 
+const timeSignatureOptions = [...new Set(bachChorales.map(chorale => chorale.timeSignature).filter(n => n))].sort((a, b) => {
+    const [numeratorA, denominatorA] = a.split('/');
+    const [numeratorB, denominatorB] = b.split('/');
+    if (denominatorA < denominatorB) return 1;
+    if (denominatorA > denominatorB) return -1;
+    if (numeratorA < numeratorB) return 1;
+    if (numeratorA > numeratorB) return -1;
+}).map(timeSignature => ({
+    value: timeSignature,
+    text: timeSignature,
+}));
+
 const majMinOptions = [
     { value: null, text: t('all') },
     { value: 'major', text: t('major') },
@@ -42,6 +54,9 @@ const majMinOptions = [
             </div>
             <div>
                 <FormDropdown :model-value="filter.keys" @update:model-value="updateFilter('keys', $event)" :label="$t('key')" :options="keyOptions" :search-enabled="false" :multiple="true"/>
+            </div>
+            <div>
+                <FormDropdown :model-value="filter.timeSignature" @update:model-value="updateFilter('timeSignature', $event)" :label="$t('timeSignature')" :options="timeSignatureOptions" :search-enabled="false" :multiple="false" />
             </div>
             <div>
                 <FormRangeSlider :group-label="$t('countCadences')" :model-value="filter.countCadences" @update:model-value="updateFilter('countCadences', $event)" :min="0" :max="23" />

@@ -43,6 +43,11 @@ const filterNumberOfMeasures = ([min, max], element) => {
     return count >= min && count <= max;
 };
 
+const filterTimeSignature = (timeSignature, element) => {
+    if (!timeSignature) return true;
+    return timeSignature === element.timeSignature;
+};
+
 export function useBachChoraleFilter(elements) {
 
     const filter = useBachChoraleFilterStore();
@@ -54,13 +59,15 @@ export function useBachChoraleFilter(elements) {
             const majorMinorMatched = filterByMajorMinor(filter.majorMinor, element);
             const countCadencesMatched = filterByCountCadences(filter.countCadences, element);
             const numberOfMeasuresMatched = filterNumberOfMeasures(filter.numberOfMeasures, element);
+            const timeSignatureMatched = filterTimeSignature(filter.timeSignature, element);
 
             return (
                 searchTextMatched &&
                 keysMatched &&
                 majorMinorMatched &&
                 countCadencesMatched && 
-                numberOfMeasuresMatched
+                numberOfMeasuresMatched &&
+                timeSignatureMatched
             );
         });
 
