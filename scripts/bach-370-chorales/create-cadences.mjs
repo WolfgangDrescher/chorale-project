@@ -28,11 +28,13 @@ function getKey(id) {
     return config.key;
 }
 
-function getCadenceDegree(finalis, cadenceUltima) {
-    const kern = `**kern	**kern
-${finalis.toUpperCase()}	${cadenceUltima.toLowerCase()}`;
-    const stdout = execSync(`echo ${escapeShell(kern)} | hint -l -d -c`).toString();
-    return parseInt(stdout.split('\n')[1], 10);
+function getCadenceDegree(key, cadenceUltima) {
+    const kern = `**kern
+*${key}:
+${cadenceUltima.toUpperCase()}
+*-`;
+    const stdout = execSync(`echo ${escapeShell(kern)} | deg`).toString();
+    return stdout.split('\n')[2];
 }
 
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
