@@ -1,0 +1,106 @@
+cadences:
+    -
+        beat: 5
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '8'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '5'
+    -
+        beat: 13
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 19
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '8'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '5'
+    -
+        beat: 27
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 33
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '8'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '5'
+    -
+        beat: 39
+        degree: 5
+        fb: '3'
+        voices:
+            alto:
+                interval: '3'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '8'
+    -
+        beat: 45
+        degree: 4
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '8'
+    -
+        beat: 51
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+choraleId: chor337

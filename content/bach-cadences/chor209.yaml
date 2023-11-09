@@ -1,0 +1,54 @@
+cadences:
+    -
+        beat: 12
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 22
+        degree: 5
+        fb: 5 3
+        voices:
+            alto:
+                interval: '8'
+            bass:
+                interval: null
+            soprano:
+                interval: '5'
+            tenor:
+                interval: '3'
+    -
+        beat: 34
+        degree: 2
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '8'
+    -
+        beat: 46
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+choraleId: chor209

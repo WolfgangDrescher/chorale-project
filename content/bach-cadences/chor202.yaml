@@ -1,0 +1,132 @@
+cadences:
+    -
+        beat: 12
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 22
+        degree: 2
+        fb: 5 3
+        voices:
+            alto:
+                interval: '8'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '5'
+    -
+        beat: 28
+        degree: 5
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 38
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '3'
+            bass:
+                interval: null
+            soprano:
+                interval: '5'
+            tenor:
+                interval: '8'
+    -
+        beat: 44
+        degree: 2
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '3'
+    -
+        beat: 55
+        degree: 6
+        fb: '5 #'
+        voices:
+            alto:
+                interval: '#3'
+            bass:
+                interval: null
+            soprano:
+                interval: '5'
+            tenor:
+                interval: '8'
+    -
+        beat: 60
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 76
+        degree: 5
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 96
+        degree: 5
+        fb: 5 4
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '4'
+    -
+        beat: 106
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+choraleId: chor202

@@ -1,0 +1,80 @@
+cadences:
+    -
+        beat: 9
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '5'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 21
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '3'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '5'
+    -
+        beat: 29
+        degree: 6
+        fb: 5 3
+        voices:
+            alto:
+                interval: '8'
+            bass:
+                interval: null
+            soprano:
+                interval: '3'
+            tenor:
+                interval: '5'
+    -
+        beat: 35
+        degree: 4
+        fb: 5 3
+        voices:
+            alto:
+                interval: '8'
+            bass:
+                interval: null
+            soprano:
+                interval: '5'
+            tenor:
+                interval: '3'
+    -
+        beat: 49
+        degree: 5
+        fb: '3'
+        voices:
+            alto:
+                interval: '3'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '3'
+    -
+        beat: 57
+        degree: 1
+        fb: 5 3
+        voices:
+            alto:
+                interval: '3'
+            bass:
+                interval: null
+            soprano:
+                interval: '8'
+            tenor:
+                interval: '5'
+choraleId: chor097
