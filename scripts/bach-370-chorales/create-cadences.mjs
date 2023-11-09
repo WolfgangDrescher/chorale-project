@@ -41,7 +41,7 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const yamlFile = `${yamlPath}/${id}.yaml`;
     const key = getKey(id);
     const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | fb -cai | fb -acon3 | beat -ca`).toString();
-    const lines = output.split('\n');
+    const lines = output.trim().split('\n');
     const cadences = [];
 
     for (let i = 0; i < lines.length; i++) {
