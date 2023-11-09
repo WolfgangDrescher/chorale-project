@@ -68,11 +68,6 @@ export default defineNuxtConfig({
         ],
         defaultLocale: 'de',
         langDir: 'locales/',
-        config: {
-            fallbackLocale: 'de',
-            legacy: false,
-            locale: 'en',
-        },
     },
     content: {
         // defaultLocale: 'de',
