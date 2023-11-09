@@ -107,6 +107,7 @@ const totalTableItems = computed(() => {
                         <template v-if="item[`${i}`]">
                             {{ item[`${i}`] }} / {{ item[`${i}.fb`] }}
                         </template>
+                        <template v-else>–</template>
                     </div>
                 </template>
                 <template #[`item.id`]="{ item }">
