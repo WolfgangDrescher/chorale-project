@@ -43,12 +43,20 @@ export function lineIsFermataEnd(lines, lineIndex, kernSpineIndices) {
 
     const spineTokens = line.split('\t');
     const checkTokenForFermata = (kernSpineIndex) => {
-        return spineTokens[kernSpineIndex]?.includes(';') ?? false;
+        // check if token includes ";" as a fermata signifier
+        const token = resolveToken(lineIndex, kernSpineIndex, lines);
+        return token?.includes(';');
     };
-    if (kernSpineIndices.every(checkTokenForFermata)) {
-        return true;
-    } else if (kernSpineIndices.some(checkTokenForFermata)) {
-        throw new Error('Fermata has notes on other lines');
+    
+    return kernSpineIndices.every(checkTokenForFermata);
+}
+
+function resolveToken(lineIndex, spineIndex, lines) {
+    for (let i = lineIndex; i >= 0; i--) {
+        const token = lines[i].split('\t')[spineIndex];
+        if (tokenIsDataRecord(token)) {
+            return token;
+        }
     }
-    return false;
+    return null;
 }
