@@ -44,6 +44,18 @@ function getNumberOfMeasures(file) {
     return null;
 }
 
+function getTimeSignature(file) {
+    const stdout = execSync(`cat ${file}`).toString();
+    const lines = stdout.trim().split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.match(/^\*M[^M]/)) {
+            return line.split('\t')[0].replace(/^\*M/, '');
+        }
+    }
+    return null;
+}
+
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const id = getIdFromFilePath(file);
     console.log(id);
@@ -68,6 +80,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     chorale.sourceFile = `https://github.com/craigsapp/bach-370-chorales/blob/master/kern/${id}.krn`;
 
     chorale.measures = getNumberOfMeasures(file);
+
+    chorale.timeSignature = getTimeSignature(file);
 
     writeYaml(yamlFile, chorale);
 });
