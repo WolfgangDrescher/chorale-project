@@ -15,7 +15,7 @@ cadences:
     -
         beat: 18
         degree: '5'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '5'
@@ -28,7 +28,7 @@ cadences:
     -
         beat: 30
         degree: '5'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -41,7 +41,7 @@ cadences:
     -
         beat: 41
         degree: '5'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -54,7 +54,7 @@ cadences:
     -
         beat: 51
         degree: '4'
-        fb: 5 -
+        fb: 5 3
         voices:
             alto:
                 interval: '5'
@@ -67,7 +67,7 @@ cadences:
     -
         beat: 60
         degree: '1'
-        fb: 5 n
+        fb: 5 3
         voices:
             alto:
                 interval: '5'

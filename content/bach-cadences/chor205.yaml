@@ -28,7 +28,7 @@ cadences:
     -
         beat: 23
         degree: 7-
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -80,7 +80,7 @@ cadences:
     -
         beat: 59
         degree: 7-
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -145,7 +145,7 @@ cadences:
     -
         beat: 99.5
         degree: '4'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -171,7 +171,7 @@ cadences:
     -
         beat: 115.5
         degree: '4'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -197,7 +197,7 @@ cadences:
     -
         beat: 131
         degree: '4'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -236,7 +236,7 @@ cadences:
     -
         beat: 155.5
         degree: 7-
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -249,7 +249,7 @@ cadences:
     -
         beat: 163.5
         degree: '4'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -262,7 +262,7 @@ cadences:
     -
         beat: 171
         degree: '4'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -275,7 +275,7 @@ cadences:
     -
         beat: 179
         degree: '4'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '#3'
@@ -288,7 +288,7 @@ cadences:
     -
         beat: 191
         degree: '1'
-        fb: '5 #'
+        fb: 5 3
         voices:
             alto:
                 interval: '5'

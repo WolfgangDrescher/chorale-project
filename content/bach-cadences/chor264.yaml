@@ -28,7 +28,7 @@ cadences:
     -
         beat: 20
         degree: '2'
-        fb: 5 n
+        fb: 5 3
         voices:
             alto:
                 interval: n3

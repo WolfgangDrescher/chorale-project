@@ -2,7 +2,7 @@ cadences:
     -
         beat: 6
         degree: '3'
-        fb: 6 -5 3
+        fb: 6 5 3
         voices:
             alto:
                 interval: '6'
@@ -28,7 +28,7 @@ cadences:
     -
         beat: 22
         degree: '3'
-        fb: 5 n
+        fb: 5 3
         voices:
             alto:
                 interval: n3
@@ -54,7 +54,7 @@ cadences:
     -
         beat: 38
         degree: '6'
-        fb: 5 n
+        fb: 5 3
         voices:
             alto:
                 interval: n3

@@ -54,7 +54,7 @@ cadences:
     -
         beat: 31
         degree: '1'
-        fb: 5 -
+        fb: 5 3
         voices:
             alto:
                 interval: '5'
