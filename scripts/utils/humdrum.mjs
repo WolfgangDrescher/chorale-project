@@ -29,12 +29,19 @@ export function getHumdrumReferenceRecod(humdrum, key) {
     return refs[key] || null;
 }
 
-export function lineIsDataRecord(line, includeNullToken = false) {
+function tokenIsDataRecord(line, includeNullToken = false) {
     return !line.startsWith('!') && !line.startsWith('*') && !line.startsWith('=') && !(!includeNullToken && line === '.');
 }
 
 export function lineIsFermataEnd(lines, lineIndex, kernSpineIndices) {
-    const spineTokens = lines[lineIndex]?.split('\t');
+
+    // Ignore line if is not data record
+    const line = lines[lineIndex];
+    if (!tokenIsDataRecord(line)) {
+        return false;
+    }
+
+    const spineTokens = line.split('\t');
     const checkTokenForFermata = (kernSpineIndex) => {
         return spineTokens[kernSpineIndex]?.includes(';') ?? false;
     };
