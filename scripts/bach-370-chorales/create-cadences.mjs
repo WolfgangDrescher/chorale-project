@@ -42,7 +42,7 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     console.log(id);
     const yamlFile = `${yamlPath}/${id}.yaml`;
     const key = getKey(id);
-    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | fb -cai | fb -acon3 | beat -ca`).toString();
+    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | fb -cai | fb -con3 | beat -ca`).toString();
     const lines = output.trim().split('\n');
     const data = {
         choraleId: id,
