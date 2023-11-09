@@ -28,7 +28,8 @@ const tableHeaders = computed(() => {
     return [{
         text: '#',
         value: 'id',
-    }, ...Array.from({ length: maxCadences.value }, (_, i) => i + 1).map((n) => ({ text: n, value: n }))];
+        align: 'center',
+    }, ...Array.from({ length: maxCadences.value }, (_, i) => i + 1).map((n) => ({ text: n, value: n, align: 'center' }))];
 });
 
 function romanizeDeg(deg) {
@@ -62,7 +63,7 @@ const totalTableHeaders = computed(() => {
         if (parseInt(a.replaceAll(/\D/g, ''), 10) < parseInt(b.replaceAll(/\D/g, ''), 10)) return -1;
         if (a.includes('+') && !b.includes('+')) return 1;
         if (a.includes('-') && !b.includes('-')) return -1;
-    }).map(n => ({text: romanizeDeg(n), value: n}));
+    }).map(n => ({text: romanizeDeg(n), value: n, align: 'center' }));
 });
 const totalTableItems = computed(() => {
     const items = totalTableHeaders.value.map(({value: n}) => {
@@ -91,14 +92,27 @@ const totalTableItems = computed(() => {
 
         <template v-if="filteredElements.length > 0">
             <Subheading>{{ $t('totalDegreeCount') }}</Subheading>
-            <DataTable small :items="totalTableItems" :headers="totalTableHeaders" />
+            <DataTable small :items="totalTableItems" :headers="totalTableHeaders">
+                <template v-for="i in totalTableHeaders.map(a => a.value)" #[`item.${i}`]="{ item }">
+                    <div class="text-center">
+                        {{ item[`${i}`] }}
+                    </div>
+                </template>
+            </DataTable>
             
             <Subheading>{{ $t('degreesOfAllChorales') }}</Subheading>
             <DataTable small :items="tableItems" :headers="tableHeaders">
+                <template v-for="i in 23" #[`item.${i}`]="{ item }">
+                    <div class="text-center">
+                        {{ item[`${i}`] }}
+                    </div>
+                </template>
                 <template #[`item.id`]="{ item }">
-                    <NuxtLink :href="localePath({ name: 'bach-nr', params: { nr: item.nr } })">
-                        {{ item.id }}
-                    </NuxtLink>
+                    <div class="text-center">
+                        <NuxtLink :href="localePath({ name: 'bach-nr', params: { nr: item.nr } })">
+                            {{ item.id }}
+                        </NuxtLink>
+                    </div>
                 </template>
             </DataTable>
         </template>
