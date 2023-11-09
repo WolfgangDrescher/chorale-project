@@ -31,6 +31,19 @@ function getCantusFirmusMelodicIntervals(file) {
     return output.split('\n').join(',');
 }
 
+function getNumberOfMeasures(file) {
+    // get last measure number
+    const stdout = execSync(`cat ${file}`).toString();
+    const lines = stdout.trim().split('\n');
+    for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i];
+        if (line.match(/^=\d/)) {
+            return parseInt(line.split('\t')[0].replaceAll(/\D/g, ''), 10);
+        }
+    }
+    return null;
+}
+
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const id = getIdFromFilePath(file);
     console.log(id);
@@ -53,6 +66,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     chorale.rawFile = `https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/${id}.krn`;
 
     chorale.sourceFile = `https://github.com/craigsapp/bach-370-chorales/blob/master/kern/${id}.krn`;
+
+    chorale.measures = getNumberOfMeasures(file);
 
     writeYaml(yamlFile, chorale);
 });
