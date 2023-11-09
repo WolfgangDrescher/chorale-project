@@ -12,7 +12,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxtjs/i18n-edge": "^8.0.0-rc.5-28274558.b818011",
+    "@nuxtjs/i18n-edge": "8.0.0-rc.5-28274558.b818011",
     "@pinia/nuxt": "^0.5.1",
     "js-levenshtein": "^1.1.6",
     "monaco-editor": "^0.44.0",
