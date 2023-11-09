@@ -47,7 +47,7 @@ export function lineIsFermataEnd(lines, lineIndex, kernSpineIndices) {
         const token = resolveToken(lineIndex, kernSpineIndex, lines);
         return token?.includes(';');
     };
-    
+
     return kernSpineIndices.every(checkTokenForFermata);
 }
 
