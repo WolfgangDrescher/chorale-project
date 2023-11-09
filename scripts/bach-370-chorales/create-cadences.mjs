@@ -3,7 +3,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decode } from 'html-entities';
 import { getFiles, readFile } from '../utils/fs.mjs'; 
-import { lineIsFermataEnd } from '../utils/humdrum.mjs'; 
+import { lineIsFermataEnd, resolveToken } from '../utils/humdrum.mjs'; 
 import yaml from 'js-yaml'; 
 import { writeYaml } from '../utils/yaml.mjs';
 
@@ -54,7 +54,7 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
             const cadence = {
                 fb: tokens[2],
                 beat: parseFloat(tokens[9]),
-                degree: getCadenceDegree(key, tokens[0]),
+                degree: getCadenceDegree(key, resolveToken(i, 0, lines)),
                 voices: {
                     soprano: {
                         interval: tokens[8],
