@@ -29,6 +29,9 @@ export default defineNuxtConfig({
         worker: {
             format: 'es',
         },
+        optimizeDeps: {
+            exclude: ['verovio'],
+        },
     },
     nitro: {
         publicAssets: [
