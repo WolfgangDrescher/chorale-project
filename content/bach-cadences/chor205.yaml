@@ -1,7 +1,7 @@
 cadences:
     -
         beat: 5
-        degree: 4
+        degree: '4'
         fb: 5 3
         voices:
             alto:
@@ -14,7 +14,7 @@ cadences:
                 interval: '5'
     -
         beat: 13
-        degree: 3
+        degree: '3'
         fb: 5 3
         voices:
             alto:
@@ -27,7 +27,7 @@ cadences:
                 interval: '3'
     -
         beat: 23
-        degree: 7
+        degree: 7-
         fb: '5 #'
         voices:
             alto:
@@ -40,7 +40,7 @@ cadences:
                 interval: '8'
     -
         beat: 31
-        degree: 3
+        degree: '3'
         fb: 5 3
         voices:
             alto:
@@ -53,7 +53,7 @@ cadences:
                 interval: '3'
     -
         beat: 37
-        degree: 4
+        degree: '4'
         fb: 5 3
         voices:
             alto:
@@ -66,7 +66,7 @@ cadences:
                 interval: '5'
     -
         beat: 51
-        degree: 3
+        degree: '3'
         fb: 5 3
         voices:
             alto:
@@ -79,7 +79,7 @@ cadences:
                 interval: '3'
     -
         beat: 59
-        degree: 7
+        degree: 7-
         fb: '5 #'
         voices:
             alto:
@@ -92,7 +92,7 @@ cadences:
                 interval: '8'
     -
         beat: 67
-        degree: 3
+        degree: '3'
         fb: 5 3
         voices:
             alto:
@@ -105,7 +105,7 @@ cadences:
                 interval: '3'
     -
         beat: 75.5
-        degree: 7
+        degree: 7-
         fb: 5 3
         voices:
             alto:
@@ -118,7 +118,7 @@ cadences:
                 interval: '8'
     -
         beat: 83
-        degree: 6
+        degree: '6'
         fb: 5 3
         voices:
             alto:
@@ -131,7 +131,7 @@ cadences:
                 interval: '5'
     -
         beat: 91
-        degree: 3
+        degree: '3'
         fb: 5 3
         voices:
             alto:
@@ -144,7 +144,7 @@ cadences:
                 interval: '5'
     -
         beat: 99.5
-        degree: 4
+        degree: '4'
         fb: '5 #'
         voices:
             alto:
@@ -157,7 +157,7 @@ cadences:
                 interval: '8'
     -
         beat: 107
-        degree: 6
+        degree: '6'
         fb: 5 3
         voices:
             alto:
@@ -170,7 +170,7 @@ cadences:
                 interval: '3'
     -
         beat: 115.5
-        degree: 4
+        degree: '4'
         fb: '5 #'
         voices:
             alto:
@@ -183,7 +183,7 @@ cadences:
                 interval: '8'
     -
         beat: 123
-        degree: 6
+        degree: '6'
         fb: 5 3
         voices:
             alto:
@@ -196,7 +196,7 @@ cadences:
                 interval: '3'
     -
         beat: 131
-        degree: 4
+        degree: '4'
         fb: '5 #'
         voices:
             alto:
@@ -209,7 +209,7 @@ cadences:
                 interval: '8'
     -
         beat: 139
-        degree: 4
+        degree: '4'
         fb: 5 3
         voices:
             alto:
@@ -222,7 +222,7 @@ cadences:
                 interval: '5'
     -
         beat: 147
-        degree: 6
+        degree: '6'
         fb: 5 3
         voices:
             alto:
@@ -235,7 +235,7 @@ cadences:
                 interval: '5'
     -
         beat: 155.5
-        degree: 7
+        degree: 7-
         fb: '5 #'
         voices:
             alto:
@@ -248,7 +248,7 @@ cadences:
                 interval: '8'
     -
         beat: 163.5
-        degree: 4
+        degree: '4'
         fb: '5 #'
         voices:
             alto:
@@ -261,7 +261,7 @@ cadences:
                 interval: '8'
     -
         beat: 171
-        degree: 4
+        degree: '4'
         fb: '5 #'
         voices:
             alto:
@@ -274,7 +274,7 @@ cadences:
                 interval: '8'
     -
         beat: 179
-        degree: 4
+        degree: '4'
         fb: '5 #'
         voices:
             alto:
@@ -287,7 +287,7 @@ cadences:
                 interval: '8'
     -
         beat: 191
-        degree: 1
+        degree: '1'
         fb: '5 #'
         voices:
             alto:
