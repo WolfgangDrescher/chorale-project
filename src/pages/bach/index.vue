@@ -6,8 +6,9 @@ useHead({
     title: t('bachChorales'),
 });
 
-const { data } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
-const chorales = createBachChorales(data.value);
+const { data: cadenceData } = await useAsyncData('/bach-cadences', () => queryContent('/bach-cadences').find())
+const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
+const chorales = createBachChorales(choraleData.value, cadenceData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 const { items, addItems } = useArrayLoader(filteredElements);
 
