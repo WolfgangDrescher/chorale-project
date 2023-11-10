@@ -1,4 +1,6 @@
 <script setup>
+import { gray } from 'tailwindcss/colors';
+
 const { t } = useI18n();
 const localePath = useLocalePath();
 
@@ -45,13 +47,16 @@ const tableItems = computed(() => {
         chorale.cadences.forEach((cadence, index) => {
             result[index + 1] = romanizeDeg(cadence.degree);
         });
+        chorale.cadences.forEach((cadence, index) => {
+            result[`${index + 1}.fb`] = cadence.fb;
+        });
         return result;
 
     });
 });
 
 const totalTableHeaders = computed(() => {
-    return filteredElements.value.reduce((accumulator, chorale) => {
+    const degreeItems = filteredElements.value.reduce((accumulator, chorale) => {
         chorale.cadences.forEach(cadence => {
             if (!accumulator.includes(cadence.degree)) {
                 accumulator.push(cadence.degree);
@@ -63,17 +68,43 @@ const totalTableHeaders = computed(() => {
         if (parseInt(a.replaceAll(/\D/g, ''), 10) < parseInt(b.replaceAll(/\D/g, ''), 10)) return -1;
         if (a.includes('+') && !b.includes('+')) return 1;
         if (a.includes('-') && !b.includes('-')) return -1;
-    }).map(n => ({text: romanizeDeg(n), value: n, align: 'center' }));
+    }).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
+    return [{ text: t('fbFigures'), value: 'fbFigures', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray[50] }];
 });
 const totalTableItems = computed(() => {
-    const items = totalTableHeaders.value.map(({value: n}) => {
+    const result = [];
+
+    // Count cadences for each fb figure and for each degree
+    const fbFigures = [...new Set(filteredElements.value.map(chorale => chorale.cadences.map(c => c.fb)).flat())].sort();
+    fbFigures.forEach((fbFig) => {
+        const items = totalTableHeaders.value.map(({ value: n }) => {
+            const count = filteredElements.value.reduce((accumulator, chorale) => {
+                const num = chorale.cadences.filter(cadence => cadence.degree === n && fbFig === cadence.fb).length;
+                return accumulator + num;
+            }, 0);
+            return [n, count];
+        });
+        const fbFigObj = Object.fromEntries(items)
+        fbFigObj.fbFigures = fbFig;
+        fbFigObj.total = items.reduce((accumulator, [, a]) => accumulator + a, 0)
+        result.push(fbFigObj);
+    });
+
+    // Count all cadences for each degree
+    const items = totalTableHeaders.value.map(({ value: n }) => {
         const count = filteredElements.value.reduce((accumulator, chorale) => {
             const num = chorale.cadences.filter(cadence => cadence.degree === n).length;
             return accumulator + num;
         }, 0);
         return [n, count];
     });
-    return [Object.fromEntries(items)];
+    const totalObj = Object.fromEntries(items)
+    totalObj.fbFigures = t('total');
+    totalObj.total = items.reduce((accumulator, [,a]) => accumulator + a, 0)
+    totalObj._rowBgColor = gray[50];
+    result.push(totalObj)
+
+    return result;
 });
 </script>
 
@@ -93,7 +124,12 @@ const totalTableItems = computed(() => {
         <template v-if="filteredElements.length > 0">
             <Subheading>{{ $t('totalDegreeCount') }}</Subheading>
             <DataTable small :items="totalTableItems" :headers="totalTableHeaders">
-                <template v-for="i in totalTableHeaders.map(a => a.value)" #[`item.${i}`]="{ item }">
+                <template #[`item.fbFigures`]="{ item }">
+                    <div class="text-center font-bold">
+                        {{ item.fbFigures }}
+                    </div>
+                </template>
+                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures')" #[`item.${i}`]="{ item }">
                     <div class="text-center">
                         {{ item[`${i}`] }}
                     </div>
