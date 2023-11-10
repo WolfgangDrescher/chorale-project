@@ -31,6 +31,7 @@ const tableHeaders = computed(() => {
         text: '#',
         value: 'id',
         align: 'center',
+        cellBgColor: gray[50],
     }, ...Array.from({ length: maxCadences.value }, (_, i) => i + 1).map((n) => ({ text: n, value: n, align: 'center' }))];
 });
 
@@ -42,6 +43,7 @@ const tableItems = computed(() => {
     return filteredElements.value.map(chorale => {
         const result = {
             id: chorale.id,
+            title: chorale.fullTitle,
             nr: chorale.nr,
         };
         chorale.cadences.forEach((cadence, index) => {
@@ -154,11 +156,9 @@ const totalTableItems = computed(() => {
                     </div>
                 </template>
                 <template #[`item.id`]="{ item }">
-                    <div class="text-center">
-                        <NuxtLink :href="localePath({ name: 'bach-nr', params: { nr: item.nr } })">
-                            {{ item.id }}
-                        </NuxtLink>
-                    </div>
+                    <NuxtLink :href="localePath({ name: 'bach-nr', params: { nr: item.nr } })">
+                        {{ item.title }}
+                    </NuxtLink>
                 </template>
             </DataTable>
         </template>

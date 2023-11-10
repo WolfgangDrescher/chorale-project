@@ -16,6 +16,10 @@ export class BachChorale {
         return this._chorale.title;
     }
 
+    get fullTitle() {
+        return `${this.nr}. ${this.title}`;
+    }
+
     get localRawFile() {
         return `/bach-370-chorales/${this.id}.krn`;
     }
