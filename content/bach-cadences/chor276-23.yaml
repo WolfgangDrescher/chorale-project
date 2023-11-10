@@ -11,4 +11,4 @@ voices:
     soprano:
         interval: '5'
     tenor:
-        interval: .
+        interval: ~4

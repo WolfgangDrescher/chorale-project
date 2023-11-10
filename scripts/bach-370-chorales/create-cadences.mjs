@@ -41,7 +41,7 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     console.log(choraleId);
     const key = getKey(choraleId);
     // fb -con3l => chor194-42 chor276-23 chor325-39
-    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | fb -cai | fb -con3 | beat -ca`).toString();
+    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | fb -caim | fb -con3 | beat -ca`).toString();
     const lines = output.trim().split('\n');
 
     for (let i = 0; i < lines.length; i++) {

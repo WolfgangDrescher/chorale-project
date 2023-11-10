@@ -5,10 +5,10 @@ fb: '4'
 id: chor194-42
 voices:
     alto:
-        interval: .
+        interval: ~5
     bass:
         interval: null
     soprano:
-        interval: .
+        interval: '#~3'
     tenor:
         interval: '4'
