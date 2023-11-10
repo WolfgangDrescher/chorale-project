@@ -6,7 +6,7 @@ const { t } = useI18n();
 const localePath = useLocalePath();
 
 useHead({
-    title: t('bachChorales'),
+    title: t('cadenceDegrees'),
 });
 
 const { data: cadenceData } = await useAsyncData('/bach-cadences', () => queryContent('/bach-cadences').find())
@@ -35,10 +35,6 @@ const tableHeaders = computed(() => {
         cellBgColor: gray50,
     }, ...Array.from({ length: maxCadences.value }, (_, i) => i + 1).map((n) => ({ text: n, value: n, align: 'center' }))];
 });
-
-function romanizeDeg(deg) {
-    return `${deg.replaceAll(/\d/g, '').replace('-', '♭').replace('+', '♯')}${romanize(deg.replaceAll(/\D/g, ''))}`
-}
 
 const tableItems = computed(() => {
     return filteredElements.value.map(chorale => {
@@ -114,7 +110,7 @@ const totalTableItems = computed(() => {
 <template>
     <Container>
 
-        <Heading>{{ $t('bachChorales') }}</Heading>
+        <Heading>{{ $t('cadenceDegrees') }}</Heading>
 
         <BachChoraleSearchFilter />
 

@@ -12,3 +12,7 @@ export function romanize(num) {
         roman = (key[+digits.pop() + (i * 10)] || '') + roman;
     return Array(+digits.join('') + 1).join('M') + roman;
 }
+
+export function romanizeDeg(deg) {
+    return `${deg.replaceAll(/\d/g, '').replace('-', '♭').replace('+', '♯')}${romanize(deg.replaceAll(/\D/g, ''))}`
+}
