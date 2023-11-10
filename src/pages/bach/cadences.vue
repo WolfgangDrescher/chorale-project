@@ -1,5 +1,6 @@
 <script setup>
-import { gray } from 'tailwindcss/colors';
+// import { gray } from 'tailwindcss/colors';
+const gray50 = '#f9fafb'; // gray[50] will not work with nuxt generate
 
 const { t } = useI18n();
 const localePath = useLocalePath();
@@ -31,7 +32,7 @@ const tableHeaders = computed(() => {
         text: '#',
         value: 'id',
         align: 'center',
-        cellBgColor: gray[50],
+        cellBgColor: gray50,
     }, ...Array.from({ length: maxCadences.value }, (_, i) => i + 1).map((n) => ({ text: n, value: n, align: 'center' }))];
 });
 
@@ -71,7 +72,7 @@ const totalTableHeaders = computed(() => {
         if (a.includes('+') && !b.includes('+')) return 1;
         if (a.includes('-') && !b.includes('-')) return -1;
     }).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
-    return [{ text: t('fbFigures'), value: 'fbFigures', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray[50] }];
+    return [{ text: t('fbFigures'), value: 'fbFigures', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray50 }];
 });
 const totalTableItems = computed(() => {
     const result = [];
@@ -103,7 +104,7 @@ const totalTableItems = computed(() => {
     const totalObj = Object.fromEntries(items)
     totalObj.fbFigures = t('total');
     totalObj.total = items.reduce((accumulator, [,a]) => accumulator + a, 0)
-    totalObj._rowBgColor = gray[50];
+    totalObj._rowBgColor = gray50;
     result.push(totalObj)
 
     return result;
