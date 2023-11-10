@@ -1,7 +1,7 @@
 export class BachChorale {
     constructor(chorale, cadences) {
         this._chorale = chorale;
-        this._cadencesItem = cadences;
+        this._cadences = cadences;
     }
 
     get id() {
@@ -61,8 +61,8 @@ export class BachChorale {
     }
 
     get cadences() {
-        if (!this._cadencesItem) throw new Error(`${this.id} does not have cadences assigned.`);
-        return this._cadencesItem.cadences;
+        if (!this._cadences) throw new Error(`${this.id} does not have cadences assigned.`);
+        return this._cadences;
     }
 
     get countCadences() {
@@ -77,7 +77,7 @@ export function createBachChorale(chorale, cadences) {
 export function createBachChorales(chorales, choralCadences) {
     if (Array.isArray(chorales)) {
         return chorales.map(chorale => {
-            const cadences = choralCadences?.find(e => e.choraleId === chorale.id);
+            const cadences = choralCadences?.filter(e => e.choraleId === chorale.id);
             return createBachChorale(toRaw(chorale), toRaw(cadences));
         });
     }
