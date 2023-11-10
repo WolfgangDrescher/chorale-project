@@ -37,24 +37,26 @@ ${cadenceUltima.toUpperCase()}
 }
 
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
-    const id = getIdFromFilePath(file);
-    console.log(id);
-    const key = getKey(id);
-    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | fb -cai | fb -con3 | beat -ca`).toString();
+    const choraleId = getIdFromFilePath(file);
+    console.log(choraleId);
+    const key = getKey(choraleId);
+    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | fb -cai | fb -con3 | beat -ca`).toString();
     const lines = output.trim().split('\n');
-    const data = {
-        choraleId: id,
-        cadences: [],
-    };
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const tokens = line.split('\t');
         if (lineIsFermataEnd(lines, i, [0, 3, 5, 7])) {
-            const cadence = {
-                fb: tokens[2],
-                beat: parseFloat(tokens[9]),
-                degree: getCadenceDegree(key, resolveToken(i, 0, lines)),
+            const fb = tokens[2];
+            const beat = parseFloat(tokens[9]);
+            const id = `${choraleId}-${beat.toString().replace('.', '_')}`;
+            const degree = getCadenceDegree(key, resolveToken(i, 0, lines));
+            const data = {
+                id,
+                choraleId,
+                fb,
+                beat,
+                degree,
                 voices: {
                     soprano: {
                         interval: tokens[8],
@@ -70,9 +72,7 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
                     },
                 }
             }
-            data.cadences.push(cadence);
+            writeYaml(`${yamlPath}/${id}.yaml`, data);
         }
     }
-
-    writeYaml(`${yamlPath}/${id}.yaml`, data);
 });
