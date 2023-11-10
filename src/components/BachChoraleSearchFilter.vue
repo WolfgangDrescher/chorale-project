@@ -41,6 +41,16 @@ const majMinOptions = [
     { value: 'major', text: t('major') },
     { value: 'minor', text: t('minor') },
 ];
+
+const cadenceDegreeOptions = [...new Set(bachChorales.map(chorale => chorale.cadences.map(c => c.degree)).flat().filter(n => n))].sort().map(degree => ({
+    value: degree,
+    text: romanizeDeg(degree),
+}));
+
+const cadenceDegreeFbNumberOptions = [...new Set(bachChorales.map(chorale => chorale.cadences.map(c => c.fb)).flat().filter(n => n))].sort().map(fb => ({
+    value: fb,
+    text: fb,
+}));
 </script>
 
 <template>
@@ -57,6 +67,12 @@ const majMinOptions = [
             </div>
             <div>
                 <FormDropdown :model-value="filter.timeSignature" @update:model-value="updateFilter('timeSignature', $event)" :label="$t('timeSignature')" :options="timeSignatureOptions" :search-enabled="false" :multiple="false" />
+            </div>
+            <div>
+                <FormDropdown :model-value="filter.cadenceDegrees" @update:model-value="updateFilter('cadenceDegrees', $event)" :label="$t('cadenceDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
+            </div>
+            <div>
+                <FormDropdown :model-value="filter.cadenceDegreeFbNumbers" @update:model-value="updateFilter('cadenceDegreeFbNumbers', $event)" :label="$t('cadenceDegreeFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
             </div>
             <div>
                 <FormRangeSlider :group-label="$t('countCadences')" :model-value="filter.countCadences" @update:model-value="updateFilter('countCadences', $event)" :min="0" :max="23" />

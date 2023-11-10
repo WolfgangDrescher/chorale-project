@@ -7,6 +7,8 @@ const defaultFilter = {
     countCadences: [0, 23],
     numberOfMeasures: [0, 48],
     timeSignature: null,
+    cadenceDegrees: [],
+    cadenceDegreeFbNumbers: [],
 };
 
 export const useBachChoraleFilterStore = defineStore('bach_chorale_filter', {

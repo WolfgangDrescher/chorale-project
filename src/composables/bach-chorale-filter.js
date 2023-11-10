@@ -47,6 +47,17 @@ const filterTimeSignature = (timeSignature, element) => {
     return timeSignature === element.timeSignature;
 };
 
+const filterCadenceDegrees = (cadenceDegrees, element) => {
+    if (!cadenceDegrees || !cadenceDegrees.length) return true;
+    return cadenceDegrees.some(deg => element.cadences.map(c => c.degree).flat().includes(deg));
+};
+
+
+const filterCadenceDegreeFbNumbers = (cadenceDegreeFbNumbers, element) => {
+    if (!cadenceDegreeFbNumbers || !cadenceDegreeFbNumbers.length) return true;
+    return cadenceDegreeFbNumbers.some(fb => element.cadences.map(c => c.fb).flat().includes(fb));
+};
+
 export function useBachChoraleFilter(elements) {
 
     const filter = useBachChoraleFilterStore();
@@ -59,6 +70,8 @@ export function useBachChoraleFilter(elements) {
             const countCadencesMatched = filterByCountCadences(filter.countCadences, element);
             const numberOfMeasuresMatched = filterNumberOfMeasures(filter.numberOfMeasures, element);
             const timeSignatureMatched = filterTimeSignature(filter.timeSignature, element);
+            const cadenceDegreesMatched = filterCadenceDegrees(filter.cadenceDegrees, element);
+            const cadenceDegreeFbNumbersMatched = filterCadenceDegreeFbNumbers(filter.cadenceDegreeFbNumbers, element);
 
             return (
                 searchTextMatched &&
@@ -66,7 +79,9 @@ export function useBachChoraleFilter(elements) {
                 majorMinorMatched &&
                 countCadencesMatched && 
                 numberOfMeasuresMatched &&
-                timeSignatureMatched
+                timeSignatureMatched &&
+                cadenceDegreesMatched && 
+                cadenceDegreeFbNumbersMatched
             );
         });
 
