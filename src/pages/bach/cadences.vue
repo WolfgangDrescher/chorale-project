@@ -134,7 +134,9 @@ const totalTableItems = computed(() => {
                 </template>
                 <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures')" #[`item.${i}`]="{ item }">
                     <div class="text-center">
-                        {{ item[`${i}`] }}
+                        <template v-if="item[i]">
+                            {{ item[i] }}
+                        </template>
                     </div>
                 </template>
                 <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures' && a !== 'total')" #[`head.${i}`]="{ field }">
