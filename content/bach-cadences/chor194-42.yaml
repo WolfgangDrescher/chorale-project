@@ -1,7 +1,7 @@
 beat: 42
 choraleId: chor194
 degree: '2'
-fb: '4'
+fb: 4 -3 -5
 id: chor194-42
 voices:
     alto:

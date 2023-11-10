@@ -41,14 +41,14 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     console.log(choraleId);
     const key = getKey(choraleId);
     // fb -con3l => chor194-42 chor276-23 chor325-39
-    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | fb -caim | fb -con3 | beat -ca`).toString();
+    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | fb -caim | fb -con3m | beat -ca`).toString();
     const lines = output.trim().split('\n');
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const tokens = line.split('\t');
         if (lineIsFermataEnd(lines, i, [0, 3, 5, 7])) {
-            const fb = tokens[2];
+            const fb = tokens[2].replaceAll('~', '-');
             const beat = parseFloat(tokens[9]);
             const id = `${choraleId}-${beat.toString().replace('.', '_')}`;
             const degree = getCadenceDegree(key, resolveToken(i, 0, lines));

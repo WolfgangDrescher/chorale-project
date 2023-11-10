@@ -1,7 +1,7 @@
 beat: 39
 choraleId: chor325
 degree: '5'
-fb: '3'
+fb: 3 -4
 id: chor325-39
 voices:
     alto:
