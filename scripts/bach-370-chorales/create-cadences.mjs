@@ -1,7 +1,6 @@
 import { execSync } from 'node:child_process';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { decode } from 'html-entities';
 import { getFiles, readFile } from '../utils/fs.mjs'; 
 import { lineIsFermataEnd, resolveToken } from '../utils/humdrum.mjs'; 
 import yaml from 'js-yaml'; 
@@ -40,7 +39,6 @@ ${cadenceUltima.toUpperCase()}
 getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const id = getIdFromFilePath(file);
     console.log(id);
-    const yamlFile = `${yamlPath}/${id}.yaml`;
     const key = getKey(id);
     const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | fb -cai | fb -con3 | beat -ca`).toString();
     const lines = output.trim().split('\n');
