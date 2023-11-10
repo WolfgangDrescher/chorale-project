@@ -126,12 +126,17 @@ const totalTableItems = computed(() => {
             <DataTable small :items="totalTableItems" :headers="totalTableHeaders">
                 <template #[`item.fbFigures`]="{ item }">
                     <div class="text-center font-bold">
-                        {{ item.fbFigures }}
+                        <code class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigures }}</code>
                     </div>
                 </template>
                 <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures')" #[`item.${i}`]="{ item }">
                     <div class="text-center">
                         {{ item[`${i}`] }}
+                    </div>
+                </template>
+                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures' && a !== 'total')" #[`head.${i}`]="{ field }">
+                    <div class="text-center font-serif">
+                        {{ field.text }}
                     </div>
                 </template>
             </DataTable>
@@ -141,7 +146,9 @@ const totalTableItems = computed(() => {
                 <template v-for="i in 23" #[`item.${i}`]="{ item }">
                     <div class="text-center">
                         <template v-if="item[`${i}`]">
-                            {{ item[`${i}`] }} / {{ item[`${i}.fb`] }}
+                            <span class="font-serif">{{ item[`${i}`] }}</span>
+                            <span class="text-gray-300">/</span>
+                            <code class="text-xs bg-gray-100 rounded p-1">{{ item[`${i}.fb`] }}</code>
                         </template>
                         <template v-else>–</template>
                     </div>
