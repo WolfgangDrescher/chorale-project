@@ -1,0 +1,14 @@
+beat: 10
+choraleId: chor302
+degree: '4'
+fb: 5 3
+id: chor302-10
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '8'

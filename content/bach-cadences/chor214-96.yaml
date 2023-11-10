@@ -1,0 +1,14 @@
+beat: 96
+choraleId: chor214
+degree: '1'
+fb: 5 3
+id: chor214-96
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '1'

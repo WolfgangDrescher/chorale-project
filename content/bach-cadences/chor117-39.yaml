@@ -1,0 +1,14 @@
+beat: 39
+choraleId: chor117
+degree: '3'
+fb: 5 3
+id: chor117-39
+voices:
+    alto:
+        interval: n3
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '1'

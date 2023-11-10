@@ -1,0 +1,14 @@
+beat: 42
+choraleId: chor320
+degree: '1'
+fb: 5 3
+id: chor320-42
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '#3'

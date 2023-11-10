@@ -1,0 +1,14 @@
+beat: 60
+choraleId: chor203
+degree: '1'
+fb: 5 3
+id: chor203-60
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: n3

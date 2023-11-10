@@ -1,0 +1,14 @@
+beat: 46
+choraleId: chor134
+degree: '5'
+fb: 5 3
+id: chor134-46
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '#3'
+    tenor:
+        interval: '1'

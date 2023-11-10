@@ -1,0 +1,14 @@
+beat: 40
+choraleId: chor356
+degree: '5'
+fb: '3'
+id: chor356-40
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

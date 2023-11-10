@@ -1,0 +1,14 @@
+beat: 15
+choraleId: chor052
+degree: '1'
+fb: 5 3
+id: chor052-15
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '3'
+    tenor:
+        interval: '8'

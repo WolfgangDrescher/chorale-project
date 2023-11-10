@@ -1,0 +1,14 @@
+beat: 23
+choraleId: chor301
+degree: '5'
+fb: 5 3
+id: chor301-23
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '1'

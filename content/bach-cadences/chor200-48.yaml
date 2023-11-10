@@ -1,0 +1,14 @@
+beat: 48
+choraleId: chor200
+degree: 7-
+fb: 5 3
+id: chor200-48
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '3'
+    tenor:
+        interval: '5'

@@ -1,0 +1,14 @@
+beat: 12
+choraleId: chor264
+degree: '1'
+fb: 5 3
+id: chor264-12
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '5'

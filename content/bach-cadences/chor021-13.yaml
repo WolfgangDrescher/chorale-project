@@ -1,0 +1,14 @@
+beat: 13
+choraleId: chor021
+degree: '1'
+fb: '3'
+id: chor021-13
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

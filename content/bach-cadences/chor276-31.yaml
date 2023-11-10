@@ -1,0 +1,14 @@
+beat: 31
+choraleId: chor276
+degree: '6'
+fb: 7 3
+id: chor276-31
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '7'
+    tenor:
+        interval: '8'

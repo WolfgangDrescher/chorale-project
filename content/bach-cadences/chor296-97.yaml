@@ -1,0 +1,14 @@
+beat: 97
+choraleId: chor296
+degree: '5'
+fb: 5 3
+id: chor296-97
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '3'

@@ -1,0 +1,14 @@
+beat: 54
+choraleId: chor244
+degree: '5'
+fb: 5 3
+id: chor244-54
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: n3

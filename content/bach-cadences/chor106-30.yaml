@@ -1,0 +1,14 @@
+beat: 30
+choraleId: chor106
+degree: '1'
+fb: 5 3
+id: chor106-30
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '3'
+    tenor:
+        interval: '5'

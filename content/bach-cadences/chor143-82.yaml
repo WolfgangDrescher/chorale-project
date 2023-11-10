@@ -1,0 +1,14 @@
+beat: 82
+choraleId: chor143
+degree: '7'
+fb: 6 3
+id: chor143-82
+voices:
+    alto:
+        interval: '6'
+    bass:
+        interval: null
+    soprano:
+        interval: '6'
+    tenor:
+        interval: '3'

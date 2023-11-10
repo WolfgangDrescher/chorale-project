@@ -1,0 +1,14 @@
+beat: 17
+choraleId: chor265
+degree: '1'
+fb: 5 3
+id: chor265-17
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '5'

@@ -1,0 +1,14 @@
+beat: 27
+choraleId: chor317
+degree: '2'
+fb: 5 3
+id: chor317-27
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '8'

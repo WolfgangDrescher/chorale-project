@@ -1,0 +1,14 @@
+beat: 7
+choraleId: chor163
+degree: '5'
+fb: 5 3
+id: chor163-7
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '1'

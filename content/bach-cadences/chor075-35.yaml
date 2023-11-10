@@ -1,0 +1,14 @@
+beat: 35
+choraleId: chor075
+degree: '1'
+fb: 5 3
+id: chor075-35
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '3'

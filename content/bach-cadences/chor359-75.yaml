@@ -1,0 +1,14 @@
+beat: 75
+choraleId: chor359
+degree: '1'
+fb: '3'
+id: chor359-75
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

@@ -1,0 +1,14 @@
+beat: 38
+choraleId: chor198
+degree: '4'
+fb: '3'
+id: chor198-38
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '3'

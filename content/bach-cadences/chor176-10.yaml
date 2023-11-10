@@ -1,0 +1,14 @@
+beat: 10
+choraleId: chor176
+degree: '5'
+fb: 5 4
+id: chor176-10
+voices:
+    alto:
+        interval: '4'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '5'

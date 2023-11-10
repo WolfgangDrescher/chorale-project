@@ -1,0 +1,14 @@
+beat: 10
+choraleId: chor141
+degree: '1'
+fb: 5 3
+id: chor141-10
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '3'

@@ -1,0 +1,14 @@
+beat: 33
+choraleId: chor102
+degree: '2'
+fb: '3'
+id: chor102-33
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

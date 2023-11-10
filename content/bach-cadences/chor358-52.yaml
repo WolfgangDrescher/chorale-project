@@ -1,0 +1,14 @@
+beat: 52
+choraleId: chor358
+degree: '3'
+fb: 5 3
+id: chor358-52
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '3'

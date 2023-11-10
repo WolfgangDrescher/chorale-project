@@ -1,0 +1,14 @@
+beat: 21
+choraleId: chor355
+degree: '5'
+fb: 5 3
+id: chor355-21
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '3'

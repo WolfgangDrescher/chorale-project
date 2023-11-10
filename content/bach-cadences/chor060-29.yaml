@@ -1,0 +1,14 @@
+beat: 29
+choraleId: chor060
+degree: '5'
+fb: 5 3
+id: chor060-29
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '3'
+    tenor:
+        interval: '1'

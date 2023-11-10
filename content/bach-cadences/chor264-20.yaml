@@ -1,0 +1,14 @@
+beat: 20
+choraleId: chor264
+degree: '2'
+fb: 5 3
+id: chor264-20
+voices:
+    alto:
+        interval: n3
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '8'

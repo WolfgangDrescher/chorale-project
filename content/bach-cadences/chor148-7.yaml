@@ -1,0 +1,14 @@
+beat: 7
+choraleId: chor148
+degree: '4'
+fb: 5 3
+id: chor148-7
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '5'

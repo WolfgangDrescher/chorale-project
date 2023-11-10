@@ -1,0 +1,14 @@
+beat: 16
+choraleId: chor320
+degree: '3'
+fb: '5'
+id: chor320-16
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

@@ -1,0 +1,14 @@
+beat: 11.5
+choraleId: chor075
+degree: 7-
+fb: 5 3
+id: chor075-11_5
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '3'

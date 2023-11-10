@@ -1,0 +1,14 @@
+beat: 44
+choraleId: chor218
+degree: '3'
+fb: 5 3
+id: chor218-44
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '5'

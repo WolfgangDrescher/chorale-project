@@ -1,0 +1,14 @@
+beat: 12
+choraleId: chor222
+degree: '4'
+fb: 5 3
+id: chor222-12
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '3'

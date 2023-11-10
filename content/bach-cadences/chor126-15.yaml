@@ -1,0 +1,14 @@
+beat: 15
+choraleId: chor126
+degree: '1'
+fb: '3'
+id: chor126-15
+voices:
+    alto:
+        interval: '#3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

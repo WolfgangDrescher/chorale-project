@@ -1,0 +1,14 @@
+beat: 27
+choraleId: chor090
+degree: '5'
+fb: 5 3
+id: chor090-27
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '8'

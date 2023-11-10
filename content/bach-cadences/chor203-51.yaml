@@ -1,0 +1,14 @@
+beat: 51
+choraleId: chor203
+degree: '4'
+fb: 5 3
+id: chor203-51
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '-3'

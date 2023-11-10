@@ -1,0 +1,14 @@
+beat: 22
+choraleId: chor365
+degree: '2'
+fb: 5 3
+id: chor365-22
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '3'

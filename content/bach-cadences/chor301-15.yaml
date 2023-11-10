@@ -1,0 +1,14 @@
+beat: 15
+choraleId: chor301
+degree: '1'
+fb: '3'
+id: chor301-15
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

@@ -1,0 +1,14 @@
+beat: 15
+choraleId: chor100
+degree: '1'
+fb: '3'
+id: chor100-15
+voices:
+    alto:
+        interval: n3
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

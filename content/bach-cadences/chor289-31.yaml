@@ -1,0 +1,14 @@
+beat: 31
+choraleId: chor289
+degree: '6'
+fb: 5 3
+id: chor289-31
+voices:
+    alto:
+        interval: '8'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: n3

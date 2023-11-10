@@ -1,0 +1,14 @@
+beat: 96
+choraleId: chor202
+degree: '5'
+fb: 5 4
+id: chor202-96
+voices:
+    alto:
+        interval: '5'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '4'

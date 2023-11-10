@@ -1,0 +1,14 @@
+beat: 130
+choraleId: chor132
+degree: 7-
+fb: '3'
+id: chor132-130
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '8'

@@ -1,0 +1,14 @@
+beat: 13
+choraleId: chor364
+degree: '1'
+fb: 5 3
+id: chor364-13
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '5'
+    tenor:
+        interval: '5'
