@@ -120,10 +120,25 @@ const totalTableItems = computed(() => {
             <DataTable small :items="totalTableItems" :headers="totalTableHeaders">
                 <template #[`item.fbFigures`]="{ item }">
                     <div class="text-center font-bold">
-                        <code class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigures }}</code>
+                        <NuxtLink v-if="item.fbFigures !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { fb: item.fbFigures } })">
+                            <code class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigures }}</code>
+                        </NuxtLink>
+                        <code v-else class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigures }}</code>
                     </div>
                 </template>
-                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures')" #[`item.${i}`]="{ item }">
+                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures' && a !== 'total')" #[`item.${i}`]="{ item }">
+                    <div class="text-center">
+                        <template v-if="item[i]">
+                            <NuxtLink v-if="item.fbFigures !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { degree: i, fb: item.fbFigures } })">
+                                {{ item[i] }}
+                            </NuxtLink>
+                            <template v-else>
+                                {{ item[i] }}
+                            </template>
+                        </template>
+                    </div>
+                </template>
+                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a === 'total')" #[`item.${i}`]="{ item }">
                     <div class="text-center">
                         <template v-if="item[i]">
                             {{ item[i] }}
@@ -132,7 +147,9 @@ const totalTableItems = computed(() => {
                 </template>
                 <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures' && a !== 'total')" #[`head.${i}`]="{ field }">
                     <div class="text-center font-serif">
-                        {{ field.text }}
+                        <NuxtLink :href="localePath({ name: 'bach-chorale-lines', query: { degree: field.value } })">
+                            {{ field.text }}
+                        </NuxtLink>
                     </div>
                 </template>
             </DataTable>
