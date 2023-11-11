@@ -38,3 +38,5 @@ fbFigures: Bezifferung
 total: Total
 cadenceDegrees: Kadenzstufen
 cadenceDegreeFbNumbers: Kadenzstufen Bezifferung
+choraleLines: Choralzeilen
+nOutOfTotalChoraleLinesFoundForSerachParams: '{n} von {total} Choralzeilen gefunden'
