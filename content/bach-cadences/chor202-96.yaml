@@ -1,8 +1,16 @@
-beat: 96
 choraleId: chor202
 degree: '5'
+endBeat: 96
+endLine: 180
+endMeasure: 25
+endMeasureBeat: 1
 fb: 5 4
+filename: c126f99a-8e56-5870-80ae-f11bd03d6eb1.krn
 id: chor202-96
+startBeat: 80
+startLine: 151
+startMeasure: 21
+startMeasureBeat: 1
 voices:
     alto:
         interval: '5'

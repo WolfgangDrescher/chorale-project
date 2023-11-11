@@ -1,8 +1,16 @@
-beat: 27
 choraleId: chor131
 degree: '5'
+endBeat: 27
+endLine: 71
+endMeasure: 7
+endMeasureBeat: 4
 fb: 5 3
+filename: bde9c79e-c551-5d9f-b0d3-b6156c9c658e.krn
 id: chor131-27
+startBeat: 20
+startLine: 58
+startMeasure: 6
+startMeasureBeat: 1
 voices:
     alto:
         interval: '5'

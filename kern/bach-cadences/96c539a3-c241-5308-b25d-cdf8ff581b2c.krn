@@ -1,0 +1,34 @@
+!!!!SEGMENT: chor170.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Nun komm, der Heiden Heiland
+!!!SCT: BWV 62/6
+!!!PC#: 170
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*a:	*a:	*a:	*a:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=1-	=1-	=1-	=1-
+8AL	4c	4e	4a
+8GJ	.	.	.
+4F	8BL	4d	4a
+.	8AJ	.	.
+4E	8BL	4e	4g
+.	8AJ	.	.
+8EL	8GL	4e	4cc
+8F#J	8AJ	.	.
+=2	=2	=2	=2
+8G#L	8BL	8eL	8bL
+8AJ	8cJ	8f#J	8aJ
+8EL	4d	4g#	4b
+8EEJ	.	.	.
+2AA;	2c;	2e;	2a;
+=	=	=	=
+*-	*-	*-	*-

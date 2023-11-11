@@ -1,8 +1,16 @@
-beat: 13
 choraleId: chor173
 degree: '1'
+endBeat: 13
+endLine: 37
+endMeasure: 5
+endMeasureBeat: 2
 fb: 5 3
+filename: bb61179f-f45f-5f30-a546-1eea2a654960.krn
 id: chor173-13
+startBeat: 5
+startLine: 24
+startMeasure: 2
+startMeasureBeat: 3
 voices:
     alto:
         interval: '5'

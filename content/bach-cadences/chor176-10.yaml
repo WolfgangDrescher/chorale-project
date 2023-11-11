@@ -1,8 +1,16 @@
-beat: 10
 choraleId: chor176
 degree: '5'
+endBeat: 10
+endLine: 38
+endMeasure: 4
+endMeasureBeat: 1
 fb: 5 4
+filename: 94b7016d-da4f-5f36-b0b0-400f8594cc83.krn
 id: chor176-10
+startBeat: 0
+startLine: 17
+startMeasure: null
+startMeasureBeat: 3
 voices:
     alto:
         interval: '4'

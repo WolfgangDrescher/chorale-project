@@ -1,0 +1,50 @@
+!!!!SEGMENT: chor132.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Kyrie! Gott Vater in Ewigkeit
+!!!SCT: BWV 371
+!!!PC#: 132
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*a:	*a:	*a:	*a:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=12||	=12||	=12||	=12||
+!! Christe, aller Welt Trost
+8EL	4GnX	4B	2e
+8DJ	.	.	.
+2C	8AL	8cL	.
+.	8GJ	8BJ	.
+.	4F#	4A	2d
+8BBL	[4G	8BL	.
+8AAJ	.	8cJ	.
+=13	=13	=13	=13
+4BB	8GL]	8eL	2g
+.	8d	8fnX	.
+2E	8c	8e	.
+.	8BJ	8dJ	.
+.	4.A	8cL	4a
+.	.	16dL	.
+.	.	16eJJ	.
+4D	.	4f	4b
+.	16GLL	.	.
+.	16FnXJJ	.	.
+=14	=14	=14	=14
+4E	8GL	16eLL	4cc
+.	.	16fJJ	.
+.	16cL	4g	.
+.	16B-JJ	.	.
+4F	4A	.	4cc
+.	.	[8f	.
+2C;	2G;	8fL]	2cc;
+.	.	16eL	.
+.	.	16dJJ	.
+.	.	4e;	.
+=	=	=	=
+*-	*-	*-	*-

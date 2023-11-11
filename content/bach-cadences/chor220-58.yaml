@@ -1,8 +1,16 @@
-beat: 58
 choraleId: chor220
 degree: 7-
+endBeat: 58
+endLine: 136
+endMeasure: 20
+endMeasureBeat: 2
 fb: 5 3
+filename: 69f51ba7-7c7d-5ed1-b10e-f0be16af5efc.krn
 id: chor220-58
+startBeat: 48
+startLine: 113
+startMeasure: 17
+startMeasureBeat: 1
 voices:
     alto:
         interval: '3'

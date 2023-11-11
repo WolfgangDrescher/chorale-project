@@ -1,0 +1,41 @@
+!!!!SEGMENT: chor133.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Wir glauben all an einen Gott
+!!!SCT: BWV 437
+!!!PC#: 133
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*d:dor	*d:dor	*d:dor	*d:dor
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=18	=18	=18	=18
+8CnXL	8AL	2e	4a
+8D	8B	.	.
+8E	8c	.	4g#
+8BBJ	8dJ	.	.
+4C	8cL	4e	4a
+.	8B	.	.
+[4D	8A	[4f	4b
+.	8G#J	.	.
+=19	=19	=19	=19
+8DL]	4A	8fL]	4cc
+8D#	.	8f#	.
+8E	[4e	8g	4b
+8CJ	.	8g#J	.
+4FnX	8eL]	8aL	4a
+.	8dJ	8AJ	.
+4E	4e	8BL	4g#
+.	.	[8dnXJ	.
+=20	=20	=20	=20
+2AA;	2e;	8dL]	2a;
+.	.	16cL	.
+.	.	16BJJ	.
+.	.	4c;	.
+*-	*-	*-	*-

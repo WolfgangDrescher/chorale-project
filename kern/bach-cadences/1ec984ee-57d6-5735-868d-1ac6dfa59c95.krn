@@ -1,0 +1,30 @@
+!!!!SEGMENT: chor327.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Jesu, nun sei gepreiset
+!!!SCT: BWV 190/7
+!!!PC#: 327
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[f#c#]	*k[f#c#]	*k[f#c#]	*k[f#c#]
+*D:	*D:	*D:	*D:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=:|!	=:|!	=:|!	=:|!
+*>D	*>D	*>D	*>D
+4A#	4c#	4f#	4ff#
+=15	=15	=15	=15
+4B	4d	4f#	4ff#
+4An	4f#	4f#	4dd
+4G	4B	4e	4ee
+4F#	4A	4d#	4ff#
+=16	=16	=16	=16
+4E	2B	4e	2gg
+4DnX	.	4f#	.
+4C#;	4A#;	4g;	4ee;
+*-	*-	*-	*-

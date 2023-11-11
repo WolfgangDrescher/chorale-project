@@ -1,8 +1,16 @@
-beat: 94
 choraleId: chor011
 degree: '2'
+endBeat: 94
+endLine: 161
+endMeasure: 28
+endMeasureBeat: 1
 fb: 5 3
+filename: 32f1102f-0c2c-549f-b40e-3d70e4129545.krn
 id: chor011-94
+startBeat: 84
+startLine: 147
+startMeasure: 24
+startMeasureBeat: 3
 voices:
     alto:
         interval: '#3'

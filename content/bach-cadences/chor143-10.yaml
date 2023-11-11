@@ -1,8 +1,16 @@
-beat: 10
 choraleId: chor143
 degree: '1'
+endBeat: 10
+endLine: 36
+endMeasure: 4
+endMeasureBeat: 1
 fb: 5 3
+filename: b9df8b1d-0fdd-59eb-8d02-4ad2ad467238.krn
 id: chor143-10
+startBeat: 0
+startLine: 17
+startMeasure: null
+startMeasureBeat: 3
 voices:
     alto:
         interval: '8'

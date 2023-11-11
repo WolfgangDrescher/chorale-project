@@ -1,0 +1,35 @@
+!!!!SEGMENT: chor217.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Ach Gott, wie manches Herzeleid
+!!!OTL@EN: Oh God, how many heart pains
+!!!OPR: Cantata, BWV 153: Schau, lieber Gott, wie meine Feind
+!!!SCT: BWV 153/9
+!!!PC#: 217
+!!!hymn: Leipzig, 1625
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*C:	*C:	*C:	*C:
+*M3/4	*M3/4	*M3/4	*M3/4
+*MM100	*MM100	*MM100	*MM100
+=9	=9	=9	=9
+4c	4c	4g	4ee
+4G#	4B	4e	4ee
+4E	4e	4g#	4ee
+=10	=10	=10	=10
+2A	4e	4a	4cc
+.	4f	4b	4dd
+4AA	4gnX	4cc#	4ee
+=11	=11	=11	=11
+4D	4f	4dd	4ff
+4E	4g	2ccnX	2ee
+4F	4c	.	.
+=12	=12	=12	=12
+2.G;	2.B;	2.g;	2.dd;
+=	=	=	=
+*-	*-	*-	*-

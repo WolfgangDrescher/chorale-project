@@ -1,0 +1,31 @@
+!!!!SEGMENT: chor255.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Was frag ich nach der Welt
+!!!SCT: BWV 64/4
+!!!PC#: 255
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[f#c#]	*k[f#c#]	*k[f#c#]	*k[f#c#]
+*D:	*D:	*D:	*D:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4GG	4G	4d	4b
+=3	=3	=3	=3
+8AAL	4.G	8c#L	4e
+8GGJ	.	8dJ	.
+8AAL	.	8c#L	4e
+8BBJ	8F#	8BJ	.
+8C#L	4E	4A	4a
+8BBJ	.	.	.
+8C#L	4A	4e	4g
+8AAJ	.	.	.
+=4	=4	=4	=4
+4D	4A	4d	4f#
+4D;	4F#;	4A;	4d;
+*-	*-	*-	*-

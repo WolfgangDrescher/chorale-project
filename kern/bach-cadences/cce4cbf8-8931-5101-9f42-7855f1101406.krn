@@ -1,0 +1,34 @@
+!!!!SEGMENT: chor276.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Lobt Gott, ihr Christen allzugleich
+!!!SCT: BWV 375
+!!!PC#: 276
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[f#]	*k[f#]	*k[f#]	*k[f#]
+*G:	*G:	*G:	*G:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4B	4B	4f#	4dd
+=7	=7	=7	=7
+4E	8GL	4g	4cc
+.	8AJ	.	.
+8eL	8BL	8gL	4b
+8dJ	8dJ	8f#J	.
+8cL	4e	4e	4a
+8AJ	.	.	.
+8dL	4d	4f#	4a
+8cJ	.	.	.
+=8	=8	=8	=8
+8BL	8dL	2g	8gL
+8A	8c	.	8a
+8G	8B	.	8b
+8F#J	8AJ	.	8ccJ
+4E;	4e;	4g#;	4dd;
+*-	*-	*-	*-

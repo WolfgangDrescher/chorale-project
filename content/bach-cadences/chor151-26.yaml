@@ -1,8 +1,16 @@
-beat: 26
 choraleId: chor151
 degree: '3'
+endBeat: 26
+endLine: 72
+endMeasure: 7
+endMeasureBeat: 3
 fb: 5 3
+filename: a0d9f914-089e-52fb-9c65-3b6c96b0d14a.krn
 id: chor151-26
+startBeat: 20
+startLine: 57
+startMeasure: 6
+startMeasureBeat: 1
 voices:
     alto:
         interval: '#3'

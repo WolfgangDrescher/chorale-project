@@ -1,8 +1,16 @@
-beat: 15
 choraleId: chor323
 degree: '5'
+endBeat: 15
+endLine: 50
+endMeasure: 4
+endMeasureBeat: 3
 fb: '3'
+filename: 023d90eb-8cf5-5360-899b-215ade990e29.krn
 id: chor323-15
+startBeat: 8
+startLine: 37
+startMeasure: 2
+startMeasureBeat: 4
 voices:
     alto:
         interval: '3'

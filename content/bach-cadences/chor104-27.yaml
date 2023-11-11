@@ -1,8 +1,16 @@
-beat: 27
 choraleId: chor104
 degree: '3'
+endBeat: 27
+endLine: 71
+endMeasure: 7
+endMeasureBeat: 3
 fb: 5 3
+filename: 9ea11a1f-d501-5865-aba5-844332985105.krn
 id: chor104-27
+startBeat: 20
+startLine: 54
+startMeasure: .nan
+startMeasureBeat: 4
 voices:
     alto:
         interval: '3'

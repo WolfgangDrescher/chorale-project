@@ -1,8 +1,16 @@
-beat: 31
 choraleId: chor140
 degree: '5'
+endBeat: 31
+endLine: 71
+endMeasure: 8
+endMeasureBeat: 3
 fb: 5 3
+filename: 40ca2011-5387-5142-9077-aea317bcae55.krn
 id: chor140-31
+startBeat: 23
+startLine: 54
+startMeasure: 6
+startMeasureBeat: .nan
 voices:
     alto:
         interval: '8'

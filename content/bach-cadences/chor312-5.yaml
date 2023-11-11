@@ -1,8 +1,16 @@
-beat: 5
 choraleId: chor312
 degree: '4'
+endBeat: 5
+endLine: 29
+endMeasure: 2
+endMeasureBeat: 1
 fb: 5 3
+filename: a5792f98-8ac0-5b11-a30e-8f30eceb2693.krn
 id: chor312-5
+startBeat: 0
+startLine: 18
+startMeasure: null
+startMeasureBeat: 4
 voices:
     alto:
         interval: '5'

@@ -1,8 +1,16 @@
-beat: 31
 choraleId: chor225
 degree: '3'
+endBeat: 31
+endLine: 92
+endMeasure: 8
+endMeasureBeat: 3
 fb: 5 3
+filename: c61153c5-fafe-5bfa-9992-ac15e2c22bb7.krn
 id: chor225-31
+startBeat: 24
+startLine: 73
+startMeasure: .nan
+startMeasureBeat: 4
 voices:
     alto:
         interval: '5'

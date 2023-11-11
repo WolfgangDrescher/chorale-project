@@ -1,8 +1,16 @@
-beat: 39
 choraleId: chor082
 degree: '5'
+endBeat: 39
+endLine: 70
+endMeasure: 10
+endMeasureBeat: 3
 fb: 5 3
+filename: 726ef62f-11eb-58dd-97fa-6edf053c81e6.krn
 id: chor082-39
+startBeat: 31
+startLine: 59
+startMeasure: 8
+startMeasureBeat: .nan
 voices:
     alto:
         interval: '#3'

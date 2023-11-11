@@ -1,0 +1,40 @@
+!!!!SEGMENT: chor209.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Dir, dir, Jehova will ich singen
+!!!SCT: BWV 299
+!!!PC#: 209
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-e-]	*k[b-e-]	*k[b-e-]	*k[b-e-]
+*B-:	*B-:	*B-:	*B-:
+*M3/4	*M3/4	*M3/4	*M3/4
+*MM100	*MM100	*MM100	*MM100
+=5	=5	=5	=5
+8AL	8cL	4f	4cc
+8GJ	8B-J	.	.
+8AL	8cL	4.f	8ccL
+8FJ	8AJ	.	8ee-J
+4B-	4B-	.	4dd
+.	.	8g	.
+=6	=6	=6	=6
+4F	4c	4a	4cc
+4E-	4F	8b-L	8ddL
+.	.	8aJ	8ccJ
+4D	4F	4b-	8ddL
+.	.	.	8b-J
+=7	=7	=7	=7
+4C	4c	4e-	8aL
+.	.	.	8b-J
+8DL	4B-	8fL	4.b-
+8CJ	.	8e-J	.
+8DL	8FL	8fL	.
+8BB-J	8GJ	8eJ	8cc
+=8	=8	=8	=8
+2FF;	2A;	2f;	2cc;
+=	=	=	=
+*-	*-	*-	*-

@@ -1,0 +1,30 @@
+!!!!SEGMENT: chor173.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: O Herzensangst, o Bangigkeit
+!!!SCT: BWV 400
+!!!PC#: 173
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-e-a-]	*k[b-e-a-]	*k[b-e-a-]	*k[b-e-a-]
+*E-:	*E-:	*E-:	*E-:
+*M3/4	*M3/4	*M3/4	*M3/4
+*MM100	*MM100	*MM100	*MM100
+4BB	4d	4g	4dd
+=13	=13	=13	=13
+4.C	4c	4g	4.ee-
+.	4c	4g	.
+8BB-X	.	.	8ee-
+4AA-	4c	4f	4ff
+=14	=14	=14	=14
+4GG	2c	4g	4ee-
+4FF	.	4a-	2dd
+4GG	4B	8gL	.
+.	.	8fJ	.
+=15	=15	=15	=15
+2C;	2G;	2e-;	2cc;
+*-	*-	*-	*-

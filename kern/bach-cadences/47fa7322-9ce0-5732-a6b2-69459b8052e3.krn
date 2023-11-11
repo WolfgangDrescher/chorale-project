@@ -1,0 +1,35 @@
+!!!!SEGMENT: chor137.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Wer Gott vertraut, hat wohl gebaut
+!!!SCT: BWV 433
+!!!PC#: 137
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[f#]	*k[f#]	*k[f#]	*k[f#]
+*G:	*G:	*G:	*G:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4r	4ry	4ry	4r
+4C	4d	4f#	4a
+=18	=18	=18	=18
+4BB	4.d	4g	4g
+4FF#	.	4d	4a
+.	8c	.	.
+4GG	8BL	8dL	4b
+.	8cJ	8eJ	.
+8DL	4d	8f#L	4a
+8CJ	.	8eJ	.
+=19	=19	=19	=19
+8BBL	8GL	8dL	2g
+8AAJ	8AJ	8c	.
+4GG	8BL	8d	.
+.	16cL	8eJ	.
+.	16BJJ	.	.
+4D;	4A;	4f#;	4a;
+*-	*-	*-	*-

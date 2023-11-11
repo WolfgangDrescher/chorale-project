@@ -1,8 +1,16 @@
-beat: 19
 choraleId: chor012
 degree: '3'
+endBeat: 19
+endLine: 41
+endMeasure: 7
+endMeasureBeat: 1
 fb: 5 3
+filename: 2ac1eed2-a7af-5a7d-8949-333a0028a25d.krn
 id: chor012-19
+startBeat: 13
+startLine: 32
+startMeasure: 5
+startMeasureBeat: 1
 voices:
     alto:
         interval: '5'

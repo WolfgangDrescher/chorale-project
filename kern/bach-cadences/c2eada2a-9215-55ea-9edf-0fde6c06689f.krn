@@ -1,0 +1,35 @@
+!!!!SEGMENT: chor299.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Meinen Jesum la&szlig; ich nicht, weil
+!!!SCT: BWV 380
+!!!PC#: 299
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-e-a-]	*k[b-e-a-]	*k[b-e-a-]	*k[b-e-a-]
+*E-:	*E-:	*E-:	*E-:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=10	=10	=10	=10
+8e-L	4e-	4g	4b-
+8d-J	.	.	.
+8cL	4e-	4g	4b-
+8B-J	.	.	.
+8A-L	4e-	4a-	4cc
+8GJ	.	.	.
+8FL	4f	8a-L	4cc
+8E-J	.	8gJ	.
+=11	=11	=11	=11
+8DnXL	8BL	4f	4ddnX
+8CJ	8cJ	.	.
+8BBnXL	8dnXL	4g	8ddL
+8GGJ	8BJ	.	16ee-L
+.	.	.	16ffJJ
+2C;	2c;	2g;	2ee-;
+=	=	=	=
+*-	*-	*-	*-

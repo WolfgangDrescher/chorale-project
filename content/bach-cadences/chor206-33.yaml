@@ -1,8 +1,16 @@
-beat: 33
 choraleId: chor206
 degree: 7-
+endBeat: 33
+endLine: 77
+endMeasure: 9
+endMeasureBeat: 1
 fb: 5 3
+filename: 49195ef6-8e9c-5c3e-9d71-bcd2f21d9fb2.krn
 id: chor206-33
+startBeat: 23
+startLine: 58
+startMeasure: 6
+startMeasureBeat: .nan
 voices:
     alto:
         interval: '8'

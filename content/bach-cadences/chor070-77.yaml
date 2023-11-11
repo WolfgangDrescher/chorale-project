@@ -1,8 +1,16 @@
-beat: 77
 choraleId: chor070
 degree: '1'
+endBeat: 77
+endLine: 175
+endMeasure: 20
+endMeasureBeat: 1
 fb: 5 3
+filename: 8513feae-47c9-5254-8012-59e400f78db6.krn
 id: chor070-77
+startBeat: 69
+startLine: 158
+startMeasure: 18
+startMeasureBeat: .nan
 voices:
     alto:
         interval: '5'

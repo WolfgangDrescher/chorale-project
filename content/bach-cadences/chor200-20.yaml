@@ -1,8 +1,16 @@
-beat: 20
 choraleId: chor200
 degree: '5'
+endBeat: 20
+endLine: 58
+endMeasure: 6
+endMeasureBeat: 1
 fb: 5 3
+filename: e25ba7db-78af-5886-a4c4-e0d4af04e8eb.krn
 id: chor200-20
+startBeat: 14
+startLine: 43
+startMeasure: 4
+startMeasureBeat: 3
 voices:
     alto:
         interval: '5'

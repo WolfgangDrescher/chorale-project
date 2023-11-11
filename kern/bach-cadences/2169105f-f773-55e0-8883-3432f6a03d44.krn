@@ -1,0 +1,39 @@
+!!!!SEGMENT: chor143.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: In dulci jubilo
+!!!SCT: BWV 368
+!!!PC#: 143
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-]	*k[b-]	*k[b-]	*k[b-]
+*F:	*F:	*F:	*F:
+*M3/4	*M3/4	*M3/4	*M3/4
+*MM100	*MM100	*MM100	*MM100
+4AA	4cnX	4f	4f
+=13	=13	=13	=13
+4BB-	4d	4f	2g
+4GG	4B-	8eL	.
+.	.	8dJ	.
+4C	4c	4e	4g
+=14	=14	=14	=14
+8FFL	2c	2f	2a
+8GG	.	.	.
+8AA	.	.	.
+8BB-	.	.	.
+8C	4c	4e	4g
+8BB-J	.	.	.
+=15	=15	=15	=15
+4AA	4c	4.f	2f
+4FF	4A	.	.
+.	.	8gL	.
+4CC	4c	8f	4g
+.	.	8eJ	.
+=16	=16	=16	=16
+2.FF;	2.c;	2.f;	2.a;
+=	=	=	=
+*-	*-	*-	*-

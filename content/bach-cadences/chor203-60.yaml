@@ -1,8 +1,16 @@
-beat: 60
 choraleId: chor203
 degree: '1'
+endBeat: 60
+endLine: 135
+endMeasure: 21
+endMeasureBeat: 1
 fb: 5 3
+filename: aeacb640-7112-50ab-a1f1-2224e9eba804.krn
 id: chor203-60
+startBeat: 53
+startLine: 119
+startMeasure: 18
+startMeasureBeat: 3
 voices:
     alto:
         interval: '5'

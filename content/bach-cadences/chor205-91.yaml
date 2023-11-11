@@ -1,8 +1,16 @@
-beat: 91
 choraleId: chor205
 degree: '3'
+endBeat: 91
+endLine: 232
+endMeasure: 23
+endMeasureBeat: 3
 fb: 5 3
+filename: 36434009-a3e3-539a-ad33-0f52369c647c.krn
 id: chor205-91
+startBeat: 84
+startLine: 214
+startMeasure: .nan
+startMeasureBeat: 4
 voices:
     alto:
         interval: '3'

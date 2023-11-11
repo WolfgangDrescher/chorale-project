@@ -1,0 +1,52 @@
+!!!!SEGMENT: chor234.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Gott lebet noch
+!!!SCT: BWV 320
+!!!PC#: 234
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-]	*k[b-]	*k[b-]	*k[b-]
+*F:	*F:	*F:	*F:
+*M3/4	*M3/4	*M3/4	*M3/4
+*MM100	*MM100	*MM100	*MM100
+4FF	4c;]	4a;]	4ff;]
+=7	=7	=7	=7
+4D	2d	2f	2a
+4C	.	.	.
+4BB-	4d	4f	4b-
+=8	=8	=8	=8
+4AA	2c	8fL	4cc
+.	.	8dJ	.
+4GG	.	4e	4b-
+4FF	4c	4f	4a
+=9	=9	=9	=9
+4C	2c	2e	2g
+4BB-	.	.	.
+4AA	4c	4f#	4a
+=10	=10	=10	=10
+4GG	4d	4g	4b-
+4AA	4c	4fnX	4a
+4BB-	4c	4e	4g
+=11	=11	=11	=11
+4AA	4c	8fL	2f
+.	.	8eJ	.
+4BB-	8B-L	4d	.
+.	8AJ	.	.
+4GG	4B-	4e	4g
+=12	=12	=12	=12
+4FF	2c	2f	2a
+4F	.	.	.
+4E	4c	4g	4g
+=13	=13	=13	=13
+4F	2c	2f	2a
+4E	.	.	.
+4D	4d	4f	4b
+=14	=14	=14	=14
+2.C;	2.e;	2.g;	2.cc;
+=	=	=	=
+*-	*-	*-	*-

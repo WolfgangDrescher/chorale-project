@@ -1,8 +1,16 @@
-beat: 47
 choraleId: chor115
 degree: '1'
+endBeat: 47
+endLine: 113
+endMeasure: 12
+endMeasureBeat: 3
 fb: 5 3
+filename: b73f2eca-13a0-5480-ad30-c8ab38015163.krn
 id: chor115-47
+startBeat: 40
+startLine: 99
+startMeasure: 10
+startMeasureBeat: 4
 voices:
     alto:
         interval: '5'

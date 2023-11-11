@@ -1,0 +1,35 @@
+!!!!SEGMENT: chor354.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Sei Lob und Ehr dem h&ouml;chsten Gut
+!!!SCT: BWV 117/4
+!!!PC#: 354
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[f#]	*k[f#]	*k[f#]	*k[f#]
+*G:	*G:	*G:	*G:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4FF#	4d	4a	4dd
+=3	=3	=3	=3
+4.GG	8dL	4g	8bL
+.	8cJ	.	8aJ
+.	8BL	4d	8gL
+8FF#	8AJ	.	8aJ
+8EEL	4G	8gL	4b
+8FF#J	.	8f#XJ	.
+8GGL	4A	4e	4cc#
+8AAJ	.	.	.
+=4	=4	=4	=4
+8FF#L	8A	8aL	4dd
+8DDJ	4d	8f#J	.
+4AA	.	4g	4ee
+.	8c#	.	.
+4DD;	4d;	4f#;	4dd;
+=	=	=	=
+*-	*-	*-	*-

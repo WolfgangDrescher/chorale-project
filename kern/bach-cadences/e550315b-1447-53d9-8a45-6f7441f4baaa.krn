@@ -1,0 +1,39 @@
+!!!!SEGMENT: chor242.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Wie bist du, Seele, in mir so gar betr&uuml;bt
+!!!SCT: BWV 435
+!!!PC#: 242
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[f#]	*k[f#]	*k[f#]	*k[f#]
+*e:	*e:	*e:	*e:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4D#	8BL	4f#	4f#
+.	8AJ	.	.
+4E	4G	8BL	4g
+.	.	8eJ	.
+4F#	[4d	8dnXL	4a
+.	.	8cJ	.
+=10	=10	=10	=10
+4G	8dL]	4B	4b
+.	8fJ	.	.
+4G#	8eL	[4e	4b
+.	8dJ	.	.
+4A	4c	8eL]	4a
+.	.	8d#J	.
+4A#	4c#	4e	8gnXL
+.	.	.	8f#J
+=11	=11	=11	=11
+4B	4.B	4e	2f#
+4BB	.	4d#	.
+.	8AnX	.	.
+4E;	4G#;	4B;	4e;
+==	==	==	==
+*-	*-	*-	*-

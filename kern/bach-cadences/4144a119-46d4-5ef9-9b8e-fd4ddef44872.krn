@@ -1,0 +1,35 @@
+!!!!SEGMENT: chor114.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Von Gott will ich nicht lassen
+!!!SCT: BWV 419
+!!!PC#: 114
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*a:	*a:	*a:	*a:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4G#	4B	4f	4dd
+=9	=9	=9	=9
+4A	8AL	8e	4cc
+.	8eJ	4a	.
+4E	4e	.	4b
+.	.	8g	.
+4.F	8eL	8gL	4a
+.	16dL	16fL	.
+.	16c#JJ	16eJJ	.
+.	8dL	4f	4a
+8E	8cJ	.	.
+=10	=10	=10	=10
+8D#L	8BL	8f#L	4.b
+8BBJ	8AJ	8d#J	.
+8C#L	8GL	8eL	.
+8D#XJ	8F#J	8f#J	8a
+4E;	4E;	4B;	4g;
+*-	*-	*-	*-

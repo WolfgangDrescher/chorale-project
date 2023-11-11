@@ -1,8 +1,16 @@
-beat: 42
 choraleId: chor152
 degree: '5'
+endBeat: 42
+endLine: 102
+endMeasure: 11
+endMeasureBeat: 3
 fb: 5 3
+filename: fcdb7aac-f028-5082-87aa-c41740024005.krn
 id: chor152-42
+startBeat: 36
+startLine: 89
+startMeasure: 10
+startMeasureBeat: 1
 voices:
     alto:
         interval: '5'

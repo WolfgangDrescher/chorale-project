@@ -1,8 +1,16 @@
-beat: 73
 choraleId: chor241
 degree: '3'
+endBeat: 73
+endLine: 191
+endMeasure: 19
+endMeasureBeat: 1
 fb: 5 3
+filename: 5c55676b-c50c-5b41-a7cd-49cf667f4c9e.krn
 id: chor241-73
+startBeat: 64
+startLine: 161
+startMeasure: 16
+startMeasureBeat: 4
 voices:
     alto:
         interval: '5'

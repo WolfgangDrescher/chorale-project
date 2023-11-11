@@ -1,0 +1,33 @@
+!!!!SEGMENT: chor070.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Gott sei gelobet und gebenedeiet
+!!!SCT: BWV 322
+!!!PC#: 70
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*G:mix	*G:mix	*G:mix	*G:mix
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=14	=14	=14	=14
+8CL	4G	4cnX	4e
+8BBJ	.	.	.
+4AA	4A	4c	4f#
+4BB	4G	4d	8gL
+.	.	.	8fJ
+8CL	4G	[4c	4e
+8BBJ	.	.	.
+=15	=15	=15	=15
+4AA	8AL	8cL]	2f#
+.	8cJ	8eJ	.
+4D	8BL	8dL	.
+.	8AJ	8cJ	.
+2GG;	2G;	2B;	2g;
+=	=	=	=
+*-	*-	*-	*-

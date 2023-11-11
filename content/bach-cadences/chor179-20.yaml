@@ -1,8 +1,16 @@
-beat: 20
 choraleId: chor179
 degree: '5'
+endBeat: 20
+endLine: 59
+endMeasure: 6
+endMeasureBeat: 1
 fb: 5 3
+filename: 06793425-dae4-56f8-b473-795400103335.krn
 id: chor179-20
+startBeat: 10
+startLine: 38
+startMeasure: 3
+startMeasureBeat: .nan
 voices:
     alto:
         interval: '5'

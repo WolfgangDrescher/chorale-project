@@ -1,8 +1,16 @@
-beat: 12
 choraleId: chor298
 degree: '5'
+endBeat: 12
+endLine: 35
+endMeasure: 5
+endMeasureBeat: 1
 fb: 5 3
+filename: 695f9329-6296-5c6f-9f60-a7e8e69c8f8e.krn
 id: chor298-12
+startBeat: 0
+startLine: 20
+startMeasure: 1
+startMeasureBeat: 1
 voices:
     alto:
         interval: '5'

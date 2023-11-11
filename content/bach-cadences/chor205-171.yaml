@@ -1,8 +1,16 @@
-beat: 171
 choraleId: chor205
 degree: '4'
+endBeat: 171
+endLine: 425
+endMeasure: 43
+endMeasureBeat: 3
 fb: 5 3
+filename: b3256b3d-68da-5e9d-bbe3-4f8591714f92.krn
 id: chor205-171
+startBeat: 164
+startLine: 406
+startMeasure: .nan
+startMeasureBeat: 4
 voices:
     alto:
         interval: '#3'

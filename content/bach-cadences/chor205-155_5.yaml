@@ -1,8 +1,16 @@
-beat: 155.5
 choraleId: chor205
 degree: 7-
+endBeat: 155.5
+endLine: 387
+endMeasure: 39
+endMeasureBeat: 3.5
 fb: 5 3
+filename: a5d19ef2-4501-540f-a3b6-a975a7a1fe0d.krn
 id: chor205-155_5
+startBeat: 148
+startLine: 367
+startMeasure: .nan
+startMeasureBeat: 4
 voices:
     alto:
         interval: '#3'

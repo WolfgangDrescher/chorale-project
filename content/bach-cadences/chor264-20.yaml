@@ -1,8 +1,16 @@
-beat: 20
 choraleId: chor264
 degree: '2'
+endBeat: 20
+endLine: 59
+endMeasure: 6
+endMeasureBeat: 1
 fb: 5 3
+filename: ccc36484-b3f7-592d-942e-92dc15793bab.krn
 id: chor264-20
+startBeat: 14
+startLine: 45
+startMeasure: 4
+startMeasureBeat: 3
 voices:
     alto:
         interval: n3
