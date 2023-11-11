@@ -4,9 +4,26 @@ const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => que
 const chorales = createBachChorales(choraleData.value, cadenceData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 
+const router = useRouter();
+const route = useRoute();
+
 const filter = reactive({
-    cadenceDegrees: [],
-    cadenceDegreeFbNumbers: [],
+    degree: [],
+    fb: [],
+});
+
+watch(filter, (value) => {
+    router.replace({query: toRaw(value)});
+});
+
+onMounted(() => {
+    Object.entries(route.query).forEach(([key, value]) => {
+        if (['degree', 'fb'].includes(key)) {
+            filter[key] = [value].flat();
+        } else {
+            filter[key] = value;
+        }
+    });
 });
 
 const choraleLines = computed(() => {
@@ -19,7 +36,7 @@ const choraleLines = computed(() => {
             if (!cadenceDegreeFbNumbers || !cadenceDegreeFbNumbers.length) return true;
             return cadenceDegreeFbNumbers.includes(choraleLine.fb);
         };
-        return filterCadenceDegrees(filter.cadenceDegrees) && filterCadenceDegreeFbNumbers(filter.cadenceDegreeFbNumbers)
+        return filterCadenceDegrees(filter.degree) && filterCadenceDegreeFbNumbers(filter.fb)
     });
 });
 
@@ -47,10 +64,10 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
 
         <div class="grid grid-cols-4 gap-4 mb-4">
             <div>
-                <FormDropdown v-model="filter.cadenceDegrees" :label="$t('cadenceDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
+                <FormDropdown v-model="filter.degree" :label="$t('cadenceDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
             </div>
             <div>
-                <FormDropdown v-model="filter.cadenceDegreeFbNumbers" :label="$t('cadenceDegreeFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
+                <FormDropdown v-model="filter.fb" :label="$t('cadenceDegreeFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
             </div>
         </div>
 
