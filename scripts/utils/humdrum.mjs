@@ -29,7 +29,7 @@ export function getHumdrumReferenceRecod(humdrum, key) {
     return refs[key] || null;
 }
 
-function tokenIsDataRecord(line, includeNullToken = false) {
+export function tokenIsDataRecord(line, includeNullToken = false) {
     return !line.startsWith('!') && !line.startsWith('*') && !line.startsWith('=') && !(!includeNullToken && line === '.');
 }
 
