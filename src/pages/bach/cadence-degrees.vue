@@ -63,14 +63,14 @@ const totalTableHeaders = computed(() => {
         });
         return accumulator;
     }, []).sort(sortCadenceDegrees).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
-    return [{ text: t('fbFigures'), value: 'fbFigures', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray50 }];
+    return [{ text: t('fbFigure'), value: 'fbFigure', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray50 }];
 });
 const totalTableItems = computed(() => {
     const result = [];
 
     // Count cadences for each fb figure and for each degree
-    const fbFigures = [...new Set(filteredElements.value.map(chorale => chorale.cadences.map(c => c.fb)).flat())].sort();
-    fbFigures.forEach((fbFig) => {
+    const fbFigure = [...new Set(filteredElements.value.map(chorale => chorale.cadences.map(c => c.fb)).flat())].sort();
+    fbFigure.forEach((fbFig) => {
         const items = totalTableHeaders.value.map(({ value: n }) => {
             const count = filteredElements.value.reduce((accumulator, chorale) => {
                 const num = chorale.cadences.filter(cadence => cadence.degree === n && fbFig === cadence.fb).length;
@@ -79,7 +79,7 @@ const totalTableItems = computed(() => {
             return [n, count];
         });
         const fbFigObj = Object.fromEntries(items)
-        fbFigObj.fbFigures = fbFig;
+        fbFigObj.fbFigure = fbFig;
         fbFigObj.total = items.reduce((accumulator, [, a]) => accumulator + a, 0)
         result.push(fbFigObj);
     });
@@ -93,7 +93,7 @@ const totalTableItems = computed(() => {
         return [n, count];
     });
     const totalObj = Object.fromEntries(items)
-    totalObj.fbFigures = t('total');
+    totalObj.fbFigure = t('total');
     totalObj.total = items.reduce((accumulator, [,a]) => accumulator + a, 0)
     totalObj._rowBgColor = gray50;
     result.push(totalObj)
@@ -118,18 +118,18 @@ const totalTableItems = computed(() => {
         <template v-if="filteredElements.length > 0">
             <Subheading>{{ $t('totalDegreeCount') }}</Subheading>
             <DataTable small :items="totalTableItems" :headers="totalTableHeaders">
-                <template #[`item.fbFigures`]="{ item }">
+                <template #[`item.fbFigure`]="{ item }">
                     <div class="text-center font-bold">
-                        <NuxtLink v-if="item.fbFigures !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { fb: item.fbFigures } })">
-                            <code class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigures }}</code>
+                        <NuxtLink v-if="item.fbFigure !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { fb: item.fbFigure } })">
+                            <code class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigure }}</code>
                         </NuxtLink>
-                        <code v-else class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigures }}</code>
+                        <code v-else class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigure }}</code>
                     </div>
                 </template>
-                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures' && a !== 'total')" #[`item.${i}`]="{ item }">
+                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigure' && a !== 'total')" #[`item.${i}`]="{ item }">
                     <div class="text-center">
                         <template v-if="item[i]">
-                            <NuxtLink v-if="item.fbFigures !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { degree: i, fb: item.fbFigures } })">
+                            <NuxtLink v-if="item.fbFigure !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { degree: i, fb: item.fbFigure } })">
                                 {{ item[i] }}
                             </NuxtLink>
                             <template v-else>
@@ -145,7 +145,7 @@ const totalTableItems = computed(() => {
                         </template>
                     </div>
                 </template>
-                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigures' && a !== 'total')" #[`head.${i}`]="{ field }">
+                <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigure' && a !== 'total')" #[`head.${i}`]="{ field }">
                     <div class="text-center font-serif">
                         <NuxtLink :href="localePath({ name: 'bach-chorale-lines', query: { degree: field.value } })">
                             {{ field.text }}
