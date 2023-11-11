@@ -13,7 +13,7 @@ const { filteredElements } = useBachChoraleFilter(chorales);
 const { items, addItems } = useArrayLoader(filteredElements);
 
 function hrefBuilder(chorale) {
-    return localePath({name: 'bach-nr', params: { nr: chorale.nr }});
+    return localePath({name: 'bach-chorale-nr', params: { nr: chorale.nr }});
 }
 </script>
 

@@ -150,7 +150,7 @@ const totalTableItems = computed(() => {
                     </div>
                 </template>
                 <template #[`item.id`]="{ item }">
-                    <NuxtLink :href="localePath({ name: 'bach-nr', params: { nr: item.nr } })">
+                    <NuxtLink :href="localePath({ name: 'bach-chorale-nr', params: { nr: item.nr } })">
                         {{ item.title }}
                     </NuxtLink>
                 </template>

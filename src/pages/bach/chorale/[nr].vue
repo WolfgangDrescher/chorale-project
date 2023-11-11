@@ -59,12 +59,12 @@ const scoreFormatter = useHumdrumScoreFormatter();
                     <Heading class="mb-0">{{ `${chorale.nr}. ${chorale.title}` }}</Heading>
                     <div class="flex flex-gap-4">
                         <div v-if="prevChorale">
-                            <NuxtLink :to="localePath({ name: 'bach-nr', params: { nr: prevChorale.nr }, hash: $route.hash })">
+                            <NuxtLink :to="localePath({ name: 'bach-chorale-nr', params: { nr: prevChorale.nr }, hash: $route.hash })">
                                 <Icon name="heroicons:arrow-left-circle" class="text-xl" />
                             </NuxtLink>
                         </div>
                         <div v-if="nextChorale">
-                            <NuxtLink :to="localePath({ name: 'bach-nr', params: { nr: nextChorale.nr }, hash: $route.hash })">
+                            <NuxtLink :to="localePath({ name: 'bach-chorale-nr', params: { nr: nextChorale.nr }, hash: $route.hash })">
                                 <Icon name="heroicons:arrow-right-circle" class="text-xl" />
                             </NuxtLink>
                         </div>
@@ -116,7 +116,7 @@ const scoreFormatter = useHumdrumScoreFormatter();
             </Subheading>
             <ul>
                 <li v-for="similarChorale in similarChorales">
-                    <NuxtLink :to="localePath({ name: 'bach-nr', params: { nr: similarChorale.nr } })">
+                    <NuxtLink :to="localePath({ name: 'bach-chorale-nr', params: { nr: similarChorale.nr } })">
                         {{ `${similarChorale.nr}. ${similarChorale.title}` }}
                         <span class="text-xs">
                             ({{ $t('levenshteinDistance') }}: {{ similarities.find(c => c.id === similarChorale.id)?.distance || 0 }})
