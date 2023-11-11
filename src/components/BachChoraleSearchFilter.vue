@@ -42,7 +42,7 @@ const majMinOptions = [
     { value: 'minor', text: t('minor') },
 ];
 
-const cadenceDegreeOptions = [...new Set(bachChorales.map(chorale => chorale.cadences.map(c => c.degree)).flat().filter(n => n))].sort().map(degree => ({
+const cadenceDegreeOptions = [...new Set(bachChorales.map(chorale => chorale.cadences.map(c => c.degree)).flat().filter(n => n))].sort(sortCadenceDegrees).map(degree => ({
     value: degree,
     text: romanizeDeg(degree),
 }));

@@ -62,12 +62,7 @@ const totalTableHeaders = computed(() => {
             }
         });
         return accumulator;
-    }, []).sort((a, b) => {
-        if (parseInt(a.replaceAll(/\D/g, ''), 10) > parseInt(b.replaceAll(/\D/g, ''), 10)) return 1;
-        if (parseInt(a.replaceAll(/\D/g, ''), 10) < parseInt(b.replaceAll(/\D/g, ''), 10)) return -1;
-        if (a.includes('+') && !b.includes('+')) return 1;
-        if (a.includes('-') && !b.includes('-')) return -1;
-    }).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
+    }, []).sort(sortCadenceDegrees).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
     return [{ text: t('fbFigures'), value: 'fbFigures', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray50 }];
 });
 const totalTableItems = computed(() => {
