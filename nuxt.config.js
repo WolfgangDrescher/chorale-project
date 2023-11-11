@@ -45,6 +45,11 @@ export default defineNuxtConfig({
                 dir: fileURLToPath(new URL('./kittel-24-chorales/kern', import.meta.url)),
                 maxAge: 3600,
             },
+            {
+                baseURL: 'kern',
+                dir: fileURLToPath(new URL('./kern', import.meta.url)),
+                maxAge: 3600,
+            },
         ],
     },
     googleFonts: {
