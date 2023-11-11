@@ -63,7 +63,7 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
         <InfiniteScroll @load="addItems()" :all="items.length === choraleLines.length">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div v-for="choraleLine in items" :key="choraleLine.id">
-                    <ChoraleLineListItem :chorale-line="choraleLine" :href-builder="hrefBuilder" />
+                    <ChoraleLineListItem :chorale-line="choraleLine" />
                 </div>
             </div>
         </InfiniteScroll>

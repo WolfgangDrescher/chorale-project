@@ -31,7 +31,6 @@ const title = `${props.choraleLine.choraleId}, T. ${props.choraleLine.endMeasure
                 unload
                 :lazy-delay="100"
                 :options="{ mnumInterval: 1 }"
-                @score-is-ready="verovioCanvasIsReady"
             />
         </div>
     </Card>
