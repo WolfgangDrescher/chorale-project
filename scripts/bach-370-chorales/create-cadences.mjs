@@ -37,10 +37,10 @@ function getKey(id) {
 function getCadenceDegree(key, cadenceUltima) {
     const kern = `**kern
 *${key}:
-${cadenceUltima.toUpperCase()}
+${cadenceUltima}
 *-`;
-    const stdout = execSync(`echo ${escapeShell(kern)} | deg`).toString();
-    return stdout.split('\n')[2];
+    const stdout = execSync(`echo ${escapeShell(kern)} | degx`).toString();
+    return stdout.split('\n')[2].split('\t')[1];
 }
 
 function getCadenceStartInitialLineIndex(lines) {
