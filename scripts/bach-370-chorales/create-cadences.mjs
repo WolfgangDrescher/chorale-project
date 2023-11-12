@@ -37,7 +37,7 @@ function getKey(id) {
 function getCadenceDegree(key, cadenceUltima) {
     const kern = `**kern
 *${key}:
-${cadenceUltima}
+${cadenceUltima.replace(']', '')}
 *-`;
     const stdout = execSync(`echo ${escapeShell(kern)} | degx`).toString();
     return stdout.split('\n')[2].split('\t')[1];
