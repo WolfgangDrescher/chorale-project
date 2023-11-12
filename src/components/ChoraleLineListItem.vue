@@ -1,11 +1,12 @@
 <script setup>
-const { localePath } = useI18n();
 const props = defineProps({
     choraleLine: {
         type: Object,
         required: true,
     },
 });
+
+const localePath = useLocalePath();
 
 const data = ref(null);
 onMounted(async () => {
@@ -21,6 +22,13 @@ const title = `${props.choraleLine.choraleId}, T. ${props.choraleLine.endMeasure
 
 <template>
     <Card :title="title">
+        <template v-slot:title>
+            <div class="text-xl font-medium leading-5 text-gray-800">
+                <NuxtLink :href="localePath({name: 'bach-chorale-nr', params: { nr: parseInt(choraleLine.choraleId.replaceAll(/\D/g, ''), 10) }})">
+                    {{ title }}
+                </NuxtLink>
+            </div>
+        </template>
         <div class="flex flex-col gap-4 mt-4">
             <VerovioCanvas
                 v-if="data"
