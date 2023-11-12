@@ -60,7 +60,7 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
 <template>
     <Container>
 
-        <Heading>{{ $t('choralLines') }}</Heading>
+        <Heading>{{ $t('choraleLines') }}</Heading>
 
         <div class="grid grid-cols-4 gap-4 mb-4">
             <div>
