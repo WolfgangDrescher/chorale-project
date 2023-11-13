@@ -10,7 +10,7 @@ const localePath = useLocalePath();
 
 const data = ref(null);
 onMounted(async () => {
-    const response = await fetch(`/kern/bach-cadences/${props.choraleLine.filename}`);
+    const response = await fetch(`/kern/bach-phrases/${props.choraleLine.filename}`);
     if (!response.ok) {
         throw new Error(`${response.status} ${response.statusText}`);
     }

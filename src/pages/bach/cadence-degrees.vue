@@ -9,7 +9,7 @@ useHead({
     title: t('cadenceDegrees'),
 });
 
-const { data: cadenceData } = await useAsyncData('/bach-cadences', () => queryContent('/bach-cadences').find())
+const { data: cadenceData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
 const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
 const chorales = createBachChorales(choraleData.value, cadenceData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
