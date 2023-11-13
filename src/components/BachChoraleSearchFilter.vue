@@ -53,7 +53,7 @@ const cadenceDegreeFbNumberOptions = bachChoraleFilterOptions.fbNumbers.sort().m
 
 <template>
     <ClientOnly>
-        <div class="grid grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
             <div>
                 <FormInputField :model-value="filter.searchText" @update:model-value="updateFilter('searchText', $event)" :label="$t('searchText')" :placeholder="$t('searchText')" />
             </div>
