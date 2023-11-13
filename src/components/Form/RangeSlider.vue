@@ -110,7 +110,7 @@ const formattedLabel = computed(() => {
     <FormGroup :label="groupLabel">
         <div
             ref="progressBarElem"
-            class="relative flex-grow h-1 bg-gray-200 cursor-pointer rounded"
+            class="relative flex-grow h-1 bg-gray-200 rounded"
             :style="`--progressLeft: ${progressLeft}%; --progressRight: ${progressRight}%`"
         >
             <div class="pointer-events-none bg-primary-500 rounded h-full absolute top-0" style="width: calc(var(--progressRight) - var(--progressLeft)); left: var(--progressLeft);"></div>
