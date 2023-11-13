@@ -9,6 +9,9 @@ useHead({
 <template>
     <div class="flex flex-col min-h-screen">
         <TheHeader />
+        <TheSubnav v-if="$slots.subnav">
+            <slot name="subnav"></slot>
+        </TheSubnav>
         <main class="py-8">
             <slot></slot>
         </main>

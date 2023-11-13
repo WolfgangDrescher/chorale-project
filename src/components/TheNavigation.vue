@@ -19,8 +19,6 @@ function onClick() {
                 <ul class="flex flex-col md:flex-row md:space-x-4 lg:space-x-8 lg:justify-center">
                     <NavigationItem :href="localePath('index')" @click="onClick">{{ $t('home') }}</NavigationItem>
                     <NavigationItem :href="localePath('bach')" @click="onClick">{{ $t('bach') }}</NavigationItem>
-                    <NavigationItem :href="localePath('bach-cadence-degrees')" @click="onClick">{{ $t('cadenceDegrees') }}</NavigationItem>
-                    <NavigationItem :href="localePath('bach-phrases')" @click="onClick">{{ $t('choralePhrases') }}</NavigationItem>
                     <NavigationItem :href="localePath('kittel')" @click="onClick">{{ $t('kittel') }}</NavigationItem>
                 </ul>
             </div>

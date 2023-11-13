@@ -1,4 +1,8 @@
 <script setup>
+definePageMeta({
+    layout: 'bach',
+});
+
 // import { gray } from 'tailwindcss/colors';
 const gray50 = '#f9fafb'; // gray[50] will not work with nuxt generate
 

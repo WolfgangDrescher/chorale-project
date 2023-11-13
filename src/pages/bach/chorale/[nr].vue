@@ -1,5 +1,10 @@
 <script setup>
 import levenshtein from 'js-levenshtein';
+
+definePageMeta({
+    layout: 'bach',
+});
+
 const { t } = useI18n();
 const localePath = useLocalePath();
 const route = useRoute();

@@ -1,4 +1,8 @@
 <script setup>
+definePageMeta({
+    layout: 'bach',
+});
+
 const { t } = useI18n();
 const localePath = useLocalePath();
 
