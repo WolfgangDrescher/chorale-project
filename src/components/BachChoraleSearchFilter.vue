@@ -40,7 +40,7 @@ const majMinOptions = [
     { value: 'minor', text: t('minor') },
 ];
 
-const cadenceDegreeOptions = bachChoraleFilterOptions.degrees.sort(sortCadenceDegrees).map(degree => ({
+const cadenceDegreeOptions = bachChoraleFilterOptions.degrees.sort(sortphraseDegrees).map(degree => ({
     value: degree,
     text: romanizeDeg(degree),
 }));
@@ -67,13 +67,13 @@ const cadenceDegreeFbNumberOptions = bachChoraleFilterOptions.fbNumbers.sort().m
                 <FormDropdown :model-value="filter.timeSignature" @update:model-value="updateFilter('timeSignature', $event)" :label="$t('timeSignature')" :options="timeSignatureOptions" :search-enabled="false" :multiple="false" />
             </div>
             <div>
-                <FormDropdown :model-value="filter.cadenceDegrees" @update:model-value="updateFilter('cadenceDegrees', $event)" :label="$t('cadenceDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
+                <FormDropdown :model-value="filter.phraseDegrees" @update:model-value="updateFilter('phraseDegrees', $event)" :label="$t('phraseDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
             </div>
             <div>
-                <FormDropdown :model-value="filter.cadenceDegreeFbNumbers" @update:model-value="updateFilter('cadenceDegreeFbNumbers', $event)" :label="$t('cadenceDegreeFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
+                <FormDropdown :model-value="filter.phraseFbNumbers" @update:model-value="updateFilter('phraseFbNumbers', $event)" :label="$t('phraseFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
             </div>
             <div>
-                <FormRangeSlider :group-label="$t('countCadences')" :model-value="filter.countCadences" @update:model-value="updateFilter('countCadences', $event)" :min="0" :max="23" />
+                <FormRangeSlider :group-label="$t('countPhrases')" :model-value="filter.countPhrases" @update:model-value="updateFilter('countPhrases', $event)" :min="0" :max="23" />
             </div>
             <div>
                 <FormRangeSlider :group-label="$t('numberOfMeasures')" :model-value="filter.numberOfMeasures" @update:model-value="updateFilter('numberOfMeasures', $event)" :min="0" :max="48" />

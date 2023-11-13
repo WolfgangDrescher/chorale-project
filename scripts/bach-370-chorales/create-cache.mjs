@@ -22,9 +22,9 @@ const keys = [...new Set(chorales.map(chorale => chorale.key).filter(n => n))];
 
 const timeSignatures = [...new Set(chorales.map(chorale => chorale.timeSignature).filter(n => n))];
 
-const degrees = [...new Set(chorales.map(chorale => chorale.cadences.map(c => c.degree)).flat().filter(n => n))]
+const degrees = [...new Set(chorales.map(chorale => chorale.phrases.map(c => c.degree)).flat().filter(n => n))]
 
-const fbNumbers = [...new Set(chorales.map(chorale => chorale.cadences.map(c => c.fb)).flat().filter(n => n))]
+const fbNumbers = [...new Set(chorales.map(chorale => chorale.phrases.map(c => c.fb)).flat().filter(n => n))]
 
 const json = {
     keys,

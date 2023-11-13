@@ -28,9 +28,9 @@ const filterByMajorMinor = (majorMinor, element) => {
     return true;
 };
 
-const filterByCountCadences = ([min, max], element) => {
+const filterBycountPhrases = ([min, max], element) => {
     if (typeof min !== 'number' || typeof max !== 'number') return true;
-    const count = element.countCadences ?? 0;
+    const count = element.countPhrases ?? 0;
     // if (isNaN(count)) return false;
     return count >= min && count <= max;
 };
@@ -47,15 +47,15 @@ const filterTimeSignature = (timeSignature, element) => {
     return timeSignature === element.timeSignature;
 };
 
-const filterCadenceDegrees = (cadenceDegrees, element) => {
-    if (!cadenceDegrees || !cadenceDegrees.length) return true;
-    return cadenceDegrees.some(deg => element.cadences.map(c => c.degree).flat().includes(deg));
+const filterphraseDegrees = (phraseDegrees, element) => {
+    if (!phraseDegrees || !phraseDegrees.length) return true;
+    return phraseDegrees.some(deg => element.phrases.map(c => c.degree).flat().includes(deg));
 };
 
 
-const filterCadenceDegreeFbNumbers = (cadenceDegreeFbNumbers, element) => {
-    if (!cadenceDegreeFbNumbers || !cadenceDegreeFbNumbers.length) return true;
-    return cadenceDegreeFbNumbers.some(fb => element.cadences.map(c => c.fb).flat().includes(fb));
+const filterphraseFbNumbers = (phraseFbNumbers, element) => {
+    if (!phraseFbNumbers || !phraseFbNumbers.length) return true;
+    return phraseFbNumbers.some(fb => element.phrases.map(c => c.fb).flat().includes(fb));
 };
 
 export function useBachChoraleFilter(elements) {
@@ -67,21 +67,21 @@ export function useBachChoraleFilter(elements) {
             const searchTextMatched = filterBySearchText(filter.searchText, element);
             const keysMatched = filterByKeys(filter.keys, element);
             const majorMinorMatched = filterByMajorMinor(filter.majorMinor, element);
-            const countCadencesMatched = filterByCountCadences(filter.countCadences, element);
+            const countPhrasesMatched = filterBycountPhrases(filter.countPhrases, element);
             const numberOfMeasuresMatched = filterNumberOfMeasures(filter.numberOfMeasures, element);
             const timeSignatureMatched = filterTimeSignature(filter.timeSignature, element);
-            const cadenceDegreesMatched = filterCadenceDegrees(filter.cadenceDegrees, element);
-            const cadenceDegreeFbNumbersMatched = filterCadenceDegreeFbNumbers(filter.cadenceDegreeFbNumbers, element);
+            const phraseDegreesMatched = filterphraseDegrees(filter.phraseDegrees, element);
+            const phraseFbNumbersMatched = filterphraseFbNumbers(filter.phraseFbNumbers, element);
 
             return (
                 searchTextMatched &&
                 keysMatched &&
                 majorMinorMatched &&
-                countCadencesMatched && 
+                countPhrasesMatched && 
                 numberOfMeasuresMatched &&
                 timeSignatureMatched &&
-                cadenceDegreesMatched && 
-                cadenceDegreeFbNumbersMatched
+                phraseDegreesMatched && 
+                phraseFbNumbersMatched
             );
         });
 

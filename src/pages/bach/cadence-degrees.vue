@@ -10,7 +10,7 @@ const { t } = useI18n();
 const localePath = useLocalePath();
 
 useHead({
-    title: t('cadenceDegrees'),
+    title: t('phraseDegrees'),
 });
 
 const { data: cadenceData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
@@ -21,12 +21,12 @@ const { filteredElements } = useBachChoraleFilter(chorales);
 
 const maxCadences = computed(() => {
     if (filteredElements.value.length === 1) {
-        return filteredElements.value[0].countCadences
+        return filteredElements.value[0].countPhrases
     } else if (filteredElements.value.length >= 2) {
         const maxCadenceItem = filteredElements.value?.reduce((prev, current) => {
-            return (prev && prev.countCadences > current.countCadences) ? prev : current;
+            return (prev && prev.countPhrases > current.countPhrases) ? prev : current;
         });
-        return maxCadenceItem?.countCadences;
+        return maxCadenceItem?.countPhrases;
     }
     return 0;
 });
@@ -47,10 +47,10 @@ const tableItems = computed(() => {
             title: chorale.fullTitle,
             nr: chorale.nr,
         };
-        chorale.cadences.forEach((cadence, index) => {
+        chorale.phrases.forEach((cadence, index) => {
             result[index + 1] = romanizeDeg(cadence.degree);
         });
-        chorale.cadences.forEach((cadence, index) => {
+        chorale.phrases.forEach((cadence, index) => {
             result[`${index + 1}.fb`] = cadence.fb;
         });
         return result;
@@ -60,24 +60,24 @@ const tableItems = computed(() => {
 
 const totalTableHeaders = computed(() => {
     const degreeItems = filteredElements.value.reduce((accumulator, chorale) => {
-        chorale.cadences.forEach(cadence => {
+        chorale.phrases.forEach(cadence => {
             if (!accumulator.includes(cadence.degree)) {
                 accumulator.push(cadence.degree);
             }
         });
         return accumulator;
-    }, []).sort(sortCadenceDegrees).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
+    }, []).sort(sortphraseDegrees).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
     return [{ text: t('fbFigure'), value: 'fbFigure', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray50 }];
 });
 const totalTableItems = computed(() => {
     const result = [];
 
     // Count cadences for each fb figure and for each degree
-    const fbFigure = [...new Set(filteredElements.value.map(chorale => chorale.cadences.map(c => c.fb)).flat())].sort();
+    const fbFigure = [...new Set(filteredElements.value.map(chorale => chorale.phrases.map(c => c.fb)).flat())].sort();
     fbFigure.forEach((fbFig) => {
         const items = totalTableHeaders.value.map(({ value: n }) => {
             const count = filteredElements.value.reduce((accumulator, chorale) => {
-                const num = chorale.cadences.filter(cadence => cadence.degree === n && fbFig === cadence.fb).length;
+                const num = chorale.phrases.filter(cadence => cadence.degree === n && fbFig === cadence.fb).length;
                 return accumulator + num;
             }, 0);
             return [n, count];
@@ -91,7 +91,7 @@ const totalTableItems = computed(() => {
     // Count all cadences for each degree
     const items = totalTableHeaders.value.map(({ value: n }) => {
         const count = filteredElements.value.reduce((accumulator, chorale) => {
-            const num = chorale.cadences.filter(cadence => cadence.degree === n).length;
+            const num = chorale.phrases.filter(cadence => cadence.degree === n).length;
             return accumulator + num;
         }, 0);
         return [n, count];
@@ -109,7 +109,7 @@ const totalTableItems = computed(() => {
 <template>
     <Container>
 
-        <Heading>{{ $t('cadenceDegrees') }}</Heading>
+        <Heading>{{ $t('phraseDegrees') }}</Heading>
 
         <BachChoraleSearchFilter />
 

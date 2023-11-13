@@ -31,31 +31,31 @@ onMounted(() => {
 });
 
 const phrases = computed(() => {
-    return filteredElements.value.map(c => c.cadences).flat().filter(choraleLine => {
-        const filterCadenceDegrees = (cadenceDegrees) => {
-            if (!cadenceDegrees || !cadenceDegrees.length) return true;
-            return cadenceDegrees.includes(choraleLine.degree);
+    return filteredElements.value.map(c => c.phrases).flat().filter(choraleLine => {
+        const filterphraseDegrees = (phraseDegrees) => {
+            if (!phraseDegrees || !phraseDegrees.length) return true;
+            return phraseDegrees.includes(choraleLine.degree);
         };
-        const filterCadenceDegreeFbNumbers = (cadenceDegreeFbNumbers) => {
-            if (!cadenceDegreeFbNumbers || !cadenceDegreeFbNumbers.length) return true;
-            return cadenceDegreeFbNumbers.includes(choraleLine.fb);
+        const filterphraseFbNumbers = (phraseFbNumbers) => {
+            if (!phraseFbNumbers || !phraseFbNumbers.length) return true;
+            return phraseFbNumbers.includes(choraleLine.fb);
         };
-        return filterCadenceDegrees(filter.degree) && filterCadenceDegreeFbNumbers(filter.fb)
+        return filterphraseDegrees(filter.degree) && filterphraseFbNumbers(filter.fb)
     });
 });
 
 const { items, addItems } = useArrayLoader(phrases);
 
 const totalPhrases = computed(() => {
-    return chorales.reduce((accumulator, chorale) => accumulator + chorale.cadences.length, 0);
+    return chorales.reduce((accumulator, chorale) => accumulator + chorale.phrases.length, 0);
 });
 
-const cadenceDegreeOptions = [...new Set(chorales.map(chorale => chorale.cadences.map(c => c.degree)).flat().filter(n => n))].sort(sortCadenceDegrees).map(degree => ({
+const cadenceDegreeOptions = [...new Set(chorales.map(chorale => chorale.phrases.map(c => c.degree)).flat().filter(n => n))].sort(sortphraseDegrees).map(degree => ({
     value: degree,
     text: romanizeDeg(degree),
 }));
 
-const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale.cadences.map(c => c.fb)).flat().filter(n => n))].sort().map(fb => ({
+const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale.phrases.map(c => c.fb)).flat().filter(n => n))].sort().map(fb => ({
     value: fb,
     text: fb,
 }));
@@ -68,10 +68,10 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
 
         <div class="grid grid-cols-4 gap-4 mb-4">
             <div>
-                <FormDropdown v-model="filter.degree" :label="$t('cadenceDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
+                <FormDropdown v-model="filter.degree" :label="$t('phraseDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
             </div>
             <div>
-                <FormDropdown v-model="filter.fb" :label="$t('cadenceDegreeFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
+                <FormDropdown v-model="filter.fb" :label="$t('phraseFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
             </div>
         </div>
 
