@@ -3,9 +3,9 @@ definePageMeta({
     layout: 'bach',
 });
 
-const { data: cadenceData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
+const { data: phrasesData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
 const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
-const chorales = createBachChorales(choraleData.value, cadenceData.value);
+const chorales = createBachChorales(choraleData.value, phrasesData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 
 const router = useRouter();
