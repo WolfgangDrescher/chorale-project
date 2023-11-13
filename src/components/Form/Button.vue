@@ -47,7 +47,7 @@ const dynamicClasses = computed(() => {
 </script>
 
 <template>
-    <button @click="onClick" :class="dynamicClasses" class="text-center border-gray-300 rounded border border-transparent shadow-sm">
+    <button :class="dynamicClasses" class="text-center border-gray-300 rounded border border-transparent shadow-sm">
         <slot></slot>
     </button>
 </template>
