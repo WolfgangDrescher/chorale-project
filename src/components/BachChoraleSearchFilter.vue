@@ -1,9 +1,7 @@
 <script setup>
-const { t } = useI18n()
+import bachChoraleFilterOptions from '../utils/bach-chorale-filter-options.json';
 
-const { data: cadenceData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
-const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
-const bachChorales = createBachChorales(choraleData.value, cadenceData.value);
+const { t } = useI18n()
 
 const filter = useBachChoraleFilterStore();
 
@@ -15,7 +13,7 @@ function resetFilter() {
     filter.reset();
 }
 
-const keyOptions = [...new Set(bachChorales.map(chorale => chorale.key).filter(n => n))].sort((a, b) => {
+const keyOptions = bachChoraleFilterOptions.keys.sort((a, b) => {
     const notes = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
     const formatKey = (value) => value.replace(/\W/, '').toLowerCase();
     return notes.indexOf(formatKey(a)) - notes.indexOf(formatKey(b));
@@ -24,7 +22,7 @@ const keyOptions = [...new Set(bachChorales.map(chorale => chorale.key).filter(n
     text: key,
 }));
 
-const timeSignatureOptions = [...new Set(bachChorales.map(chorale => chorale.timeSignature).filter(n => n))].sort((a, b) => {
+const timeSignatureOptions = bachChoraleFilterOptions.timeSignatures.sort((a, b) => {
     const [numeratorA, denominatorA] = a.split('/');
     const [numeratorB, denominatorB] = b.split('/');
     if (denominatorA < denominatorB) return 1;
@@ -42,12 +40,12 @@ const majMinOptions = [
     { value: 'minor', text: t('minor') },
 ];
 
-const cadenceDegreeOptions = [...new Set(bachChorales.map(chorale => chorale.cadences.map(c => c.degree)).flat().filter(n => n))].sort(sortCadenceDegrees).map(degree => ({
+const cadenceDegreeOptions = bachChoraleFilterOptions.degrees.sort(sortCadenceDegrees).map(degree => ({
     value: degree,
     text: romanizeDeg(degree),
 }));
 
-const cadenceDegreeFbNumberOptions = [...new Set(bachChorales.map(chorale => chorale.cadences.map(c => c.fb)).flat().filter(n => n))].sort().map(fb => ({
+const cadenceDegreeFbNumberOptions = bachChoraleFilterOptions.fbNumbers.sort().map(fb => ({
     value: fb,
     text: fb,
 }));
