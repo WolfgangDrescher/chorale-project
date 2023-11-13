@@ -13,7 +13,7 @@ function onClick() {
 </script>
 
 <template>
-    <nav class="bg-gray-100 p-3 md:p-5 hidden shadow md:shadow-none whitespace-nowrap overflow-x-auto" :class="{'is-open': open}" id="header-navigation">
+    <nav class="bg-gray-100 border-b p-3 md:p-5 hidden shadow md:shadow-none whitespace-nowrap overflow-x-auto" :class="{'is-open': open}" id="header-navigation">
         <div class="lg:container">
             <div class="w-full md:block md:w-auto">
                 <ul class="flex flex-col md:flex-row md:space-x-4 lg:space-x-8 lg:justify-center">
