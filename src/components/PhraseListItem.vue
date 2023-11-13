@@ -1,6 +1,6 @@
 <script setup>
 const props = defineProps({
-    choraleLine: {
+    phrase: {
         type: Object,
         required: true,
     },
@@ -10,21 +10,21 @@ const localePath = useLocalePath();
 
 const data = ref(null);
 onMounted(async () => {
-    const response = await fetch(`/kern/bach-phrases/${props.choraleLine.filename}`);
+    const response = await fetch(`/kern/bach-phrases/${props.phrase.filename}`);
     if (!response.ok) {
         throw new Error(`${response.status} ${response.statusText}`);
     }
     data.value = await response.text();
 });
 
-const title = `${props.choraleLine.choraleId}, T. ${props.choraleLine.endMeasure} ♩ ${props.choraleLine.endMeasureBeat}`;
+const title = `${props.phrase.choraleId}, T. ${props.phrase.endMeasure} ♩ ${props.phrase.endMeasureBeat}`;
 </script>
 
 <template>
     <Card :title="title">
         <template v-slot:title>
             <div class="text-xl font-medium leading-5 text-gray-800">
-                <NuxtLink :href="localePath({name: 'bach-chorale-nr', params: { nr: parseInt(choraleLine.choraleId.replaceAll(/\D/g, ''), 10) }})">
+                <NuxtLink :href="localePath({name: 'bach-chorale-nr', params: { nr: parseInt(phrase.choraleId.replaceAll(/\D/g, ''), 10) }})">
                     {{ title }}
                 </NuxtLink>
             </div>

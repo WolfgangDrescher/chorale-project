@@ -31,16 +31,16 @@ onMounted(() => {
 });
 
 const phrases = computed(() => {
-    return filteredElements.value.map(c => c.phrases).flat().filter(choraleLine => {
-        const filterphraseDegrees = (phraseDegrees) => {
+    return filteredElements.value.map(c => c.phrases).flat().filter(phrase => {
+        const filterPhraseDegrees = (phraseDegrees) => {
             if (!phraseDegrees || !phraseDegrees.length) return true;
-            return phraseDegrees.includes(choraleLine.degree);
+            return phraseDegrees.includes(phrase.degree);
         };
-        const filterphraseFbNumbers = (phraseFbNumbers) => {
+        const filterPhraseFbNumbers = (phraseFbNumbers) => {
             if (!phraseFbNumbers || !phraseFbNumbers.length) return true;
-            return phraseFbNumbers.includes(choraleLine.fb);
+            return phraseFbNumbers.includes(phrase.fb);
         };
-        return filterphraseDegrees(filter.degree) && filterphraseFbNumbers(filter.fb)
+        return filterPhraseDegrees(filter.degree) && filterPhraseFbNumbers(filter.fb)
     });
 });
 
@@ -83,8 +83,8 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
 
         <InfiniteScroll @load="addItems()" :all="items.length === phrases.length">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div v-for="choraleLine in items" :key="choraleLine.id">
-                    <ChoraleLineListItem :chorale-line="choraleLine" />
+                <div v-for="phrase in items" :key="phrase.id">
+                    <PhraseListItem :phrase="phrase" />
                 </div>
             </div>
         </InfiniteScroll>
