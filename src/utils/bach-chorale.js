@@ -78,7 +78,7 @@ export function createBachChorales(chorales, choralCadences) {
     if (Array.isArray(chorales)) {
         return chorales.map(chorale => {
             const cadences = choralCadences?.filter(e => e.choraleId === chorale.id);
-            return createBachChorale(toRaw(chorale), toRaw(cadences));
+            return createBachChorale(typeof toRaw !== 'undefined' ? toRaw(chorale) : chorale, typeof toRaw !== 'undefined' ? toRaw(cadences) : cadences);
         });
     }
     throw new Error('Cannot convert passsed argument to Chorale objects');
