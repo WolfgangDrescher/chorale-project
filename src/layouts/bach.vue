@@ -1,4 +1,5 @@
 <script setup>
+const localePath = useLocalePath();
 useHead({
     titleTemplate: (titleChunk) => {
         return titleChunk ? `${titleChunk} | Chorale Project` : 'Chorale Project';
