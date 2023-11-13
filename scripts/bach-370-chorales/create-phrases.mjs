@@ -16,8 +16,8 @@ function getIdFromFilePath(path) {
     return path.split(/[\\\/]/).pop().split('.')[0];
 }
 
-const yamlPath = `${__dirname}/../../content/bach-cadences`;
-const kernPath = `${__dirname}/../../kern/bach-cadences`;
+const yamlPath = `${__dirname}/../../content/bach-phrases`;
+const kernPath = `${__dirname}/../../kern/bach-phrases`;
 
 execSync(`rm -rf ${yamlPath}/*`);
 execSync(`mkdir -p ${yamlPath}`);

@@ -1,5 +1,5 @@
 <script setup>
-const { data: cadenceData } = await useAsyncData('/bach-cadences', () => queryContent('/bach-cadences').find())
+const { data: cadenceData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
 const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
 const chorales = createBachChorales(choraleData.value, cadenceData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
@@ -26,7 +26,7 @@ onMounted(() => {
     });
 });
 
-const choraleLines = computed(() => {
+const phrases = computed(() => {
     return filteredElements.value.map(c => c.cadences).flat().filter(choraleLine => {
         const filterCadenceDegrees = (cadenceDegrees) => {
             if (!cadenceDegrees || !cadenceDegrees.length) return true;
@@ -40,9 +40,9 @@ const choraleLines = computed(() => {
     });
 });
 
-const { items, addItems } = useArrayLoader(choraleLines);
+const { items, addItems } = useArrayLoader(phrases);
 
-const totalChoraleLines = computed(() => {
+const totalPhrases = computed(() => {
     return chorales.reduce((accumulator, chorale) => accumulator + chorale.cadences.length, 0);
 });
 
@@ -60,7 +60,7 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
 <template>
     <Container>
 
-        <Heading>{{ $t('choraleLines') }}</Heading>
+        <Heading>{{ $t('choralePhrases') }}</Heading>
 
         <div class="grid grid-cols-4 gap-4 mb-4">
             <div>
@@ -73,11 +73,11 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
 
         <div class="my-4 flex flex-col md:flex-row gap-4">
             <div class="flex items-center">
-                {{ $t('nOutOfTotalChoraleLinesFoundForSerachParams', { n: choraleLines.length, total: totalChoraleLines }) }}
+                {{ $t('nOutOfTotalPhrasesFoundForSerachParams', { n: phrases.length, total: totalPhrases }) }}
             </div>
         </div>
 
-        <InfiniteScroll @load="addItems()" :all="items.length === choraleLines.length">
+        <InfiniteScroll @load="addItems()" :all="items.length === phrases.length">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div v-for="choraleLine in items" :key="choraleLine.id">
                     <ChoraleLineListItem :chorale-line="choraleLine" />

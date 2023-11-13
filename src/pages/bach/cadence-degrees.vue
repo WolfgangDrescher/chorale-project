@@ -120,7 +120,7 @@ const totalTableItems = computed(() => {
             <DataTable small :items="totalTableItems" :headers="totalTableHeaders">
                 <template #[`item.fbFigure`]="{ item }">
                     <div class="text-center font-bold">
-                        <NuxtLink v-if="item.fbFigure !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { fb: item.fbFigure } })">
+                        <NuxtLink v-if="item.fbFigure !== t('total')" :href="localePath({ name: 'bach-phrases', query: { fb: item.fbFigure } })">
                             <code class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigure }}</code>
                         </NuxtLink>
                         <code v-else class="text-xs bg-gray-100 rounded p-1">{{ item.fbFigure }}</code>
@@ -129,7 +129,7 @@ const totalTableItems = computed(() => {
                 <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigure' && a !== 'total')" #[`item.${i}`]="{ item }">
                     <div class="text-center">
                         <template v-if="item[i]">
-                            <NuxtLink v-if="item.fbFigure !== t('total')" :href="localePath({ name: 'bach-chorale-lines', query: { degree: i, fb: item.fbFigure } })">
+                            <NuxtLink v-if="item.fbFigure !== t('total')" :href="localePath({ name: 'bach-phrases', query: { degree: i, fb: item.fbFigure } })">
                                 {{ item[i] }}
                             </NuxtLink>
                             <template v-else>
@@ -147,7 +147,7 @@ const totalTableItems = computed(() => {
                 </template>
                 <template v-for="i in totalTableHeaders.map(a => a.value).filter(a => a !== 'fbFigure' && a !== 'total')" #[`head.${i}`]="{ field }">
                     <div class="text-center font-serif">
-                        <NuxtLink :href="localePath({ name: 'bach-chorale-lines', query: { degree: field.value } })">
+                        <NuxtLink :href="localePath({ name: 'bach-phrases', query: { degree: field.value } })">
                             {{ field.text }}
                         </NuxtLink>
                     </div>
