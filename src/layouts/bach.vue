@@ -9,9 +9,9 @@ useHead({
 <template>
     <NuxtLayout name="default">
         <template #subnav>
-            <NavigationItem :href="localePath('bach')" @click="onClick">{{ $t('chorales') }}</NavigationItem>
-            <NavigationItem :href="localePath('bach-cadence-degrees')" @click="onClick">{{ $t('phraseDegrees') }}</NavigationItem>
-            <NavigationItem :href="localePath('bach-phrases')" @click="onClick">{{ $t('choralePhrases') }}</NavigationItem>
+            <NavigationItem :href="localePath('bach')">{{ $t('chorales') }}</NavigationItem>
+            <NavigationItem :href="localePath('bach-cadence-degrees')">{{ $t('phraseDegrees') }}</NavigationItem>
+            <NavigationItem :href="localePath('bach-phrases')">{{ $t('choralePhrases') }}</NavigationItem>
         </template>
         <NuxtPage></NuxtPage>
     </NuxtLayout>
