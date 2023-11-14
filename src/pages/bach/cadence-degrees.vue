@@ -47,11 +47,11 @@ const tableItems = computed(() => {
             title: chorale.fullTitle,
             nr: chorale.nr,
         };
-        chorale.phrases.forEach((cadence, index) => {
-            result[index + 1] = romanizeDeg(cadence.degree);
-        });
-        chorale.phrases.forEach((cadence, index) => {
-            result[`${index + 1}.fb`] = cadence.fb;
+        chorale.phrases.forEach((phrase, index) => {
+            result[index + 1] = romanizeDeg(phrase.degree);
+            result[`${index + 1}.fb`] = phrase.fb;
+            result[`${index + 1}.phraseId`] = phrase.id;
+            result[`${index + 1}.filename`] = phrase.filename;
         });
         return result;
 
@@ -104,6 +104,14 @@ const totalTableItems = computed(() => {
 
     return result;
 });
+
+const openModal = ref(null);
+const modalScoreData = ref('');
+async function loadScoreData(filename) {
+    modalScoreData.value = '';
+    const response = await $fetch(`/kern/bach-phrases/${filename}`);
+    modalScoreData.value = await response.text();
+}
 </script>
 
 <template>
@@ -163,9 +171,14 @@ const totalTableItems = computed(() => {
                 <template v-for="i in 23" #[`item.${i}`]="{ item }">
                     <div class="text-center">
                         <template v-if="item[`${i}`]">
-                            <span class="font-serif">{{ item[`${i}`] }}</span>
-                            <span class="text-gray-300">/</span>
-                            <code class="text-xs bg-gray-100 rounded p-1">{{ item[`${i}.fb`] }}</code>
+                            <button @click="openModal = item[`${i}.phraseId`]; loadScoreData(item[`${i}.filename`])">
+                                <span class="font-serif">{{ item[`${i}`] }}</span>
+                                <span class="text-gray-300">/</span>
+                                <code class="text-xs bg-gray-100 rounded p-1">{{ item[`${i}.fb`] }}</code>
+                            </button>
+                            <Modal v-if="openModal === item[`${i}.phraseId`]" @close="openModal = null">
+                                <VerovioCanvas :data="modalScoreData" :scale="35" :page-margin="50" />
+                            </Modal>
                         </template>
                         <template v-else>–</template>
                     </div>
