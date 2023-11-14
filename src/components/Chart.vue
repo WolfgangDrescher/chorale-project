@@ -7,6 +7,7 @@ const defaultColors = [
 ];
 
 const props = defineProps(['config']);
+const emit = defineEmits(['chartMounted']);
 
 const { config } = toRefs(props);
 
@@ -41,6 +42,7 @@ watch(colorizedConfig, value => {
 
 onMounted(() => {
     chart = new Chart(chartElem.value, colorizedConfig.value);
+    emit('chartMounted', chart);
 });
 
 </script>

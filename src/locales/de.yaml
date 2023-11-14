@@ -41,3 +41,23 @@ phraseFbNumbers: Kadenzstufen Bezifferung
 choralePhrases: Choralzeilen
 nOutOfTotalPhrasesFoundForSerachParams: '{n} von {total} Choralzeilen gefunden'
 chorales: Choräle
+outerVoices: Aussenstimmen
+intervalMode: Intervall-Modus
+intervalPosition: Intervall-Position
+intervals: Intervalle
+figuresbass: Generalbass
+harmonicIntervals: Exakte Intervalle
+fbNumbers: Generalbassziffern
+nMore: +{n} weitere
+previous: Vorheriges
+next: Nächstes
+nOutOfTotalIntervalsFoundForSerachParams: '{n} von {total} Intervallen gefunden'
+phraseStart: Anfang einer Choralzeile
+phraseEnd:  Ende einer Choralzeile
+choraleStart: Anfang eines Chorals
+choraleEnd: Ende eines Chorals
+rhythmicPosition: Rhythmische Position
+quarterNotes: Viertelnoten
+eighthNotes: Achtelnoten
+eighthNotesNotQuater: Achtelnoten ohne Viertel
+sixteenthNotesNotEighth: Sechzehntelnoten ohne Achtel

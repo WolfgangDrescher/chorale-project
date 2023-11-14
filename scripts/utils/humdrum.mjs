@@ -60,3 +60,13 @@ export function resolveToken(lineIndex, spineIndex, lines) {
     }
     return null;
 }
+
+export function getResolvedTokenLineIndex(lineIndex, spineIndex, lines) {
+    for (let i = lineIndex; i >= 0; i--) {
+        const token = lines[i].split('\t')[spineIndex];
+        if (tokenIsDataRecord(token)) {
+            return i;
+        }
+    }
+    return null;
+}
