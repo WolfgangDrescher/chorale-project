@@ -34,6 +34,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | extractxx -k 1,4 | fb -ac | fb -ac --hint | beat -a | beat -ac`).toString().trim();
     const lines = output.split('\n');
 
+    const choraleSlices = [];
+
     let isPhraseStart = true;
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -43,7 +45,7 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
             // and if there is no rest in one of the two voice (fb will be `.`)
             if ((tokens[0] !== '.' || tokens[3] !== '.') && tokens[1] !== '.') {
                 const isPhraseEnd = tokens[0].includes(';') && tokens[3].includes(';');
-                slices.push({
+                choraleSlices.push({
                     choraleId,
                     lineIndex: i + 1,// `beat` will remove the first line of the chorales that start withb `!!!!SEGMENT`
                     beat: getBeat(tokens[4], choraleId),
@@ -51,12 +53,17 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
                     hint: tokens[2],
                     isPhraseStart,
                     isPhraseEnd,
+                    isChoraleStart: false,
+                    isChoraleEnd: false,
                 });
                 if (isPhraseStart) isPhraseStart = false;
                 if (isPhraseEnd) isPhraseStart = true;
             }
         }
     }
+    choraleSlices[0].isChoraleStart = true;
+    choraleSlices[choraleSlices.length - 1].isChoraleEnd = true;
+    slices.push(...choraleSlices);
 });
 
 writeYaml(yamlPath, slices);
