@@ -137,7 +137,7 @@ const openModal = ref(null);
 const modalScoreData = ref();
 async function loadScoreData(interval) {
     modalScoreData.value = null;
-    const response = await $fetch(`/bach-370-chorales/${interval.choraleId}.krn`)
+    const response = await $fetch(`/bach-370-chorales/${interval.choraleId}.krn`);
     const data = await  response.text();
     const lines = data.split('\n');
     for (let i = 0; i < lines.length; i++) {
