@@ -3,7 +3,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getFiles } from '../utils/fs.mjs'; 
 import { writeYaml } from '../utils/yaml.mjs'; 
-import { tokenIsDataRecord, lineIsFermataEnd } from '../utils/humdrum.mjs'; 
+import { tokenIsDataRecord } from '../utils/humdrum.mjs'; 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
