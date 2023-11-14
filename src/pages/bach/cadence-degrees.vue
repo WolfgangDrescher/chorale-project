@@ -176,7 +176,7 @@ async function loadScoreData(filename) {
                                 <span class="text-gray-300">/</span>
                                 <code class="text-xs bg-gray-100 rounded p-1">{{ item[`${i}.fb`] }}</code>
                             </button>
-                            <Modal v-if="openModal === item[`${i}.phraseId`]" @close="openModal = null">
+                            <Modal v-if="openModal === item[`${i}.phraseId`]" @close="openModal = null" :title="item[`${i}.phraseId`]">
                                 <VerovioCanvas :data="modalScoreData" :scale="35" :page-margin="50" />
                             </Modal>
                         </template>
