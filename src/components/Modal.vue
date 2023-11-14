@@ -1,5 +1,12 @@
 <script setup>
-defineEmits(['close']);
+import { onKeyStroke } from '@vueuse/core';
+
+defineProps(['title']);
+const emit = defineEmits(['close']);
+
+onKeyStroke('Escape', () => {
+   emit('close');
+});
 </script>
 
 <template>
