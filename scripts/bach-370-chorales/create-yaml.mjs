@@ -25,9 +25,15 @@ function getKey(file) {
     return matches ? `${matches[1]}${matches[2]}` : null;
 }
 
-function getCantusFirmusMelodicIntervals(file) {
-    // get melodic intervals of soprano voice but ignore other beats than quater notes
+function getCantusFirmusMelodicIntervalsQuarterNotesOnly(file) {
+    // get melodic intervals of soprano voice but ignore other beats than quarter notes
     const output = execSync(`extractxx -f 4 ${file} | ridxx -d | beat -a | sed -E '/\\t[0-9]+\\.[0-9]+$/d' | extractxx -f 1 | ridxx -LGTM | mint -d | ridxx -I | sed -E '/^\\[/d'`).toString().trim();
+    return output.split('\n').join(',');
+}
+
+function getCantusFirmusMelodicIntervals(file) {
+    // get melodic intervals of soprano voice
+    const output = execSync(`extractxx -f 4 ${file} | ridxx -d | extractxx -f 1 | ridxx -LGTM | mint | ridxx -I | sed -E '/^\\[/d'`).toString().trim();
     return output.split('\n').join(',');
 }
 
@@ -70,6 +76,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     chorale.key = getKey(file);
 
     chorale.nr = parseInt(id.replace('chor', ''), 10);
+
+    chorale.cantusFirmusMintQuarterNotes = getCantusFirmusMelodicIntervalsQuarterNotesOnly(file);
 
     chorale.cantusFirmusMint = getCantusFirmusMelodicIntervals(file);
 
