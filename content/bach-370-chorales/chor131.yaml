@@ -1,5 +1,5 @@
 cantusFirmusMint: '-M2,-M2,+M2,+P4,-m3,-M3,+M2,-M2,P1,P1,P1,+M2,+M2,-M2,-M2,-P4,P1,+M2,+M2,+m2,+M2,-m3,-M3,+P4,P1,P1,P1,+M2,+M2,-M2,-M2'
-cantusFirmusMintQuaterNotes: '-2,1,+4,-3,-3,+2,-2,1,1,1,+2,+2,-2,-2,-4,1,+2,+2,+2,+2,-3,-3,+4,1,1,1,+2,+2,-2,-2'
+cantusFirmusMintQuarterNotes: '-2,1,+4,-3,-3,+2,-2,1,1,1,+2,+2,-2,-2,-4,1,+2,+2,+2,+2,-3,-3,+4,1,1,1,+2,+2,-2,-2'
 id: chor131
 key: G
 measures: 10

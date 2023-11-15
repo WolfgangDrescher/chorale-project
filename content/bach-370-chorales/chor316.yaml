@@ -1,5 +1,5 @@
 cantusFirmusMint: +M3,-M2,+M2,+m2,+M2,-m3,r,+P4,P1,-M2,P1,-M2,P1,-m2,+m2,r,-m2,+P4,-M3,-m3,+M2,+m3,+M2,+M2,+m2,-m2,-M2,-M2,-m3,-M2,-M2,P1,-m2,+m2
-cantusFirmusMintQuaterNotes: +3,-2,+2,+2,+2,-3,r,+4,1,-2,1,-2,1,1,r,-2,+4,-5,+2,+3,+2,+2,+2,-2,-2,-2,-3,-2,-2,1,-2,+2
+cantusFirmusMintQuarterNotes: +3,-2,+2,+2,+2,-3,r,+4,1,-2,1,-2,1,1,r,-2,+4,-5,+2,+3,+2,+2,+2,-2,-2,-2,-3,-2,-2,1,-2,+2
 id: chor316
 key: G
 measures: 19
