@@ -52,6 +52,10 @@ export class BachChorale {
         return this._chorale.cantusFirmusMint;
     }
 
+    get cantusFirmusMintQuarterNotes() {
+        return this._chorale.cantusFirmusMintQuarterNotes;
+    }
+
     get measures() {
         return this._chorale.measures;
     }

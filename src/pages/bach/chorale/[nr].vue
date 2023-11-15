@@ -20,7 +20,7 @@ const chorales = createBachChorales(choralesData.value);
 // check for similar cantus firmi with levenshtein distance
 const similarities = chorales.map((c) => ({
     id: c.id,
-    distance: levenshtein(chorale.cantusFirmusMint, c.cantusFirmusMint),
+    distance: levenshtein(chorale.cantusFirmusMintQuarterNotes, c.cantusFirmusMintQuarterNotes),
 })).filter(s => s.distance <= 20);
 
 // get similar chorales
