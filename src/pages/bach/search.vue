@@ -46,12 +46,12 @@ function hrefBuilder(chorale) {
 <template>
     <Container>
 
-        <Heading>{{ $t('bachChorales') }}</Heading>
+        <Heading>{{ $t('cantusFirmusSearch') }}</Heading>
 
         <BachChoraleSearchFilter />
 
         <div>
-            <FormInputField v-model="q" :label="$t('searchInput')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
+            <FormInputField v-model="q" :label="$t('mintSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" class="text-2xl" />
         </div>
 
         <div class="my-4 flex flex-col md:flex-row gap-4">
