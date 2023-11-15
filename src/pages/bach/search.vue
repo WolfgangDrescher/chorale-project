@@ -54,8 +54,6 @@ function hrefBuilder(chorale) {
             <FormInputField v-model="q" :label="$t('searchInput')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
         </div>
 
-        {{ qValue }}
-
         <div class="my-4 flex flex-col md:flex-row gap-4">
             <div class="flex items-center">
                 {{ $t('nOutOfTotalChoralesFoundForSerachParams', { n: filteredChorales.length, total: chorales.length }) }}
