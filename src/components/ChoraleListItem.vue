@@ -1,10 +1,56 @@
 <script setup>
-defineProps({
+import { tokenIsDataRecord } from '../../scripts/utils/humdrum.mjs';
+
+const props = defineProps({
     chorale: {
         type: Object,
         required: true,
     },
-    hrefBuilder: Function
+    hrefBuilder: Function,
+    fullScore: Boolean,
+    highlightMint: String,
+});
+
+const kernScore = ref();
+
+function escapeRegex(string) {
+    return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+function highlightMintInKern(chorale, kern, mintString) {
+    if (mintString) {
+        const lines = kern.trim().split('\n');
+        lines.push('!!!RDF**kern: @ = marked note');
+        [chorale.cantusFirmusMint, chorale.cantusFirmusMint.replace(/[A-Za-z]/g, '')].forEach((choraleCantusFirmusMint) => {
+            const indices = [...choraleCantusFirmusMint.matchAll(new RegExp(escapeRegex(mintString), 'g'))].map(a => a.index);
+            indices.forEach((index) => {
+                const dataLinesBefore = choraleCantusFirmusMint.slice(0, index).split(',').length;
+                const mintStringItems = mintString.split(',').length;
+                let numberOfDataLines = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const cfToken = line.split('\t')?.[3] || '!';
+                    if (tokenIsDataRecord(cfToken)) {
+                        numberOfDataLines++;
+                        if (numberOfDataLines >= dataLinesBefore && numberOfDataLines <= dataLinesBefore + mintStringItems) {
+                            lines[i] = lines[i].split('\t').map((token, index) => {
+                                if (index === 3) return `${token}@`;
+                                return token;
+                            }).join('\t');
+                        }
+                    }
+                }
+            });
+        });
+        return lines.join('\n');
+    }
+    return kern;
+}
+
+onMounted(async () => {
+    const response = await $fetch(props.chorale.localRawFile);
+    const kern = await response.text();
+    kernScore.value = highlightMintInKern(props.chorale, kern, props.highlightMint);
 });
 </script>
 
@@ -35,7 +81,7 @@ defineProps({
             </div>
         </template>
         <div class="flex flex-col gap-4 mt-4">
-            <VerovioCanvas :url="chorale.localRawFile" :select="{measureRange: '1-4'}" view-mode="horizontal" :scale="35" lazy unload :lazy-delay="100" :options="{ pageMarginBottom: 30 }" />
+            <VerovioCanvas :data="kernScore" :select="fullScore ? {} : {measureRange: '1-4'}" view-mode="horizontal" :scale="35" lazy unload :lazy-delay="100" :options="{ pageMarginBottom: 30 }" />
         </div>
     </Card>
 </template>
