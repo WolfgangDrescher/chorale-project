@@ -55,6 +55,20 @@ function getCantusFirmusMelodicIntervals(file) {
     return mintLines.join(',').replaceAll(';,', ';');
 }
 
+function getHarmonicIntervals(file) {
+    const output = execSync(`cat ${file} | fb -caon --hint | extractxx -f 2 | ridxx -LGTM | ridxx -I`).toString().trim();
+    const hintLines = output.split('\n');
+    const kernOutput = execSync(`cat ${file} | extractxx -f 2 | ridxx -LGTM | ridxx -I`).toString().trim();
+    const kernLines = kernOutput.split('\n');
+    for (let i = 0; i < kernLines.length; i++) {
+        const line = kernLines[i];
+        if (tokenIsDataRecord(line) && line.includes(';')) {
+            hintLines[i] = `${hintLines[i]};`;
+        }
+    }
+    return hintLines.join(',').replaceAll(';,', ';');
+}
+
 function getNumberOfMeasures(file) {
     // get last measure number
     const stdout = execSync(`cat ${file}`).toString();
@@ -108,6 +122,8 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     chorale.measures = getNumberOfMeasures(file);
 
     chorale.timeSignature = getTimeSignature(file);
+
+    chorale.harmonicIntervals = getHarmonicIntervals(file);
 
     writeYaml(yamlFile, chorale);
 });
