@@ -181,7 +181,6 @@ onKeyStroke('ArrowLeft', () => {
 onKeyStroke('ArrowRight', () => {
     if (activeIndex !== null) loadIndex(activeIndex + 1)
 });
-
 </script>
 
 <template>
