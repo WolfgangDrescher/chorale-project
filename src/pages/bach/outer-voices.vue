@@ -153,7 +153,13 @@ async function loadScoreData(interval) {
             });
         }
     }
-    lines.push('!!!filter: extract -k 1,4 | rid -glid | fb -ci');
+    if (modalFilter.hideMiddleVoices) {
+        lines.push('!!!filter: extract -s 1,4');
+    }
+    lines.push(`!!!filter: rid -glid | fb -ci -k 1,$`);
+    if (modalFilter.satb2gs) {
+        lines.push('!!!filter: satb2gs');
+    }
     lines.push('!!!RDF**kern: @ = marked note');
     modalScoreData.value = lines.join('\n');
     openModal.value = `${interval.choraleId}${interval.lineIndex}`;
@@ -175,11 +181,20 @@ function loadIndex(index) {
 }
 
 onKeyStroke('ArrowLeft', () => {
-    if (activeIndex !== null) loadIndex(activeIndex - 1)
+    if (activeIndex !== null) loadIndex(activeIndex - 1);
 });
 
 onKeyStroke('ArrowRight', () => {
-    if (activeIndex !== null) loadIndex(activeIndex + 1)
+    if (activeIndex !== null) loadIndex(activeIndex + 1);
+});
+
+const modalFilter = reactive({
+    hideMiddleVoices: true,
+    satb2gs: false,
+});
+
+watch(modalFilter, () => {
+    loadIndex(activeIndex)
 });
 </script>
 
@@ -218,7 +233,15 @@ onKeyStroke('ArrowRight', () => {
         <Badge v-for="(interval, index) in limitedIntervals" :key="`${interval.choraleId}${interval.lineIndex}`" @click="loadIndex(index)">
             {{ `${parseInt(interval.choraleId.replaceAll(/\D/g, ''), 10)}/${interval.lineIndex + 1}` }}
             <Modal v-if="openModal === `${interval.choraleId}${interval.lineIndex}`" @close="closeModal" :title="`${interval.choraleId} / ${interval.lineIndex + 1}`">
-                <VerovioCanvas :data="modalScoreData" :scale="35" :page-margin="50" />
+                <div class="flex gap-4">
+                    <div>
+                        <FormCheckbox v-model="modalFilter.hideMiddleVoices" :label="$t('humdrumFilter.HideMiddleVoicesFilter')" group-label="" />
+                    </div>
+                    <div v-if="!modalFilter.hideMiddleVoices">
+                        <FormCheckbox v-model="modalFilter.satb2gs" :label="$t('humdrumFilter.Satb2gsFilter')" group-label="" />
+                    </div>
+                </div>
+                <VerovioCanvas v-if="modalScoreData"  :data="modalScoreData" :scale="35" :page-margin="50" :key="modalScoreData" />
                 <div class="flex gap-4">
                     <FormButton v-if="limitedIntervals[index - 1]" @click="loadIndex(index - 1)" ref="prev" class="mr-auto">{{ $t('previous') }}</FormButton>
                     <FormButton v-if="limitedIntervals[index + 1]" @click="loadIndex(index + 1)" ref="next" class="ml-auto">{{ $t('next') }}</FormButton>
