@@ -11,16 +11,23 @@ useHead({
 });
 
 const filter = reactive({
-    q: '',
+    mint: '',
+    hint: '',
     ignoreFermatas: true,
 });
 
-watch(() => filter.q, (value) => {
-    router.replace({ query: { q: value } });
+watch(filter, (value) => {
+    router.replace({
+        query: {
+            mint: value.mint || undefined,
+            hint: value.hint || undefined,
+        },
+    });
 });
 
 onMounted(() => {
-    filter.q = route.query.q;
+    filter.mint = route.query.mint;
+    filter.hint = route.query.hint;
 });
 
 const router = useRouter();
@@ -31,18 +38,31 @@ const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => que
 const chorales = createBachChorales(choraleData.value, phrasesData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 
-const qValue = computed(() => {
-    return filter.q?.replace(/^[,;]+/g, '').replaceAll(/\s*,\s+|\s+/g, ',').replace(';', filter.ignoreFermatas ? ',' : ';');
+const mintValue = computed(() => {
+    return filter.mint?.replace(/^[,;]+/g, '').replaceAll(/\s*,\s+|\s+/g, ',').replace(';', filter.ignoreFermatas ? ',' : ';');
+});
+
+const hintValue = computed(() => {
+    return filter.hint?.replace(/^[,;]+/g, '').replaceAll(/\s*,\s+|\s+/g, ',').replace(';', filter.ignoreFermatas ? ',' : ';');
 });
 
 const filteredChorales = computed(() => {
     return filteredElements.value.filter(c => {
         const mintNoQuality = c.cantusFirmusMint.replace(/[AdmMP]/g, '').replace(';', filter.ignoreFermatas ? ',' : ';');
-        const mint = c.cantusFirmusMint.replace(';', filter.ignoreFermatas ? ',' : ';');
-        const q = qValue.value;
-        return !q ||
-        mintNoQuality.includes(q) ||
-        mint.includes(q);
+        const mintString = c.cantusFirmusMint.replace(';', filter.ignoreFermatas ? ',' : ';');
+        const mint = mintValue.value;
+        const hintNoQuality = c.harmonicIntervals.replace(/[AdmMP]/g, '').replace(';', filter.ignoreFermatas ? ',' : ';');
+        const hintString = c.harmonicIntervals.replace(';', filter.ignoreFermatas ? ',' : ';');
+        const hint = hintValue.value;
+        return (
+            !mint ||
+            mintNoQuality.includes(mint) ||
+            mintString.includes(mint)
+        ) && (
+            !hint ||
+            hintNoQuality.includes(hint) ||
+            hintString.includes(hint)
+        );
     });
 });
 
@@ -60,10 +80,15 @@ function hrefBuilder(chorale) {
 
         <BachChoraleSearchFilter />
 
+        {{ hintValue }}
+
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <FormInputField v-model="filter.q" :label="$t('mintCantusFirmusSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
+                <FormInputField v-model="filter.mint" :label="$t('mintCantusFirmusSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
             </div>
+                <div>
+                    <FormInputField v-model="filter.hint" :label="$t('hintSearch')" placeholder="6 4 3 or M2 A4 M6" />
+                </div>
             <div>
                 <FormCheckbox v-model="filter.ignoreFermatas" :label="$t('ignoreFermatas')" group-label="" />
             </div>
@@ -77,8 +102,15 @@ function hrefBuilder(chorale) {
 
         <InfiniteScroll @load="addItems()" :all="items.length === filteredElements.length">
             <div class="grid grid-cols-1 gap-4">
-                <div v-for="chorale in items" :key="`${chorale.id}${qValue}`">
-                    <ChoraleListItem :chorale="chorale" :href-builder="hrefBuilder" full-score :highlight-mint="qValue" :highlight-ignore-fermatas="filter.ignoreFermatas"/>
+                <div v-for="chorale in items" :key="`${chorale.id}/${filteredElements.map(e => e.id)}}`">
+                    <ChoraleListItem
+                        :chorale="chorale"
+                        :href-builder="hrefBuilder"
+                        full-score
+                        :highlight-mint="mintValue"
+                        :highlight-hint="hintValue"
+                        :highlight-ignore-fermatas="filter.ignoreFermatas"
+                    />
                 </div>
             </div>
         </InfiniteScroll>
