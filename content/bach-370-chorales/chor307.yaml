@@ -1,5 +1,6 @@
 cantusFirmusMint: P1,P1,P1,-M2,-M2,-m2;-M2,-m2,+m2,+M2,+m2,+M2,-M2,-m2;-M2,+M2,+m2,-m2,-M2,P1,-M2,-M2,-m2;-M2,-m2,+m2,+M2,+m2,+M2,-M2,-m2;+P4,P1,P1,-M2,-M2,-m2,-M2;+P4,+M2,+M2,+m2,+M2,+M2,-M2,-M2,-m2;-M2,+M2,+m2,-m2,-M2,P1,-M2,-M2,-m2;-M2,-M2,+M2,+M2,+m2,+M2,+M2,-M2,-M2,-m2;
 cantusFirmusMintQuarterNotes: 1,1,1,-2,-2,-2;-2,-2,+2,+2,+3,-2,-2;-2,+2,+2,-3,1,-3,-2;-2,-2,+2,+2,+3,-2,-2;+4,1,1,-2,-2,-2,-2;+4,+2,+2,+2,+2,+2,-2,-2,-2;-2,+2,+2,-3,1,-3,-2;-2,-2,+2,+2,+3,+2,-2,-2,-2;
+harmonicIntervals: P5 M3,m7 P4 m3,m6 m3,m7 M3,P5 m3,m7 P4 m3,M6 M3,P5 m3,m6 d5 m3,m6 d5 m3,M9 P5 m3,P5 m3,P5 P4,P5 M3;P5 M3,M6 M3,P5 M3,M6 A4 M2,M6 M3,M6 A4,M6 m3,P5 m3,m6 P4 M2,m6 d5 m3,M9 P5 m3,M6 M3,P5 P4;P5 M3,P5 M3,m6 P4 m3,M6 m3,m6 m3,m6 P5 m3,M9 P5 M3,M6 M3,m6 m3,m6 d5 m3,M9 P5 m3,P5 m3,P5 M3;P5 M3,M6 M3,P5 M3,M6 A4 M2,M6 M3,M6 A4,M6 m3,P5 m3,m6 P4 M2,m6 d5 m3,M9 P5 m3,M6 M3,P5 M3;P5 M3,M9 P4 m3,m6 m3,M7 P5 M2,M6 P4,M6 M3,M6 M2,P5 M3,d7 d5 m3,M9 P5 m3,P5 m3,P5 P4,P5 M3,m7 P5 M3,m3;P5 m3,m6 m3,m7 d5 m3,m6 m3,m6 d5 m3,P5 M3,M6 A4,m6 m3,m6,m7 m3,P5 M3,P5 M3,M6 M3,M6 P4 M2,m6 d5 m3,P5 P4,m6 m3,P5 M3;P5 m3,M6 m3,P5 M3,M6 A4 M2,m6 m3,m6 P5 m3,P5 M3,M6 P4 m3,P5 m3,m7 m3,M6 M3,m7 P5 M2,P5 P4;P5 M3,M6 M3,M6 M3,m6 d5 m3,m6 m3,P5 m3,M6 m3,P5 M3,P5 P4 M2,P5 M3,M6 A4 M2,m6 m3,P5 M3,P5 P4,P5 M3,m7 P5 M3,M9 P5 m3,M6 m3,m7 P5 m3,P5 M3;
 id: chor307
 key: a
 measures: 17

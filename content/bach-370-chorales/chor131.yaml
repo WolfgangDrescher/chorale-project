@@ -1,5 +1,6 @@
 cantusFirmusMint: '-M2,-M2,+M2,+P4,-m3,-M3,+M2;-M2,P1,P1,P1,+M2,+M2,-M2,-M2;-P4,P1,+M2,+M2,+m2,+M2,-m3,-M3;+P4,P1,P1,P1,+M2,+M2,-M2,-M2;'
 cantusFirmusMintQuarterNotes: '-2,1,+4,-3,-3,+2;-2,1,1,1,+2,+2,-2,-2;-4,1,+2,+2,+2,+2,-3,-3;+4,1,1,1,+2,+2,-2,-2;'
+harmonicIntervals: P5 M3,M9 P5 M3,M9 P5 M3,P5 M3,P5 M2,m6 m3,m7 P4 M2,P5 M3,P5 M3,M9 P4 m3,m6 m3,M6 P5,P5 M3;P5 m3,P5 m3,m9 P5 m3,M6 P4 m3,P5 M3,P5 M3,P5 M2,m6 m3,P5 m3,M6 m3,P5 M3,m6 m3,M6 P5 M3,m7 m3,P5 M3,P5 M3,m7 P5 M3,P5 M3;P5 M3,P5 M3,P5 M2,m6 m3,P5 m3,M6 m3,P5 M3,M6 P4 M2,m6 m3,P5 M3,P5 M3;m6 m3,M3,m7 m3,m6 d5 m3,P5 M3,M9 P4 M3,P5 M3,m7 m6 P4,m6 P4,P5 m3,M6 m3,P5 M3,m6 m3,P5 P4,P5 M2,P5 M3,m7 P5 M3,P5 M3;
 id: chor131
 key: G
 measures: 10
