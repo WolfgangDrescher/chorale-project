@@ -61,6 +61,6 @@ quarterNotes: Viertelnoten
 eighthNotes: Achtelnoten
 eighthNotesNotQuater: Achtelnoten ohne Viertel
 sixteenthNotesNotEighth: Sechzehntelnoten ohne Achtel
-cantusFirmusSearch: Cantus firmus Suche
-mintSearch: Intervallschritte durchsuchen
+search: Suchen
+mintCantusFirmusSearch: Intervallschritte im Cantus firmus durchsuchen
 ignoreFermatas: Fermaten ignorieren

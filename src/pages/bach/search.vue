@@ -56,13 +56,13 @@ function hrefBuilder(chorale) {
 <template>
     <Container>
 
-        <Heading>{{ $t('cantusFirmusSearch') }}</Heading>
+        <Heading>{{ $t('search') }}</Heading>
 
         <BachChoraleSearchFilter />
 
         <div class="grid grid-cols-2 gap-4">
             <div>
-                <FormInputField v-model="filter.q" :label="$t('mintSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
+                <FormInputField v-model="filter.q" :label="$t('mintCantusFirmusSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
             </div>
             <div>
                 <FormCheckbox v-model="filter.ignoreFermatas" :label="$t('ignoreFermatas')" group-label="" />
