@@ -10,14 +10,17 @@ useHead({
     title: t('bachChorales'),
 });
 
-const q = ref();
+const filter = reactive({
+    q: '',
+    ignoreFermatas: true,
+});
 
-watch(q, (value) => {
-    router.replace({ query: { q: toRaw(value) } });
+watch(filter, (value) => {
+    router.replace({ query: value });
 });
 
 onMounted(() => {
-    q.value = route.query.q;
+    filter.q = route.query.q;
 });
 
 const router = useRouter();
@@ -29,11 +32,18 @@ const chorales = createBachChorales(choraleData.value, phrasesData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 
 const qValue = computed(() => {
-    return q.value?.replace(/^,+|,+$/g, '').split(/(?=[+\-])\s*|\s*,\s*|\s+/).filter(n => n).join(',');
+    return filter.q?.replace(/^[,;]+/g, '').replaceAll(/\s*,\s+|\s+/g, ',').replace(';', filter.ignoreFermatas ? ',' : ';');
 });
 
 const filteredChorales = computed(() => {
-    return filteredElements.value.filter(c => !qValue.value || c.cantusFirmusMint.replace(/[A-Za-z]/g, '').includes(qValue.value) || c.cantusFirmusMint.includes(qValue.value));
+    return filteredElements.value.filter(c => {
+        const mintNoQuality = c.cantusFirmusMint.replace(/[AdmMP]/g, '').replace(';', filter.ignoreFermatas ? ',' : ';');
+        const mint = c.cantusFirmusMint.replace(';', filter.ignoreFermatas ? ',' : ';');
+        const q = qValue.value;
+        return !q ||
+        mintNoQuality.includes(q) ||
+        mint.includes(q);
+    });
 });
 
 const { items, addItems } = useArrayLoader(filteredChorales);
@@ -50,8 +60,13 @@ function hrefBuilder(chorale) {
 
         <BachChoraleSearchFilter />
 
-        <div>
-            <FormInputField v-model="q" :label="$t('mintSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" class="text-2xl" />
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <FormInputField v-model="filter.q" :label="$t('mintSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
+            </div>
+            <div>
+                <FormCheckbox v-model="filter.ignoreFermatas" :label="$t('ignoreFermatas')" group-label="" />
+            </div>
         </div>
 
         <div class="my-4 flex flex-col md:flex-row gap-4">
@@ -63,7 +78,7 @@ function hrefBuilder(chorale) {
         <InfiniteScroll @load="addItems()" :all="items.length === filteredElements.length">
             <div class="grid grid-cols-1 gap-4">
                 <div v-for="chorale in items" :key="`${chorale.id}${qValue}`">
-                    <ChoraleListItem :chorale="chorale" :href-builder="hrefBuilder" full-score :highlight-mint="qValue"/>
+                    <ChoraleListItem :chorale="chorale" :href-builder="hrefBuilder" full-score :highlight-mint="qValue" :highlight-ignore-fermatas="filter.ignoreFermatas"/>
                 </div>
             </div>
         </InfiniteScroll>

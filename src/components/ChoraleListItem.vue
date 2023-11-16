@@ -9,6 +9,7 @@ const props = defineProps({
     hrefBuilder: Function,
     fullScore: Boolean,
     highlightMint: String,
+    highlightIgnoreFermatas: String,
 });
 
 const kernScore = ref();
@@ -21,11 +22,15 @@ function highlightMintInKern(chorale, kern, mintString) {
     if (mintString) {
         const lines = kern.trim().split('\n');
         lines.push('!!!RDF**kern: @ = marked note');
-        [chorale.cantusFirmusMint, chorale.cantusFirmusMint.replace(/[A-Za-z]/g, '')].forEach((choraleCantusFirmusMint) => {
+        mintString = mintString.replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';');
+        [
+            chorale.cantusFirmusMint.replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';'),
+            chorale.cantusFirmusMint.replace(/[AdmMP]/g, '').replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';'),
+        ].forEach((choraleCantusFirmusMint) => {
             const indices = [...choraleCantusFirmusMint.matchAll(new RegExp(escapeRegex(mintString), 'g'))].map(a => a.index);
             indices.forEach((index) => {
-                const dataLinesBefore = choraleCantusFirmusMint.slice(0, index).split(',').length;
-                const mintStringItems = mintString.split(',').length;
+                const dataLinesBefore = choraleCantusFirmusMint.slice(0, index).split(/,|;/).length;
+                const mintStringItems = mintString.replace(/[,;]$/, '').split(/,|;/).length;
                 let numberOfDataLines = 0;
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];
