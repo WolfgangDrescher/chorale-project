@@ -11,7 +11,7 @@ export default defineNuxtConfig({
                 { hid: 'robots', name: 'robots', content: process.env.DEPLOY_ENV === 'prod' ? 'all' : 'noindex' },
             ],
             link: [
-                { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg', sizes: 'any' },
+                // { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg', sizes: 'any' },
             ],
         },
     },
