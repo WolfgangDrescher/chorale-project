@@ -1,5 +1,5 @@
-cantusFirmusMint: '-M3,-m2,+m2,-m2,-m3,+m2,P1,-m2,+m6,P1,P1,+m2,-m2,-M2,P1,-M2,-m2,+m2,+M2,+M2,-M2,-M2,-m2,-M2,+M2,+m2,+M2,+M2,-P4,-M2'
-cantusFirmusMintQuarterNotes: '-3,1,-2,-3,+2,1,-2,+6,1,1,+2,-2,-2,-2,-2,+2,+2,+2,-2,-2,-2,-2,+2,+2,+2,-3,-2'
+cantusFirmusMint: '-M3,-m2,+m2,-m2;-m3,+m2,P1,-m2;+m6,P1,P1,+m2,-m2,-M2,P1,-M2;-m2,+m2,+M2,+M2,-M2,-M2,-m2;-M2,+M2,+m2,+M2,+M2,-P4,-M2;'
+cantusFirmusMintQuarterNotes: '-3,1,-2;-3,+2,1,-2;+6,1,1,+2,-2,-2,-2;-2,+2,+2,+2,-2,-2,-2;-2,+2,+2,+2,-3,-2;'
 id: chor057
 key: a
 measures: 8

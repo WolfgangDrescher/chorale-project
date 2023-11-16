@@ -1,5 +1,5 @@
-cantusFirmusMint: +M2,-M2,-M2,+M2,+P4,+M2,-M2,P1,-P4,+M3,+m2,+M2,+M2,P1,-M2,P1,+M2,-M2,-M2,-m3,-M2,+M3,+M2,+m2,-P5,+P4,-m3,-M3,+M3,-M2,P1
-cantusFirmusMintQuarterNotes: +2,-2,-2,+2,+4,+2,-2,1,-4,+3,+2,+2,+2,1,-2,1,+2,-3,-3,-2,+3,+2,+2,-5,+4,-3,-3,+3,-2,1
+cantusFirmusMint: +M2,-M2,-M2,+M2,+P4,+M2,-M2;P1,-P4,+M3,+m2,+M2,+M2,P1,-M2;P1,+M2,-M2,-M2,-m3,-M2,+M3,+M2,+m2;-P5,+P4,-m3,-M3,+M3,-M2,P1;
+cantusFirmusMintQuarterNotes: +2,-2,-2,+2,+4,+2,-2;1,-4,+3,+2,+2,+2,1,-2;1,+2,-3,-3,-2,+3,+2,+2;-5,+4,-3,-3,+3,-2,1;
 id: chor187
 key: G
 measures: 8
