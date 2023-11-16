@@ -33,7 +33,7 @@ const maxCadences = computed(() => {
 
 const tableHeaders = computed(() => {
     return [{
-        text: '#',
+        text: t('title'),
         value: 'id',
         align: 'center',
         cellBgColor: gray50,
@@ -184,6 +184,11 @@ async function loadScoreData(filename) {
                             </Modal>
                         </template>
                         <template v-else>–</template>
+                    </div>
+                </template>
+                <template #[`head.id`]="{ field }">
+                    <div class="text-left">
+                        {{ field.text }}
                     </div>
                 </template>
                 <template #[`item.id`]="{ item }">
