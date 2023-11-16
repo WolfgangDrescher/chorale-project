@@ -121,7 +121,7 @@ function onChartMounted(chart) {
 }
 
 function chartClickHandler(event) {
-    const points = chartInstance.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+    const points = chartInstance.getElementsAtEventForMode(event, 'nearest', { intersect: false, axis: 'x' }, true);
     if (points.length) {
         const firstPoint = points[0];
         // const label = chartInstance.data.labels[firstPoint.index];
