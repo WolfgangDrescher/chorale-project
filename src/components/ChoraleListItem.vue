@@ -9,7 +9,7 @@ const props = defineProps({
     hrefBuilder: Function,
     fullScore: Boolean,
     highlightMint: String,
-    highlightIgnoreFermatas: String,
+    highlightIgnoreFermatas: Boolean,
 });
 
 const kernScore = ref();
