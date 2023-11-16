@@ -15,8 +15,8 @@ const filter = reactive({
     ignoreFermatas: true,
 });
 
-watch(filter, (value) => {
-    router.replace({ query: value });
+watch(() => filter.q, (value) => {
+    router.replace({ query: { q: value } });
 });
 
 onMounted(() => {
