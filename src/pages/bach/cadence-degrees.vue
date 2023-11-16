@@ -165,6 +165,9 @@ async function loadScoreData(filename) {
                     </div>
                 </template>
             </DataTable>
+            <Hint>
+                {{ t('fbFigureInfoText') }}
+            </Hint>
             
             <Subheading>{{ $t('degreesOfAllChorales') }}</Subheading>
             <DataTable small :items="tableItems" :headers="tableHeaders">
