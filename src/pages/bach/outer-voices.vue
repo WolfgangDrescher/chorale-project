@@ -7,6 +7,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+const localePath = useLocalePath();
 
 useHead({
     title: t('phraseDegrees'),
@@ -233,6 +234,11 @@ watch(modalFilter, () => {
         <Badge v-for="(interval, index) in limitedIntervals" :key="`${interval.choraleId}${interval.lineIndex}`" @click="loadIndex(index)">
             {{ `${parseInt(interval.choraleId.replaceAll(/\D/g, ''), 10)}/${interval.lineIndex + 1}` }}
             <Modal v-if="openModal === `${interval.choraleId}${interval.lineIndex}`" @close="closeModal" :title="`${interval.choraleId} / ${interval.lineIndex + 1}`">
+                <template v-slot:title>
+                        <NuxtLink :href="localePath({ name: 'bach-chorale-nr', params: { nr: parseInt(interval.choraleId.replaceAll(/\D/g, ''), 10) } })">
+                            {{ interval.choraleId }}
+                        </NuxtLink>
+                </template>
                 <div class="flex gap-4">
                     <div>
                         <FormCheckbox v-model="modalFilter.hideMiddleVoices" :label="$t('humdrumFilter.HideMiddleVoicesFilter')" group-label="" />
