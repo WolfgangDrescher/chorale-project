@@ -1,5 +1,5 @@
 <script setup>
-import { tokenIsDataRecord } from '../../scripts/utils/humdrum.mjs';
+import { tokenIsDataRecord, getResolvedTokenLineIndex } from '../../scripts/utils/humdrum.mjs';
 
 const props = defineProps({
     chorale: {
@@ -9,6 +9,7 @@ const props = defineProps({
     hrefBuilder: Function,
     fullScore: Boolean,
     highlightMint: String,
+    highlightHint: String,
     highlightIgnoreFermatas: Boolean,
 });
 
@@ -52,10 +53,46 @@ function highlightMintInKern(chorale, kern, mintString) {
     return kern;
 }
 
+function highlightHintInKern(chorale, kern, hintString) {
+    if (hintString) {
+        const lines = kern.trim().split('\n');
+        lines.push('!!!RDF**kern: | = marked note, color=blue');
+        hintString = hintString.replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';');
+        [
+            chorale.harmonicIntervals.replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';'),
+            chorale.harmonicIntervals.replace(/[AdmMP]/g, '').replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';'),
+        ].forEach((harmonicIntervals) => {
+            const indices = [...harmonicIntervals.matchAll(new RegExp(escapeRegex(hintString), 'g'))].map(a => a.index);
+            indices.forEach((index) => {
+                const dataLinesBefore = harmonicIntervals.slice(0, index).split(/,|;/).length;
+                const hintStringItems = hintString.replace(/[,;]$/, '').split(/,|;/).length;
+                let numberOfDataLines = 0;
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (tokenIsDataRecord(line)) {
+                        numberOfDataLines++;
+                        if (numberOfDataLines >= dataLinesBefore && numberOfDataLines < dataLinesBefore + hintStringItems) {
+                            line.split('\t').forEach((_, tokenIndex) => {
+                                const resolvedTokenLineIndex = getResolvedTokenLineIndex(i, tokenIndex, lines);
+                                lines[resolvedTokenLineIndex] = lines[resolvedTokenLineIndex].split('\t').map((token, ti) => {
+                                    return ti === tokenIndex ? `${token}|` : token;
+                                }).join('\t');
+                            });
+                        }
+                    }
+                }
+            });
+        });
+        return lines.join('\n');
+    }
+    return kern;
+}
+
 onMounted(async () => {
     const response = await $fetch(props.chorale.localRawFile);
     const kern = await response.text();
     kernScore.value = highlightMintInKern(props.chorale, kern, props.highlightMint);
+    kernScore.value = highlightHintInKern(props.chorale, kernScore.value, props.highlightHint);
 });
 </script>
 
