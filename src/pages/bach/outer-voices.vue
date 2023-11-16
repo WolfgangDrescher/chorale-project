@@ -81,7 +81,7 @@ const config = computed(() => ({
     type: 'bar',
     data: {
         datasets: [{
-            data: intervalCount.value.map(i => ({ x: i[0], y: i[1] }))
+            data: intervalCount.value.map(i => ({ x: i[0], y: i[1] })),
         }],
     },
     options: {
