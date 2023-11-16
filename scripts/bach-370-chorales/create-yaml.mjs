@@ -3,7 +3,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decode } from 'html-entities';
 import { getFiles, readFile } from '../utils/fs.mjs'; 
-import { parseHumdrumReferenceRecords } from '../utils/humdrum.mjs';
+import { parseHumdrumReferenceRecords, tokenIsDataRecord } from '../utils/humdrum.mjs';
 import { writeYaml } from '../utils/yaml.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -28,13 +28,31 @@ function getKey(file) {
 function getCantusFirmusMelodicIntervalsQuarterNotesOnly(file) {
     // get melodic intervals of soprano voice but ignore other beats than quarter notes
     const output = execSync(`extractxx -f 4 ${file} | ridxx -d | beat -a | sed -E '/\\t[0-9]+\\.[0-9]+$/d' | extractxx -f 1 | ridxx -LGTM | mint -d | ridxx -I | sed -E '/^\\[/d'`).toString().trim();
-    return output.split('\n').join(',');
+    const mintLines = output.split('\n');
+    const kernOutput = execSync(`extractxx -f 4 ${file} | ridxx -d | beat -a | sed -E '/\\t[0-9]+\\.[0-9]+$/d' | extractxx -f 1 | ridxx -LGTM | ridxx -I`).toString().trim();
+    const kernLines = kernOutput.split('\n');
+    for (let i = 0; i < kernLines.length; i++) {
+        const line = kernLines[i];
+        if (tokenIsDataRecord(line) && line.includes(';')) {
+            mintLines[i - 1] = `${mintLines[i - 1]};`;
+        }
+    }
+    return mintLines.join(',').replaceAll(';,', ';');
 }
 
 function getCantusFirmusMelodicIntervals(file) {
     // get melodic intervals of soprano voice
     const output = execSync(`extractxx -f 4 ${file} | ridxx -d | extractxx -f 1 | ridxx -LGTM | mint | ridxx -I | sed -E '/^\\[/d'`).toString().trim();
-    return output.split('\n').join(',');
+    const mintLines = output.split('\n');
+    const kernOutput = execSync(`extractxx -f 4 ${file} | ridxx -d | extractxx -f 1 | ridxx -LGTM | ridxx -I`).toString().trim();
+    const kernLines = kernOutput.split('\n');
+    for (let i = 0; i < kernLines.length; i++) {
+        const line = kernLines[i];
+        if (tokenIsDataRecord(line) && line.includes(';')) {
+            mintLines[i - 1] = `${mintLines[i-1]};`;
+        }
+    }
+    return mintLines.join(',').replaceAll(';,', ';');
 }
 
 function getNumberOfMeasures(file) {
