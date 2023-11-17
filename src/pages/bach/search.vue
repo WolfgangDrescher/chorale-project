@@ -87,7 +87,7 @@ function hrefBuilder(chorale) {
                 <FormInputField v-model="filter.mint" :label="$t('mintCantusFirmusSearch')" placeholder="+4,-2,-2,-2,-2,+2 or -P5,+P5,+m2" />
             </div>
                 <div>
-                    <FormInputField v-model="filter.hint" :label="$t('hintSearch')" placeholder="6 4 3 or M2 A4 M6" />
+                    <FormInputField v-model="filter.hint" :label="$t('hintSearch')" placeholder="6 4 3 or M6 A4 M2" />
                 </div>
             <div>
                 <FormCheckbox v-model="filter.ignoreFermatas" :label="$t('ignoreFermatas')" group-label="" />
