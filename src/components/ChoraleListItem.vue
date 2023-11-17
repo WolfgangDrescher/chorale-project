@@ -58,30 +58,27 @@ function highlightHintInKern(chorale, kern, hintString) {
         const lines = kern.trim().split('\n');
         lines.push('!!!RDF**kern: | = marked note, color=blue');
         hintString = hintString.replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';');
-        [
-            chorale.harmonicIntervals.replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';'),
-            chorale.harmonicIntervals.replace(/[AdmMP]/g, '').replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';'),
-        ].forEach((harmonicIntervals) => {
-            const indices = [...harmonicIntervals.matchAll(new RegExp(escapeRegex(hintString), 'g'))].map(a => a.index);
-            indices.forEach((index) => {
-                const dataLinesBefore = harmonicIntervals.slice(0, index).split(/,|;/).length;
-                const hintStringItems = hintString.replace(/[,;]$/, '').split(/,|;/).length;
-                let numberOfDataLines = 0;
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i];
-                    if (tokenIsDataRecord(line)) {
-                        numberOfDataLines++;
-                        if (numberOfDataLines >= dataLinesBefore && numberOfDataLines < dataLinesBefore + hintStringItems) {
-                            line.split('\t').forEach((_, tokenIndex) => {
-                                const resolvedTokenLineIndex = getResolvedTokenLineIndex(i, tokenIndex, lines);
-                                lines[resolvedTokenLineIndex] = lines[resolvedTokenLineIndex].split('\t').map((token, ti) => {
-                                    return ti === tokenIndex ? `${token}|` : token;
-                                }).join('\t');
-                            });
-                        }
+        const harmonicIntervalsString = hintString.match(/[AdmMP]/) ? chorale.harmonicIntervals : chorale.harmonicIntervals.replace(/[AdmMP]/g, '');
+        const harmonicIntervals = harmonicIntervalsString.replaceAll(';', props.highlightIgnoreFermatas ? ',' : ';');
+        const indices = [...harmonicIntervals.matchAll(new RegExp(escapeRegex(hintString), 'g'))].map(a => a.index);
+        indices.forEach((index) => {
+            const dataLinesBefore = harmonicIntervals.slice(0, index).split(/,|;/).length;
+            const hintStringItems = hintString.replace(/[,;]$/, '').split(/,|;/).length;
+            let numberOfDataLines = 0;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (tokenIsDataRecord(line)) {
+                    numberOfDataLines++;
+                    if (numberOfDataLines >= dataLinesBefore && numberOfDataLines < dataLinesBefore + hintStringItems) {
+                        line.split('\t').forEach((_, tokenIndex) => {
+                            const resolvedTokenLineIndex = getResolvedTokenLineIndex(i, tokenIndex, lines);
+                            lines[resolvedTokenLineIndex] = lines[resolvedTokenLineIndex].split('\t').map((token, ti) => {
+                                return ti === tokenIndex ? `${token}|` : token;
+                            }).join('\t');
+                        });
                     }
                 }
-            });
+            }
         });
         return lines.join('\n');
     }
