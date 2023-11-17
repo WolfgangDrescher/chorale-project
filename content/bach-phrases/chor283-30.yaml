@@ -5,12 +5,12 @@ endLine: 93
 endMeasure: 8
 endMeasureBeat: 3
 fb: '4'
-filename: 5466a4c8-0328-5ccb-86ac-a3ddd92c9060.krn
+filename: 9d81db7e-2742-5d94-af0f-d628bf3e235f.krn
 id: chor283-30
-startBeat: 20.5
-startLine: 73
-startMeasure: 6
-startMeasureBeat: 1.5
+startBeat: 24
+startLine: 78
+startMeasure: 7
+startMeasureBeat: 1
 voices:
     alto:
         interval: '8'
