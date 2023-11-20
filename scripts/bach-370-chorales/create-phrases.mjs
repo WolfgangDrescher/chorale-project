@@ -14,6 +14,7 @@ console.log('Create kern score and config for each phrase of the Bach chorales')
 const progressBar = new cliProgress.SingleBar({
     format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total} | {id}',
 }, cliProgress.Presets.shades_classic);
+
 const UUID_NAMESPACE = 'abe966bb-81ba-4760-bdbd-6688243eb522';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
