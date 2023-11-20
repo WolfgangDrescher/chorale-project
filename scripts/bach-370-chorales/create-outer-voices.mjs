@@ -3,7 +3,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getFiles } from '../utils/fs.mjs'; 
 import { writeYaml } from '../utils/yaml.mjs'; 
-import { tokenIsDataRecord } from '../utils/humdrum.mjs'; 
+import { tokenIsDataRecord, getResolvedTokenLineIndex } from '../utils/humdrum.mjs'; 
 import cliProgress from 'cli-progress';
 
 console.log('Create outer voices of the Bach chorales');
@@ -55,7 +55,9 @@ files.forEach(file => {
             // ignore line when both voices have a null token
             // and if there is no rest in one of the two voice (fb will be `.`)
             if ((tokens[0] !== '.' || tokens[3] !== '.') && tokens[1] !== '.') {
-                const isPhraseEnd = tokens[0].includes(';') && tokens[3].includes(';');
+                const bassLineIndex = getResolvedTokenLineIndex(i, 0, lines);
+                const sopranoLineIndex = getResolvedTokenLineIndex(i, 3, lines);
+                const isPhraseEnd = lines[bassLineIndex].split('\t')[0].includes(';') && lines[sopranoLineIndex].split('\t')[3].includes(';');
                 choraleSlices.push({
                     choraleId,
                     lineIndex: i + 1,// `beat` will remove the first line of the chorales that start withb `!!!!SEGMENT`
