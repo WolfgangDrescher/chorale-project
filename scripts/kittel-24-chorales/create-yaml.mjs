@@ -5,6 +5,13 @@ import { decode } from 'html-entities';
 import { getFiles, readFile } from '../utils/fs.mjs'; 
 import { parseHumdrumReferenceRecords } from '../utils/humdrum.mjs';
 import { writeYaml } from '../utils/yaml.mjs';
+import cliProgress from 'cli-progress';
+
+console.log('Create YAML config for Kittel chorales');
+
+const progressBar = new cliProgress.SingleBar({
+    format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total} | {id}',
+}, cliProgress.Presets.shades_classic);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -17,9 +24,14 @@ const yamlPath = `${__dirname}/../../content/kittel-24-chorales`;
 execSync(`rm -rf ${yamlPath}/*`);
 execSync(`mkdir -p ${yamlPath}`);
 
-getFiles(`${__dirname}/../../kittel-24-chorales/kern`).forEach(file => {
+const files = getFiles(`${__dirname}/../../kittel-24-chorales/kern`);
+
+progressBar.start(files.length, 0);
+
+files.forEach(file => {
     const id = getIdFromFilePath(file);
-    console.log(id);
+    progressBar.increment({ id });
+
     const yamlFile = `${yamlPath}/${id}.yaml`;
     const kern = readFile(file);
     const referenceRecords = parseHumdrumReferenceRecords(kern);
@@ -38,3 +50,5 @@ getFiles(`${__dirname}/../../kittel-24-chorales/kern`).forEach(file => {
 
     writeYaml(yamlFile, chorale);
 });
+
+progressBar.stop();

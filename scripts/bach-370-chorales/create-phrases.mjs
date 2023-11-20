@@ -7,7 +7,13 @@ import { lineIsFermataEnd, resolveToken, tokenIsDataRecord } from '../utils/humd
 import yaml from 'js-yaml'; 
 import { writeYaml } from '../utils/yaml.mjs';
 import { v5 as uuidv5 } from 'uuid';
+import cliProgress from 'cli-progress';
 
+console.log('Create kern score and config for each phrase of the Bach chorales');
+
+const progressBar = new cliProgress.SingleBar({
+    format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total} | {id}',
+}, cliProgress.Presets.shades_classic);
 const UUID_NAMESPACE = 'abe966bb-81ba-4760-bdbd-6688243eb522';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -77,9 +83,13 @@ function getStartBeat(lineIndex, lines) {
     return 0;
 }
 
-getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
+const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`);
+
+progressBar.start(files.length, 0);
+
+files.forEach(file => {
     const choraleId = getIdFromFilePath(file);
-    console.log(choraleId);
+    progressBar.increment({ id: choraleId });
     const key = getKey(choraleId);
     // fb -con3l => chor194-42 chor276-23 chor325-39
     // `beat` will remove the first line of the chorales that start withb `!!!!SEGMENT`
@@ -143,3 +153,5 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
         }
     }
 });
+
+progressBar.stop();

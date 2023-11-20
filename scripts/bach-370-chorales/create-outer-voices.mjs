@@ -4,6 +4,13 @@ import { fileURLToPath } from 'node:url';
 import { getFiles } from '../utils/fs.mjs'; 
 import { writeYaml } from '../utils/yaml.mjs'; 
 import { tokenIsDataRecord } from '../utils/humdrum.mjs'; 
+import cliProgress from 'cli-progress';
+
+console.log('Create outer voices of the Bach chorales');
+
+const progressBar = new cliProgress.SingleBar({
+    format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total} | {id}',
+}, cliProgress.Presets.shades_classic);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -27,9 +34,13 @@ function fixWrongBeats(id) {
 
 const slices = [];
 
-getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
+const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`);
+
+progressBar.start(files.length, 0);
+
+files.forEach(file => {
     const choraleId = getIdFromFilePath(file);
-    console.log(choraleId);
+    progressBar.increment({ id: choraleId });
 
     const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | extractxx -k 1,4 | fb -ac | fb -ac --hint | beat -a | beat -ac`).toString().trim();
     const lines = output.split('\n');
@@ -67,3 +78,5 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
 });
 
 writeYaml(yamlPath, slices);
+
+progressBar.stop();

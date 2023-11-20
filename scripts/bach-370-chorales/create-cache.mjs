@@ -6,6 +6,7 @@ import { getFiles, readFile } from '../utils/fs.mjs';
 import yaml from 'js-yaml'; 
 import { createBachChorales } from '../../src/utils/bach-chorale.js';
 
+console.log('Create cache of the Bach chorales for BachChoraleSearchFilter');
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const choralesData = getFiles(`${__dirname}/../../content/bach-370-chorales`).map(file => {

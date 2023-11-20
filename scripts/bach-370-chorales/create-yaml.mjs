@@ -5,6 +5,13 @@ import { decode } from 'html-entities';
 import { getFiles, readFile } from '../utils/fs.mjs'; 
 import { parseHumdrumReferenceRecords, tokenIsDataRecord } from '../utils/humdrum.mjs';
 import { writeYaml } from '../utils/yaml.mjs';
+import cliProgress from 'cli-progress';
+
+console.log('Create YAML config for Bach chorales');
+
+const progressBar = new cliProgress.SingleBar({
+    format: ' {bar} {percentage}% | ETA: {eta}s | {value}/{total} | {id}',
+}, cliProgress.Presets.shades_classic);
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -94,9 +101,13 @@ function getTimeSignature(file) {
     return null;
 }
 
-getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
+const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`)
+
+progressBar.start(files.length, 0);
+
+files.forEach(file => {
     const id = getIdFromFilePath(file);
-    console.log(id);
+    progressBar.increment({ id });
     const yamlFile = `${yamlPath}/${id}.yaml`;
     const kern = readFile(file);
     const referenceRecords = parseHumdrumReferenceRecords(kern);
@@ -126,4 +137,7 @@ getFiles(`${__dirname}/../../bach-370-chorales/kern`).forEach(file => {
     chorale.harmonicIntervals = getHarmonicIntervals(file);
 
     writeYaml(yamlFile, chorale);
+    progressBar.increment();
 });
+
+progressBar.stop();
