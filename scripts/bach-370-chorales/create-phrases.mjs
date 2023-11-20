@@ -62,11 +62,11 @@ function getCadenceStartInitialLineIndex(lines) {
 function getMeasureNumber(lineIndex, lines) {
     for (let i = lineIndex; i >= 0; i--) {
         const line = lines[i];
-        if (line.startsWith('=')) {
+        if (line.startsWith('=') && line.match(/^=\d+/)) {
             return parseInt(line.split('\t')[0].replaceAll(/\D/g, ''), 10);
         }
     }
-    return null;
+    return 0;
 }
 
 function getStartBeat(lineIndex, lines) {
