@@ -58,8 +58,15 @@ const intervals = computed(() => {
     });
 });
 
-const limitedIntervals = computed(() => {
-    return intervals.value.slice(0, 500);
+const groupedIntervals = computed(() => {
+    return Object.entries(intervals.value.reduce((accumulator, interval) => {
+        accumulator[interval.choraleId] = accumulator[interval.choraleId] ?? [];
+        accumulator[interval.choraleId].push(interval);
+        return accumulator;
+    }, {})).map(([choraleId, intervals]) => ({
+        choraleId,
+        intervals,
+    }));
 });
 
 const intervalCount = computed(() => {
@@ -136,23 +143,28 @@ function chartClickHandler(event) {
 
 const openModal = ref(null);
 const modalScoreData = ref();
-async function loadScoreData(interval) {
+async function loadScoreData(group) {
     modalScoreData.value = null;
-    const response = await $fetch(`/bach-370-chorales/${interval.choraleId}.krn`);
+    const response = await $fetch(`/bach-370-chorales/${group.choraleId}.krn`);
     const data = await  response.text();
     const lines = data.split('\n');
-    for (let i = 0; i < lines.length; i++) {
-        if (i === interval.lineIndex) {
-            [0, 3].forEach((tokenIndex) => {
-                const resolvedLineIndex = getResolvedTokenLineIndex(i, tokenIndex, lines);
-                lines[resolvedLineIndex] = lines[resolvedLineIndex].split('\t').map((token, ti) => {
-                    if (ti === tokenIndex) {
-                        return `${token}@`;
-                    }
-                    return token;
-                }).join('\t');
-            });
-        }
+    const choraleIntervalLength = outerVoicesData.value.body.filter(i => i.choraleId === group.choraleId).length;
+    if (group.intervals.length < choraleIntervalLength) {
+        group.intervals.forEach((interval) => {
+            for (let i = 0; i < lines.length; i++) {
+                if (i === interval.lineIndex) {
+                    [0, 3].forEach((tokenIndex) => {
+                        const resolvedLineIndex = getResolvedTokenLineIndex(i, tokenIndex, lines);
+                        lines[resolvedLineIndex] = lines[resolvedLineIndex].split('\t').map((token, ti) => {
+                            if (ti === tokenIndex) {
+                                return `${token}@`;
+                            }
+                            return token;
+                        }).join('\t');
+                    });
+                }
+            }
+        });
     }
     if (modalFilter.hideMiddleVoices) {
         lines.push('!!!filter: extract -s 1,4');
@@ -163,7 +175,7 @@ async function loadScoreData(interval) {
     }
     lines.push('!!!RDF**kern: @ = marked note');
     modalScoreData.value = lines.join('\n');
-    openModal.value = `${interval.choraleId}${interval.lineIndex}`;
+    openModal.value = group.choraleId;
 }
 
 function closeModal() {
@@ -174,7 +186,7 @@ function closeModal() {
 
 let activeIndex = null;
 function loadIndex(index) {
-    const item = limitedIntervals.value[index]; 
+    const item = groupedIntervals.value[index]; 
     if (item) {
         loadScoreData(item);
         activeIndex = index;
@@ -231,12 +243,12 @@ watch(modalFilter, () => {
             <Chart :config="config" @chart-mounted="onChartMounted" @click="chartClickHandler" />
         </div>
 
-        <Badge v-for="(interval, index) in limitedIntervals" :key="`${interval.choraleId}${interval.lineIndex}`" @click="loadIndex(index)">
-            {{ `${parseInt(interval.choraleId.replaceAll(/\D/g, ''), 10)}/${interval.lineIndex + 1}` }}
-            <Modal v-if="openModal === `${interval.choraleId}${interval.lineIndex}`" @close="closeModal" :title="`${interval.choraleId} / ${interval.lineIndex + 1}`">
+        <Badge v-for="(group, index) in groupedIntervals" :key="group.choraleId" @click="loadIndex(index)">
+            {{ `${group.choraleId} (${group.intervals.length})` }}
+            <Modal v-if="openModal === group.choraleId" @close="closeModal" :title="group.choraleId">
                 <template v-slot:title>
-                        <NuxtLink :href="localePath({ name: 'bach-chorale-nr', params: { nr: parseInt(interval.choraleId.replaceAll(/\D/g, ''), 10) } })">
-                            {{ interval.choraleId }}
+                        <NuxtLink :href="localePath({ name: 'bach-chorale-nr', params: { nr: parseInt(group.choraleId.replaceAll(/\D/g, ''), 10) } })">
+                            {{ group.choraleId }}
                         </NuxtLink>
                 </template>
                 <div class="flex gap-4">
@@ -249,13 +261,11 @@ watch(modalFilter, () => {
                 </div>
                 <VerovioCanvas v-if="modalScoreData"  :data="modalScoreData" :scale="35" :page-margin="50" :key="modalScoreData" />
                 <div class="flex gap-4">
-                    <FormButton v-if="limitedIntervals[index - 1]" @click="loadIndex(index - 1)" ref="prev" class="mr-auto">{{ $t('previous') }}</FormButton>
-                    <FormButton v-if="limitedIntervals[index + 1]" @click="loadIndex(index + 1)" ref="next" class="ml-auto">{{ $t('next') }}</FormButton>
+                    <FormButton v-if="groupedIntervals[index - 1]" @click="loadIndex(index - 1)" ref="prev" class="mr-auto">{{ $t('previous') }}</FormButton>
+                    <FormButton v-if="groupedIntervals[index + 1]" @click="loadIndex(index + 1)" ref="next" class="ml-auto">{{ $t('next') }}</FormButton>
                 </div>
             </Modal>
         </Badge>
-
-        <Badge v-if="limitedIntervals.length < intervals.length">{{ $t('nMore', intervals.length - limitedIntervals.length) }}</Badge>
 
     </Container>
 </template>
