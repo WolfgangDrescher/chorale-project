@@ -34,7 +34,7 @@ files.forEach(file => {
     const choraleId = getIdFromFilePath(file);
     progressBar.increment({ id: choraleId });
 
-    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | beat -a | extractxx -f 1,4,5 | fb -ac | fb -ac --hint`).toString().trim();
+    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | beat -a -A 0 | extractxx -f 1,4,5 | fb -ac | fb -ac --hint`).toString().trim();
     const lines = output.split('\n');
 
     const choraleSlices = [];
