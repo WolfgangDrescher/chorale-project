@@ -66,7 +66,7 @@ const totalTableHeaders = computed(() => {
             }
         });
         return accumulator;
-    }, []).sort(sortphraseDegrees).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
+    }, []).sort(sortPhraseDegrees).map(n => ({ text: romanizeDeg(n), value: n, align: 'center' }))
     return [{ text: t('fbFigure'), value: 'fbFigure', align: 'center' }, ...degreeItems, { text: t('total'), value: 'total', align: 'center', cellBgColor: gray50 }];
 });
 const totalTableItems = computed(() => {

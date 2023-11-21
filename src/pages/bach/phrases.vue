@@ -50,7 +50,7 @@ const totalPhrases = computed(() => {
     return chorales.reduce((accumulator, chorale) => accumulator + chorale.phrases.length, 0);
 });
 
-const cadenceDegreeOptions = [...new Set(chorales.map(chorale => chorale.phrases.map(c => c.degree)).flat().filter(n => n))].sort(sortphraseDegrees).map(degree => ({
+const cadenceDegreeOptions = [...new Set(chorales.map(chorale => chorale.phrases.map(c => c.degree)).flat().filter(n => n))].sort(sortPhraseDegrees).map(degree => ({
     value: degree,
     text: romanizeDeg(degree),
 }));
