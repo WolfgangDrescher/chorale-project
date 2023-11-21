@@ -21,15 +21,7 @@ function getIdFromFilePath(path) {
 const yamlPath = `${__dirname}/../../content/bach-outer-voices.yaml`;
 
 function getBeat(token, id) {
-    return parseFloat(token) || fixWrongBeats(id);
-}
-
-function fixWrongBeats(id) {
-    if (id === 'chor081') return 1;
-    if (id === 'chor113') return 1;
-    if (id === 'chor123') return 2;
-    if (id === 'chor346') return 3.5;
-    return null;
+    return parseFloat(token);
 }
 
 const slices = [];
@@ -42,7 +34,7 @@ files.forEach(file => {
     const choraleId = getIdFromFilePath(file);
     progressBar.increment({ id: choraleId });
 
-    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | extractxx -k 1,4 | fb -ac | fb -ac --hint | beat -a | beat -ac`).toString().trim();
+    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | beat -a | extractxx -f 1,4,5 | fb -ac | fb -ac --hint`).toString().trim();
     const lines = output.split('\n');
 
     const choraleSlices = [];
