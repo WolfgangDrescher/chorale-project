@@ -106,9 +106,15 @@ files.forEach(file => {
             // add 2; one for line index to line number + one for missing first line with `!!!!SEGMENT` because of the beat program
             const startLine = nextCadenceStartLineIndex + 2;
             const endLine = i + 2;
-            const kernScore = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | myank -I -l ${startLine}-${endLine} --hide-ending`).toString().trim();
-            const cadenceFilename = `${uuidv5(kernScore, UUID_NAMESPACE)}.krn`;
-            fs.writeFileSync(`${kernPath}/${cadenceFilename}`, kernScore);
+            let cadenceFilename = null;
+            try {
+                const kernScore = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | myank -I -l ${startLine}-${endLine} --hide-ending`).toString().trim();
+                const kernScoreFiltered = kernScore.split('\n').filter(l => !l.startsWith('!!xywh') && !l.startsWith('*>')).join('\n');
+                cadenceFilename = `${uuidv5(kernScoreFiltered, UUID_NAMESPACE)}.krn`;
+                fs.writeFileSync(`${kernPath}/${cadenceFilename}`, kernScoreFiltered);
+            } catch (e) {
+                console.error(`Error creating score for ${choraleId} lines ${startLine}-${endLine}`);
+            }
 
             // write yaml file
             const { beat: startBeat, measureBeat: startMeasureBeat} = getStartBeat(nextCadenceStartLineIndex, lines);
