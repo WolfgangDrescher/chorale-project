@@ -137,7 +137,6 @@ files.forEach(file => {
     chorale.harmonicIntervals = getHarmonicIntervals(file);
 
     writeYaml(yamlFile, chorale);
-    progressBar.increment();
 });
 
 progressBar.stop();
