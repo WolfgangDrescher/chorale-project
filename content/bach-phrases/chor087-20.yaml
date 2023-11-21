@@ -1,15 +1,15 @@
 choraleId: chor087
 degree: '1'
 endBeat: 20
-endLine: 49
-endMeasure: 6
+endLine: 53
+endMeasure: 0
 endMeasureBeat: 1
 fb: 5 3
-filename: 99f4835d-1485-5889-8465-11bb69649edd.krn
+filename: null
 id: chor087-20
 startBeat: 12
-startLine: 36
-startMeasure: 4
+startLine: 40
+startMeasure: 0
 startMeasureBeat: .nan
 voices:
     alto:

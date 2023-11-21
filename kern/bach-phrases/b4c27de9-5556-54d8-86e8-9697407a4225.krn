@@ -1,0 +1,34 @@
+!!!!SEGMENT: chor268.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Nun lob, mein Seel, den Herren
+!!!SCT: BWV 389
+!!!PC#: 268
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*C:	*C:	*C:	*C:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=:|!	=:|!	=:|!	=:|!
+4C	4G	4e	4cc
+=5	=5	=5	=5
+4F	4A	4f	8ccL
+.	.	.	8ddJ
+8EL	8GL	4cc	4ee
+8FJ	8AJ	.	.
+4G	4B	8gL	4dd
+.	.	8fJ	.
+4G#	4B	4e	4ee
+=6	=6	=6	=6
+4A	8B	2e	4cc
+.	4A	.	.
+4E	.	.	4b
+.	8G#	.	.
+4AA;	4c;	4e;	4a;
+*-	*-	*-	*-

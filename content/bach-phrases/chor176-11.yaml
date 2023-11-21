@@ -1,0 +1,22 @@
+choraleId: chor176
+degree: '5'
+endBeat: 11
+endLine: 40
+endMeasure: 4
+endMeasureBeat: 2
+fb: 5 3
+filename: 84539a0e-6681-5819-b054-d6929dbcb6e5.krn
+id: chor176-11
+startBeat: 0
+startLine: 18
+startMeasure: 0
+startMeasureBeat: 3
+voices:
+    alto:
+        interval: '3'
+    bass:
+        interval: null
+    soprano:
+        interval: '8'
+    tenor:
+        interval: '5'

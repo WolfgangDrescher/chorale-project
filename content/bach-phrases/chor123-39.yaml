@@ -1,14 +1,14 @@
 choraleId: chor123
 degree: '5'
 endBeat: 39
-endLine: 99
+endLine: 101
 endMeasure: 10
 endMeasureBeat: 3
 fb: 5 3
 filename: c2ebd89b-c58d-59f4-9da4-d3d21c8f67c4.krn
 id: chor123-39
 startBeat: 32
-startLine: 84
+startLine: 86
 startMeasure: 8
 startMeasureBeat: 4
 voices:
