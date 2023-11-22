@@ -165,7 +165,7 @@ files.forEach(file => {
 
             // write yaml file
             const { beat: startBeat, measureBeat: startMeasureBeat} = getStartBeat(nextCadenceStartLineIndex, lines);
-            const fb = tokens[2].replaceAll('~', '-');
+            const fb = tokens[2];
             const endBeat = parseFloat(tokens[9]);
             const startMeasure = getMeasureNumber(nextCadenceStartLineIndex, lines);
             const endMeasure = getMeasureNumber(i, lines);
@@ -190,7 +190,7 @@ files.forEach(file => {
                     console.error(`Error creating score for ${choraleId} lines ${conStartLine}-${conEndLine}`);
                 }
             
-                const conFb = lines[conLineIndex].split('\t')[2].replaceAll('~', '-');
+                const conFb = lines[conLineIndex].split('\t')[2];
                 const conDegree = getCadenceDegree(key, resolveToken(conLineIndex, 0, lines));
                 const conBassMint = getContinuationBassMint(resolveToken(endLine - 2, 0, lines), resolveToken(conLineIndex, 0, lines));
 
