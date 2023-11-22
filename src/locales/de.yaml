@@ -48,7 +48,6 @@ intervals: Intervalle
 figuresbass: Generalbass
 harmonicIntervals: Exakte Intervalle
 fbNumbers: Generalbassziffern
-nMore: +{n} weitere
 previous: Vorheriges
 next: Nächstes
 nOutOfTotalIntervalsFoundForSerachParams: '{n} von {total} Intervallen gefunden'
