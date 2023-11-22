@@ -50,6 +50,23 @@ export function lineIsFermataEnd(lines, lineIndex, kernSpineIndices) {
     return kernSpineIndices.every(checkTokenForFermata);
 }
 
+export function lineIsRestsOnly(lines, lineIndex, kernSpineIndices) {
+
+    // Ignore line if is not data record
+    const line = lines[lineIndex];
+    if (!tokenIsDataRecord(line)) {
+        return false;
+    }
+
+    const checkTokenForFermata = (kernSpineIndex) => {
+        // check if token includes "r" as a rest signifier
+        const token = resolveToken(lineIndex, kernSpineIndex, lines);
+        return token?.includes('r');
+    };
+
+    return kernSpineIndices.every(checkTokenForFermata);
+}
+
 export function resolveToken(lineIndex, spineIndex, lines) {
     for (let i = lineIndex; i >= 0; i--) {
         const token = lines[i].split('\t')[spineIndex];
