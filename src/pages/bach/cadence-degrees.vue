@@ -109,8 +109,7 @@ const openModal = ref(null);
 const modalScoreData = ref('');
 async function loadScoreData(filename) {
     modalScoreData.value = '';
-    const response = await $fetch(`/kern/bach-phrases/${filename}`);
-    modalScoreData.value = await response.text();
+    modalScoreData.value = await $fetch(`/kern/bach-phrases/${filename}`, { parseResponse: (txt) => txt });
 }
 </script>
 
