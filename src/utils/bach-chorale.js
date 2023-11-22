@@ -21,7 +21,7 @@ export class BachChorale {
     }
 
     get localRawFile() {
-        return `/bach-370-chorales/${this.id}.krn`;
+        return `/kern/bach-370-chorales/${this.id}.krn`;
     }
 
     get rawFile() {

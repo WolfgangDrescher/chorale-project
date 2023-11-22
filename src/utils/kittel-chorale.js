@@ -16,7 +16,7 @@ export class KittelChorale {
     }
 
     get localRawFile() {
-        return `/kittel-24-chorales/${this.id}.krn`;
+        return `/kern/kittel-24-chorales/${this.id}.krn`;
     }
 
     get rawFile() {

@@ -36,12 +36,12 @@ export default defineNuxtConfig({
     nitro: {
         publicAssets: [
             {
-                baseURL: 'bach-370-chorales',
+                baseURL: 'kern/bach-370-chorales',
                 dir: fileURLToPath(new URL('./bach-370-chorales/kern', import.meta.url)),
                 maxAge: 3600,
             },
             {
-                baseURL: 'kittel-24-chorales',
+                baseURL: 'kern/kittel-24-chorales',
                 dir: fileURLToPath(new URL('./kittel-24-chorales/kern', import.meta.url)),
                 maxAge: 3600,
             },
