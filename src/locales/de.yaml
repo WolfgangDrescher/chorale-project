@@ -66,6 +66,16 @@ ignoreFermatas: Fermaten ignorieren
 title: Titel
 fbFigureInfoText: Wenn eine Stimme den Bass unterschreitet werden bei der Bezifferung in dieser Tabelle negative Intervalle angezeigt.
 hintSearch: Akkordbezifferungen durchsuchen
+minorInterval: Kleines Intervall
+majorInterval: Grosses Intervall
+perfectInterval: Perfektes Intervall
+diminishedInterval: Vermindertes Intervall
+augmentedInterval: Übermässiges Intervall
+negativeIntervals: Negative Intervalle (Stimmkreuzung mit Bass)
+ascending: Aufwärts
+descending: Abwärts
+nullToken: Kein Akkord
+rest: Pause
 melodicIntervals: Melodische Intervallschritte
 mode: Modus
 continuations: Fermaten Anschluss
