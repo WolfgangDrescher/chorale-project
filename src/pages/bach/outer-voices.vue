@@ -247,9 +247,9 @@ watch(modalFilter, () => {
             {{ `${group.choraleId} (${group.intervals.length})` }}
             <Modal v-if="openModal === group.choraleId" @close="closeModal" :title="group.choraleId">
                 <template v-slot:title>
-                        <NuxtLink :href="localePath({ name: 'bach-chorale-nr', params: { nr: parseInt(group.choraleId.replaceAll(/\D/g, ''), 10) } })">
-                            {{ group.choraleId }}
-                        </NuxtLink>
+                    <NuxtLink :href="localePath({ name: 'bach-chorale-nr', params: { nr: parseInt(group.choraleId.replaceAll(/\D/g, ''), 10) } })">
+                        {{ group.choraleId }}
+                    </NuxtLink>
                 </template>
                 <div class="flex gap-4">
                     <div>
@@ -261,8 +261,8 @@ watch(modalFilter, () => {
                 </div>
                 <VerovioCanvas v-if="modalScoreData"  :data="modalScoreData" :scale="35" :page-margin="50" :key="modalScoreData" />
                 <div class="flex gap-4">
-                    <FormButton v-if="groupedIntervals[index - 1]" @click="loadIndex(index - 1)" ref="prev" class="mr-auto">{{ $t('previous') }}</FormButton>
-                    <FormButton v-if="groupedIntervals[index + 1]" @click="loadIndex(index + 1)" ref="next" class="ml-auto">{{ $t('next') }}</FormButton>
+                    <FormButton v-if="groupedIntervals[index - 1]" @click="loadIndex(index - 1)" class="mr-auto">{{ $t('previous') }}</FormButton>
+                    <FormButton v-if="groupedIntervals[index + 1]" @click="loadIndex(index + 1)" class="ml-auto">{{ $t('next') }}</FormButton>
                 </div>
             </Modal>
         </Badge>
