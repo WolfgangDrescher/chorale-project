@@ -1,0 +1,26 @@
+!!!!SEGMENT: chor109.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Singen wir aus Herzensgrund
+!!!SCT: BWV 187/7
+!!!PC#: 109
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-e-]	*k[b-e-]	*k[b-e-]	*k[b-e-]
+*g:	*g:	*g:	*g:
+*M3/4	*M3/4	*M3/4	*M3/4
+*MM100	*MM100	*MM100	*MM100
+4G	2e	4b-	4dd]
+4A	.	4a	4cc#
+=16	=16	=16	=16
+2.D;	2.f#;	2.a;	2.dd;
+=17	=17	=17	=17
+8BB-L	2f	2b-	2dd
+8C	.	.	.
+8D	.	.	.
+8CJ	.	.	.
+*-	*-	*-	*-

@@ -1,0 +1,27 @@
+!!!!SEGMENT: chor050.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: In allen meinen Taten
+!!!SCT: BWV 244/37
+!!!PC#: 50
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-]	*k[b-]	*k[b-]	*k[b-]
+*F:	*F:	*F:	*F:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=2	=2	=2	=2
+4D	4F	4a	2b-
+4E	4c	4g	.
+4F;	4c;	4f;	4a;
+8FL	4c	4f	8aL
+8GJ	.	.	8b-J
+=3	=3	=3	=3
+4A	4c	8fL	4cc
+.	.	8eJ	.
+*-	*-	*-	*-

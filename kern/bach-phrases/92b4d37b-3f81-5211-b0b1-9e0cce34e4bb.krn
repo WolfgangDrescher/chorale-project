@@ -1,0 +1,29 @@
+!!!!SEGMENT: chor218.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: La&szlig;, o Herr, dein Ohr sich neigen
+!!!SCT: BWV 372
+!!!PC#: 218
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-]	*k[b-]	*k[b-]	*k[b-]
+*g:dor	*g:dor	*g:dor	*g:dor
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4C	4c	8e-L	4a
+.	.	8dJ	.
+4C#	8B-L	4e	4g
+.	8AJ	.	.
+=5	=5	=5	=5
+2D;	2A;	2d;	2f#;
+8DL	4F	8AL	4f
+8CnX	.	8B-J	.
+8BB-	4F	4c	4e-
+8AAJ	.	.	.
+=	=	=	=
+*-	*-	*-	*-

@@ -1,4 +1,10 @@
 choraleId: chor222
+continuation:
+    degree: '4'
+    fb: 5 3
+    filename: 237325c2-4e68-5598-b3dd-37b2014abad5.krn
+    lineIndex: 88
+    mint: +m10
 degree: '2'
 endBeat: 41
 endLine: 85

@@ -1,4 +1,10 @@
 choraleId: chor265
+continuation:
+    degree: '1'
+    fb: 5 3
+    filename: 5c98af04-0318-5bc8-a6e1-39168f559c7a.krn
+    lineIndex: 57
+    mint: +P8
 degree: '1'
 endBeat: 17
 endLine: 54

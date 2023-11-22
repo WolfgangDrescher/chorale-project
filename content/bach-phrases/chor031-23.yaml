@@ -1,4 +1,10 @@
 choraleId: chor031
+continuation:
+    degree: '1'
+    fb: 5 3
+    filename: 80140291-a04a-5cb1-b397-145ac23cacab.krn
+    lineIndex: 71
+    mint: +P4
 degree: '5'
 endBeat: 23
 endLine: 70

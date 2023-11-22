@@ -1,0 +1,29 @@
+!!!!SEGMENT: chor162.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Das alte Jahr vergangen ist
+!!!SCT: BWV 288
+!!!PC#: 162
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*d:dor	*d:dor	*d:dor	*d:dor
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=6	=6	=6	=6
+!!xywh-#83:147,509,2728,433
+8EL	4A	4.e	4ccnX
+8DJ	.	.	.
+4E	4G#	.	4b
+.	.	8d	.
+4AA;	4E;	4c#;	4a;
+4D	4F	4d	4b
+=7	=7	=7	=7
+4CnX	8GL	4e	4cc
+.	8E	.	.
+*-	*-	*-	*-

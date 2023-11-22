@@ -1,0 +1,28 @@
+!!!!SEGMENT: chor266.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Herr Jesu Christ, du h&ouml;chstes Gut
+!!!SCT: BWV 48/7
+!!!PC#: 266
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-e-]	*k[b-e-]	*k[b-e-]	*k[b-e-]
+*g:	*g:	*g:	*g:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=8	=8	=8	=8
+!!xywh-#138:218,512,1242,423
+4D	4B-	4d	4f
+4E	8AL	4cnX	4g
+.	8GJ	.	.
+4F;	4F;	4c;	4a;
+4E-	4G	4c	8gL
+.	.	.	8aJ
+=9	=9	=9	=9
+4D	4F	4d	4b-
+*-	*-	*-	*-

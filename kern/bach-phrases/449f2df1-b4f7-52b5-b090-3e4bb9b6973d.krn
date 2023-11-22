@@ -1,0 +1,30 @@
+!!!!SEGMENT: chor073.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Herr Jesu Christ, ich schrei zu dir
+!!!SCT: BWV 334
+!!!PC#: 73
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-e-]	*k[b-e-]	*k[b-e-]	*k[b-e-]
+*g:	*g:	*g:	*g:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=6	=6	=6	=6
+!!xywh-#43:150,17,2675,506
+8DL	8dL	8f#	4b-
+8CJ	8e-J	4g	.
+4D	8AL	.	4a
+.	8dJ	8f#	.
+4GG;	4B-;	4d;	4g;
+4G	4d	8gL	4b-
+.	.	8fJ	.
+=7	=7	=7	=7
+8GL	8c#L	8eL	4a
+8FJ	8dJ	8dJ	.
+*-	*-	*-	*-

@@ -1,0 +1,34 @@
+!!!!SEGMENT: chor241.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Was willst du dich, o meine Seele
+!!!SCT: BWV 425
+!!!PC#: 241
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*d:dor	*d:dor	*d:dor	*d:dor
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+8GGL	8B-L	8dL]	4.e
+8EEJ	8GJ	16c#L	.
+.	.	16BJJ	.
+4AA	8EL	4c#	.
+.	16AL	.	8d
+.	16GJJ	.	.
+=14	=14	=14	=14
+!!xywh-#125:217,885,2679,429
+2BB-;	2F;	2d;	2d;
+4r	4ry	4ry	4r
+4F	8FL	4cnX	4a
+.	8GJ	.	.
+=15	=15	=15	=15
+8FL	8AL	8cL	4a
+8EJ	16BnXL	16dL	.
+.	16cJJ	16eJJ	.
+*-	*-	*-	*-

@@ -1,4 +1,10 @@
 choraleId: chor087
+continuation:
+    degree: '1'
+    fb: 5 3
+    filename: null
+    lineIndex: 57
+    mint: P1
 degree: '1'
 endBeat: 20
 endLine: 53

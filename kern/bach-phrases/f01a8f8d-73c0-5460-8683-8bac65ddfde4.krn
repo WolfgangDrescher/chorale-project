@@ -1,0 +1,30 @@
+!!!!SEGMENT: chor200.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Christus ist erstanden, hat &uuml;berwunden
+!!!SCT: BWV 284
+!!!PC#: 200
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*C:	*C:	*C:	*C:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4D	[4d	8f#	4b-
+.	.	4g	.
+4DD	8.dL]	.	4a
+.	.	8f#	.
+.	16cJk	.	.
+=6	=6	=6	=6
+2GG;	2B-;	2d;	2g;
+8CL	[4c	8enXL	4g
+8D	.	8fnXJ	.
+8E	8cL]	4g	4cc
+8FJ	8dJ	.	.
+=	=	=	=
+*-	*-	*-	*-

@@ -1,0 +1,27 @@
+!!!!SEGMENT: chor203.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: O Mensch, schau Jesum Christum an
+!!!SCT: BWV 403
+!!!PC#: 203
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-]	*k[b-]	*k[b-]	*k[b-]
+*g:dor	*g:dor	*g:dor	*g:dor
+*M3/4	*M3/4	*M3/4	*M3/4
+*MM100	*MM100	*MM100	*MM100
+8E-L	8G]	8cL	4g]
+8DJ	8B-L	8B-J	.
+4E-	8A	4c	4g
+.	8GJ	.	.
+=11	=11	=11	=11
+2D;	2d;	2F#;	2a;
+4DD	4d	4f#X	4a
+=12	=12	=12	=12
+8DL	[4d	[4f#	[4a
+8E-	.	.	.
+*-	*-	*-	*-

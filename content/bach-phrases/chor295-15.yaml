@@ -1,4 +1,10 @@
 choraleId: chor295
+continuation:
+    degree: '1'
+    fb: 5 3
+    filename: bebe5150-f081-5d18-969f-11bbd8d119f8.krn
+    lineIndex: 47
+    mint: +P4
 degree: '5'
 endBeat: 15
 endLine: 46

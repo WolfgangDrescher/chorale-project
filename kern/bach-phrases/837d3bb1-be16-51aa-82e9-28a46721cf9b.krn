@@ -1,0 +1,29 @@
+!!!!SEGMENT: chor196.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Da der Herr Christ zu Tische sa&szlig;
+!!!SCT: BWV 285
+!!!PC#: 196
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-e-a-]	*k[b-e-a-]	*k[b-e-a-]	*k[b-e-a-]
+*c:	*c:	*c:	*c:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=4	=4	=4	=4
+4E-	8cL	4g	4cc
+.	8BJ	.	.
+4A-	4c	8gL	4cc
+.	.	8fJ	.
+4G;	4d;	4g;	4b;
+8GL	4B	4d	4g
+8FJ	.	.	.
+=5	=5	=5	=5
+8E-L	4c	4g	8ccL
+8DJ	.	.	8ddJ
+*-	*-	*-	*-

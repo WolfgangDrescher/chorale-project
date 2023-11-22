@@ -1,4 +1,10 @@
 choraleId: chor217
+continuation:
+    degree: '1'
+    fb: 5 3
+    filename: 75227372-baba-5b15-a013-edf63a967e45.krn
+    lineIndex: 50
+    mint: +P11
 degree: '5'
 endBeat: 21
 endLine: 48

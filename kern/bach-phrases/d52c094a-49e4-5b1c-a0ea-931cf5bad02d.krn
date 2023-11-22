@@ -1,0 +1,28 @@
+!!!!SEGMENT: chor332.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Von Gott will ich nicht lassen
+!!!SCT: BWV 418
+!!!PC#: 332
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[]	*k[]	*k[]	*k[]
+*a:	*a:	*a:	*a:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+4G	8GL	8dL	4b
+.	8AJ	8fnXJ	.
+4G#	4B	8eL	4b
+.	.	8dJ	.
+=4	=4	=4	=4
+2.A;	2.A;	2.c;	2.e;
+8EL	4G#	4B	4e
+8DJ	.	.	.
+=5	=5	=5	=5
+4C	4A	4e	4a
+*-	*-	*-	*-

@@ -1,4 +1,10 @@
 choraleId: chor181
+continuation:
+    degree: '5'
+    fb: 6 3
+    filename: bfa92811-28f2-5c4e-99bb-870711341dc4.krn
+    lineIndex: 67
+    mint: '-m2'
 degree: '6'
 endBeat: 23
 endLine: 66

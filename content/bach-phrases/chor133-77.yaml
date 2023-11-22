@@ -1,4 +1,10 @@
 choraleId: chor133
+continuation:
+    degree: '2'
+    fb: 5 3
+    filename: 465fa16a-0ab1-5534-9448-0c07b6ccb1b3.krn
+    lineIndex: 201
+    mint: +P5
 degree: '5'
 endBeat: 77
 endLine: 200

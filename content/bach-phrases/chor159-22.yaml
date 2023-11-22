@@ -1,4 +1,10 @@
 choraleId: chor159
+continuation:
+    degree: 5+
+    fb: 6 3
+    filename: 30816a27-7ad4-5f5d-b8bb-ab6c3486b65c.krn
+    lineIndex: 58
+    mint: A1
 degree: '5'
 endBeat: 22
 endLine: 56

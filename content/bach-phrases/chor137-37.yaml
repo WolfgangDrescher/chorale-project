@@ -1,4 +1,10 @@
 choraleId: chor137
+continuation:
+    degree: 5+
+    fb: 6 5 3
+    filename: da98da7a-2783-5342-8ad3-d52b8effb268.krn
+    lineIndex: 92
+    mint: A1
 degree: '5'
 endBeat: 37
 endLine: 90

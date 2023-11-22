@@ -1,0 +1,30 @@
+!!!!SEGMENT: chor335.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Es ist das Heil uns kommen her
+!!!SCT: BWV 155/5
+!!!PC#: 335
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[b-]	*k[b-]	*k[b-]	*k[b-]
+*F:	*F:	*F:	*F:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=6	=6	=6	=6
+8AAL	8FL	8cL	8ffL
+8GGJ	8cJ	8aJ	8eeJ
+4GG	4B	8dL	4dd
+.	.	8gJ	.
+4C;	4c;	4e;	4cc;
+4F	8AL	8fL	4cc
+.	8B-J	8gJ	.
+=7	=7	=7	=7
+!!xywh-#170:228,487,2674,431
+8FFL	4c	8aL	4ff
+8GGJ	.	8b-J	.
+*-	*-	*-	*-

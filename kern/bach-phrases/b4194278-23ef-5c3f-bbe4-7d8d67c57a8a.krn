@@ -1,0 +1,28 @@
+!!!!SEGMENT: chor115.krn
+!!!COM: Bach, Johann Sebastian
+!!!CDT: 1685/02/21/-1750/07/28/
+!!!OTL@@DE: Was mein Gott will, das g'scheh allzeit
+!!!SCT: BWV 244/25
+!!!PC#: 115
+!!!AGN: chorale
+**kern	**kern	**kern	**kern
+*ICvox	*ICvox	*ICvox	*ICvox
+*Ibass	*Itenor	*Ialto	*Isoprn
+*I"Bass	*I"Tenor	*I"Alto	*I"Soprano
+*clefF4	*clefGv2	*clefG2	*clefG2
+*k[f#c#]	*k[f#c#]	*k[f#c#]	*k[f#c#]
+*b:	*b:	*b:	*b:
+*M4/4	*M4/4	*M4/4	*M4/4
+*met(c)	*met(c)	*met(c)	*met(c)
+*MM100	*MM100	*MM100	*MM100
+=2	=2	=2	=2
+4A	4A	8f#L	4dd
+.	.	8gJ	.
+4AA	4e	4a	4cc#
+4D;	4f#;	4a;	4dd;
+4BB	8eL	4g#	4dd
+.	8dJ	.	.
+=3	=3	=3	=3
+4AA	8eL	4a	4cc#
+.	8f#J	.	.
+*-	*-	*-	*-
