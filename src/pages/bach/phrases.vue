@@ -66,6 +66,8 @@ const cadenceDegreeFbNumberOptions = [...new Set(chorales.map(chorale => chorale
 
         <Heading>{{ $t('choralePhrases') }}</Heading>
 
+        <BachChoraleSearchFilter />
+
         <div class="grid grid-cols-4 gap-4 mb-4">
             <div>
                 <FormDropdown v-model="filter.degree" :label="$t('phraseDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
