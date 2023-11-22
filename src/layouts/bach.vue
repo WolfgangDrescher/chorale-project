@@ -15,6 +15,7 @@ useHead({
             <NavigationItem :href="localePath('bach-cadence-degrees')">{{ $t('phraseDegrees') }}</NavigationItem>
             <NavigationItem :href="localePath('bach-phrases')">{{ $t('choralePhrases') }}</NavigationItem>
             <NavigationItem :href="localePath('bach-outer-voices')">{{ $t('outerVoices') }}</NavigationItem>
+            <NavigationItem :href="localePath('bach-continuations')">{{ $t('continuations') }}</NavigationItem>
         </template>
         <NuxtPage></NuxtPage>
     </NuxtLayout>
