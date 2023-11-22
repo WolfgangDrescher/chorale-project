@@ -243,6 +243,9 @@ watch(modalFilter, () => {
             <Chart :config="config" @chart-mounted="onChartMounted" @click="chartClickHandler" />
         </div>
 
+        <IntervalQualityLegend v-if="options.mode === 'hint'" />
+        <FiguredBassLegend v-else-if="options.mode === 'fb'" />
+
         <Badge v-for="(group, index) in groupedIntervals" :key="group.choraleId" @click="loadIndex(index)">
             {{ `${group.choraleId} (${group.intervals.length})` }}
             <Modal v-if="openModal === group.choraleId" @close="closeModal" :title="group.choraleId">

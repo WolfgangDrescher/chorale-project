@@ -187,6 +187,9 @@ onKeyStroke('ArrowRight', () => {
             <Chart :config="config" @chart-mounted="onChartMounted" @click="chartClickHandler" />
         </div>
 
+        <IntervalQualityLegend v-if="options.mode === 'mint'" direction rest />
+        <FiguredBassLegend v-else-if="options.mode === 'fb'" negative null-token />
+
         <Badge v-for="(group, index) in groupedPhrases" :key="group.choraleId" @click="loadIndex(index)">
             {{ `${group.choraleId} (${group.phrases.length})` }}
             <Modal v-if="openModal === group.choraleId" @close="closeModal" :title="group.choraleId">

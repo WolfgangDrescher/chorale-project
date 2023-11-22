@@ -168,6 +168,8 @@ async function loadScoreData(filename) {
             <Hint>
                 {{ t('fbFigureInfoText') }}
             </Hint>
+
+            <FiguredBassLegend negative :accid="false" />
             
             <Subheading>{{ $t('degreesOfAllChorales') }}</Subheading>
             <DataTable small :items="tableItems" :headers="tableHeaders">
