@@ -41,7 +41,6 @@ export function lineIsFermataEnd(lines, lineIndex, kernSpineIndices) {
         return false;
     }
 
-    const spineTokens = line.split('\t');
     const checkTokenForFermata = (kernSpineIndex) => {
         // check if token includes ";" as a fermata signifier
         const token = resolveToken(lineIndex, kernSpineIndex, lines);
