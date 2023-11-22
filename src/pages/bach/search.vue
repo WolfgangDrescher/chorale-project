@@ -43,7 +43,7 @@ const mintValue = computed(() => {
 });
 
 const hintValue = computed(() => {
-    return filter.hint?.replace(/^[,;]+/g, '').replaceAll(/\s*,\s+|\s+/g, ',').replace(';', filter.ignoreFermatas ? ',' : ';');
+    return filter.hint?.replace(/^[,;]+/g, '').replace(';', filter.ignoreFermatas ? ',' : ';');
 });
 
 const filteredChorales = computed(() => {
@@ -79,8 +79,6 @@ function hrefBuilder(chorale) {
         <Heading>{{ $t('search') }}</Heading>
 
         <BachChoraleSearchFilter />
-
-        {{ hintValue }}
 
         <div class="grid grid-cols-2 gap-4">
             <div>
