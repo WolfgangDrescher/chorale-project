@@ -84,6 +84,53 @@ function getStartBeat(lineIndex, lines) {
     return 0;
 }
 
+function getContinuationStartLine(beat, lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const tokens = line.split('\t');
+        const lineBeat = parseFloat(tokens[9]);
+        if (tokenIsDataRecord(line) && lineBeat >= beat - 2) {
+            return i;
+        }
+    }
+    return null; 
+}
+
+function getContinuationEndLine(beat, fermataDur, lines) {
+    for (let i = lines.length - 1 ; i >= 0; i--) {
+        const line = lines[i];
+        const tokens = line.split('\t');
+        const lineBeat = parseFloat(tokens[9]);
+        if (tokenIsDataRecord(line) && lineBeat < beat + fermataDur + 2) {
+            return i;
+        }
+    }
+    return null;
+}
+
+function getContinuationLineIndex(lineIndex, fermataDur, lines) {
+    const fermataBeatPos = parseFloat(lines[lineIndex].split('\t')[9]);
+    if (lineIndex) {
+        for (let i = lineIndex + 1; i < lines.length; i++) {
+            const line = lines[i];
+            const beat = parseFloat(line.split('\t')[9]);
+            if (tokenIsDataRecord(line) && beat >= fermataDur + fermataBeatPos) {
+                return i;
+            }
+        }
+    }
+    return null;
+}
+
+function getContinuationBassMint(endToken, startToken) {
+    const kern = `**kern
+${endToken}
+${startToken}
+*-`;
+    const output = execSync(`echo ${escapeShell(kern)} | mint`).toString().trim();
+    return output.split('\n')[2];
+}
+
 const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`);
 
 progressBar.start(files.length, 0);
@@ -94,7 +141,7 @@ files.forEach(file => {
     const key = getKey(choraleId);
     // fb -con3l => chor194-42 chor276-23 chor325-39
     // `beat` will remove the first line of the chorales that start withb `!!!!SEGMENT`
-    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | fb -caim | fb -con3m | beat -ca | beat -a`).toString().trim();
+    const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | fb -caim | fb -con3m | beat -ca | beat -a | beat -da`).toString().trim();
     const lines = output.split('\n');
     let nextCadenceStartLineIndex = getCadenceStartInitialLineIndex(lines);
     for (let i = 0; i < lines.length; i++) {
@@ -125,6 +172,37 @@ files.forEach(file => {
             const endMeasureBeat = parseFloat(tokens[10]);
             const id = `${choraleId}-${endBeat.toString().replace('.', '_')}`;
             const degree = getCadenceDegree(key, resolveToken(i, 0, lines));
+            const fermataDur = parseFloat(tokens[11]);
+
+            const conLineIndex = getContinuationLineIndex(i, fermataDur, lines);
+            let continuation = null;
+            if (conLineIndex) {
+                // write continuation kern file
+                // add 2; one for line index to line number + one for missing first line with `!!!!SEGMENT` because of the beat program
+                const conStartLine = getContinuationStartLine(endBeat, lines) + 2;
+                const conEndLine = getContinuationEndLine(endBeat, fermataDur, lines) + 2;
+                let conFilename = null;
+                try {
+                    const conKernScore = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | myank -I -l ${conStartLine}-${conEndLine} --hide-ending`).toString().trim();
+                    conFilename = `${uuidv5(conKernScore, UUID_NAMESPACE)}.krn`;
+                    fs.writeFileSync(`${kernPath}/${conFilename}`, conKernScore);
+                } catch(e) {
+                    console.error(`Error creating score for ${choraleId} lines ${conStartLine}-${conEndLine}`);
+                }
+            
+                const conFb = lines[conLineIndex].split('\t')[2].replaceAll('~', '-');
+                const conDegree = getCadenceDegree(key, resolveToken(conLineIndex, 0, lines));
+                const conBassMint = getContinuationBassMint(resolveToken(endLine - 2, 0, lines), resolveToken(conLineIndex, 0, lines));
+
+                continuation = {
+                    filename: conFilename,
+                    fb: conFb,
+                    degree: conDegree,
+                    lineIndex: conLineIndex + 2,
+                    mint: conBassMint,
+                }
+            }
+
             const data = {
                 id,
                 choraleId,
@@ -152,7 +230,8 @@ files.forEach(file => {
                     bass: {
                         interval: null,
                     },
-                }
+                },
+                continuation,
             }
             writeYaml(`${yamlPath}/${id}.yaml`, data);
 
