@@ -18,10 +18,6 @@ const UUID_NAMESPACE = 'abe966bb-81ba-4760-bdbd-6688243eb522';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function getIdFromFilePath(path) {
-    return path.split(/[\\\/]/).pop().split('.')[0];
-}
-
 const yamlPath = `${__dirname}/../../content/bach-segments`;
 const kernPath = `${__dirname}/../../kern/bach-segments`;
 
@@ -30,9 +26,13 @@ execSync(`mkdir -p ${yamlPath}`);
 execSync(`rm -rf ${kernPath}`);
 execSync(`mkdir -p ${kernPath}`);
 
-const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`)
+function getIdFromFilePath(path) {
+    return path.split(/[\\\/]/).pop().split('.')[0];
+}
 
-progressBar.start(files.length, 0);
+function escapeShell(cmd) {
+    return '"' + cmd.replace(/(["$`\\])/g, '\\$1') + '"';
+}
 
 function getEndLineIndex(lineIndex, lines, startBeat, beatNum) {
     let endLineIndex = null;
@@ -68,16 +68,19 @@ function getEndLineIndex(lineIndex, lines, startBeat, beatNum) {
     return endLineIndex;
 }
 
-const betaNums = [4];
+const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`)
 
-const tmp = [];
-files.forEach(file => {
-    const id = getIdFromFilePath(file);
-    progressBar.increment({ id });
-    betaNums.forEach(beatNum => {
-        const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | beat -ca -A 0`).toString().trim();
+const beatNums = [4];
+
+progressBar.start(files.length * beatNums.length, 0);
+
+beatNums.forEach(beatNum => {
+    const data = [];
+    files.forEach(file => {
+        const choraleId = getIdFromFilePath(file);
+        progressBar.increment({ id: `${choraleId}/${beatNum}-beats` });
+        const output = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | beat -ca -A 0`).toString().trim();
         const lines = output.split('\n');
-        // lines.forEach((l, i) => console.log(i, l))
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const tokens = line.split('\t');
@@ -89,19 +92,45 @@ files.forEach(file => {
                         const startLine = i + 2;
                         const endLine = endLineIndex + 2;
                         try {
-                            const kernScore = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${id}.krn | myank -I -l ${startLine}-${endLine} --hide-ending`).toString().trim();
+                            const kernScore = execSync(`cat ${__dirname}/../../bach-370-chorales/kern/${choraleId}.krn | myank -l ${startLine}-${endLine} --hide-ending --hide-starting`).toString().trim();
                             const filename = `${uuidv5(kernScore, UUID_NAMESPACE)}.krn`;
                             fs.writeFileSync(`${kernPath}/${filename}`, kernScore);
-                            tmp.push(filename);
+
+                            const bassMintData = execSync(`echo ${escapeShell(kernScore)} | extractxx -f 1 | mint -c`).toString().trim();
+                            const sopranoMintData = execSync(`echo ${escapeShell(kernScore)} | extractxx -f 4 | mint -c`).toString().trim();
+                            const fbData = execSync(`echo ${escapeShell(kernScore)} | fb -cn --hint | fb -c -k 1,4 --hint | beat -ca -A 0`).toString().trim();
+                            const kern = execSync(`paste -d '\t' <(echo ${escapeShell(fbData)}) <(echo ${escapeShell(bassMintData)}) <(echo ${escapeShell(sopranoMintData)}) | extractxx -f 2,3,7,8,9`, { shell: '/bin/bash' }).toString().trim();
+                            const slices = [];
+
+                            kern.split('\n').forEach((l) => {
+                                if (tokenIsDataRecord(l)) {
+                                    const tokens = l.split('\t');
+                                    slices.push({
+                                        fb: tokens[0],
+                                        fbOuterVoices: tokens[1],
+                                        beat: parseFloat(tokens[2]),
+                                        bassMint: tokens[3],
+                                        sopranoMint: tokens[4],
+                                    });
+                                }
+                            });
+
+                            data.push({
+                                beats: beatNum,
+                                choraleId,
+                                startLine,
+                                endLine,
+                                filename,
+                                slices,
+                            });
                         } catch (e) {
-                            console.error(`Error creating score for ${id} lines ${startLine}-${endLine}`);
+                            console.error(`Error creating score for ${choraleId} lines ${startLine}-${endLine}`);
                         }
                     }
                 }
             }
         }
     });
+    writeYaml(`${yamlPath}/${beatNum}-beats.yaml`, data);
 });
 progressBar.stop();
-console.log(tmp);
-writeYaml(`${yamlPath}/segments.yaml`, tmp);
