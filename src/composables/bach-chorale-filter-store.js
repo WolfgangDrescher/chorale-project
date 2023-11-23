@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia';
 
 const defaultFilter = {
-    searchText: null,
+    searchText: '',
     keys: [],
-    majorMinor: null,
+    majorMinor: '',
     countPhrases: [0, 23],
     numberOfMeasures: [0, 48],
-    timeSignature: null,
+    timeSignature: '',
     phraseDegrees: [],
     phraseFbNumbers: [],
 };

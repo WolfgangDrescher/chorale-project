@@ -35,7 +35,7 @@ const timeSignatureOptions = bachChoraleFilterOptions.timeSignatures.sort((a, b)
 }));
 
 const majMinOptions = [
-    { value: null, text: t('all') },
+    { value: '', text: t('all') },
     { value: 'major', text: t('major') },
     { value: 'minor', text: t('minor') },
 ];
