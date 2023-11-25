@@ -105,24 +105,30 @@ beatNums.forEach(beatNum => {
                             kern.split('\n').forEach((l) => {
                                 if (tokenIsDataRecord(l)) {
                                     const tokens = l.split('\t');
-                                    slices.push({
-                                        fb: tokens[0],
-                                        fbOuterVoices: tokens[1],
-                                        beat: parseFloat(tokens[2]),
-                                        bassMint: tokens[3],
-                                        sopranoMint: tokens[4],
-                                    });
+                                    const fb = tokens[0];
+                                    const fbOuterVoices = tokens[1];
+                                    const beat = parseFloat(tokens[2]);
+                                    const bassMint = tokens[3];
+                                    const sopranoMint = tokens[4];
+                                    // slices.push({
+                                    //     fb: tokens[0],
+                                    //     fbOuterVoices: tokens[1],
+                                    //     beat: parseFloat(tokens[2]),
+                                    //     bassMint: tokens[3],
+                                    //     sopranoMint: tokens[4],
+                                    // });
+                                    slices.push([fb, fbOuterVoices, beat, bassMint, sopranoMint]);
                                 }
                             });
 
-                            data.push({
-                                beats: beatNum,
-                                choraleId,
-                                startLine,
-                                endLine,
-                                filename,
-                                slices,
-                            });
+                            // data.push({
+                            //     choraleId,
+                            //     filename,
+                            //     startLine,
+                            //     endLine,
+                            //     slices,
+                            // });
+                            data.push([choraleId, filename, startLine, endLine, slices])
                         } catch (e) {
                             console.error(`Error creating score for ${choraleId} lines ${startLine}-${endLine}`);
                         }
@@ -131,6 +137,8 @@ beatNums.forEach(beatNum => {
             }
         }
     });
-    writeYaml(`${yamlPath}/${beatNum}-beats.yaml`, data);
+    // writeYaml(`${yamlPath}/${beatNum}-beats.yaml`, data);
+    fs.writeFileSync(`${yamlPath}/${beatNum}-beats.json`, JSON.stringify(data), 'utf8');
+
 });
 progressBar.stop();
