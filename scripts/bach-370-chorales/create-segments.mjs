@@ -70,7 +70,7 @@ function getEndLineIndex(lineIndex, lines, startBeat, beatNum) {
 
 const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`)
 
-const beatNums = [4];
+const beatNums = [3, 4];
 
 progressBar.start(files.length * beatNums.length, 0);
 
