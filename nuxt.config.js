@@ -87,4 +87,11 @@ export default defineNuxtConfig({
             },
         },
     },
+    experimental: {
+        defaults: {
+            useAsyncData: {
+                deep: false,
+            },
+        },
+    },
 });
