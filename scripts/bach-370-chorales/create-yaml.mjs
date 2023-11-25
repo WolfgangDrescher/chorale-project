@@ -3,7 +3,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { decode } from 'html-entities';
 import { getFiles, readFile } from '../utils/fs.mjs'; 
-import { parseHumdrumReferenceRecords, tokenIsDataRecord } from '../utils/humdrum.mjs';
+import { parseHumdrumReferenceRecords, tokenIsDataRecord, lineIsFermataEnd } from '../utils/humdrum.mjs';
 import { writeYaml } from '../utils/yaml.mjs';
 import cliProgress from 'cli-progress';
 
@@ -101,6 +101,16 @@ function getTimeSignature(file) {
     return null;
 }
 
+function getNumberOfPhrases(lines) {
+    let count = 0;
+    for (let i = 0; i < lines.length; i++) { 
+        if (lineIsFermataEnd(lines, i, [0, 1, 2, 3])) {
+            count++;
+        }
+    }
+    return count;
+}
+
 const files = getFiles(`${__dirname}/../../bach-370-chorales/kern`)
 
 progressBar.start(files.length, 0);
@@ -135,6 +145,8 @@ files.forEach(file => {
     chorale.timeSignature = getTimeSignature(file);
 
     chorale.harmonicIntervals = getHarmonicIntervals(file);
+
+    chorale.numberOfPhrases = getNumberOfPhrases(kern.split('\n'));
 
     writeYaml(yamlFile, chorale);
 });
