@@ -1,4 +1,6 @@
 <script setup>
+import bachChoraleFilterOptions from '../../utils/bach-chorale-filter-options.json';
+
 definePageMeta({
     layout: 'bach',
 });
@@ -18,12 +20,31 @@ const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => que
 const chorales = createBachChorales(choraleData.value, phrasesData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 
+const options = reactive({
+    phraseFbNumbers: [],
+    phraseDegrees: [],
+});
+
+const filteredChorales = computed(() => {
+    return filteredElements.value.filter((chorale) => {
+        const filterphraseDegrees = (phraseDegrees) => {
+            if (!phraseDegrees || !phraseDegrees.length) return true;
+            return chorale.phrases.some(phrase => phraseDegrees.includes(phrase.degree));
+        };
+
+        const filterphraseFbNumbers = (phraseFbNumbers) => {
+            if (!phraseFbNumbers || !phraseFbNumbers.length) return true;
+            return chorale.phrases.some(phrase => phraseFbNumbers.includes(phrase.fb));
+        };
+        return filterphraseDegrees(options.phraseDegrees) && filterphraseFbNumbers(options.phraseFbNumbers);
+    })
+});
 
 const maxCadences = computed(() => {
-    if (filteredElements.value.length === 1) {
-        return filteredElements.value[0].countPhrases
-    } else if (filteredElements.value.length >= 2) {
-        const maxCadenceItem = filteredElements.value?.reduce((prev, current) => {
+    if (filteredChorales.value.length === 1) {
+        return filteredChorales.value[0].countPhrases
+    } else if (filteredChorales.value.length >= 2) {
+        const maxCadenceItem = filteredChorales.value?.reduce((prev, current) => {
             return (prev && prev.countPhrases > current.countPhrases) ? prev : current;
         });
         return maxCadenceItem?.countPhrases;
@@ -40,8 +61,10 @@ const tableHeaders = computed(() => {
     }, ...Array.from({ length: maxCadences.value }, (_, i) => i + 1).map((n) => ({ text: n, value: n, align: 'center' }))];
 });
 
+
+
 const tableItems = computed(() => {
-    return filteredElements.value.map(chorale => {
+    return filteredChorales.value.map(chorale => {
         const result = {
             id: chorale.id,
             title: chorale.fullTitle,
@@ -59,7 +82,7 @@ const tableItems = computed(() => {
 });
 
 const totalTableHeaders = computed(() => {
-    const degreeItems = filteredElements.value.reduce((accumulator, chorale) => {
+    const degreeItems = filteredChorales.value.reduce((accumulator, chorale) => {
         chorale.phrases.forEach(cadence => {
             if (!accumulator.includes(cadence.degree)) {
                 accumulator.push(cadence.degree);
@@ -73,10 +96,10 @@ const totalTableItems = computed(() => {
     const result = [];
 
     // Count cadences for each fb figure and for each degree
-    const fbFigure = [...new Set(filteredElements.value.map(chorale => chorale.phrases.map(c => c.fb)).flat())].sort();
+    const fbFigure = [...new Set(filteredChorales.value.map(chorale => chorale.phrases.map(c => c.fb)).flat())].sort();
     fbFigure.forEach((fbFig) => {
         const items = totalTableHeaders.value.map(({ value: n }) => {
-            const count = filteredElements.value.reduce((accumulator, chorale) => {
+            const count = filteredChorales.value.reduce((accumulator, chorale) => {
                 const num = chorale.phrases.filter(cadence => cadence.degree === n && fbFig === cadence.fb).length;
                 return accumulator + num;
             }, 0);
@@ -90,7 +113,7 @@ const totalTableItems = computed(() => {
 
     // Count all cadences for each degree
     const items = totalTableHeaders.value.map(({ value: n }) => {
-        const count = filteredElements.value.reduce((accumulator, chorale) => {
+        const count = filteredChorales.value.reduce((accumulator, chorale) => {
             const num = chorale.phrases.filter(cadence => cadence.degree === n).length;
             return accumulator + num;
         }, 0);
@@ -111,6 +134,16 @@ async function loadScoreData(filename) {
     modalScoreData.value = '';
     modalScoreData.value = await $fetch(`/kern/bach-phrases/${filename}`, { parseResponse: (txt) => txt });
 }
+
+const cadenceDegreeOptions = bachChoraleFilterOptions.degrees.sort(sortPhraseDegrees).map(degree => ({
+    value: degree,
+    text: romanizeDeg(degree),
+}));
+
+const cadenceDegreeFbNumberOptions = bachChoraleFilterOptions.fbNumbers.sort().map(fb => ({
+    value: fb,
+    text: fb,
+}));
 </script>
 
 <template>
@@ -120,13 +153,22 @@ async function loadScoreData(filename) {
 
         <BachChoraleSearchFilter />
 
-        <div class="my-4 flex flex-col md:flex-row gap-4">
-            <div class="flex items-center">
-                {{ $t('nOutOfTotalChoralesFoundForSerachParams', { n: filteredElements.length, total: chorales.length }) }}
+        <div class="grid grid-cols-4 gap-4 mb-4">
+            <div>
+                <FormDropdown v-model="options.phraseDegrees" :label="$t('phraseDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
+            </div>
+            <div>
+                <FormDropdown v-model="options.phraseFbNumbers" :label="$t('phraseFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
             </div>
         </div>
 
-        <template v-if="filteredElements.length > 0">
+        <div class="my-4 flex flex-col md:flex-row gap-4">
+            <div class="flex items-center">
+                {{ $t('nOutOfTotalChoralesFoundForSerachParams', { n: filteredChorales.length, total: chorales.length }) }}
+            </div>
+        </div>
+
+        <template v-if="filteredChorales.length > 0">
             <Subheading>{{ $t('totalDegreeCount') }}</Subheading>
             <DataTable small :items="totalTableItems" :headers="totalTableHeaders">
                 <template #[`item.fbFigure`]="{ item }">

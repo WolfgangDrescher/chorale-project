@@ -4,11 +4,9 @@ const defaultFilter = {
     searchText: '',
     keys: [],
     majorMinor: '',
-    countPhrases: [0, 23],
+    numberOfPhrases: [0, 23],
     numberOfMeasures: [0, 48],
     timeSignature: '',
-    phraseDegrees: [],
-    phraseFbNumbers: [],
 };
 
 export const useBachChoraleFilterStore = defineStore('bach_chorale_filter', {

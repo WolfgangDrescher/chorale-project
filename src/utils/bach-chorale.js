@@ -68,6 +68,10 @@ export class BachChorale {
         return this._chorale.timeSignature;
     }
 
+    get numberOfPhrases() {
+        return this._chorale.numberOfPhrases;
+    }
+
     get phrases() {
         if (!this._phrases) throw new Error(`${this.id} does not have phrases assigned.`);
         return this._phrases;

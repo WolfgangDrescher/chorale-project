@@ -33,9 +33,8 @@ onMounted(() => {
 const router = useRouter();
 const route = useRoute();
 
-const { data: phrasesData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
 const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
-const chorales = createBachChorales(choraleData.value, phrasesData.value);
+const chorales = createBachChorales(choraleData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 
 const mintValue = computed(() => {

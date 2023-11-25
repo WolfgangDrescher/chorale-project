@@ -14,9 +14,8 @@ useHead({
 });
 
 const { data: outerVoicesData } = await useAsyncData('/bach-outer-voices', () => queryContent('/bach-outer-voices').findOne())
-const { data: phrasesData } = await useAsyncData('/bach-phrases', () => queryContent('/bach-phrases').find())
 const { data: choraleData } = await useAsyncData('/bach-370-chorales', () => queryContent('/bach-370-chorales').find())
-const chorales = createBachChorales(choraleData.value, phrasesData.value);
+const chorales = createBachChorales(choraleData.value);
 const { filteredElements } = useBachChoraleFilter(chorales);
 
 const totalSlices = outerVoicesData.value.body.length;

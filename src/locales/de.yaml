@@ -31,7 +31,7 @@ nOutOfTotalChoralesFoundForSerachParams: '{n} von {total} Chorälen gefunden'
 bachCadences: Bach Kadenzen
 totalDegreeCount: Summe aller Kadenzstufen
 degreesOfAllChorales: Kadenzstufen aller Choräle
-countPhrases: Anzahl Kadenzen
+numberOfPhrases: Anzahl Choralzeilen
 numberOfMeasures: Anzahl Takte
 timeSignature: Taktart
 fbFigure: Bezifferung

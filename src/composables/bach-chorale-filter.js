@@ -28,9 +28,9 @@ const filterByMajorMinor = (majorMinor, element) => {
     return true;
 };
 
-const filterBycountPhrases = ([min, max], element) => {
+const filterByNumberOfPhrases = ([min, max], element) => {
     if (typeof min !== 'number' || typeof max !== 'number') return true;
-    const count = element.countPhrases ?? 0;
+    const count = element.numberOfPhrases ?? 0;
     // if (isNaN(count)) return false;
     return count >= min && count <= max;
 };
@@ -47,17 +47,6 @@ const filterTimeSignature = (timeSignature, element) => {
     return timeSignature === element.timeSignature;
 };
 
-const filterphraseDegrees = (phraseDegrees, element) => {
-    if (!phraseDegrees || !phraseDegrees.length) return true;
-    return phraseDegrees.some(deg => element.phrases.map(c => c.degree).flat().includes(deg));
-};
-
-
-const filterphraseFbNumbers = (phraseFbNumbers, element) => {
-    if (!phraseFbNumbers || !phraseFbNumbers.length) return true;
-    return phraseFbNumbers.some(fb => element.phrases.map(c => c.fb).flat().includes(fb));
-};
-
 export function useBachChoraleFilter(elements) {
 
     const filter = useBachChoraleFilterStore();
@@ -67,21 +56,17 @@ export function useBachChoraleFilter(elements) {
             const searchTextMatched = filterBySearchText(filter.searchText, element);
             const keysMatched = filterByKeys(filter.keys, element);
             const majorMinorMatched = filterByMajorMinor(filter.majorMinor, element);
-            const countPhrasesMatched = filterBycountPhrases(filter.countPhrases, element);
+            const numberOfPhrasesMatched = filterByNumberOfPhrases(filter.numberOfPhrases, element);
             const numberOfMeasuresMatched = filterNumberOfMeasures(filter.numberOfMeasures, element);
             const timeSignatureMatched = filterTimeSignature(filter.timeSignature, element);
-            const phraseDegreesMatched = filterphraseDegrees(filter.phraseDegrees, element);
-            const phraseFbNumbersMatched = filterphraseFbNumbers(filter.phraseFbNumbers, element);
 
             return (
                 searchTextMatched &&
                 keysMatched &&
                 majorMinorMatched &&
-                countPhrasesMatched && 
+                numberOfPhrasesMatched && 
                 numberOfMeasuresMatched &&
-                timeSignatureMatched &&
-                phraseDegreesMatched && 
-                phraseFbNumbersMatched
+                timeSignatureMatched
             );
         });
 

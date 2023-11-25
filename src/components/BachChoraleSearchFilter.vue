@@ -39,16 +39,6 @@ const majMinOptions = [
     { value: 'major', text: t('major') },
     { value: 'minor', text: t('minor') },
 ];
-
-const cadenceDegreeOptions = bachChoraleFilterOptions.degrees.sort(sortPhraseDegrees).map(degree => ({
-    value: degree,
-    text: romanizeDeg(degree),
-}));
-
-const cadenceDegreeFbNumberOptions = bachChoraleFilterOptions.fbNumbers.sort().map(fb => ({
-    value: fb,
-    text: fb,
-}));
 </script>
 
 <template>
@@ -67,13 +57,7 @@ const cadenceDegreeFbNumberOptions = bachChoraleFilterOptions.fbNumbers.sort().m
                 <FormDropdown :model-value="filter.timeSignature" @update:model-value="updateFilter('timeSignature', $event)" :label="$t('timeSignature')" :options="timeSignatureOptions" :search-enabled="false" :multiple="false" />
             </div>
             <div>
-                <FormDropdown :model-value="filter.phraseDegrees" @update:model-value="updateFilter('phraseDegrees', $event)" :label="$t('phraseDegrees')" :options="cadenceDegreeOptions" :search-enabled="false" :multiple="true" />
-            </div>
-            <div>
-                <FormDropdown :model-value="filter.phraseFbNumbers" @update:model-value="updateFilter('phraseFbNumbers', $event)" :label="$t('phraseFbNumbers')" :options="cadenceDegreeFbNumberOptions" :search-enabled="false" :multiple="true" />
-            </div>
-            <div>
-                <FormRangeSlider :group-label="$t('countPhrases')" :model-value="filter.countPhrases" @update:model-value="updateFilter('countPhrases', $event)" :min="0" :max="23" />
+                <FormRangeSlider :group-label="$t('numberOfPhrases')" :model-value="filter.numberOfPhrases" @update:model-value="updateFilter('numberOfPhrases', $event)" :min="0" :max="23" />
             </div>
             <div>
                 <FormRangeSlider :group-label="$t('numberOfMeasures')" :model-value="filter.numberOfMeasures" @update:model-value="updateFilter('numberOfMeasures', $event)" :min="0" :max="48" />
