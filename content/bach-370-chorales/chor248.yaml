@@ -5,6 +5,7 @@ id: chor248
 key: G
 measures: 10
 nr: 248
+numberOfPhrases: 5
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor248.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor248.krn
 timeSignature: 4/4

@@ -5,6 +5,7 @@ id: chor076
 key: G
 measures: 14
 nr: 76
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor076.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor076.krn
 timeSignature: 4/4

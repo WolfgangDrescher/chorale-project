@@ -5,6 +5,7 @@ id: chor333
 key: D
 measures: 18
 nr: 333
+numberOfPhrases: 8
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor333.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor333.krn
 timeSignature: 4/4

@@ -5,6 +5,7 @@ id: chor180
 key: d
 measures: 8
 nr: 180
+numberOfPhrases: 4
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor180.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor180.krn
 timeSignature: 4/4

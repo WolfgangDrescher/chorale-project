@@ -5,6 +5,7 @@ id: chor202
 key: D
 measures: 27
 nr: 202
+numberOfPhrases: 10
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor202.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor202.krn
 timeSignature: 4/4

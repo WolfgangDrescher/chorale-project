@@ -5,6 +5,7 @@ id: chor107
 key: E-
 measures: 21
 nr: 107
+numberOfPhrases: 10
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor107.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor107.krn
 timeSignature: 4/4

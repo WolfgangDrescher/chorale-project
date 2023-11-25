@@ -5,6 +5,7 @@ id: chor335
 key: F
 measures: 10
 nr: 335
+numberOfPhrases: 5
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor335.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor335.krn
 timeSignature: 4/4

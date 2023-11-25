@@ -5,6 +5,7 @@ id: chor108
 key: E-
 measures: 12
 nr: 108
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor108.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor108.krn
 timeSignature: 4/4

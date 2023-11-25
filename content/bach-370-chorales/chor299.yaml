@@ -5,6 +5,7 @@ id: chor299
 key: E-
 measures: 13
 nr: 299
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor299.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor299.krn
 timeSignature: 4/4

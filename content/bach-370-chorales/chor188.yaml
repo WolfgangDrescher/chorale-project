@@ -5,6 +5,7 @@ id: chor188
 key: F
 measures: 16
 nr: 188
+numberOfPhrases: 4
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor188.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor188.krn
 timeSignature: 3/4

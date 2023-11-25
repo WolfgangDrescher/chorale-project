@@ -5,6 +5,7 @@ id: chor011
 key: C
 measures: 32
 nr: 11
+numberOfPhrases: 12
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor011.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor011.krn
 timeSignature: 4/4

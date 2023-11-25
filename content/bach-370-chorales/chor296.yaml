@@ -5,6 +5,7 @@ id: chor296
 key: C
 measures: 36
 nr: 296
+numberOfPhrases: 10
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor296.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor296.krn
 timeSignature: 3/4

@@ -5,6 +5,7 @@ id: chor132
 key: a
 measures: 40
 nr: 132
+numberOfPhrases: 18
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor132.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor132.krn
 timeSignature: 4/4

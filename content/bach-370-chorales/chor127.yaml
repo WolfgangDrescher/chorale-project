@@ -5,6 +5,7 @@ id: chor127
 key: G
 measures: 9
 nr: 127
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor127.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor127.krn
 timeSignature: 4/4

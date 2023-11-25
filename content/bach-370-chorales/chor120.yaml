@@ -5,6 +5,7 @@ id: chor120
 key: b
 measures: 12
 nr: 120
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor120.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor120.krn
 timeSignature: 4/4

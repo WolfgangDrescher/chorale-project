@@ -5,6 +5,7 @@ id: chor193
 key: a
 measures: 10
 nr: 193
+numberOfPhrases: 5
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor193.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor193.krn
 timeSignature: 4/4

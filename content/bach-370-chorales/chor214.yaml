@@ -5,6 +5,7 @@ id: chor214
 key: a
 measures: 27
 nr: 214
+numberOfPhrases: 12
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor214.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor214.krn
 timeSignature: 4/4

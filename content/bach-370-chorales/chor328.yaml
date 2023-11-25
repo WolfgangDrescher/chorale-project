@@ -5,6 +5,7 @@ id: chor328
 key: G
 measures: 10
 nr: 328
+numberOfPhrases: 4
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor328.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor328.krn
 timeSignature: 4/4

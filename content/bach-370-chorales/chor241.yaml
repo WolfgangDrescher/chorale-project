@@ -5,6 +5,7 @@ id: chor241
 key: d
 measures: 25
 nr: 241
+numberOfPhrases: 9
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor241.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor241.krn
 timeSignature: 4/4

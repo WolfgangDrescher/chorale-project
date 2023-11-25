@@ -5,6 +5,7 @@ id: chor151
 key: G
 measures: 9
 nr: 151
+numberOfPhrases: 4
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor151.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor151.krn
 timeSignature: 4/4

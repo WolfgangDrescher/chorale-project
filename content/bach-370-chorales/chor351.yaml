@@ -5,6 +5,7 @@ id: chor351
 key: A
 measures: 15
 nr: 351
+numberOfPhrases: 7
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor351.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor351.krn
 timeSignature: 4/4

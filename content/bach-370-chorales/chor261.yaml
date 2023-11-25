@@ -5,6 +5,7 @@ id: chor261
 key: e
 measures: 12
 nr: 261
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor261.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor261.krn
 timeSignature: 4/4

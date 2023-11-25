@@ -5,6 +5,7 @@ id: chor141
 key: A
 measures: 11
 nr: 141
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor141.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor141.krn
 timeSignature: 4/4

@@ -5,6 +5,7 @@ id: chor170
 key: a
 measures: 8
 nr: 170
+numberOfPhrases: 4
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor170.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor170.krn
 timeSignature: 4/4

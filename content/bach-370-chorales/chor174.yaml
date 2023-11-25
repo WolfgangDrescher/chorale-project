@@ -5,6 +5,7 @@ id: chor174
 key: g
 measures: 11
 nr: 174
+numberOfPhrases: 5
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor174.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor174.krn
 timeSignature: 4/4

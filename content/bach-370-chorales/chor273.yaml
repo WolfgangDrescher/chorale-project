@@ -5,6 +5,7 @@ id: chor273
 key: D
 measures: 12
 nr: 273
+numberOfPhrases: 7
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor273.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor273.krn
 timeSignature: 4/4

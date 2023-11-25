@@ -5,6 +5,7 @@ id: chor152
 key: D
 measures: 13
 nr: 152
+numberOfPhrases: 6
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor152.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor152.krn
 timeSignature: 4/4

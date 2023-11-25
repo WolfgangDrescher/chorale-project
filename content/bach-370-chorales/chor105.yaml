@@ -5,6 +5,7 @@ id: chor105
 key: b
 measures: 11
 nr: 105
+numberOfPhrases: 4
 rawFile: https://raw.githubusercontent.com/craigsapp/bach-370-chorales/master/kern/chor105.krn
 sourceFile: https://github.com/craigsapp/bach-370-chorales/blob/master/kern/chor105.krn
 timeSignature: 4/4
