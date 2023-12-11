@@ -4,6 +4,8 @@ bach: Bach
 bachChorales: Bach Choräle
 kittel: Kittel
 kittelChorales: Kittel 24 Choräle
+schiorring: Schiørring
+schiorringChoralBog: Schiørring Chorale-Bog
 kern: Kern
 humdrumFilter.Satb2gsFilter: Klaviersatz anzeigen
 humdrumFilter.IntervallsatzPresetFilter: Intervallsatz anzeigen
@@ -15,6 +17,7 @@ humdrumFilter.HideFiguredbassFilter: Generalbass ausblenden
 humdrumFilter.FiguresWithoutSlashesFilter: Ziffern ohne Schrägstriche anzeigen
 humdrumFilter.ExtractCantusFirmusFilter: Cantus firmus isolieren
 humdrumFilter.HideNonCantusFirmusVoicesFilter: Alle Stimmen ausser Cantus firmus ausblenden
+humdrumFilter.ModernClefsModoriFilter: Moderne Schlüssel
 allBasses: Alle
 clear: Zurücksetzen
 zoom: Zoom
@@ -79,3 +82,8 @@ rest: Pause
 melodicIntervals: Melodische Intervallschritte
 mode: Modus
 continuations: Fermaten Anschluss
+schiorringSelectPart: Stimme auswählen
+schiorringPartAll: Alles
+schiorringPartFb: Generalbass
+schiorringPartPiano: Klavier
+schiorringPartSatb: Singstimmen
