@@ -212,3 +212,11 @@ export class FiguresWithoutSlashesFilter extends HumdrumFilter {
         new Line('shed -X **fb -e "s/slash/Xslash/I"'),
     ];
 }
+
+export class ModernClefsModoriFilter extends HumdrumFilter {
+    static NAME = 'ModernClefsModoriFilter';
+    unique = true;
+    lines = [
+        new Line('modori -m'),
+    ];
+}
