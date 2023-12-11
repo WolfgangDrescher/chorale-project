@@ -38,7 +38,7 @@ export function useHumdrumScoreFormatter(kernScore) {
     });
 
     const formattedScoreData = computed(() => {
-        return `${manualFilters.value || filtersAsString.value}\n${unref(data)}`.replace(/^\s+|\s+$/g, '');
+        return `${unref(data)}\n${manualFilters.value || filtersAsString.value}`.replace(/^\s+|\s+$/g, '');
     });
 
     function setData(value) {
