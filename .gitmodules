@@ -4,3 +4,6 @@
 [submodule "kittel-24-chorales"]
 	path = kittel-24-chorales
 	url = https://github.com/WolfgangDrescher/kittel-24-chorales.git
+[submodule "schiorring-choral-bog"]
+	path = schiorring-choral-bog
+	url = https://github.com/WolfgangDrescher/schiorring-choral-bog.git
