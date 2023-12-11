@@ -46,6 +46,11 @@ export default defineNuxtConfig({
                 maxAge: 3600,
             },
             {
+                baseURL: 'kern/schiorring-choral-bog',
+                dir: fileURLToPath(new URL('./schiorring-choral-bog/kern', import.meta.url)),
+                maxAge: 3600,
+            },
+            {
                 baseURL: 'kern',
                 dir: fileURLToPath(new URL('./kern', import.meta.url)),
                 maxAge: 3600,
