@@ -11,3 +11,7 @@ export const useBachViewOptionsStore = defineStore('bach_view_options', {
 export const useKittelViewOptionsStore = defineStore('kittel_view_options', {
     state: () => ({ ...defaultFilter }),
 });
+
+export const useSchiorringViewOptionsStore = defineStore('schiorring_view_options', {
+    state: () => ({ ...defaultFilter }),
+});
