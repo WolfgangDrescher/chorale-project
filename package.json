@@ -13,24 +13,24 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxtjs/i18n-edge": "8.0.0-rc.5-28274558.b818011",
     "@pinia/nuxt": "^0.5.1",
-    "chart.js": "^4.4.0",
+    "chart.js": "^4.4.1",
     "js-levenshtein": "^1.1.6",
-    "monaco-editor": "^0.44.0",
+    "monaco-editor": "^0.45.0",
     "pinia": "^2.0.34",
     "verovio": "^4.0.1",
     "vue-verovio-canvas": "^1.2.4"
   },
   "devDependencies": {
     "@nuxt/content": "^2.5.2",
-    "@nuxtjs/google-fonts": "^3.0.0",
-    "@nuxtjs/tailwindcss": "^6.9.5",
+    "@nuxtjs/google-fonts": "^3.1.1",
+    "@nuxtjs/i18n": "^8.0.0-rc.9",
+    "@nuxtjs/tailwindcss": "^6.10.1",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "cli-progress": "^3.12.0",
     "html-entities": "^2.3.3",
     "js-yaml": "^4.1.0",
-    "nuxt": "^3.8.1",
-    "nuxt-icon": "^0.6.6"
+    "nuxt": "^3.8.2",
+    "nuxt-icon": "^0.6.7"
   }
 }
