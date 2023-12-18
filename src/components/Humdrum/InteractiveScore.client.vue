@@ -38,6 +38,7 @@ const verovioCanvasOptions = computed(() => {
         },
         scale: scale.value,
         data: formattedScoreData.value,
+        key: formattedScoreData.value,
     });
 });
 
