@@ -33,22 +33,21 @@ const figuredbassFilter = computed({
     set: (value) => value ? addFilter(hideFiguredbassFilter) : removeFilter(hideFiguredbassFilter),
 });
 
-const partSelector = ref('all');
+const partSelector = ref([]);
 watch(partSelector, (value) => {
     removeFilter(new ExtractSpineFilter());
-    if (value !== 'all') {
-        let spines = null;
-        if (value === 'fb') {
-            spines = '1-3';
-        } else if (value === 'piano') {
-            spines = '4-5';
-        } else if (value === 'satb') {
-            spines = '6-9';
-        }
-        if (spines) {
-            console.log(spines);
-            addFilter(new ExtractSpineFilter(spines));
-        }
+    const spines = [];
+    if (value.includes('fb')) {
+        spines.push('1-3');
+    }
+    if (value.includes('piano')) {
+        spines.push('4-5');
+    }
+    if (value.includes('satb')) {
+        spines.push('6-9');
+    }
+    if (spines.length) {
+        addFilter(new ExtractSpineFilter(spines.join(',')));
     }
 }, {immediate: true});
 
@@ -63,11 +62,10 @@ const figuresWithoutSlashes = computed({
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 items-center">
         <div>
             <FormDropdown v-model="partSelector" :label="$t('schiorringSelectPart')" :options="[
-                {value: 'all', text: $t('schiorringPartAll')},
-                {value: 'fb', text: $t('schiorringPartFb')},
-                {value: 'piano', text: $t('schiorringPartPiano')},
                 {value: 'satb', text: $t('schiorringPartSatb')},
-            ]" :search-enabled="false" :multiple="false" />
+                {value: 'piano', text: $t('schiorringPartPiano')},
+                {value: 'fb', text: $t('schiorringPartFb')},
+            ]" :search-enabled="false" :multiple="true" />
         </div>
         <div>
             <FormCheckbox v-model="modernClefsModori" :label="$t('humdrumFilter.ModernClefsModoriFilter')" group-label="" />
