@@ -1,4 +1,6 @@
 <script setup>
+import { storeToRefs } from 'pinia';
+
 const props = defineProps({
     url: {
         type: String,
@@ -27,7 +29,7 @@ if (!response.ok) {
 }
 setData(await response.text())
 
-const scale = ref(40);
+const { scale } = storeToRefs(useScoreViewOptionsStore());
 const verovioCanvasOptions = computed(() => {
     return Object.assign({
         pageMargin: 50,

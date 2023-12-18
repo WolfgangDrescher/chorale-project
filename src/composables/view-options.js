@@ -15,3 +15,9 @@ export const useKittelViewOptionsStore = defineStore('kittel_view_options', {
 export const useSchiorringViewOptionsStore = defineStore('schiorring_view_options', {
     state: () => ({ ...defaultFilter }),
 });
+
+export const useScoreViewOptionsStore = defineStore('score_view_options', {
+    state: () => ({
+        scale: 40,
+    }),
+});
