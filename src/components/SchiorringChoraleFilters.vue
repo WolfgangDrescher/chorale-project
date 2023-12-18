@@ -11,7 +11,22 @@ const props = defineProps({
 const { scoreFilters } = storeToRefs(useSchiorringViewOptionsStore());
 const { filters, addFilter, removeFilter } = props.scoreFormatter;
 
-scoreFilters.value.forEach(filter => addFilter(filter));
+const defaultPartSelector = [];
+scoreFilters.value.forEach(filter => {
+    addFilter(filter);
+    if (filter.className === 'ExtractSpineFilter') {
+        const values = filter.value.split(',');
+        if (values.includes('1-3')) {
+            defaultPartSelector.push('fb');
+        }
+        if (values.includes('4-5')) {
+            defaultPartSelector.push('piano');
+        }
+        if (values.includes('6-9')) {
+            defaultPartSelector.push('satb');
+        }
+    }
+});
 
 watch(filters, (value) => {
     scoreFilters.value = [...value];
@@ -33,7 +48,7 @@ const figuredbassFilter = computed({
     set: (value) => value ? addFilter(hideFiguredbassFilter) : removeFilter(hideFiguredbassFilter),
 });
 
-const partSelector = ref([]);
+const partSelector = ref(defaultPartSelector);
 watch(partSelector, (value) => {
     removeFilter(new ExtractSpineFilter());
     const spines = [];
