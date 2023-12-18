@@ -26,8 +26,8 @@ export function useHumdrumScoreFormatter(kernScore) {
         }
         if (found) {
             found.beforeRemove();
+            filters.value = filters.value.filter(f => f.id !== found.id);
         }
-        filters.value = filters.value.filter(f => f.id !== found.id);
     }
 
     const filtersAsString = computed(() => {
