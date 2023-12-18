@@ -1,7 +1,7 @@
 export function useHumdrumScoreFormatter(kernScore) {
     const data = ref(toRaw(unref(kernScore)));
     const filters = ref([]);
-    // When using exportMode filters are ignored and manualFilters will be used instead
+    // When using expertMode filters are ignored and manualFilters will be used instead
     const manualFilters = ref('');
 
     function addFilter(filter) {
