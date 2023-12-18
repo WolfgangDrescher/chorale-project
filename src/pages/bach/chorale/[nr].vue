@@ -87,12 +87,12 @@ const scoreFormatter = useHumdrumScoreFormatter();
                 >
                     <BachChoraleFilters :score-formatter="scoreFormatter" />
                 </HumdrumInteractiveScore>
-                <template #error="{ error }">
-                    <AlertMessage>
-                        <p>{{ error }}</p>
-                    </AlertMessage>
-                </template>
             </Suspense>
+            <template #error="{ error }">
+                <AlertMessage>
+                    <p>{{ error }}</p>
+                </AlertMessage>
+            </template>
         </NuxtErrorBoundary>
 
         <section>

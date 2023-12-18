@@ -61,12 +61,12 @@ const scoreFormatter = useHumdrumScoreFormatter();
                 <HumdrumInteractiveScore :url="chorale.localRawFile" :score-formatter="scoreFormatter" :verovio-options="verovioOptions">
                     <SchiorringChoraleFilters :score-formatter="scoreFormatter" />
                 </HumdrumInteractiveScore>
-                <template #error="{ error }">
-                    <AlertMessage>
-                        <p>{{ error }}</p>
-                    </AlertMessage>
-                </template>
             </Suspense>
+            <template #error="{ error }">
+                <AlertMessage>
+                    <p>{{ error }}</p>
+                </AlertMessage>
+            </template>
         </NuxtErrorBoundary>
 
         <Subheading>
