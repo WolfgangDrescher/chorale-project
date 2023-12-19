@@ -87,8 +87,11 @@ function highlightHintInKern(chorale, kern, hintString) {
 
 onMounted(async () => {
     const kern = await $fetch(props.chorale.localRawFile, { parseResponse: (txt) => txt });
-    kernScore.value = highlightMintInKern(props.chorale, kern, props.highlightMint);
-    kernScore.value = highlightHintInKern(props.chorale, kernScore.value, props.highlightHint);
+    kernScore.value = kern;
+    if (props.chorale instanceof BachChorale) {
+        kernScore.value = highlightMintInKern(props.chorale, kern, props.highlightMint);
+        kernScore.value = highlightHintInKern(props.chorale, kernScore.value, props.highlightHint);
+    }
 });
 </script>
 
