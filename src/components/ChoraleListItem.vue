@@ -93,6 +93,11 @@ onMounted(async () => {
         kernScore.value = highlightHintInKern(props.chorale, kernScore.value, props.highlightHint);
     }
 });
+
+const verovioOptions = {
+    pageMarginBottom: 30,
+    pageMarginLeft: props.chorale instanceof SchiorringChorale ? 30 : 0,
+};
 </script>
 
 <template>
@@ -122,7 +127,7 @@ onMounted(async () => {
             </div>
         </template>
         <div class="flex flex-col gap-4 mt-4">
-            <VerovioCanvas :data="kernScore" :select="fullScore ? {} : {measureRange: '1-4'}" view-mode="horizontal" :scale="35" lazy unload :lazy-delay="100" :options="{ pageMarginBottom: 30 }" />
+            <VerovioCanvas :data="kernScore" :select="fullScore ? {} : {measureRange: '1-4'}" view-mode="horizontal" :scale="35" lazy unload :lazy-delay="100" :options="verovioOptions" />
         </div>
     </Card>
 </template>
