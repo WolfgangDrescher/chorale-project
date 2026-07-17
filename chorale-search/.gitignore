@@ -1,0 +1,18 @@
+# Build output
+build/
+
+# External dependencies: fetched by scripts/fetch-deps.sh
+external/
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Compiler/linker artifacts
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.exe
