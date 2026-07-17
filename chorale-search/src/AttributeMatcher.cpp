@@ -7,6 +7,8 @@ namespace choralesearch {
 namespace {
 
 const std::string kDurationKey = "duration";
+const std::string kFermataKey = "fermata";
+const std::string kKernFeature = "kern";
 
 bool isWildcard(const std::vector<std::string>& allowed) {
     return std::find(allowed.begin(), allowed.end(), "*") != allowed.end();
@@ -16,13 +18,10 @@ bool inList(const std::vector<std::string>& allowed, const std::string& actual) 
     return std::find(allowed.begin(), allowed.end(), actual) != allowed.end();
 }
 
-std::optional<std::string> lookupValue(const HumdrumChorale& chorale, std::size_t voice, int lineNumber,
-                                        const std::string& feature) {
+hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineNumber, const std::string& feature) {
     hum::HTp start = chorale.spine(feature, voice);
-    if (!start) return std::nullopt;
-    hum::HTp tok = findTokenAtLine(start, lineNumber);
-    if (!tok) return std::nullopt;
-    return std::string(*tok);
+    if (!start) return nullptr;
+    return findTokenAtLine(start, lineNumber);
 }
 
 } // namespace
@@ -58,12 +57,16 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                 std::string actual;
                 if (key == kDurationKey) {
                     actual = hum::Convert::durationToRecip(tok->getDuration());
+                } else if (key == kFermataKey) {
+                    hum::HTp kernTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
+                    if (!kernTok) { ok = false; break; }
+                    actual = kernTok->hasFermata() ? "true" : "false";
                 } else if (key == m_drivingFeature) {
                     actual = std::string(*tok);
                 } else {
-                    auto val = lookupValue(chorale, voice, lineNumber, key);
-                    if (!val) { ok = false; break; }
-                    actual = *val;
+                    hum::HTp valTok = lookupToken(chorale, voice, lineNumber, key);
+                    if (!valTok) { ok = false; break; }
+                    actual = std::string(*valTok);
                 }
                 if (!inList(allowed, actual)) { ok = false; break; }
             }

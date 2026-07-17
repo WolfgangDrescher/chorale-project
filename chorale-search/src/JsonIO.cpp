@@ -8,6 +8,7 @@ namespace {
 
 std::vector<std::string> attributeValueFromJson(const nlohmann::json& v, const std::string& context) {
     if (v.is_string()) return {v.get<std::string>()};
+    if (v.is_boolean()) return {v.get<bool>() ? "true" : "false"};
     if (v.is_array()) {
         std::vector<std::string> out;
         for (const auto& entry : v) {
@@ -17,7 +18,7 @@ std::vector<std::string> attributeValueFromJson(const nlohmann::json& v, const s
         if (out.empty()) throw std::invalid_argument(context + ": OR-list must not be empty");
         return out;
     }
-    throw std::invalid_argument(context + ": must be a string or an array of strings");
+    throw std::invalid_argument(context + ": must be a string, boolean, or an array of strings");
 }
 
 std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
