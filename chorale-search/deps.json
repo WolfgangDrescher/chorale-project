@@ -1,0 +1,10 @@
+{
+    "humlib": {
+        "url": "https://codeload.github.com/WolfgangDrescher/humlib/tar.gz/196e0d4210bed3d1611d9aa986ff7df3ed9a9920",
+        "keep": ["min"]
+    },
+    "json": {
+        "url": "https://codeload.github.com/nlohmann/json/tar.gz/refs/tags/v3.12.0",
+        "keep": ["single_include"]
+    }
+}
