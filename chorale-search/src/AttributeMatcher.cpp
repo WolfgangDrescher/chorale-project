@@ -6,6 +6,8 @@ namespace choralesearch {
 
 namespace {
 
+const std::string kDurationKey = "duration";
+
 bool isWildcard(const std::vector<std::string>& allowed) {
     return std::find(allowed.begin(), allowed.end(), "*") != allowed.end();
 }
@@ -54,7 +56,9 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                 if (isWildcard(allowed)) continue;
 
                 std::string actual;
-                if (key == m_drivingFeature) {
+                if (key == kDurationKey) {
+                    actual = hum::Convert::durationToRecip(tok->getDuration());
+                } else if (key == m_drivingFeature) {
                     actual = std::string(*tok);
                 } else {
                     auto val = lookupValue(chorale, voice, lineNumber, key);
