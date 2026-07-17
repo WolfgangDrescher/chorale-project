@@ -15,8 +15,8 @@ namespace {
 
 void printUsage(const char* argv0) {
     std::cerr <<
-        "Usage: " << argv0 << " CORPUS_DIR --query JSON\n"
-        "   or: " << argv0 << " CORPUS_DIR --query-file FILE.json\n";
+        "Usage: " << argv0 << " CORPUS_DIR --query JSON [--format table|json]\n"
+        "   or: " << argv0 << " CORPUS_DIR --query-file FILE.json [--format table|json]\n";
 }
 
 void printTable(const std::vector<Result>& results) {
@@ -25,6 +25,11 @@ void printTable(const std::vector<Result>& results) {
         std::cout << r.choraleId << '\t' << r.feature << '\t' << r.voiceLabel << '\t' << r.startLineNumber << '\t'
                    << r.endLineNumber << '\t' << r.startPosition << '\t' << r.endPosition << '\n';
     }
+    std::cerr << results.size() << " match(es)\n";
+}
+
+void printJson(const std::vector<Result>& results) {
+    std::cout << choralesearch::resultsToJson(results).dump(1, '\t') << '\n';
     std::cerr << results.size() << " match(es)\n";
 }
 
@@ -40,6 +45,7 @@ int main(int argc, char** argv) {
     std::string queryFile;
     std::string queryString;
     bool haveQueryString = false;
+    std::string format = "table";
 
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
@@ -50,6 +56,7 @@ int main(int argc, char** argv) {
         try {
             if (arg == "--query-file") { queryFile = next("--query-file"); }
             else if (arg == "--query") { queryString = next("--query"); haveQueryString = true; }
+            else if (arg == "--format") { format = next("--format"); }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else { std::cerr << "Unknown option: " << arg << "\n"; printUsage(argv[0]); return 1; }
         } catch (const std::exception& e) {
@@ -68,6 +75,11 @@ int main(int argc, char** argv) {
         printUsage(argv[0]);
         return 1;
     }
+    if (format != "table" && format != "json") {
+        std::cerr << "Error: --format must be 'table' or 'json'\n\n";
+        printUsage(argv[0]);
+        return 1;
+    }
 
     try {
         nlohmann::json j;
@@ -81,7 +93,12 @@ int main(int argc, char** argv) {
         Query query = choralesearch::queryFromJson(j);
 
         CorpusSearch search(corpusDir);
-        printTable(search.run(query));
+        std::vector<Result> results = search.run(query);
+        if (format == "json") {
+            printJson(results);
+        } else {
+            printTable(results);
+        }
     } catch (const nlohmann::json::exception& e) {
         std::cerr << "Error: invalid JSON: " << e.what() << "\n";
         return 1;
