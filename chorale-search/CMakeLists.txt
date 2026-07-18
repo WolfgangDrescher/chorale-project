@@ -41,4 +41,9 @@ target_link_libraries(chorale_core PUBLIC humlib)
 add_executable(chorale-search cli/chorale-search.cpp)
 target_link_libraries(chorale-search PRIVATE chorale_core)
 
+add_executable(add-modulations cli/add-modulations.cpp)
+target_include_directories(add-modulations PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include)
+target_compile_options(add-modulations PRIVATE -Wall -Wextra)
+target_link_libraries(add-modulations PRIVATE humlib)
+
 install(TARGETS chorale-search RUNTIME DESTINATION bin)
