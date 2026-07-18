@@ -1,0 +1,6 @@
+/kern/
+
+# Misc
+.DS_Store
+.fleet
+.idea
