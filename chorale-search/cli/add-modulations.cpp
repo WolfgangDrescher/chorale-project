@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -157,13 +158,13 @@ void processChorale(const std::string& choraleId, const std::vector<Modulation>&
 }
 
 void printUsage(const char* argv0) {
-    std::cerr << "Usage: " << argv0 << " ANNOTATIONS_JSON SOURCE_KERN_DIR OUT_KERN_DIR\n";
+    std::cerr << "Usage: " << argv0 << " ANNOTATIONS_JSON SOURCE_KERN_DIR OUT_KERN_DIR [CHORALE_ID...]\n";
 }
 
 } // namespace
 
 int main(int argc, char** argv) {
-    if (argc != 4) {
+    if (argc < 4) {
         printUsage(argv[0]);
         return 1;
     }
@@ -171,6 +172,7 @@ int main(int argc, char** argv) {
     fs::path annotationsPath = argv[1];
     fs::path sourceDir = argv[2];
     fs::path outDir = argv[3];
+    std::vector<std::string> requestedIds(argv + 4, argv + argc);
 
     try {
         std::ifstream f(annotationsPath);
@@ -181,7 +183,17 @@ int main(int argc, char** argv) {
 
         fs::create_directories(outDir);
 
+        for (const std::string& choraleId : requestedIds) {
+            if (!root.contains(choraleId)) {
+                throw std::runtime_error("No modulations found for chorale: " + choraleId);
+            }
+        }
+
         for (const auto& [choraleId, modsJson] : root.items()) {
+            if (!requestedIds.empty() &&
+                std::find(requestedIds.begin(), requestedIds.end(), choraleId) == requestedIds.end()) {
+                continue;
+            }
             std::vector<Modulation> mods;
             for (const auto& entry : modsJson) {
                 mods.push_back(parseModulation(entry.at(0).get<std::string>(), entry.at(1).get<std::string>()));
