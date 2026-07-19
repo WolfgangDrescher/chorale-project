@@ -1,18 +1,31 @@
 # Thin convenience wrapper around the CMake build.
-#   make deps            download external libraries (pinned by commit hash, see scripts/deps.json)
-#   make                 build everything (Release) into build/
-#   make debug           build with debug info / no optimization
-#   make run-cli ARGS="data --query '{...}'"
-#   make clean
 #
-# No `test`/`test-verbose` target right now -- tests/ is deliberately not
-# part of the active build (see CMakeLists.txt); the files are still on
-# disk for later.
+# make deps
+#     download external libraries (pinned by commit hash, see scripts/deps.json)
+#
+# make
+#     build everything (Release) into build/
+#
+# make debug
+#     build with debug info / no optimization
+#
+# make run-cli ARGS="data --query '{...}'"
+#
+# make test
+#     build and run the tests/ suite (see tests/test_framework.hpp)
+#
+# make test-verbose
+#     same, but run each test binary directly instead of through ctest, so
+#     you get its own output with none of ctest's -V scaffolding around it
+#     (needs jq, same as scripts/fetch-deps.sh)
+#
+# make clean
 
+SHELL     := /bin/bash
 BUILD_DIR := build
 JOBS      ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: all deps debug clean run-cli
+.PHONY: all deps debug clean run-cli test test-verbose
 .DEFAULT_GOAL := all
 
 deps:
@@ -31,3 +44,13 @@ clean:
 
 run-cli: all
 	./$(BUILD_DIR)/chorale-search $(ARGS)
+
+test: all
+	ctest --test-dir $(BUILD_DIR) --output-on-failure
+
+test-verbose: all
+	@status=0; \
+	while IFS= read -r cmd; do \
+		(cd $(BUILD_DIR) && eval "$$cmd") || status=1; \
+	done < <(ctest --test-dir $(BUILD_DIR) --show-only=json-v1 | jq -r '.tests[] | (.command | join(" "))'); \
+	exit $$status
