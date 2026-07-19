@@ -14,6 +14,10 @@ HumdrumChorale::HumdrumChorale(const std::string& path) : m_path(path) {
         throw std::runtime_error("Could not parse Humdrum file: " + path);
     }
 
+    // Apply analysis spines such as **deg and **mint so every chorale has them
+    // available before search runs
+    applySpineAnalysisTools(m_infile);
+
     int maxTrack = m_infile.getMaxTrack();
     for (int track = 1; track <= maxTrack; ++track) {
         hum::HTp start = m_infile.getTrackStart(track);
@@ -51,6 +55,20 @@ hum::HTp findTokenAtLine(hum::HTp spineStart, int targetLineNumber) {
         t = t->getNextToken();
     }
     return nullptr;
+}
+
+void applySpineAnalysisTools(hum::HumdrumFile& infile) {
+    hum::Tool_deg degTool;
+    degTool.run(infile);
+    if (degTool.hasHumdrumText()) {
+        infile.readString(degTool.getHumdrumText());
+    }
+
+    hum::Tool_mint mintTool;
+    mintTool.run(infile);
+    if (mintTool.hasHumdrumText()) {
+        infile.readString(mintTool.getHumdrumText());
+    }
 }
 
 } // namespace choralesearch
