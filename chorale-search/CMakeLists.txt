@@ -47,3 +47,13 @@ target_compile_options(add-modulations PRIVATE -Wall -Wextra)
 target_link_libraries(add-modulations PRIVATE humlib)
 
 install(TARGETS chorale-search RUNTIME DESTINATION bin)
+
+option(BUILD_TESTS "Build the minitest test binaries in tests/" ON)
+
+if(BUILD_TESTS)
+    enable_testing()
+
+    add_executable(test_voicemap tests/test_voicemap.cpp src/VoiceMap.cpp)
+    target_include_directories(test_voicemap PRIVATE src tests)
+    add_test(NAME voicemap COMMAND test_voicemap)
+endif()
