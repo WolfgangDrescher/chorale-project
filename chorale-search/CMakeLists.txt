@@ -56,4 +56,8 @@ if(BUILD_TESTS)
     add_executable(test_voicemap tests/test_voicemap.cpp src/VoiceMap.cpp)
     target_include_directories(test_voicemap PRIVATE src tests)
     add_test(NAME voicemap COMMAND test_voicemap)
+
+    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp)
+    target_include_directories(test_jsonio PRIVATE src tests external/json/single_include)
+    add_test(NAME jsonio COMMAND test_jsonio)
 endif()
