@@ -7,7 +7,7 @@
 namespace choralesearch {
 
 struct Result {
-    std::string choraleId;			 // e.g. "chor029"
+    std::string choraleId;           // e.g. "chor029"
     std::string feature;             // e.g. "deg", "mint"
     std::string voiceLabel;          // e.g. "Soprano"
     std::size_t voice = 0;           // 1-indexed voice (spine); 0 = not set (voices are always 1-4; where 1 is Bass)
@@ -24,9 +24,9 @@ inline std::ostream& operator<<(std::ostream& os, const Result& r) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Results& results) {
-	for (const auto& r : results)
-		os << r << '\n';
-	return os;
+    for (const auto& r : results)
+        os << r << '\n';
+    return os;
 }
 
 } // namespace choralesearch
