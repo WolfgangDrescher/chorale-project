@@ -65,4 +65,26 @@ TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano) {
     CHECK_RESULT(results[5], "chor029", 4, "45", "47");
     CHECK_RESULT(results[6], "chor029", 4, "47", "50");
 }
+
+TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano_fermata) {
+    Query q;
+    q.feature = "deg";
+    q.pattern = {
+        AttributeMap{{"deg", {"3"}}},
+        AttributeMap{{"deg", {"2"}}},
+        AttributeMap{{"deg", {"1", "3"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "soprano";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 4u);
+
+    CHECK_RESULT(results[0], "chor029", 4, "5", "7");
+    CHECK_RESULT(results[1], "chor029", 4, "12", "14");
+    CHECK_RESULT(results[2], "chor029", 4, "20", "22");
+    CHECK_RESULT(results[3], "chor029", 4, "47", "50");
+}
+
 TEST_MAIN()
