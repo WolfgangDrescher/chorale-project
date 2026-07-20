@@ -54,7 +54,6 @@ TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano) {
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
-    std::cout << results;
 
     REQUIRE(results.size() == 7u);
 
