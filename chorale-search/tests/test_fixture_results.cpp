@@ -17,7 +17,7 @@ using choralesearch::Query;
 // results: for pattern X, chorale Y's voice Z has a match starting/ending at
 // exactly these beat positions.
 
-TEST_CASE(deg_descending_3_2_1) {
+TEST_CASE(deg_3_2_1) {
     Query q;
     q.feature = "deg";
     q.pattern = {
