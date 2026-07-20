@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -41,6 +42,15 @@ inline std::string shortFileName(const std::string& file) {
     if (pos != std::string::npos) return file.substr(pos + 1);
     pos = file.find_last_of('/');
     return pos == std::string::npos ? file : file.substr(pos + 1);
+}
+
+// Resolves tests/fixtures/<choraleId>.krn relative to the calling test file
+// (not the test binary's working directory, which varies by how it's
+// invoked -- directly, via ctest, via `make test`, ...). Use the
+// FIXTURE_CHORALE(id) macro below rather than calling this directly, so
+// __FILE__ is always the test file itself.
+inline std::string fixtureChoralePath(const char* sourceFile, const std::string& choraleId) {
+    return (std::filesystem::path(sourceFile).parent_path() / "fixtures" / (choraleId + ".krn")).string();
 }
 
 inline void reportFailure(const char* file, int line, const std::string& msg) {
@@ -183,6 +193,9 @@ inline int minitestMain(const char* sourceFile) {
     static void name();                                                             \
     static minitest::Registrar registrar_##name(#name, name);                       \
     static void name()
+
+// Path to tests/fixtures/<id>.krn, e.g. FIXTURE_CHORALE("chor029").
+#define FIXTURE_CHORALE(id) minitest::fixtureChoralePath(__FILE__, id)
 
 #define CHECK(cond)                                                                 \
     do {                                                                            \
