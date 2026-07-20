@@ -53,6 +53,39 @@ inline std::string fixtureChoralePath(const char* sourceFile, const std::string&
     return (std::filesystem::path(sourceFile).parent_path() / "fixtures" / (choraleId + ".krn")).string();
 }
 
+// RAII guard that redirects stderr to /dev/null for its scope -- for
+// silencing known-noisy diagnostic output an external library (e.g.
+// humlib) writes directly to stderr around an expected failure, without
+// touching stdout (so minitest's own report still prints normally).
+// A no-op on non-POSIX platforms, where it's simply not implemented.
+#if defined(__unix__) || defined(__APPLE__)
+class SilenceStderr {
+public:
+    SilenceStderr() {
+        std::fflush(stderr);
+        m_savedFd = dup(fileno(stderr));
+        if (FILE* devnull = std::fopen("/dev/null", "w")) {
+            dup2(fileno(devnull), fileno(stderr));
+            std::fclose(devnull);
+        }
+    }
+    ~SilenceStderr() {
+        std::fflush(stderr);
+        if (m_savedFd >= 0) {
+            dup2(m_savedFd, fileno(stderr));
+            close(m_savedFd);
+        }
+    }
+    SilenceStderr(const SilenceStderr&) = delete;
+    SilenceStderr& operator=(const SilenceStderr&) = delete;
+
+private:
+    int m_savedFd = -1;
+};
+#else
+class SilenceStderr {};
+#endif
+
 inline void reportFailure(const char* file, int line, const std::string& msg) {
     ++failureCount();
     std::ostringstream oss;

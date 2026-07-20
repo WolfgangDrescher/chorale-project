@@ -12,6 +12,7 @@ TEST_CASE(constructor_sets_path_and_id_from_the_filename_stem) {
 }
 
 TEST_CASE(constructor_throws_on_a_missing_file) {
+    minitest::SilenceStderr silence;
     CHECK_THROWS(HumdrumChorale("/nonexistent/path/to/chorale.krn"));
 }
 
