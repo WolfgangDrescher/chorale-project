@@ -129,4 +129,24 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard) {
     CHECK_RESULT(results[5], "chor029", 4, "45", "47");
 }
 
+TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard_and_fermata) {
+    Query q;
+    q.feature = "deg";
+    q.pattern = {
+        AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
+        AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
+        AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "all";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 3u);
+
+    CHECK_RESULT(results[0], "chor029", 4, "5", "7");
+    CHECK_RESULT(results[1], "chor029", 4, "12", "14");
+    CHECK_RESULT(results[2], "chor029", 4, "20", "22");
+}
+
 TEST_MAIN()
