@@ -16,10 +16,10 @@ public:
     explicit CorpusSearch(std::filesystem::path corpusRoot);
 
     // Runs `query` across every *.krn file found (recursively) under the corpus root.
-    std::vector<Result> run(const Query& query) const;
+    Results run(const Query& query) const;
 
     // Runs `query` against a single already-loaded chorale.
-    std::vector<Result> runOne(const HumdrumChorale& chorale, const Query& query) const;
+    Results runOne(const HumdrumChorale& chorale, const Query& query) const;
 
 private:
     std::filesystem::path m_corpusRoot;

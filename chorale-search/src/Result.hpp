@@ -1,6 +1,8 @@
 #pragma once
 
+#include <ostream>
 #include <string>
+#include <vector>
 
 namespace choralesearch {
 
@@ -14,5 +16,11 @@ struct Result {
     std::size_t startLineNumber = 0; // 1-indexed line in the compiled Humdrum file; 0 = not set
     std::size_t endLineNumber = 0;   // same, for the last matched line number
 };
+
+using Results = std::vector<Result>;
+
+inline std::ostream& operator<<(std::ostream& os, const Result& r) {
+    return os << r.choraleId << '\t' << r.feature << '\t' << r.voiceLabel << '\t' << '\t' << r.startPosition << '\t' << r.endPosition;
+}
 
 } // namespace choralesearch

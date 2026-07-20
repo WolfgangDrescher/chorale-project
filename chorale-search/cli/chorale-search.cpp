@@ -10,6 +10,7 @@
 using choralesearch::CorpusSearch;
 using choralesearch::Query;
 using choralesearch::Result;
+using choralesearch::Results;
 
 namespace {
 
@@ -19,7 +20,7 @@ void printUsage(const char* argv0) {
         "   or: " << argv0 << " CORPUS_DIR --query-file FILE.json [--format table|json]\n";
 }
 
-void printTable(const std::vector<Result>& results) {
+void printTable(const Results& results) {
     std::cout << "chorale\tfeature\tvoice\tstart_line\tend_line\tstart_position\tend_position\n";
     for (const auto& r : results) {
         std::cout << r.choraleId << '\t' << r.feature << '\t' << r.voiceLabel << '\t' << r.startLineNumber << '\t'
@@ -28,7 +29,7 @@ void printTable(const std::vector<Result>& results) {
     std::cerr << results.size() << " match(es)\n";
 }
 
-void printJson(const std::vector<Result>& results) {
+void printJson(const Results& results) {
     std::cout << choralesearch::resultsToJson(results).dump(1, '\t') << '\n';
     std::cerr << results.size() << " match(es)\n";
 }
@@ -93,7 +94,7 @@ int main(int argc, char** argv) {
         Query query = choralesearch::queryFromJson(j);
 
         CorpusSearch search(corpusDir);
-        std::vector<Result> results = search.run(query);
+        Results results = search.run(query);
         if (format == "json") {
             printJson(results);
         } else {

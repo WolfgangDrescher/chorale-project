@@ -41,8 +41,8 @@ std::vector<fs::path> CorpusSearch::findChoraleFiles() const {
     return files;
 }
 
-std::vector<Result> CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) const {
-    std::vector<Result> results;
+Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) const {
+    Results results;
     if (!chorale.hasFeature(query.feature)) return results;
 
     AttributeMatcher matcher(query.feature, query.pattern);
@@ -66,8 +66,8 @@ std::vector<Result> CorpusSearch::runOne(const HumdrumChorale& chorale, const Qu
     return results;
 }
 
-std::vector<Result> CorpusSearch::run(const Query& query) const {
-    std::vector<Result> allResults;
+Results CorpusSearch::run(const Query& query) const {
+    Results allResults;
     for (const auto& file : findChoraleFiles()) {
         HumdrumChorale chorale(file.string());
         if (!chorale.hasFeature(query.feature)) continue;

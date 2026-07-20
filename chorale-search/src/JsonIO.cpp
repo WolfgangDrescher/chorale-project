@@ -75,7 +75,7 @@ nlohmann::json resultToJson(const Result& r) {
     return j;
 }
 
-nlohmann::json resultsToJson(const std::vector<Result>& results) {
+nlohmann::json resultsToJson(const Results& results) {
     nlohmann::json arr = nlohmann::json::array();
     for (const auto& r : results) arr.push_back(resultToJson(r));
     return arr;
