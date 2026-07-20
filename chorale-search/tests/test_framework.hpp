@@ -13,6 +13,8 @@
 #include <unistd.h>
 #endif
 
+#include "../src/Result.hpp"
+
 namespace minitest {
 
 struct TestCase {
@@ -271,6 +273,27 @@ inline int minitestMain(const char* sourceFile) {
             minitest::reportFailure(__FILE__, __LINE__,                             \
                                      std::string("CHECK_NOTHROW failed: threw: ") + e.what()); \
         }                                                                           \
+    } while (0)
+
+#define CHECK_RESULT_FIELD(a, b)                                                    \
+    do {                                                                            \
+        ++minitest::checkCount();                                                   \
+        auto _mt_a = (a);                                                           \
+        auto _mt_b = (b);                                                           \
+        if (!(_mt_a == _mt_b)) {                                                    \
+            std::string _mt_msg = "CHECK_RESULT failed: " #a " == " #b " (got '" +  \
+                                   minitest::toDebugString(_mt_a) + "', expected '" + \
+                                   minitest::toDebugString(_mt_b) + "')";           \
+            minitest::reportFailure(__FILE__, __LINE__, _mt_msg);                   \
+        }                                                                           \
+    } while (0)
+
+#define CHECK_RESULT(r, expChoraleId, expVoice, expStartPosition, expEndPosition)   \
+    do {                                                                            \
+        CHECK_RESULT_FIELD((r).choraleId, expChoraleId);                            \
+        CHECK_RESULT_FIELD((r).voice, expVoice);                                    \
+        CHECK_RESULT_FIELD((r).startPosition, expStartPosition);                    \
+        CHECK_RESULT_FIELD((r).endPosition, expEndPosition);                        \
     } while (0)
 
 #define REQUIRE(cond)                                                               \
