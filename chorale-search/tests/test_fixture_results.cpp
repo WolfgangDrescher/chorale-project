@@ -29,7 +29,6 @@ TEST_CASE(deg_3_2_1) {
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
-    std::cout << results;
 
     REQUIRE(results.size() == 8u);
 
