@@ -10,10 +10,17 @@
 #
 # make clean
 #     remove the generated ./kern directory
+#
+# make fixtures
+#     wipe chorale-search/tests/fixtures/ and regenerate it (with
+#     modulations applied, same as `make kern`) for the chorales listed in
+#     FIXTURE_CHORALES below -- these ARE committed, unlike ./kern
 
-.PHONY: kern clean
+.PHONY: kern clean fixtures
 
-CHORALES += $(filter-out kern clean,$(MAKECMDGOALS))
+CHORALES += $(filter-out kern clean fixtures,$(MAKECMDGOALS))
+
+FIXTURE_CHORALES := chor029
 
 kern:
 	$(MAKE) -C chorale-search
@@ -25,6 +32,16 @@ kern:
 
 clean:
 	rm -rf kern
+
+fixtures:
+	$(MAKE) -C chorale-search
+	rm -rf chorale-search/tests/fixtures
+	mkdir -p chorale-search/tests/fixtures
+	./chorale-search/build/add-modulations \
+		annotations/bach-modulations.json \
+		bach-370-chorales/kern \
+		chorale-search/tests/fixtures \
+		$(FIXTURE_CHORALES)
 
 # lets chorale IDs passed after `kern` (e.g. `make kern chor001`) be picked up
 # as $(CHORALES) above instead of make trying to build them as targets.
