@@ -20,7 +20,13 @@ struct Result {
 using Results = std::vector<Result>;
 
 inline std::ostream& operator<<(std::ostream& os, const Result& r) {
-    return os << r.choraleId << '\t' << r.feature << '\t' << r.voiceLabel << '\t' << '\t' << r.startPosition << '\t' << r.endPosition;
+    return os << r.choraleId << '\t' << r.feature << '\t' << r.voiceLabel << '\t' << r.startPosition << '\t' << r.endPosition;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Results& results) {
+	for (const auto& r : results)
+		os << r << '\n';
+	return os;
 }
 
 } // namespace choralesearch
