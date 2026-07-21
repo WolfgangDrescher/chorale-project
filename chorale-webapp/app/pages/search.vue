@@ -72,6 +72,7 @@ function onSubmit() {
                     :sections="[
                         {
                             items: items.map(i => ({
+                                voice: i.voice,
                                 startLine: i.startLine,
                                 endLine: i.endLine,
                             })),
