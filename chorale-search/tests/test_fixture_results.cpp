@@ -182,4 +182,82 @@ TEST_CASE(mint_plusM2_plusM2_in_soprano_start_at_previous_token) {
     CHECK_RESULT(results[0], "chor029", 4, "0", "2");
 }
 
+TEST_CASE(mint_direction_only_plus2_plus2_in_soprano) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"mint", {"+2"}}},
+        AttributeMap{{"mint", {"+2"}}},
+        AttributeMap{{"mint", {"-2"}}},
+    };
+    q.voices = "soprano";
+    q.mintStartAtPreviousToken = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 4u);
+    CHECK_RESULT(results[0], "chor029", 4, "0", "3");
+    CHECK_RESULT(results[1], "chor029", 4, "9", "12");
+    CHECK_RESULT(results[2], "chor029", 4, "16", "19");
+    CHECK_RESULT(results[3], "chor029", 4, "42", "44");
+}
+
+TEST_CASE(mint_direction_only_plus2_plus2_in_soprano_with_duration) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"mint", {"+2"}}, {"duration", {"4"}}},
+        AttributeMap{{"mint", {"+2"}}},
+        AttributeMap{{"mint", {"-2"}}},
+    };
+    q.voices = "soprano";
+    q.mintStartAtPreviousToken = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+
+    REQUIRE(results.size() == 3u);
+    CHECK_RESULT(results[0], "chor029", 4, "0", "3");
+    CHECK_RESULT(results[1], "chor029", 4, "9", "12");
+    CHECK_RESULT(results[2], "chor029", 4, "16", "19");
+}
+
+TEST_CASE(mint_bare_number_2_or_1_in_soprano) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"mint", {"2", "1"}}},
+    };
+    q.voices = "soprano";
+    q.mintStartAtPreviousToken = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 40u);
+}
+
+TEST_CASE(mint_mixed_input) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"mint", {"m2"}}},
+        AttributeMap{{"mint", {"6"}}},
+        AttributeMap{{"mint", {"+2"}}},
+        AttributeMap{{"mint", {"-m2"}}},
+        AttributeMap{{"mint", {"-2"}}, {"duration", {"2"}}},
+        AttributeMap{{"mint", {"P1"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "soprano";
+    q.mintStartAtPreviousToken = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor009"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 1u);
+    CHECK_RESULT(results[0], "chor009", 4, "32", "39");
+}
+
 TEST_MAIN()

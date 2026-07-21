@@ -1,6 +1,9 @@
 #include "AttributeMatcher.hpp"
 
 #include <algorithm>
+#include <optional>
+#include <regex>
+#include <tuple>
 
 namespace choralesearch {
 
@@ -9,6 +12,7 @@ namespace {
 const std::string kDurationKey = "duration";
 const std::string kFermataKey = "fermata";
 const std::string kKernFeature = "kern";
+const std::string kMintFeature = "mint";
 
 bool isWildcard(const std::vector<std::string>& allowed) {
     return std::find(allowed.begin(), allowed.end(), "*") != allowed.end();
@@ -16,6 +20,39 @@ bool isWildcard(const std::vector<std::string>& allowed) {
 
 bool inList(const std::vector<std::string>& allowed, const std::string& actual) {
     return std::find(allowed.begin(), allowed.end(), actual) != allowed.end();
+}
+
+// Splits a **mint interval token ("+M2", "-m3", ...) into (sign, quality, number).
+// Sign and quality come back empty when the string has none (e.g. a bare "2"), which
+// mintValueMatches() below treats as "matches any" for that part.
+std::optional<std::tuple<std::string, std::string, std::string>> parseMintValue(const std::string& s) {
+    static const std::regex re(R"(^([+-]?)([A-Za-z]*)(\d+)$)");
+    std::smatch m;
+    if (!std::regex_match(s, m, re)) return std::nullopt;
+    return std::make_tuple(m[1].str(), m[2].str(), m[3].str());
+}
+
+// A pattern value may omit sign and/or quality to match any of them -- "+2" matches
+// "+M2"/"+m2"/"+A2"/..., and a bare "2" matches any sign and quality with that diatonic
+// number. Values that aren't parseable as an interval (e.g. mint's own "[G]" bracketed
+// pitch name for a voice's very first note) fall back to a literal string comparison.
+bool mintValueMatches(const std::string& patternValue, const std::string& actual) {
+    auto pattern = parseMintValue(patternValue);
+    auto value = parseMintValue(actual);
+    if (!pattern || !value) return patternValue == actual;
+
+    const auto& [patternSign, patternQuality, patternNumber] = *pattern;
+    const auto& [valueSign, valueQuality, valueNumber] = *value;
+    if (patternNumber != valueNumber) return false;
+    if (!patternSign.empty() && patternSign != valueSign) return false;
+    if (!patternQuality.empty() && patternQuality != valueQuality) return false;
+    return true;
+}
+
+bool mintInList(const std::vector<std::string>& allowed, const std::string& actual) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
+        return mintValueMatches(v, actual);
+    });
 }
 
 hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineNumber, const std::string& feature) {
@@ -77,7 +114,8 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     if (!valTok) { ok = false; break; }
                     actual = std::string(*valTok);
                 }
-                if (!inList(allowed, actual)) { ok = false; break; }
+                bool matched = (key == kMintFeature) ? mintInList(allowed, actual) : inList(allowed, actual);
+                if (!matched) { ok = false; break; }
             }
         }
         if (!ok) continue;

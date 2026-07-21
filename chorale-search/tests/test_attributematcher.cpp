@@ -183,4 +183,47 @@ TEST_CASE(matcher_mint_start_at_previous_token_is_a_noop_after_an_explicit_wildc
     }
 }
 
+TEST_CASE(matcher_mint_pattern_can_omit_quality_to_match_any_quality) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher exact("mint", {AttributeMap{{"mint", {"+M2"}}}});
+    AttributeMatcher directionOnly("mint", {AttributeMap{{"mint", {"+2"}}}});
+
+    auto exactMatches = exact.findAll(chorale, 4);
+    auto directionOnlyMatches = directionOnly.findAll(chorale, 4);
+
+    REQUIRE(!exactMatches.empty());
+    // Every exact "+M2" match must also satisfy the quality-agnostic "+2".
+    for (const auto& m : exactMatches) {
+        bool found = std::any_of(directionOnlyMatches.begin(), directionOnlyMatches.end(),
+                                  [&](const auto& d) { return d.startLineNumber == m.startLineNumber; });
+        CHECK(found);
+    }
+    CHECK(directionOnlyMatches.size() >= exactMatches.size());
+}
+
+TEST_CASE(matcher_mint_pattern_can_omit_sign_and_quality_to_match_any_direction) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher ascending("mint", {AttributeMap{{"mint", {"+2"}}}});
+    AttributeMatcher descending("mint", {AttributeMap{{"mint", {"-2"}}}});
+    AttributeMatcher either("mint", {AttributeMap{{"mint", {"2"}}}});
+
+    auto ascendingMatches = ascending.findAll(chorale, 4);
+    auto descendingMatches = descending.findAll(chorale, 4);
+    auto eitherMatches = either.findAll(chorale, 4);
+
+    REQUIRE(!ascendingMatches.empty());
+    REQUIRE(!descendingMatches.empty());
+    CHECK_EQ(eitherMatches.size(), ascendingMatches.size() + descendingMatches.size());
+}
+
+TEST_CASE(matcher_mint_pattern_mixes_partial_and_exact_values_across_positions) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    std::vector<AttributeMap> pattern = {
+        AttributeMap{{"mint", {"+2"}}},
+        AttributeMap{{"mint", {"+M2"}}},
+    };
+    AttributeMatcher matcher("mint", pattern);
+    CHECK(!matcher.findAll(chorale, 4).empty());
+}
+
 TEST_MAIN()
