@@ -8,6 +8,6 @@ useHead({
 
  <template>
     <UContainer>
-       <h1>Index</h1>
+       <Heading>{{ $t('home') }}</Heading>
     </UContainer>
 </template>
