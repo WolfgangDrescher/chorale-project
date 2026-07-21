@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
@@ -22,5 +24,17 @@ export default defineNuxtConfig({
     },
     colorMode: {
         preference: 'light',
+    },
+    nitro: {
+        routeRules: {
+            '/kern/**': { prerender: false },
+        },
+        publicAssets: [
+            {
+                baseURL: 'kern/bach-370-chorales',
+                dir: fileURLToPath(new URL('../kern/bach-370-chorales', import.meta.url)),
+                maxAge: 3600,
+            },
+        ],
     },
 })
