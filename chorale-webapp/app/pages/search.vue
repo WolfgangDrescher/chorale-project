@@ -63,7 +63,7 @@ function onSubmit() {
         <div v-else class="flex flex-col gap-4">
             <UCard v-for="([choraleId, items]) in Object.entries(results)" :title="choraleId">
                 <HighlightedScore
-                    view-mode="horizontal"
+                    :horizontal="true"
                     :piece-id="choraleId"
                     :verovio-options="{
                         scale: 35,
