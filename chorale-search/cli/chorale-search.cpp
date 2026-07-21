@@ -18,6 +18,10 @@ void printUsage(const char* argv0) {
     std::cerr <<
         "Usage: " << argv0 << " CORPUS_DIR (--query JSON | --query-file FILE.json) [OPTIONS]\n"
         "\n"
+        "Arguments:\n"
+        "    CORPUS_DIR            directory containing the corpus's *.krn files (searched\n"
+        "                          recursively), or a path to a single .krn file\n"
+        "\n"
         "Options:\n"
         "    --format table|json   output format (default: table)\n"
         "    --group-by-chorale    with --format json, group results into an object keyed\n"
