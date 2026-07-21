@@ -16,11 +16,13 @@ namespace {
 
 void printUsage(const char* argv0) {
     std::cerr <<
-        "Usage: " << argv0 << " CORPUS_DIR --query JSON [--format table|json] [--group-by-chorale]\n"
-        "   or: " << argv0 << " CORPUS_DIR --query-file FILE.json [--format table|json] [--group-by-chorale]\n"
+        "Usage: " << argv0 << " CORPUS_DIR (--query JSON | --query-file FILE.json) [OPTIONS]\n"
         "\n"
-        "  --group-by-chorale   only with --format json: output an object keyed by\n"
-        "                       choraleId instead of a flat array of results\n";
+        "Options:\n"
+        "    --format table|json   output format (default: table)\n"
+        "    --group-by-chorale    with --format json, group results into an object keyed\n"
+        "                          by choraleId instead of a flat array\n"
+        "    --help, -h            show this help\n";
 }
 
 void printTable(const Results& results) {
