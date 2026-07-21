@@ -81,4 +81,10 @@ nlohmann::json resultsToJson(const Results& results) {
     return arr;
 }
 
+nlohmann::json resultsGroupedByChoraleToJson(const Results& results) {
+    nlohmann::json obj = nlohmann::json::object();
+    for (const auto& r : results) obj[r.choraleId].push_back(resultToJson(r));
+    return obj;
+}
+
 } // namespace choralesearch

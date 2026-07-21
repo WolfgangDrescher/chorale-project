@@ -7,6 +7,7 @@ using choralesearch::Result;
 using choralesearch::Query;
 using choralesearch::resultsToJson;
 using choralesearch::resultToJson;
+using choralesearch::resultsGroupedByChoraleToJson;
 using nlohmann::json;
 
 TEST_CASE(query_from_json_parses_minimal_query) {
@@ -111,6 +112,37 @@ TEST_CASE(results_to_json_handles_empty_list) {
     json arr = resultsToJson({});
     REQUIRE(arr.is_array());
     CHECK_EQ(arr.size(), 0u);
+}
+
+TEST_CASE(results_grouped_by_chorale_to_json) {
+    Result a;
+    a.choraleId = "chor001";
+    a.startPosition = "1";
+    Result b;
+    b.choraleId = "chor002";
+    b.startPosition = "2";
+    Result c;
+    c.choraleId = "chor001";
+    c.startPosition = "3";
+
+    json obj = resultsGroupedByChoraleToJson({a, b, c});
+    REQUIRE(obj.is_object());
+    REQUIRE(obj.size() == 2u);
+
+    REQUIRE(obj.at("chor001").is_array());
+    REQUIRE(obj.at("chor001").size() == 2u);
+    CHECK_EQ(obj.at("chor001")[0].at("startPosition").get<std::string>(), std::string("1"));
+    CHECK_EQ(obj.at("chor001")[1].at("startPosition").get<std::string>(), std::string("3"));
+
+    REQUIRE(obj.at("chor002").is_array());
+    REQUIRE(obj.at("chor002").size() == 1u);
+    CHECK_EQ(obj.at("chor002")[0].at("startPosition").get<std::string>(), std::string("2"));
+}
+
+TEST_CASE(results_grouped_by_chorale_to_json_handles_empty_list) {
+    json obj = resultsGroupedByChoraleToJson({});
+    REQUIRE(obj.is_object());
+    CHECK_EQ(obj.size(), 0u);
 }
 
 TEST_MAIN()

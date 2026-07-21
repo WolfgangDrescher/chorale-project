@@ -16,8 +16,11 @@ namespace {
 
 void printUsage(const char* argv0) {
     std::cerr <<
-        "Usage: " << argv0 << " CORPUS_DIR --query JSON [--format table|json]\n"
-        "   or: " << argv0 << " CORPUS_DIR --query-file FILE.json [--format table|json]\n";
+        "Usage: " << argv0 << " CORPUS_DIR --query JSON [--format table|json] [--group-by-chorale]\n"
+        "   or: " << argv0 << " CORPUS_DIR --query-file FILE.json [--format table|json] [--group-by-chorale]\n"
+        "\n"
+        "  --group-by-chorale   only with --format json: output an object keyed by\n"
+        "                       choraleId instead of a flat array of results\n";
 }
 
 void printTable(const Results& results) {
@@ -29,8 +32,10 @@ void printTable(const Results& results) {
     std::cerr << results.size() << " match(es)\n";
 }
 
-void printJson(const Results& results) {
-    std::cout << choralesearch::resultsToJson(results).dump(1, '\t') << '\n';
+void printJson(const Results& results, bool groupByChorale) {
+    nlohmann::json j = groupByChorale ? choralesearch::resultsGroupedByChoraleToJson(results)
+                                       : choralesearch::resultsToJson(results);
+    std::cout << j.dump(1, '\t') << '\n';
     std::cerr << results.size() << " match(es)\n";
 }
 
@@ -47,6 +52,7 @@ int main(int argc, char** argv) {
     std::string queryString;
     bool haveQueryString = false;
     std::string format = "table";
+    bool groupByChorale = false;
 
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
@@ -58,6 +64,7 @@ int main(int argc, char** argv) {
             if (arg == "--query-file") { queryFile = next("--query-file"); }
             else if (arg == "--query") { queryString = next("--query"); haveQueryString = true; }
             else if (arg == "--format") { format = next("--format"); }
+            else if (arg == "--group-by-chorale") { groupByChorale = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else { std::cerr << "Unknown option: " << arg << "\n"; printUsage(argv[0]); return 1; }
         } catch (const std::exception& e) {
@@ -81,6 +88,11 @@ int main(int argc, char** argv) {
         printUsage(argv[0]);
         return 1;
     }
+    if (groupByChorale && format != "json") {
+        std::cerr << "Error: --group-by-chorale requires --format json\n\n";
+        printUsage(argv[0]);
+        return 1;
+    }
 
     try {
         nlohmann::json j;
@@ -96,7 +108,7 @@ int main(int argc, char** argv) {
         CorpusSearch search(corpusDir);
         Results results = search.run(query);
         if (format == "json") {
-            printJson(results);
+            printJson(results, groupByChorale);
         } else {
             printTable(results);
         }

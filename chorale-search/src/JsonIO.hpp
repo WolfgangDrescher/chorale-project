@@ -12,5 +12,6 @@ Query queryFromJson(const nlohmann::json& j);
 
 nlohmann::json resultToJson(const Result& r);
 nlohmann::json resultsToJson(const Results& results);
+nlohmann::json resultsGroupedByChoraleToJson(const Results& results);
 
 } // namespace choralesearch
