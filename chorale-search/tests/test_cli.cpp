@@ -111,7 +111,7 @@ TEST_CASE(cli_json_format_matches_what_corpussearch_finds_directly) {
     CHECK_EQ(parsed.size(), std::size_t{18}); // 6 soprano fermatas x 3 fixture chorales, see test_corpussearch.cpp
     REQUIRE(!parsed.empty());
     CHECK(parsed[0].contains("chorale"));
-    CHECK(parsed[0].contains("voiceIndex"));
+    CHECK(parsed[0].contains("voice"));
 }
 
 TEST_CASE(cli_table_format_has_a_header_plus_one_row_per_match) {
