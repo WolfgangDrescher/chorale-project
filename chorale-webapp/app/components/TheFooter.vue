@@ -11,6 +11,10 @@ const columns = [
                 label: t('home'),
                 to: localePath('index'),
             },
+            {
+                label: t('search'),
+                to: localePath('search'),
+            },
         ],
     },
     {
