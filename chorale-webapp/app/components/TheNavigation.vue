@@ -7,6 +7,10 @@ const items = [
         label: t('home'),
         to: localePath({name: 'index'}),
     },
+    {
+        label: t('search'),
+        to: localePath({name: 'search'}),
+    },
 ];
 </script>
 
