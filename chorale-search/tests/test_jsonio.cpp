@@ -18,6 +18,7 @@ TEST_CASE(query_from_json_parses_minimal_query) {
     REQUIRE(q.pattern[0].count("deg") == 1u);
     CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"1"}));
     CHECK(!q.limit.has_value());
+    CHECK(!q.mintStartAtPreviousToken); // default when omitted
 }
 
 TEST_CASE(query_from_json_reads_voices_and_limit) {
@@ -25,6 +26,12 @@ TEST_CASE(query_from_json_reads_voices_and_limit) {
     CHECK_EQ(q.voices, std::string("1234"));
     REQUIRE(q.limit.has_value());
     CHECK_EQ(*q.limit, 5u);
+}
+
+TEST_CASE(query_from_json_reads_mint_start_at_previous_token) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-M2"}],"mintStartAtPreviousToken":true})"));
+    CHECK(q.mintStartAtPreviousToken);
 }
 
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {

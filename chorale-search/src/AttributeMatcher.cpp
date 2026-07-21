@@ -26,8 +26,10 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
 
 } // namespace
 
-AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern)
-    : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)) {}
+AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
+                                    bool mintStartAtPreviousToken)
+    : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)),
+      m_mintStartAtPreviousToken(mintStartAtPreviousToken) {}
 
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
@@ -45,6 +47,13 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
     }
 
     if (onsets.size() < n) return matches;
+
+    bool shiftStartToPreviousToken = false;
+    if (m_mintStartAtPreviousToken && m_drivingFeature == "mint") {
+        auto it = m_pattern[0].find(m_drivingFeature);
+        bool firstPositionIsExplicitWildcard = it != m_pattern[0].end() && isWildcard(it->second);
+        shiftStartToPreviousToken = !firstPositionIsExplicitWildcard;
+    }
 
     for (std::size_t start = 0; start + n <= onsets.size(); ++start) {
         bool ok = true;
@@ -73,11 +82,13 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         }
         if (!ok) continue;
 
+        hum::HTp startTok = (shiftStartToPreviousToken && start > 0) ? onsets[start - 1] : onsets[start];
+
         AttributeMatch m;
         m.voice = voice;
-        m.startLineNumber = static_cast<std::size_t>(onsets[start]->getLineNumber());
+        m.startLineNumber = static_cast<std::size_t>(startTok->getLineNumber());
         m.endLineNumber = static_cast<std::size_t>(onsets[start + n - 1]->getLineNumber());
-        m.startPosition = onsets[start]->getDurationFromStart();
+        m.startPosition = startTok->getDurationFromStart();
         m.endPosition = onsets[start + n - 1]->getDurationFromStart();
         matches.push_back(std::move(m));
     }

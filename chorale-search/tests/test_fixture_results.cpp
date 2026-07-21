@@ -149,4 +149,37 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard_and_fermata) {
     CHECK_RESULT(results[2], "chor029", 4, "20", "22");
 }
 
+TEST_CASE(mint_plusM2_plusM2_in_soprano) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"mint", {"+M2"}}},
+        AttributeMap{{"mint", {"+M2"}}},
+    };
+    q.voices = "soprano";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(!results.empty());
+    CHECK_RESULT(results[0], "chor029", 4, "1", "2");
+}
+
+TEST_CASE(mint_plusM2_plusM2_in_soprano_start_at_previous_token) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"mint", {"+M2"}}},
+        AttributeMap{{"mint", {"+M2"}}},
+    };
+    q.voices = "soprano";
+    q.mintStartAtPreviousToken = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(!results.empty());
+    CHECK_RESULT(results[0], "chor029", 4, "0", "2");
+}
+
 TEST_MAIN()

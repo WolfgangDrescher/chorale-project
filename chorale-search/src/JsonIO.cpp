@@ -59,6 +59,10 @@ Query queryFromJson(const nlohmann::json& j) {
         q.limit = j["limit"].get<std::size_t>();
     }
 
+    if (j.contains("mintStartAtPreviousToken") && j["mintStartAtPreviousToken"].is_boolean()) {
+        q.mintStartAtPreviousToken = j["mintStartAtPreviousToken"].get<bool>();
+    }
+
     return q;
 }
 

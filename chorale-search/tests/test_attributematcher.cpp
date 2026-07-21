@@ -116,4 +116,71 @@ TEST_CASE(matcher_returns_empty_when_the_pattern_is_longer_than_the_voice_has_on
     CHECK(matcher.findAll(chorale, 1).empty());
 }
 
+TEST_CASE(matcher_mint_start_at_previous_token_has_no_effect_on_other_driving_features) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}};
+    AttributeMatcher withoutFlag("kern", pattern, /*mintStartAtPreviousToken=*/false);
+    AttributeMatcher withFlag("kern", pattern, /*mintStartAtPreviousToken=*/true);
+
+    auto without = withoutFlag.findAll(chorale, 1);
+    auto with = withFlag.findAll(chorale, 1);
+
+    REQUIRE(!without.empty());
+    REQUIRE(with.size() == without.size());
+    for (std::size_t i = 0; i < with.size(); ++i) {
+        CHECK_EQ(with[i].startLineNumber, without[i].startLineNumber);
+    }
+}
+
+TEST_CASE(matcher_mint_start_at_previous_token_shifts_every_start_back_by_one_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Positions left empty rather than an explicit {"mint": "*"} -- position 0 pinning
+    // the driving feature (wildcard or not) is exactly the escape hatch that disables
+    // the shift, which would make this test check nothing.
+    std::vector<AttributeMap> pattern = {AttributeMap{}, AttributeMap{}};
+    AttributeMatcher withoutShift("mint", pattern);
+    AttributeMatcher withShift("mint", pattern, /*mintStartAtPreviousToken=*/true);
+
+    auto unshifted = withoutShift.findAll(chorale, 4);
+    auto shifted = withShift.findAll(chorale, 4);
+
+    // A wildcard-only 2-position pattern matches every consecutive onset pair, so
+    // both matchers produce one match per window, in the same order.
+    REQUIRE(unshifted.size() > 1u);
+    REQUIRE(shifted.size() == unshifted.size());
+
+    // The very first window has nothing earlier to shift to.
+    CHECK_EQ(shifted[0].startLineNumber, unshifted[0].startLineNumber);
+
+    // Every later window's shifted start lands exactly on the previous window's
+    // (unshifted) start -- that's what "one onset earlier" means for a sliding window.
+    for (std::size_t i = 1; i < shifted.size(); ++i) {
+        CHECK_EQ(shifted[i].startLineNumber, unshifted[i - 1].startLineNumber);
+        CHECK_EQ(shifted[i].endLineNumber, unshifted[i].endLineNumber); // end is never touched
+    }
+}
+
+TEST_CASE(matcher_mint_start_at_previous_token_is_a_noop_after_an_explicit_wildcard) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // The pattern's own first position already pins the driving feature (even though,
+    // as a wildcard, it accepts any value) -- that position's onset is the intended
+    // start already, so the flag must not shift past it.
+    std::vector<AttributeMap> pattern = {
+        AttributeMap{{"mint", {"*"}}},
+        AttributeMap{{"mint", {"*"}}},
+        AttributeMap{{"mint", {"*"}}},
+    };
+    AttributeMatcher withoutFlag("mint", pattern, /*mintStartAtPreviousToken=*/false);
+    AttributeMatcher withFlag("mint", pattern, /*mintStartAtPreviousToken=*/true);
+
+    auto without = withoutFlag.findAll(chorale, 4);
+    auto with = withFlag.findAll(chorale, 4);
+
+    REQUIRE(!without.empty());
+    REQUIRE(with.size() == without.size());
+    for (std::size_t i = 0; i < with.size(); ++i) {
+        CHECK_EQ(with[i].startLineNumber, without[i].startLineNumber);
+    }
+}
+
 TEST_MAIN()
