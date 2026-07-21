@@ -12,4 +12,7 @@ export default defineNuxtConfig({
         defaultLocale: 'de',
         langDir: 'locales/',
     },
+    colorMode: {
+        preference: 'light',
+    },
 })
