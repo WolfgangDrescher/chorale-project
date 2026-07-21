@@ -126,7 +126,7 @@ onMounted(async () => {
                     <HighlightedNote v-for="noteId in noteGroup.items" :note-id="noteId" :color="noteGroup.color" :container="scoreContainer" />
                 </template>
                 <template v-for="sectionGroup in resolvedSections">
-                    <HighlightedSection v-for="section in sectionGroup.items" :start-line="section.startLine" :end-line="section.endLine" :label="section.label" :color="sectionGroup.color" :container="scoreContainer" />
+                    <HighlightedSection v-for="section in sectionGroup.items" :start-line="section.startLine" :end-line="section.endLine" :label="section.label" :voice="section.voice" :color="sectionGroup.color" :container="scoreContainer" />
                 </template>
                 <template v-for="lineGroup in resolvedLines">
                     <HighlightedSection v-for="line in lineGroup.items" :start-line="line.lineNumber" :end-line="line.lineNumber" :label="line.label" :color="lineGroup.color" :container="scoreContainer" />

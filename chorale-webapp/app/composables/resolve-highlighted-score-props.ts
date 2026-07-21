@@ -7,6 +7,7 @@ interface Section {
     startLine: number;
     endLine: number;
     label?: Label | string | null;
+    voice?: number;
 }
 
 interface SectionGroup {
@@ -91,6 +92,10 @@ export function useResolveHighlightedScoreProps(props: {
         return label;
     }
 
+    function resolveVoice(voice?: number): number | undefined {
+        return Number.isInteger(voice) && voice! > 0 ? voice : undefined;
+    }
+
     const isValidLineField = (id: string) => /^L\d+F\d+$/.test(id);
 
     const resolvedNotes = computed<NoteGroup[]>(() => {
@@ -133,6 +138,7 @@ export function useResolveHighlightedScoreProps(props: {
                     startLine: applyLineShift(s.startLine)!,
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label),
+                    voice: resolveVoice(s.voice),
                 }));
             return [
                 {
@@ -150,6 +156,7 @@ export function useResolveHighlightedScoreProps(props: {
                     startLine: applyLineShift(s.startLine)!,
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label) ?? null,
+                    voice: resolveVoice(s.voice),
                 }))
                 : [],
             color: group.color || defaultColors[index % defaultColors.length],

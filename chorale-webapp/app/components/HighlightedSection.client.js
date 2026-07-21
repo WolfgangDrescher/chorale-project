@@ -1,4 +1,17 @@
-function createMarker(startElem, endElem, systemElem, containerElem, color) {
+function getStaffIndexInMeasure(noteElem) {
+    const staffElem = noteElem?.closest('.staff');
+    const measureElem = staffElem?.closest('.measure');
+    if (!staffElem || !measureElem) return null;
+    const index = [...measureElem.querySelectorAll('.staff')].indexOf(staffElem);
+    return index === -1 ? null : index;
+}
+
+function getVoiceStaffRect(systemElem, voiceStaffIndex) {
+    const staffsInFirstMeasure = systemElem?.querySelector('.measure')?.querySelectorAll('.staff');
+    return getBBoxElem(staffsInFirstMeasure?.[voiceStaffIndex])?.getBoundingClientRect();
+}
+
+function createMarker(startElem, endElem, systemElem, containerElem, color, voiceStaffIndex = null) {
     endElem = getBBoxElem(endElem) || endElem;
 
     const systemFirstMeasureStaffRect = selectBBoxElem(systemElem, '.measure .staff')?.getBoundingClientRect();
@@ -7,9 +20,10 @@ function createMarker(startElem, endElem, systemElem, containerElem, color) {
     const startRect = getBBoxElem(startElem)?.getBoundingClientRect();
     const endRect = getBBoxElem(endElem)?.getBoundingClientRect();
 
+    const voiceStaffRect = voiceStaffIndex != null ? getVoiceStaffRect(systemElem, voiceStaffIndex) : null;
     const staffs = systemElem?.querySelectorAll('.measure .staff');
-    const firstStaffRect = getBBoxElem(staffs[0])?.getBoundingClientRect();
-    const lastStaffRect = getBBoxElem(staffs[staffs.length - 1])?.getBoundingClientRect();
+    const firstStaffRect = voiceStaffRect ?? getBBoxElem(staffs[0])?.getBoundingClientRect();
+    const lastStaffRect = voiceStaffRect ?? getBBoxElem(staffs[staffs.length - 1])?.getBoundingClientRect();
 
     const heightExtender = 15;
     const height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y  + heightExtender;
@@ -55,6 +69,10 @@ export default {
     props: {
         startLine: Number,
         endLine: Number,
+        voice: {
+            type: Number,
+            default: null,
+        },
         color: String,
         container: HTMLElement,
         label: {
@@ -69,16 +87,21 @@ export default {
         let startElem = null;
         let endElem = null;
         const containerElem = props.container;
+        const noteSelector = (line) => props.voice != null ? `g[id^="note-L${line}F${props.voice}"]` : `g[id^="note-L${line}F"]`;
 
         for (let i = props.startLine; i <= props.endLine; i++) {
-            startElem = props.container?.querySelector(`g[id^="note-L${i}F"]`);
+            startElem = props.container?.querySelector(noteSelector(i));
             if (startElem) break;
         }
 
         for (let i = props.endLine; i >= props.startLine; i--) {
-            endElem = props.container?.querySelector(`g[id^="note-L${i}F"]`);
+            endElem = props.container?.querySelector(noteSelector(i));
             if (endElem) break;
         }
+
+        const voiceStaffIndex = props.voice != null
+            ? getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem)
+            : null;
 
         if (startElem && endElem && containerElem) {
 
@@ -86,7 +109,7 @@ export default {
             const endSystem = endElem.closest('g.system');
 
             if (startSystem === endSystem) {
-                markers.push(createMarker(startElem, endElem, startSystem, containerElem, props.color));
+                markers.push(createMarker(startElem, endElem, startSystem, containerElem, props.color, voiceStaffIndex));
             } else {
                 const systemParentChildren = startSystem.parentElement.children;
                 const startIndex = [...systemParentChildren].indexOf(startSystem);
@@ -100,6 +123,7 @@ export default {
                         systemElem,
                         containerElem,
                         props.color,
+                        voiceStaffIndex,
                     ));
                 }
             }
