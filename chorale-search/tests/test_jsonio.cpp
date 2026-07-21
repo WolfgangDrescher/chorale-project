@@ -34,6 +34,12 @@ TEST_CASE(query_from_json_reads_mint_start_at_previous_token) {
     CHECK(q.mintStartAtPreviousToken);
 }
 
+TEST_CASE(query_from_json_reads_fb_compare_exact_chord) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"fb","pattern":[{"fb":"6 3"}],"fbCompareExactChord":true})"));
+    CHECK(q.fbCompareExactChord);
+}
+
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
     CHECK_EQ(q.pattern[0]["fermata"], (std::vector<std::string>{"true"}));

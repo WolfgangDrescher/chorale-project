@@ -45,7 +45,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
     Results results;
     if (!chorale.hasFeature(query.feature)) return results;
 
-    AttributeMatcher matcher(query.feature, query.pattern, query.mintStartAtPreviousToken);
+    AttributeMatcher matcher(query.feature, query.pattern, query.mintStartAtPreviousToken, query.fbCompareExactChord);
 
     for (std::size_t voice : resolveVoices(query.voices)) {
         for (auto& m : matcher.findAll(chorale, voice)) {

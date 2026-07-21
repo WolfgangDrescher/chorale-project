@@ -1,6 +1,7 @@
 #include "HumdrumChorale.hpp"
 
 #include <filesystem>
+#include <regex>
 #include <stdexcept>
 
 namespace fs = std::filesystem;
@@ -68,6 +69,16 @@ void applySpineAnalysisTools(hum::HumdrumFile& infile) {
     mintTool.run(infile);
     if (mintTool.hasHumdrumText()) {
         infile.readString(mintTool.getHumdrumText());
+    }
+
+    hum::Tool_fb fbTool;
+    fbTool.process("-c -n --hint");
+    fbTool.run(infile);
+    if (fbTool.hasHumdrumText()) {
+        // Rename **hint to **fb before parsing -- renaming the token after the fact
+        // wouldn't update HumdrumFile's separately cached line text.
+        static const std::regex hintRe(R"((^|\t)\*\*hint(?=\t|$))", std::regex::multiline);
+        infile.readString(std::regex_replace(fbTool.getHumdrumText(), hintRe, "$1**fb"));
     }
 }
 

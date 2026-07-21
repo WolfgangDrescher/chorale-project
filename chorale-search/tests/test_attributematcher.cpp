@@ -226,4 +226,98 @@ TEST_CASE(matcher_mint_pattern_mixes_partial_and_exact_values_across_positions) 
     CHECK(!matcher.findAll(chorale, 4).empty());
 }
 
+TEST_CASE(matcher_fb_as_driving_feature_gives_identical_matches_for_every_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher matcher("fb", {AttributeMap{}});
+    auto bass = matcher.findAll(chorale, 1);
+    auto tenor = matcher.findAll(chorale, 2);
+    auto alto = matcher.findAll(chorale, 3);
+    auto soprano = matcher.findAll(chorale, 4);
+
+    REQUIRE(!bass.empty());
+    REQUIRE(tenor.size() == bass.size());
+    REQUIRE(alto.size() == bass.size());
+    REQUIRE(soprano.size() == bass.size());
+    for (std::size_t i = 0; i < bass.size(); ++i) {
+        CHECK_EQ(tenor[i].startLineNumber, bass[i].startLineNumber);
+        CHECK_EQ(alto[i].startLineNumber, bass[i].startLineNumber);
+        CHECK_EQ(soprano[i].startLineNumber, bass[i].startLineNumber);
+    }
+}
+
+TEST_CASE(matcher_fb_as_cross_referenced_key_resolves_the_same_regardless_of_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Driving off kern in voice 4 (soprano), constrained on a literal fb value (not a
+    // wildcard, so the cross-spine lookup actually runs). fb's only spine is index 1
+    // (bass), so without remapping, chorale.spine("fb", 4) would be out of range and
+    // this constraint would fail for every candidate.
+    AttributeMatcher matcher("kern", {AttributeMap{{"fb", {"P5 M3"}}}});
+    CHECK(!matcher.findAll(chorale, 4).empty());
+}
+
+// fb pattern values can omit quality per figure, and can list several figures that
+// must all be present in the chord -- checked structurally (superset relationships),
+// exact real-music results live in test_fixture_results.cpp.
+
+TEST_CASE(matcher_fb_pattern_can_omit_quality_on_one_figure_but_not_another) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher exact("fb", {AttributeMap{{"fb", {"m6 m3"}}}});
+    AttributeMatcher mixed("fb", {AttributeMap{{"fb", {"6 m3"}}}}); // 6th free, 3rd pinned
+    AttributeMatcher any("fb", {AttributeMap{{"fb", {"6 3"}}}}); // both free
+
+    auto exactMatches = exact.findAll(chorale, 1);
+    auto mixedMatches = mixed.findAll(chorale, 1);
+    auto anyMatches = any.findAll(chorale, 1);
+
+    REQUIRE(!exactMatches.empty());
+    // Every exact "m6 m3" match must also satisfy the looser patterns.
+    for (const auto& m : exactMatches) {
+        auto hasLine = [&](const auto& matches) {
+            return std::any_of(matches.begin(), matches.end(),
+                                [&](const auto& x) { return x.startPosition == m.startPosition; });
+        };
+        CHECK(hasLine(mixedMatches));
+        CHECK(hasLine(anyMatches));
+    }
+    CHECK(mixedMatches.size() >= exactMatches.size());
+    CHECK(anyMatches.size() >= mixedMatches.size());
+}
+
+TEST_CASE(matcher_fb_pattern_requires_every_listed_figure_present_in_the_chord) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher sixOnly("fb", {AttributeMap{{"fb", {"6"}}}});
+    AttributeMatcher sixAndThree("fb", {AttributeMap{{"fb", {"6 3"}}}});
+
+    auto sixOnlyMatches = sixOnly.findAll(chorale, 1);
+    auto sixAndThreeMatches = sixAndThree.findAll(chorale, 1);
+
+    REQUIRE(!sixOnlyMatches.empty());
+    // Requiring an additional figure can only narrow the result set, never widen it.
+    CHECK(sixAndThreeMatches.size() <= sixOnlyMatches.size());
+    for (const auto& m : sixAndThreeMatches) {
+        bool alsoInSixOnly = std::any_of(sixOnlyMatches.begin(), sixOnlyMatches.end(),
+                                          [&](const auto& x) { return x.startLineNumber == m.startLineNumber; });
+        CHECK(alsoInSixOnly);
+    }
+}
+
+TEST_CASE(matcher_fb_compare_exact_chord_rejects_chords_with_extra_figures) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher permissive("fb", {AttributeMap{{"fb", {"6 3"}}}});
+    AttributeMatcher exact("fb", {AttributeMap{{"fb", {"6 3"}}}}, /*mintStartAtPreviousToken=*/false,
+                            /*fbCompareExactChord=*/true);
+
+    auto permissiveMatches = permissive.findAll(chorale, 1);
+    auto exactMatches = exact.findAll(chorale, 1);
+
+    REQUIRE(!permissiveMatches.empty());
+    // Exact-chord matching can only narrow the permissive (default) result set.
+    CHECK(exactMatches.size() <= permissiveMatches.size());
+    for (const auto& m : exactMatches) {
+        bool alsoInPermissive = std::any_of(permissiveMatches.begin(), permissiveMatches.end(),
+                                             [&](const auto& x) { return x.startLineNumber == m.startLineNumber; });
+        CHECK(alsoInPermissive);
+    }
+}
+
 TEST_MAIN()

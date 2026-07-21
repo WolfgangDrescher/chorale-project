@@ -25,6 +25,11 @@ struct Query {
     // (e.g. an explicit {"mint": "*"}), which signals the caller included that lead-in
     // token in the pattern themselves.
     bool mintStartAtPreviousToken = false;
+
+    // Only relevant when feature == "fb": by default an fb pattern value's figures are a
+    // minimum requirement, so "2 4" also matches a chord actually voiced as "2 4 6". When
+    // set, the chord must have exactly as many figures as the pattern value -- no extras.
+    bool fbCompareExactChord = false;
 };
 
 } // namespace choralesearch

@@ -239,6 +239,56 @@ TEST_CASE(mint_bare_number_2_or_1_in_soprano) {
     REQUIRE(results.size() == 40u);
 }
 
+TEST_CASE(fb_m6_3_in_bass) {
+    // fb's 6th figure pinned to minor, 3rd left quality-free -- excludes e.g. line 31's
+    // "M6 m3" (major 6th) while accepting every "m6 <any 3rd quality>" chord.
+    Query q;
+    q.feature = "fb";
+    q.pattern = {
+        AttributeMap{{"fb", {"m6 3"}}},
+    };
+    q.voices = "bass";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 13u);
+    CHECK_RESULT(results[0], "chor029", 1, "1", "1");
+    CHECK_RESULT(results[1], "chor029", 1, "5", "5");
+    CHECK_RESULT(results[2], "chor029", 1, "9", "9");
+    CHECK_RESULT(results[3], "chor029", 1, "12", "12");
+    CHECK_RESULT(results[4], "chor029", 1, "17", "17");
+    CHECK_RESULT(results[5], "chor029", 1, "19", "19");
+    CHECK_RESULT(results[6], "chor029", 1, "28", "28");
+    CHECK_RESULT(results[7], "chor029", 1, "35", "35");
+    CHECK_RESULT(results[8], "chor029", 1, "36+1/2", "36+1/2");
+    CHECK_RESULT(results[9], "chor029", 1, "39", "39");
+    CHECK_RESULT(results[10], "chor029", 1, "43", "43");
+    CHECK_RESULT(results[11], "chor029", 1, "44", "44");
+    CHECK_RESULT(results[12], "chor029", 1, "47", "47");
+}
+
+TEST_CASE(fb_component_order_within_a_pattern_value_does_not_matter) {
+    Query withOrder;
+    withOrder.feature = "fb";
+    withOrder.pattern = {AttributeMap{{"fb", {"m6 3"}}}};
+    withOrder.voices = "bass";
+
+    Query reversed;
+    reversed.feature = "fb";
+    reversed.pattern = {AttributeMap{{"fb", {"3 m6"}}}};
+    reversed.voices = "bass";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto a = search.run(withOrder);
+    auto b = search.run(reversed);
+
+    REQUIRE(a.size() == b.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        CHECK_EQ(a[i].startPosition, b[i].startPosition);
+    }
+}
+
 TEST_CASE(mint_mixed_input) {
     Query q;
     q.feature = "mint";
@@ -258,6 +308,74 @@ TEST_CASE(mint_mixed_input) {
 
     REQUIRE(results.size() == 1u);
     CHECK_RESULT(results[0], "chor009", 4, "32", "39");
+}
+
+TEST_CASE(fb_6_3_exact_chord_in_bass) {
+    // Same "6 3" pattern as a permissive search would use, but with fbCompareExactChord
+    // set: chords voiced with an extra component beyond the 6th and 3rd (e.g. an added
+    // 9th) no longer qualify, narrowing 19 permissive matches down to these 16.
+    Query q;
+    q.feature = "fb";
+    q.pattern = {
+        AttributeMap{{"fb", {"6 3"}}},
+    };
+    q.voices = "bass";
+    q.fbCompareExactChord = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 16u);
+    CHECK_RESULT(results[0], "chor029", 1, "1", "1");
+    CHECK_RESULT(results[1], "chor029", 1, "4+1/2", "4+1/2");
+    CHECK_RESULT(results[2], "chor029", 1, "5", "5");
+    CHECK_RESULT(results[3], "chor029", 1, "9", "9");
+    CHECK_RESULT(results[4], "chor029", 1, "11+1/2", "11+1/2");
+    CHECK_RESULT(results[5], "chor029", 1, "12", "12");
+    CHECK_RESULT(results[6], "chor029", 1, "17", "17");
+    CHECK_RESULT(results[7], "chor029", 1, "19", "19");
+    CHECK_RESULT(results[8], "chor029", 1, "28", "28");
+    CHECK_RESULT(results[9], "chor029", 1, "34+1/2", "34+1/2");
+    CHECK_RESULT(results[10], "chor029", 1, "35", "35");
+    CHECK_RESULT(results[11], "chor029", 1, "37", "37");
+    CHECK_RESULT(results[12], "chor029", 1, "39", "39");
+    CHECK_RESULT(results[13], "chor029", 1, "43", "43");
+    CHECK_RESULT(results[14], "chor029", 1, "44", "44");
+    CHECK_RESULT(results[15], "chor029", 1, "47", "47");
+}
+
+TEST_CASE(fb_4_2_chord_in_bass) {
+    Query q;
+    q.feature = "fb";
+    q.pattern = {
+        AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
+        AttributeMap{{"mint", {"-2"}}},
+    };
+    q.voices = "bass";
+    q.fbCompareExactChord = false;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 2u);
+    CHECK_RESULT(results[0], "chor029", 1, "24+1/2", "25");
+    CHECK_RESULT(results[1], "chor029", 1, "46", "47");
+}
+
+TEST_CASE(fb_4_2_exact_chord_in_bass) {
+    Query q;
+    q.feature = "fb";
+    q.pattern = {
+        AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
+        AttributeMap{{"mint", {"-2"}}},
+    };
+    q.voices = "bass";
+    q.fbCompareExactChord = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.empty());
 }
 
 TEST_MAIN()

@@ -63,6 +63,10 @@ Query queryFromJson(const nlohmann::json& j) {
         q.mintStartAtPreviousToken = j["mintStartAtPreviousToken"].get<bool>();
     }
 
+    if (j.contains("fbCompareExactChord") && j["fbCompareExactChord"].is_boolean()) {
+        q.fbCompareExactChord = j["fbCompareExactChord"].get<bool>();
+    }
+
     return q;
 }
 

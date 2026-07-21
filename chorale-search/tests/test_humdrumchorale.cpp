@@ -20,8 +20,8 @@ TEST_CASE(available_features_lists_kern_and_the_derived_analysis_spines) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     auto features = chorale.availableFeatures();
     // std::map-backed storage, so this comes back key-sorted rather than in
-    // file order -- "deg" < "kern" < "mint".
-    CHECK_EQ(features, (std::vector<std::string>{"deg", "kern", "mint"}));
+    // file order -- "deg" < "fb" < "kern" < "mint".
+    CHECK_EQ(features, (std::vector<std::string>{"deg", "fb", "kern", "mint"}));
 }
 
 TEST_CASE(has_feature_is_true_for_present_and_false_for_absent) {
@@ -29,6 +29,8 @@ TEST_CASE(has_feature_is_true_for_present_and_false_for_absent) {
     CHECK(chorale.hasFeature("kern"));
     CHECK(chorale.hasFeature("deg"));
     CHECK(chorale.hasFeature("mint"));
+    CHECK(chorale.hasFeature("fb"));
+    CHECK(!chorale.hasFeature("hint"));
     CHECK(!chorale.hasFeature("nonexistent"));
 }
 
