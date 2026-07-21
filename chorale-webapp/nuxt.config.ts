@@ -12,6 +12,14 @@ export default defineNuxtConfig({
         defaultLocale: 'de',
         langDir: 'locales/',
     },
+    vite: {
+        worker: {
+            format: 'es',
+        },
+        optimizeDeps: {
+            exclude: ['verovio'],
+        },
+    },
     colorMode: {
         preference: 'light',
     },
