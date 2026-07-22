@@ -50,6 +50,12 @@ TEST_CASE(query_from_json_accepts_array_or_list_for_attribute_value) {
     CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"1", "3", "5"}));
 }
 
+TEST_CASE(query_from_json_preserves_a_negated_key_as_is) {
+    Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"!deg":["1","3"]}]})"));
+    REQUIRE(q.pattern[0].count("!deg") == 1u);
+    CHECK_EQ(q.pattern[0]["!deg"], (std::vector<std::string>{"1", "3"}));
+}
+
 TEST_CASE(query_from_json_requires_feature_field) {
     CHECK_THROWS(queryFromJson(json::parse(R"({"pattern":[{"deg":"1"}]})")));
 }

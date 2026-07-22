@@ -320,4 +320,73 @@ TEST_CASE(matcher_fb_compare_exact_chord_rejects_chords_with_extra_figures) {
     }
 }
 
+// A "!" prefix on a pattern key negates that whole position (De Morgan's over the
+// OR-list) -- checked by partitioning: count("!key") + count("key") must equal the
+// total onset count, for the plain, mint, and fb comparators alike.
+
+TEST_CASE(matcher_negated_key_partitions_plain_comparator_matches) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher total("deg", {AttributeMap{}});
+    AttributeMatcher positive("deg", {AttributeMap{{"deg", {"3", "5"}}}});
+    AttributeMatcher negated("deg", {AttributeMap{{"!deg", {"3", "5"}}}});
+
+    auto totalMatches = total.findAll(chorale, 1);
+    auto positiveMatches = positive.findAll(chorale, 1);
+    auto negatedMatches = negated.findAll(chorale, 1);
+
+    REQUIRE(!totalMatches.empty());
+    CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
+
+    // No overlap between the two partitions.
+    for (const auto& m : negatedMatches) {
+        bool alsoInPositive = std::any_of(positiveMatches.begin(), positiveMatches.end(),
+                                           [&](const auto& x) { return x.startLineNumber == m.startLineNumber; });
+        CHECK(!alsoInPositive);
+    }
+}
+
+TEST_CASE(matcher_negated_key_partitions_mint_comparator_matches) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher total("mint", {AttributeMap{}});
+    AttributeMatcher positive("mint", {AttributeMap{{"mint", {"+2"}}}});
+    AttributeMatcher negated("mint", {AttributeMap{{"!mint", {"+2"}}}});
+
+    auto totalMatches = total.findAll(chorale, 4);
+    auto positiveMatches = positive.findAll(chorale, 4);
+    auto negatedMatches = negated.findAll(chorale, 4);
+
+    REQUIRE(!totalMatches.empty());
+    CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
+}
+
+TEST_CASE(matcher_negated_key_partitions_fb_comparator_matches) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher total("fb", {AttributeMap{}});
+    AttributeMatcher positive("fb", {AttributeMap{{"fb", {"6"}}}});
+    AttributeMatcher negated("fb", {AttributeMap{{"!fb", {"6"}}}});
+
+    auto totalMatches = total.findAll(chorale, 1);
+    auto positiveMatches = positive.findAll(chorale, 1);
+    auto negatedMatches = negated.findAll(chorale, 1);
+
+    REQUIRE(!totalMatches.empty());
+    CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
+}
+
+TEST_CASE(matcher_negated_key_as_a_cross_referenced_constraint) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Driving off kern, negating a cross-referenced deg constraint -- not just the
+    // driving feature itself.
+    AttributeMatcher total("kern", {AttributeMap{}});
+    AttributeMatcher positive("kern", {AttributeMap{{"deg", {"1"}}}});
+    AttributeMatcher negated("kern", {AttributeMap{{"!deg", {"1"}}}});
+
+    auto totalMatches = total.findAll(chorale, 1);
+    auto positiveMatches = positive.findAll(chorale, 1);
+    auto negatedMatches = negated.findAll(chorale, 1);
+
+    REQUIRE(!totalMatches.empty());
+    CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
+}
+
 TEST_MAIN()

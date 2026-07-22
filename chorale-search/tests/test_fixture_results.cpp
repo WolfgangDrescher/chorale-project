@@ -378,4 +378,44 @@ TEST_CASE(fb_4_2_exact_chord_in_bass) {
     REQUIRE(results.empty());
 }
 
+TEST_CASE(fb_not_rule_of_the_octave_chords_on_deg_4_in_bass) {
+    Query q;
+    q.feature = "fb";
+    q.voices = "1";
+    q.pattern = {
+        AttributeMap{{"deg", {"4"}}, {"!fb", {"2 4 6", "6 5 3"}}},
+    };
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 5u);
+    CHECK_RESULT(results[0], "chor029", 1, "5+1/2", "5+1/2");
+    CHECK_RESULT(results[1], "chor029", 1, "12+1/2", "12+1/2");
+    CHECK_RESULT(results[2], "chor029", 1, "36", "36");
+    CHECK_RESULT(results[3], "chor029", 1, "40", "40");
+    CHECK_RESULT(results[4], "chor029", 1, "47+1/2", "47+1/2");
+}
+
+TEST_CASE(fb_excluding_soprano_mint_2_or_1_or_bracketed_first_note) {
+    Query q;
+    q.feature = "fb";
+    q.voices = "4";
+    q.pattern = {
+        AttributeMap{{"!mint", {"2", "1", "[g]"}}},
+    };
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 6u);
+
+    CHECK_RESULT(results[0], "chor029", 4, "8", "8");
+    CHECK_RESULT(results[1], "chor029", 4, "16", "16");
+    CHECK_RESULT(results[2], "chor029", 4, "24", "24");
+    CHECK_RESULT(results[3], "chor029", 4, "33", "33");
+    CHECK_RESULT(results[4], "chor029", 4, "40", "40");
+    CHECK_RESULT(results[5], "chor029", 4, "42", "42");
+}
+
 TEST_MAIN()

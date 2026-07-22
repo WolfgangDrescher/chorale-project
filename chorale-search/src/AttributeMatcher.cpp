@@ -159,27 +159,36 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         for (std::size_t offset = 0; ok && offset < n; ++offset) {
             hum::HTp tok = onsets[start + offset];
             int lineNumber = tok->getLineNumber();
-            for (const auto& [key, allowed] : m_pattern[offset]) {
-                if (isWildcard(allowed)) continue;
+            for (const auto& [rawKey, allowed] : m_pattern[offset]) {
+                // A "!" prefix negates the whole position's result (De Morgan's over the
+                // OR-list: {"!deg": ["3","5"]} means "neither 3 nor 5"), not individual
+                // values -- negating single OR-list entries doesn't compose sensibly.
+                bool negate = rawKey.size() > 1 && rawKey[0] == '!';
+                const std::string key = negate ? rawKey.substr(1) : rawKey;
 
-                std::string actual;
-                if (key == kDurationKey) {
-                    actual = hum::Convert::durationToRecip(tok->getDuration());
-                } else if (key == kFermataKey) {
-                    hum::HTp kernTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
-                    if (!kernTok) { ok = false; break; }
-                    actual = kernTok->hasFermata() ? "true" : "false";
-                } else if (key == m_drivingFeature) {
-                    actual = std::string(*tok);
-                } else {
-                    hum::HTp valTok = lookupToken(chorale, effectiveVoice(key, voice), lineNumber, key);
-                    if (!valTok) { ok = false; break; }
-                    actual = std::string(*valTok);
-                }
                 bool matched;
-                if (key == kMintFeature) matched = mintInList(allowed, actual);
-                else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
-                else matched = inList(allowed, actual);
+                if (isWildcard(allowed)) {
+                    matched = true;
+                } else {
+                    std::string actual;
+                    if (key == kDurationKey) {
+                        actual = hum::Convert::durationToRecip(tok->getDuration());
+                    } else if (key == kFermataKey) {
+                        hum::HTp kernTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
+                        if (!kernTok) { ok = false; break; }
+                        actual = kernTok->hasFermata() ? "true" : "false";
+                    } else if (key == m_drivingFeature) {
+                        actual = std::string(*tok);
+                    } else {
+                        hum::HTp valTok = lookupToken(chorale, effectiveVoice(key, voice), lineNumber, key);
+                        if (!valTok) { ok = false; break; }
+                        actual = std::string(*valTok);
+                    }
+                    if (key == kMintFeature) matched = mintInList(allowed, actual);
+                    else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
+                    else matched = inList(allowed, actual);
+                }
+                if (negate) matched = !matched;
                 if (!matched) { ok = false; break; }
             }
         }
