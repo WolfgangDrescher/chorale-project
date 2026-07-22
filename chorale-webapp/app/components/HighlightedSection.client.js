@@ -87,7 +87,10 @@ export default {
         let startElem = null;
         let endElem = null;
         const containerElem = props.container;
-        const noteSelector = (line) => props.voice != null ? `g[id^="note-L${line}F${props.voice}"]` : `g[id^="note-L${line}F"]`;
+        const noteSelector = (line) => {
+            const suffix = props.voice != null ? `L${line}F${props.voice}` : `L${line}F`;
+            return `g[id^="note-${suffix}"], g[id^="rest-${suffix}"], g[id^="mrest-${suffix}"]`;
+        };
 
         for (let i = props.startLine; i <= props.endLine; i++) {
             startElem = props.container?.querySelector(noteSelector(i));
