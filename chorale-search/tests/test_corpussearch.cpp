@@ -71,12 +71,12 @@ TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
     q.voices = "soprano";
     auto results = search.run(q);
 
-    CHECK_EQ(results.size(), std::size_t{18}); // 6 fermatas x 3 fixture chorales
+    CHECK_EQ(results.size(), std::size_t{22}); // 6+6+6 fermatas x 3 fixture chorales, plus chor006's 4
     std::vector<std::string> ids;
     for (const auto& r : results) ids.push_back(r.choraleId);
     std::sort(ids.begin(), ids.end());
     ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
-    CHECK_EQ(ids, (std::vector<std::string>{"chor001", "chor009", "chor029"}));
+    CHECK_EQ(ids, (std::vector<std::string>{"chor001", "chor006", "chor009", "chor029"}));
 }
 
 TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
@@ -95,7 +95,7 @@ TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
 
     REQUIRE(results.size() == 8u);
     for (std::size_t i = 0; i < 6; ++i) CHECK_EQ(results[i].choraleId, std::string("chor001"));
-    for (std::size_t i = 6; i < 8; ++i) CHECK_EQ(results[i].choraleId, std::string("chor009"));
+    for (std::size_t i = 6; i < 8; ++i) CHECK_EQ(results[i].choraleId, std::string("chor006"));
 }
 
 TEST_CASE(run_throws_when_the_corpus_root_does_not_exist) {
