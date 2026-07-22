@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
     devtools: { enabled: false },
-    modules: ['@nuxt/ui', '@nuxtjs/i18n', '@pinia/nuxt'],
+    modules: ['@nuxt/ui', '@nuxt/content', '@nuxtjs/i18n', '@pinia/nuxt'],
     css: ['~/assets/css/main.css'],
     i18n: {
         strategy: 'prefix_except_default',

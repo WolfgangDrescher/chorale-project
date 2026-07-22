@@ -11,6 +11,10 @@ const items = [
         label: t('search'),
         to: localePath({name: 'search'}),
     },
+    {
+        label: t('docs'),
+        to: localePath('/docs'),
+    },
 ];
 </script>
 
