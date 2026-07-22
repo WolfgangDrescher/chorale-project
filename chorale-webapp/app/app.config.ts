@@ -3,5 +3,10 @@ export default defineAppConfig({
         colors: {
             primary: 'sky',
         },
+        contentSurround: {
+            slots: {
+                linkTitle: 'font-medium text-base',
+            },
+        },
     },
 });
