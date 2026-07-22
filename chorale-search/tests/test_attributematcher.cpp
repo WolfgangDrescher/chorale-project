@@ -42,12 +42,12 @@ TEST_CASE(matcher_kern_rhythm_only_value_matches_any_pitch_with_that_rhythm) {
 
 TEST_CASE(matcher_kern_rhythm_only_value_sees_past_tie_markup) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // Position 3, voice 2 is written "[4G" -- a tie-start marker before the duration digit.
+    // Position 2, voice 2 is written "[4G" -- a tie-start marker before the duration digit.
     AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4"}}}});
     auto matches = matcher.findAll(chorale, 2);
-    bool foundPosition3 = std::any_of(matches.begin(), matches.end(),
-                                    [](const auto& m) { return m.startPosition == 3; });
-    CHECK(foundPosition3);
+    bool foundPosition2 = std::any_of(matches.begin(), matches.end(),
+                                    [](const auto& m) { return m.startPosition == 2; });
+    CHECK(foundPosition2);
 }
 
 TEST_CASE(matcher_kern_pitch_only_value_matches_any_rhythm_with_that_pitch) {
