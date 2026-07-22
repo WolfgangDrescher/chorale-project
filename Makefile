@@ -23,7 +23,7 @@
 
 CHORALES += $(filter-out kern clean fixtures test,$(MAKECMDGOALS))
 
-FIXTURE_CHORALES := chor001 chor009 chor029
+FIXTURE_CHORALES := chor001 chor006 chor009 chor029
 
 kern:
 	$(MAKE) -C chorale-search
