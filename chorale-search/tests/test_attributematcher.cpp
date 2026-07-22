@@ -40,27 +40,45 @@ TEST_CASE(matcher_kern_rhythm_only_value_matches_any_pitch_with_that_rhythm) {
     CHECK_EQ(rhythmOnlyMatches.size(), durationMatches.size());
 }
 
-TEST_CASE(matcher_kern_rhythm_only_value_sees_past_tie_markup) {
+TEST_CASE(matcher_secondary_tied_kern_note_is_not_a_separate_onset) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // Position 2, voice 2 is written "[4G" -- a tie-start marker before the duration digit.
-    AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4"}}}});
-    auto matches = matcher.findAll(chorale, 2);
-    bool foundPosition2 = std::any_of(matches.begin(), matches.end(),
-                                    [](const auto& m) { return m.startPosition == 2; });
-    CHECK(foundPosition2);
+    // Position 2, voice 2 is "[4G" (tie start); position 3 is its tied continuation
+    // "8GL]" -- not a new attack, so it must not show up as its own onset.
+    AttributeMatcher wildcard("kern", {AttributeMap{{"kern", {"*"}}}});
+    auto matches = wildcard.findAll(chorale, 2);
+    bool foundPosition3 = std::any_of(matches.begin(), matches.end(),
+                                       [](const auto& m) { return m.startPosition == 3; });
+    CHECK(!foundPosition3);
 }
 
-TEST_CASE(matcher_kern_pitch_only_value_matches_any_rhythm_with_that_pitch) {
+TEST_CASE(matcher_kern_rhythm_reflects_full_tied_duration) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"G"}}}});
-    AttributeMatcher fullToken("kern", {AttributeMap{{"kern", {"4G"}}}});
-    auto pitchOnlyMatches = pitchOnly.findAll(chorale, 2);
-    auto fullTokenMatches = fullToken.findAll(chorale, 2);
-    CHECK(!pitchOnlyMatches.empty());
-    CHECK(pitchOnlyMatches.size() >= fullTokenMatches.size()); // pitch-only is a superset
-    bool foundPosition3 = std::any_of(pitchOnlyMatches.begin(), pitchOnlyMatches.end(),
-                                    [](const auto& m) { return m.startPosition == 3; });
-    CHECK(foundPosition3); // sees past the tie marker "[" too
+    // "[4G" (position 2) is tied to an eighth note, so it actually sounds for a
+    // dotted quarter ("4."), not the plain quarter its own written duration shows.
+    AttributeMatcher dottedQuarter("kern", {AttributeMap{{"kern", {"4."}}}});
+    AttributeMatcher plainQuarter("kern", {AttributeMap{{"kern", {"4"}}}});
+    auto dottedMatches = dottedQuarter.findAll(chorale, 2);
+    auto plainMatches = plainQuarter.findAll(chorale, 2);
+    bool dottedFoundPosition2 = std::any_of(dottedMatches.begin(), dottedMatches.end(),
+                                             [](const auto& m) { return m.startPosition == 2; });
+    bool plainFoundPosition2 = std::any_of(plainMatches.begin(), plainMatches.end(),
+                                            [](const auto& m) { return m.startPosition == 2; });
+    CHECK(dottedFoundPosition2);
+    CHECK(!plainFoundPosition2);
+}
+
+TEST_CASE(matcher_duration_key_reflects_full_tied_duration) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher dottedQuarter("kern", {AttributeMap{{"duration", {"4."}}}});
+    AttributeMatcher plainQuarter("kern", {AttributeMap{{"duration", {"4"}}}});
+    auto dottedMatches = dottedQuarter.findAll(chorale, 2);
+    auto plainMatches = plainQuarter.findAll(chorale, 2);
+    bool dottedFoundPosition2 = std::any_of(dottedMatches.begin(), dottedMatches.end(),
+                                             [](const auto& m) { return m.startPosition == 2; });
+    bool plainFoundPosition2 = std::any_of(plainMatches.begin(), plainMatches.end(),
+                                            [](const auto& m) { return m.startPosition == 2; });
+    CHECK(dottedFoundPosition2);
+    CHECK(!plainFoundPosition2);
 }
 
 TEST_CASE(matcher_kern_rhythm_and_pitch_combination_ignores_fermata_unless_asked) {

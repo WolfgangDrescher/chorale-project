@@ -67,20 +67,21 @@ std::optional<std::tuple<std::string, std::string, bool>> parseKernValue(const s
 // A **kern pattern value independently checks rhythm, pitch-or-rest, and/or fermata,
 // ignoring tie/beam/slur markup. Falls back to a raw literal comparison only for values
 // with characters outside those three components (markup spelled out literally).
-bool kernValueMatches(const std::string& patternValue, const std::string& actual) {
+bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok) {
+    std::string actual = (std::string)*actualTok;
     auto parsed = parseKernValue(patternValue);
     if (!parsed) return patternValue == actual;
 
     const auto& [recip, pitch, fermata] = *parsed;
-    if (!recip.empty() && recip != hum::Convert::kernToRecip(actual)) return false;
+    if (!recip.empty() && recip != hum::Convert::durationToRecip(actualTok->getTiedDuration())) return false;
     if (!pitch.empty() && pitch != kernToPitch(actual)) return false;
-    if (fermata && !hum::HumdrumToken(actual).hasFermata()) return false;
+    if (fermata && !actualTok->hasFermata()) return false;
     return true;
 }
 
-bool kernInList(const std::vector<std::string>& allowed, const std::string& actual) {
+bool kernInList(const std::vector<std::string>& allowed, hum::HTp actualTok) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        return kernValueMatches(v, actual);
+        return kernValueMatches(v, actualTok);
     });
 }
 
@@ -187,7 +188,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
     std::vector<hum::HTp> onsets;
     hum::HTp t = drivingStart->getNextToken();
     while (t) {
-        if (t->getOwner()->isData() && !t->isNull()) onsets.push_back(t);
+        if (t->getOwner()->isData() && !t->isNull() && !t->isSecondaryTiedNote()) onsets.push_back(t);
         t = t->getNextToken();
     }
 
@@ -217,22 +218,28 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     matched = true;
                 } else {
                     std::string actual;
+                    hum::HTp kernTok = nullptr;
                     if (key == kDurationKey) {
-                        actual = hum::Convert::durationToRecip(tok->getDuration());
+                        // tok isn't necessarily **kern here (duration can be checked
+                        // against any driving feature), so getTiedDuration() -- **kern-
+                        // specific -- is only safe to call once we know it is one.
+                        actual = hum::Convert::durationToRecip(tok->isKern() ? tok->getTiedDuration() : tok->getDuration());
                     } else if (key == kFermataKey) {
-                        hum::HTp kernTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
-                        if (!kernTok) { ok = false; break; }
-                        actual = kernTok->hasFermata() ? "true" : "false";
+                        hum::HTp fermataTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
+                        if (!fermataTok) { ok = false; break; }
+                        actual = fermataTok->hasFermata() ? "true" : "false";
                     } else if (key == m_drivingFeature) {
                         actual = std::string(*tok);
+                        kernTok = tok;
                     } else {
                         hum::HTp valTok = lookupToken(chorale, effectiveVoice(key, voice), lineNumber, key);
                         if (!valTok) { ok = false; break; }
                         actual = std::string(*valTok);
+                        kernTok = valTok;
                     }
                     if (key == kMintFeature) matched = mintInList(allowed, actual);
                     else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
-                    else if (key == kKernFeature) matched = kernInList(allowed, actual);
+                    else if (key == kKernFeature) matched = kernInList(allowed, kernTok);
                     else matched = inList(allowed, actual);
                 }
                 if (negate) matched = !matched;
