@@ -18,9 +18,19 @@ if (!page.value) {
     throw createError({ statusCode: 404, statusMessage: 'Page not found', fatal: true });
 }
 
-const { data: navigation } = await useAsyncData('docs-navigation', () => {
+const { data: navigationData } = await useAsyncData('docs-navigation', () => {
     return queryCollectionNavigation('docs');
 });
+
+function withExactMatch(items) {
+    return (items ?? []).map((item) => ({
+        ...item,
+        exact: true,
+        children: item.children ? withExactMatch(item.children) : item.children,
+    }));
+}
+
+const navigation = computed(() => withExactMatch(navigationData.value?.[0]?.children));
 
 const headline = ref(findPageHeadline(navigation?.value, page.value?.path))
 
@@ -35,7 +45,7 @@ useSeoMeta({
         <UPage>
             <template #left>
                 <UPageAside>
-                    <UContentNavigation :navigation="navigation ?? []" highlight />
+                    <UContentNavigation :navigation="navigation" highlight />
                 </UPageAside>
             </template>
 
