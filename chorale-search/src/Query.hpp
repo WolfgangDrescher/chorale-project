@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 namespace choralesearch {
 
 // feature name -> OR-list of acceptable values ("*" anywhere in the list = wildcard)
@@ -31,5 +33,27 @@ struct Query {
     // set, the chord must have exactly as many figures as the pattern value -- no extras.
     bool fbCompareExactChord = false;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Query& q) {
+    nlohmann::json j;
+    j["feature"] = q.feature;
+    j["voices"] = q.voices;
+
+    nlohmann::json pattern = nlohmann::json::array();
+    for (const auto& position : q.pattern) {
+        nlohmann::json posJson = nlohmann::json::object();
+        for (const auto& [key, values] : position) {
+            posJson[key] = values;
+        }
+        pattern.push_back(posJson);
+    }
+    j["pattern"] = pattern;
+
+    if (q.limit) j["limit"] = *q.limit;
+    if (q.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = true;
+    if (q.fbCompareExactChord) j["fbCompareExactChord"] = true;
+
+    return os << j.dump(1, '\t') << std::endl;
+}
 
 } // namespace choralesearch
