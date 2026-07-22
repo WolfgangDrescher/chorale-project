@@ -13,11 +13,10 @@ using choralesearch::HumdrumChorale;
 using choralesearch::Query;
 using choralesearch::Result;
 
-// chor001.krn, chor009.krn and chor029.krn (tests/fixtures/) each have exactly
-// 6 fermatas in the soprano -- used below to exercise behavior that's actually
-// CorpusSearch's own job (file discovery, cross-file aggregation, Result-field
-// mapping, limit truncation) rather than re-testing AttributeMatcher's matching
-// logic, which test_attributematcher.cpp already covers.
+// chor001.krn, chor009.krn, and chor029.krn each have exactly 6 soprano fermatas.
+// chor006.krn (added for rest-matching coverage) has only 4 and sorts between
+// chor001 and chor009. Tests below exercise CorpusSearch behaviour (file
+// discovery, aggregation, result mapping, limit truncation), not AttributeMatcher.
 
 TEST_CASE(run_one_populates_result_fields_from_a_real_match) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
@@ -81,11 +80,10 @@ TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
 }
 
 TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
-    // findChoraleFiles() sorts, so chor001 < chor009 < chor029. chor001
-    // alone has 6 soprano fermatas, so a limit of 8 must exhaust chor001 and
-    // then take 2 more from chor009 -- exercising the cross-file
-    // accumulate-then-truncate logic that's unique to CorpusSearch::run,
-    // not something a single-file test (or AttributeMatcher) can show.
+    // findChoraleFiles() sorts, so chor001 < chor006 < chor009 < chor029. chor001 alone has
+    // 6 soprano fermatas, so a limit of 8 must exhaust chor001 and then take 2 more from
+    // chor006 -- exercising the cross-file accumulate-then-truncate logic that's unique to
+    // CorpusSearch::run, not something a single-file test (or AttributeMatcher) can show.
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
     Query q;

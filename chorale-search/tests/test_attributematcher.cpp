@@ -9,16 +9,14 @@ using choralesearch::AttributeMap;
 using choralesearch::AttributeMatcher;
 using choralesearch::HumdrumChorale;
 
-// General AttributeMatcher mechanics against the real chor029.krn fixture:
-// literal/duration/fermata/cross-spine matching, wildcards, multi-position
-// patterns, voice scoping, and graceful-empty edge cases. Exhaustive
-// exact-result coverage across all fixture chorales is a separate,
-// later test file -- this one is about the matching *mechanism* itself.
+// General AttributeMatcher mechanics against chor029.krn: literal/duration/fermata/
+// cross-spine matching, wildcards, multi-position patterns, voice scoping. Exhaustive
+// exact-result coverage lives in test_fixture_results.cpp instead.
 
 TEST_CASE(matcher_matches_literal_driving_feature_token) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // Matching on the driving feature itself compares the *raw* token
-    // text, fermata marker included -- "4D" alone would not match "4D;".
+    // Matching on the driving feature itself decomposes into rhythm+pitch+fermata like any
+    // other kern value -- "4D;" requires a quarter-note D with a fermata specifically.
     AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4D;"}}}});
     auto matches = matcher.findAll(chorale, 1);
     CHECK(!matches.empty());
@@ -247,10 +245,9 @@ TEST_CASE(matcher_fb_as_driving_feature_gives_identical_matches_for_every_voice)
 
 TEST_CASE(matcher_fb_as_cross_referenced_key_resolves_the_same_regardless_of_voice) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // Driving off kern in voice 4 (soprano), constrained on a literal fb value (not a
-    // wildcard, so the cross-spine lookup actually runs). fb's only spine is index 1
-    // (bass), so without remapping, chorale.spine("fb", 4) would be out of range and
-    // this constraint would fail for every candidate.
+    // Driving off kern in voice 4, constrained on a literal (non-wildcard) fb value so the
+    // cross-spine lookup actually runs. fb's only spine is index 1 (bass); without voice
+    // remapping, chorale.spine("fb", 4) would be out of range and this would fail.
     AttributeMatcher matcher("kern", {AttributeMap{{"fb", {"P5 M3"}}}});
     CHECK(!matcher.findAll(chorale, 4).empty());
 }

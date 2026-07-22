@@ -44,9 +44,8 @@ std::optional<std::tuple<std::string, std::string, std::string>> parseMintValue(
 }
 
 // A pattern value may omit sign and/or quality to match any of them -- "+2" matches
-// "+M2"/"+m2"/"+A2"/..., and a bare "2" matches any sign and quality with that diatonic
-// number. Values that aren't parseable as an interval (e.g. mint's own "[G]" bracketed
-// pitch name for a voice's very first note) fall back to a literal string comparison.
+// "+M2"/"+m2"/..., a bare "2" any sign/quality. Unparseable values (e.g. mint's
+// bracketed "[G]" first-note marker) fall back to a literal comparison.
 bool mintValueMatches(const std::string& patternValue, const std::string& actual) {
     auto pattern = parseMintValue(patternValue);
     auto value = parseMintValue(actual);
@@ -66,9 +65,8 @@ bool mintInList(const std::vector<std::string>& allowed, const std::string& actu
     });
 }
 
-// Splits a single figured-bass interval ("m6", "P5", ...) into (quality, figure).
-// Quality (currently ignoring accidentals/inversion markers -- not yet supported)
-// comes back empty for a bare figure like "6", which fbValueMatches() below treats
+// Splits a figured-bass interval ("m6", "P5", ...) into (quality, figure). A bare
+// figure like "6" comes back with an empty quality, which fbValueMatches() treats
 // as "any quality" for that figure.
 std::optional<std::pair<std::string, std::string>> parseFbValue(const std::string& s) {
     static const std::regex re(R"(^([A-Za-z]*)(\d+)$)");
@@ -94,12 +92,9 @@ std::vector<std::string> splitFbComponents(const std::string& s) {
     return {std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
 }
 
-// fb's actual token is a chord: several space-separated intervals above the bass
-// (e.g. "m6 m3"). A pattern value may itself list several figures (e.g. "6 3"), all
-// of which must be present somewhere in the chord -- order doesn't matter, and each
-// figure is matched quality-optionally on its own, same as mintValueMatches(). With
-// exactChord, the chord must have exactly as many figures as the pattern value (no
-// extras); by default it's a minimum requirement, so "2 4" also matches "2 4 6".
+// fb's token is a chord of space-separated intervals (e.g. "m6 m3"); a pattern value
+// lists figures (e.g. "6 3") that must all appear somewhere in it, order-independent.
+// exactChord requires an exact figure count; otherwise it's a minimum ("2 4" in "2 4 6").
 bool fbValueMatches(const std::string& patternValue, const std::string& actual, bool exactChord) {
     std::vector<std::string> patternComponents = splitFbComponents(patternValue);
     std::vector<std::string> actualComponents = splitFbComponents(actual);
