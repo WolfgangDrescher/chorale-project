@@ -30,6 +30,153 @@ TEST_CASE(matcher_matches_duration_key) {
     CHECK(!matches.empty());
 }
 
+TEST_CASE(matcher_kern_rhythm_only_value_matches_any_pitch_with_that_rhythm) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher rhythmOnly("kern", {AttributeMap{{"kern", {"4"}}}});
+    AttributeMatcher durationKey("kern", {AttributeMap{{"duration", {"4"}}}});
+    auto rhythmOnlyMatches = rhythmOnly.findAll(chorale, 2);
+    auto durationMatches = durationKey.findAll(chorale, 2);
+    CHECK(!rhythmOnlyMatches.empty());
+    CHECK_EQ(rhythmOnlyMatches.size(), durationMatches.size());
+}
+
+TEST_CASE(matcher_kern_rhythm_only_value_sees_past_tie_markup) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Position 3, voice 2 is written "[4G" -- a tie-start marker before the duration digit.
+    AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4"}}}});
+    auto matches = matcher.findAll(chorale, 2);
+    bool foundPosition3 = std::any_of(matches.begin(), matches.end(),
+                                    [](const auto& m) { return m.startPosition == 3; });
+    CHECK(foundPosition3);
+}
+
+TEST_CASE(matcher_kern_pitch_only_value_matches_any_rhythm_with_that_pitch) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"G"}}}});
+    AttributeMatcher fullToken("kern", {AttributeMap{{"kern", {"4G"}}}});
+    auto pitchOnlyMatches = pitchOnly.findAll(chorale, 2);
+    auto fullTokenMatches = fullToken.findAll(chorale, 2);
+    CHECK(!pitchOnlyMatches.empty());
+    CHECK(pitchOnlyMatches.size() >= fullTokenMatches.size()); // pitch-only is a superset
+    bool foundPosition3 = std::any_of(pitchOnlyMatches.begin(), pitchOnlyMatches.end(),
+                                    [](const auto& m) { return m.startPosition == 3; });
+    CHECK(foundPosition3); // sees past the tie marker "[" too
+}
+
+TEST_CASE(matcher_kern_rhythm_and_pitch_combination_ignores_fermata_unless_asked) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Posiion 9, voice 1 is "4D;" (fermata); A rhythm+pitch value with no ";"
+    // doesn't care about fermata, so "4D" matches all six fermatas; adding ";"
+    // narrows it down to just position 7.
+    AttributeMatcher rhythmAndPitch("kern", {AttributeMap{{"kern", {"4D"}}}});
+    AttributeMatcher rhythmAndPitchWithFermata("kern", {AttributeMap{{"kern", {"4D;"}}}});
+    auto rhythmAndPitchMatches = rhythmAndPitch.findAll(chorale, 1);
+    auto withFermataMatches = rhythmAndPitchWithFermata.findAll(chorale, 1);
+    CHECK_EQ(withFermataMatches.size(), std::size_t{1});
+    CHECK_EQ(withFermataMatches.front().startPosition, 7);
+    CHECK(rhythmAndPitchMatches.size() > withFermataMatches.size());
+    bool foundPosition7 = std::any_of(rhythmAndPitchMatches.begin(), rhythmAndPitchMatches.end(),
+                                    [](const auto& m) { return m.startPosition == 7; });
+    CHECK(foundPosition7);
+}
+
+TEST_CASE(matcher_kern_fermata_only_value_matches_any_pitch_and_rhythm_with_a_fermata) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher fermataOnly("kern", {AttributeMap{{"kern", {";"}}}});
+    AttributeMatcher fermataKey("kern", {AttributeMap{{"fermata", {"true"}}}});
+    auto fermataOnlyMatches = fermataOnly.findAll(chorale, 1);
+    auto fermataKeyMatches = fermataKey.findAll(chorale, 1);
+    CHECK_EQ(fermataOnlyMatches.size(), fermataKeyMatches.size()); // both see all 6 fermatas
+    bool foundPosition7 = std::any_of(fermataOnlyMatches.begin(), fermataOnlyMatches.end(),
+                                    [](const auto& m) { return m.startPosition == 7; });
+    CHECK(foundPosition7);
+}
+
+TEST_CASE(matcher_kern_rhythm_and_fermata_combine_in_one_value) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // "4;" requires a quarter note AND a fermata -- narrower than either alone.
+    AttributeMatcher rhythmAndFermata("kern", {AttributeMap{{"kern", {"4;"}}}});
+    AttributeMatcher rhythmOnly("kern", {AttributeMap{{"kern", {"4"}}}});
+    AttributeMatcher fermataOnly("kern", {AttributeMap{{"kern", {";"}}}});
+    auto combinedMatches = rhythmAndFermata.findAll(chorale, 1);
+    CHECK(!combinedMatches.empty());
+    CHECK(combinedMatches.size() < rhythmOnly.findAll(chorale, 1).size());
+    CHECK(combinedMatches.size() < fermataOnly.findAll(chorale, 1).size());
+    bool foundPosition7 = std::any_of(combinedMatches.begin(), combinedMatches.end(),
+                                    [](const auto& m) { return m.startPosition == 7; });
+    CHECK(foundPosition7);
+}
+
+TEST_CASE(matcher_kern_pitch_and_fermata_combine_in_one_value) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // "D;" requires pitch D AND a fermata -- sees past the fermata marker to the pitch,
+    // and past everything else to the fermata, at the same time.
+    AttributeMatcher pitchAndFermata("kern", {AttributeMap{{"kern", {"D;"}}}});
+    AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"D"}}}});
+    auto combinedMatches = pitchAndFermata.findAll(chorale, 1);
+    CHECK(!combinedMatches.empty());
+    CHECK(combinedMatches.size() < pitchOnly.findAll(chorale, 1).size());
+    bool foundPosition7 = std::any_of(combinedMatches.begin(), combinedMatches.end(),
+                                    [](const auto& m) { return m.startPosition == 7; });
+    CHECK(foundPosition7);
+}
+
+TEST_CASE(matcher_kern_rest_value_matches_any_rest_regardless_of_decoration) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    // Position 15 is a full-measure rest: "4r" in bass/soprano, "4ry" in tenor/alto -- the
+    // trailing "y" (an editorial/invisible marker) doesn't stop it from being a rest.
+    AttributeMatcher restOnly("kern", {AttributeMap{{"kern", {"r"}}}});
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto matches = restOnly.findAll(chorale, voice);
+        bool foundPosition15 = std::any_of(matches.begin(), matches.end(),
+                                        [](const auto& m) { return m.startPosition == 15; });
+        CHECK(foundPosition15);
+    }
+}
+
+TEST_CASE(matcher_kern_rhythm_and_rest_combine_in_one_value) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    // "4r" requires a quarter rest specifically -- narrower than "4" (any quarter note or
+    // rest) or "r" (any rest, any rhythm) alone.
+    AttributeMatcher rhythmAndRest("kern", {AttributeMap{{"kern", {"4r"}}}});
+    AttributeMatcher rhythmOnly("kern", {AttributeMap{{"kern", {"4"}}}});
+    AttributeMatcher restOnly("kern", {AttributeMap{{"kern", {"r"}}}});
+    auto combinedMatches = rhythmAndRest.findAll(chorale, 1);
+    CHECK(!combinedMatches.empty());
+    CHECK(combinedMatches.size() < rhythmOnly.findAll(chorale, 1).size());
+    CHECK(combinedMatches.size() <= restOnly.findAll(chorale, 1).size());
+    bool foundPosition15 = std::any_of(combinedMatches.begin(), combinedMatches.end(),
+                                    [](const auto& m) { return m.startPosition == 15; });
+    CHECK(foundPosition15);
+}
+
+TEST_CASE(matcher_kern_rest_value_never_overlaps_a_pitch_value) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    AttributeMatcher restOnly("kern", {AttributeMap{{"kern", {"r"}}}});
+    AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"g"}}}});
+    auto restMatches = restOnly.findAll(chorale, 4);
+    auto pitchMatches = pitchOnly.findAll(chorale, 4);
+    CHECK(!restMatches.empty());
+    CHECK(!pitchMatches.empty());
+    for (const auto& m : restMatches) {
+        bool overlap = std::any_of(pitchMatches.begin(), pitchMatches.end(),
+                                    [&](const auto& other) { return other.startPosition == m.startPosition; });
+        CHECK(!overlap);
+    }
+}
+
+TEST_CASE(matcher_kern_fermata_only_value_does_not_match_a_rest) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    // Fermatas fall on real notes in this piece (lines 30, 41, 58, 68); the "4r"/"4ry"
+    // rests at line 42 have none.
+    AttributeMatcher fermataOnly("kern", {AttributeMap{{"kern", {";"}}}});
+    auto matches = fermataOnly.findAll(chorale, 1);
+    CHECK(!matches.empty());
+    bool foundPosition15 = std::any_of(matches.begin(), matches.end(),
+                                    [](const auto& m) { return m.startPosition == 15; });
+    CHECK(!foundPosition15);
+}
+
 TEST_CASE(matcher_duration_pattern_accepts_an_or_list_of_values) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher quarterOnly("kern", {AttributeMap{{"duration", {"4"}}}});

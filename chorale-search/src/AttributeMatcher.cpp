@@ -33,6 +33,57 @@ bool inList(const std::vector<std::string>& allowed, const std::string& actual) 
     return std::find(allowed.begin(), allowed.end(), actual) != allowed.end();
 }
 
+// Extracts the pitch+accidental from a **kern token (e.g. "f#" from "8f#L"), ignoring
+// rhythm/ties/beams/decoration; returns "r" for a rest. Only the first subtoken of a
+// chord is considered (getSubtoken(0) is a no-op when there's no space to split on).
+std::string kernToPitch(const std::string& kerndata) {
+    std::string subtoken = hum::HumdrumToken(kerndata).getSubtoken(0);
+    if (hum::Convert::isKernRest(subtoken)) return "r";
+    std::string pitch;
+    for (char c : subtoken) {
+        if ((c >= 'A' && c <= 'G') || (c >= 'a' && c <= 'g') || c == '#' || c == '-' || c == 'n') {
+            pitch += c;
+        }
+    }
+    return pitch;
+}
+
+// Splits a **kern pattern value into rhythm, pitch-or-rest, and/or fermata (";") --
+// any subset, in any combination; an omitted component is a wildcard, not "absent"
+// (no ";" doesn't mean "no fermata"). nullopt for anything else -- falls back to literal.
+std::optional<std::tuple<std::string, std::string, bool>> parseKernValue(const std::string& patternValue) {
+    static const std::regex re(R"(^(\d+\.*)?([A-Ga-g]+[#n-]*|r)?(;)?$)");
+    std::smatch m;
+    if (!std::regex_match(patternValue, m, re)) return std::nullopt;
+
+    std::string recip = m[1].str();
+    std::string pitch = m[2].str();
+    bool fermata = m[3].matched;
+    if (recip.empty() && pitch.empty() && !fermata) return std::nullopt; // e.g. "" -- nothing to match on
+
+    return std::make_tuple(recip, pitch, fermata);
+}
+
+// A **kern pattern value independently checks rhythm, pitch-or-rest, and/or fermata,
+// ignoring tie/beam/slur markup. Falls back to a raw literal comparison only for values
+// with characters outside those three components (markup spelled out literally).
+bool kernValueMatches(const std::string& patternValue, const std::string& actual) {
+    auto parsed = parseKernValue(patternValue);
+    if (!parsed) return patternValue == actual;
+
+    const auto& [recip, pitch, fermata] = *parsed;
+    if (!recip.empty() && recip != hum::Convert::kernToRecip(actual)) return false;
+    if (!pitch.empty() && pitch != kernToPitch(actual)) return false;
+    if (fermata && !hum::HumdrumToken(actual).hasFermata()) return false;
+    return true;
+}
+
+bool kernInList(const std::vector<std::string>& allowed, const std::string& actual) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
+        return kernValueMatches(v, actual);
+    });
+}
+
 // Splits a **mint interval token ("+M2", "-m3", ...) into (sign, quality, number).
 // Sign and quality come back empty when the string has none (e.g. a bare "2"), which
 // mintValueMatches() below treats as "matches any" for that part.
@@ -181,6 +232,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     }
                     if (key == kMintFeature) matched = mintInList(allowed, actual);
                     else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
+                    else if (key == kKernFeature) matched = kernInList(allowed, actual);
                     else matched = inList(allowed, actual);
                 }
                 if (negate) matched = !matched;
