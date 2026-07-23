@@ -19,9 +19,9 @@ function useChoraleSearch() {
     "feature": "deg",
     "voices": "all",
     "pattern": [
-        {"deg": "3"},
-        {"deg": "2"},
-        {"deg": ["1", "3"]}
+        { "deg": "3" },
+        { "deg": "2" },
+        { "deg": ["1", "3"] }
     ]
 }`);
 
