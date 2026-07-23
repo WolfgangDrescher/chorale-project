@@ -40,6 +40,17 @@ TEST_CASE(query_from_json_reads_fb_compare_exact_chord) {
     CHECK(q.fbCompareExactChord);
 }
 
+TEST_CASE(query_from_json_reads_kern_ignore_octave) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"kernIgnoreOctave":true})"));
+    CHECK(q.kernIgnoreOctave);
+}
+
+TEST_CASE(query_from_json_defaults_kern_ignore_octave_to_false) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}]})"));
+    CHECK(!q.kernIgnoreOctave);
+}
+
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
     CHECK_EQ(q.pattern[0]["fermata"], (std::vector<std::string>{"true"}));

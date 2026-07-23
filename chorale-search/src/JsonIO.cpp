@@ -67,6 +67,10 @@ Query queryFromJson(const nlohmann::json& j) {
         q.fbCompareExactChord = j["fbCompareExactChord"].get<bool>();
     }
 
+    if (j.contains("kernIgnoreOctave") && j["kernIgnoreOctave"].is_boolean()) {
+        q.kernIgnoreOctave = j["kernIgnoreOctave"].get<bool>();
+    }
+
     return q;
 }
 

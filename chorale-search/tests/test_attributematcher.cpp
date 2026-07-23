@@ -463,6 +463,56 @@ TEST_CASE(matcher_fb_pattern_requires_every_listed_figure_present_in_the_chord) 
     }
 }
 
+TEST_CASE(matcher_kern_ignore_octave_matches_every_register_of_a_pitch_class) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Soprano's G-pitch-class notes are all written lowercase ("g"); plain "G" (uppercase,
+    // a different register) matches none of them without the flag.
+    AttributeMatcher upperCaseOnly("kern", {AttributeMap{{"kern", {"G"}}}});
+    AttributeMatcher lowerCaseOnly("kern", {AttributeMap{{"kern", {"g"}}}});
+    AttributeMatcher upperCaseIgnoringOctave("kern", {AttributeMap{{"kern", {"G"}}}},
+                                              /*mintStartAtPreviousToken=*/false, /*fbCompareExactChord=*/false,
+                                              /*kernIgnoreOctave=*/true);
+
+    auto upperCaseMatches = upperCaseOnly.findAll(chorale, 4);
+    auto lowerCaseMatches = lowerCaseOnly.findAll(chorale, 4);
+    auto ignoringOctaveMatches = upperCaseIgnoringOctave.findAll(chorale, 4);
+
+    CHECK(upperCaseMatches.empty());
+    REQUIRE(!lowerCaseMatches.empty());
+    REQUIRE(ignoringOctaveMatches.size() == lowerCaseMatches.size());
+    for (std::size_t i = 0; i < ignoringOctaveMatches.size(); ++i) {
+        CHECK_EQ(ignoringOctaveMatches[i].startLineNumber, lowerCaseMatches[i].startLineNumber);
+    }
+}
+
+TEST_CASE(matcher_kern_ignore_octave_still_honors_rhythm_and_fermata_in_the_same_value) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // "4D;" (bass, position 7) is a quarter-note D with a fermata -- ignoring octave must
+    // still require the rhythm and fermata components, just not the D's own register.
+    AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4D;"}}}}, /*mintStartAtPreviousToken=*/false,
+                              /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/true);
+    auto matches = matcher.findAll(chorale, 1);
+    REQUIRE(matches.size() == 1u);
+    CHECK_EQ(matches.front().startPosition, 7);
+}
+
+TEST_CASE(matcher_kern_ignore_octave_does_not_conflate_rests_with_pitches) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    AttributeMatcher restOnly("kern", {AttributeMap{{"kern", {"r"}}}}, /*mintStartAtPreviousToken=*/false,
+                               /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/true);
+    AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"g"}}}}, /*mintStartAtPreviousToken=*/false,
+                                /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/true);
+    auto restMatches = restOnly.findAll(chorale, 4);
+    auto pitchMatches = pitchOnly.findAll(chorale, 4);
+    CHECK(!restMatches.empty());
+    CHECK(!pitchMatches.empty());
+    for (const auto& m : restMatches) {
+        bool overlap = std::any_of(pitchMatches.begin(), pitchMatches.end(),
+                                    [&](const auto& other) { return other.startPosition == m.startPosition; });
+        CHECK(!overlap);
+    }
+}
+
 TEST_CASE(matcher_fb_compare_exact_chord_rejects_chords_with_extra_figures) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher permissive("fb", {AttributeMap{{"fb", {"6 3"}}}});

@@ -32,6 +32,11 @@ struct Query {
     // minimum requirement, so "2 4" also matches a chord actually voiced as "2 4 6". When
     // set, the chord must have exactly as many figures as the pattern value -- no extras.
     bool fbCompareExactChord = false;
+
+    // Affects any "kern" key comparison (driving or cross-referenced): by default, a pitch
+    // pattern value's register must match exactly, so "G" only matches "G", not "g"/"GG"/etc.
+    // When set, register is ignored -- "G" matches every octave of that pitch class.
+    bool kernIgnoreOctave = false;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Query& q) {
@@ -52,6 +57,7 @@ inline std::ostream& operator<<(std::ostream& os, const Query& q) {
     if (q.limit) j["limit"] = *q.limit;
     if (q.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = true;
     if (q.fbCompareExactChord) j["fbCompareExactChord"] = true;
+    if (q.kernIgnoreOctave) j["kernIgnoreOctave"] = true;
 
     return os << j.dump(1, '\t') << std::endl;
 }

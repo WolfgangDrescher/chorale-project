@@ -19,7 +19,8 @@ struct AttributeMatch {
 class AttributeMatcher {
 public:
     AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
-                      bool mintStartAtPreviousToken = false, bool fbCompareExactChord = false);
+                      bool mintStartAtPreviousToken = false, bool fbCompareExactChord = false,
+                      bool kernIgnoreOctave = false);
 
     std::vector<AttributeMatch> findAll(const HumdrumChorale& chorale, std::size_t voice) const;
 
@@ -28,6 +29,7 @@ private:
     std::vector<AttributeMap> m_pattern;
     bool m_mintStartAtPreviousToken;
     bool m_fbCompareExactChord;
+    bool m_kernIgnoreOctave;
 };
 
 } // namespace choralesearch

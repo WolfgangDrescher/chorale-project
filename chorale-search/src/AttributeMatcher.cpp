@@ -67,21 +67,26 @@ std::optional<std::tuple<std::string, std::string, bool>> parseKernValue(const s
 // A **kern pattern value independently checks rhythm, pitch-or-rest, and/or fermata,
 // ignoring tie/beam/slur markup. Falls back to a raw literal comparison only for values
 // with characters outside those three components (markup spelled out literally).
-bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok) {
+bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok, bool ignoreOctave) {
     std::string actual = (std::string)*actualTok;
     auto parsed = parseKernValue(patternValue);
     if (!parsed) return patternValue == actual;
 
     const auto& [recip, pitch, fermata] = *parsed;
     if (!recip.empty() && recip != hum::Convert::durationToRecip(actualTok->getTiedDuration())) return false;
-    if (!pitch.empty() && pitch != kernToPitch(actual)) return false;
+    if (!pitch.empty()) {
+        std::string actualPitch = kernToPitch(actual);
+        bool pitchMatches = ignoreOctave ? hum::Convert::kernToBase40PC(pitch) == hum::Convert::kernToBase40PC(actualPitch)
+                                          : pitch == actualPitch;
+        if (!pitchMatches) return false;
+    }
     if (fermata && !actualTok->hasFermata()) return false;
     return true;
 }
 
-bool kernInList(const std::vector<std::string>& allowed, hum::HTp actualTok) {
+bool kernInList(const std::vector<std::string>& allowed, hum::HTp actualTok, bool ignoreOctave) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        return kernValueMatches(v, actualTok);
+        return kernValueMatches(v, actualTok, ignoreOctave);
     });
 }
 
@@ -173,9 +178,11 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
 } // namespace
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
-                                    bool mintStartAtPreviousToken, bool fbCompareExactChord)
+                                    bool mintStartAtPreviousToken, bool fbCompareExactChord,
+                                    bool kernIgnoreOctave)
     : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)),
-      m_mintStartAtPreviousToken(mintStartAtPreviousToken), m_fbCompareExactChord(fbCompareExactChord) {}
+      m_mintStartAtPreviousToken(mintStartAtPreviousToken), m_fbCompareExactChord(fbCompareExactChord),
+      m_kernIgnoreOctave(kernIgnoreOctave) {}
 
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
@@ -239,7 +246,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     }
                     if (key == kMintFeature) matched = mintInList(allowed, actual);
                     else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
-                    else if (key == kKernFeature) matched = kernInList(allowed, kernTok);
+                    else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_kernIgnoreOctave);
                     else matched = inList(allowed, actual);
                 }
                 if (negate) matched = !matched;
