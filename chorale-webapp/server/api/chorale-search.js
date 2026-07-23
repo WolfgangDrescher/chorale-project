@@ -94,7 +94,6 @@ function parseSearchOutput(stdout) {
 }
 
 export default defineEventHandler(async (event) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
     setResponseHeader(event, 'Content-Type', 'application/json');
 
     try {
