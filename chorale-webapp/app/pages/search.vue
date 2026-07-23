@@ -91,7 +91,19 @@ function applyDemoQuery() {
        <UCard class="mb-4">
            <UForm class="space-y-4" @submit="onSubmit">
                 <UFormField :label="$t('query')">
-                    <UTextarea v-model="query" class="font-mono w-full" :rows="10" />
+                    <MonacoEditor
+                        v-model="query"
+                        :options="{
+                            fontSize: 14,
+                            // theme: 'vs-light',
+                            tabSize: 12,
+                            scrollBeyondLastLine: false,
+                            automaticLayout: true,
+                            scrollbar: {
+                                alwaysConsumeMouseWheel: false,
+                            },
+                        }"
+                    />
                 </UFormField>
                <UButton type="submit" :loading="pending" :trailing="true">{{ $t('submit') }}</UButton>
            </UForm>
