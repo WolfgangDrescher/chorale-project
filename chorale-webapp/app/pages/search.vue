@@ -109,7 +109,13 @@ function applyDemoQuery() {
            </UForm>
        </UCard>
        <template v-if="error">
-            {{ error }}
+            <UAlert color="error" variant="subtle" :title="error.data?.message ?? $t('searchError')">
+                <template v-if="error.data?.errors?.length" #description>
+                    <ul>
+                        <li v-for="(msg, i) in error.data.errors" :key="i">{{ msg }}</li>
+                    </ul>
+                </template>
+            </UAlert>
        </template>
         <template v-else>
             <div v-if="pending" class="flex flex-col gap-6 mt-8">

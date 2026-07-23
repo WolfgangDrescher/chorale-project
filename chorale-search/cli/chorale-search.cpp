@@ -14,6 +14,10 @@ using choralesearch::Results;
 
 namespace {
 
+constexpr int kExitError = 1;
+constexpr int kExitInvalidArgumentError = 2;
+constexpr int kExitValidationError = 3;
+
 void printUsage(const char* argv0) {
     std::cerr <<
         "Usage: " << argv0 << " CORPUS_DIR (--query JSON | --query-file FILE.json) [OPTIONS]\n"
@@ -50,7 +54,7 @@ void printJson(const Results& results, bool groupByChorale) {
 int main(int argc, char** argv) {
     if (argc < 2 || std::string(argv[1]) == "--help" || std::string(argv[1]) == "-h") {
         printUsage(argv[0]);
-        return (argc < 2) ? 1 : 0;
+        return (argc < 2) ? kExitInvalidArgumentError : 0;
     }
 
     std::string corpusDir = argv[1];
@@ -72,32 +76,36 @@ int main(int argc, char** argv) {
             else if (arg == "--format") { format = next("--format"); }
             else if (arg == "--group-by-chorale") { groupByChorale = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
-            else { std::cerr << "Unknown option: " << arg << "\n"; printUsage(argv[0]); return 1; }
+            else {
+                std::cerr << "Unknown option: " << arg << "\n";
+                printUsage(argv[0]);
+                return kExitInvalidArgumentError;
+            }
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << "\n";
-            return 1;
+            return kExitInvalidArgumentError;
         }
     }
 
     if (queryFile.empty() && !haveQueryString) {
         std::cerr << "Error: need --query or --query-file\n\n";
         printUsage(argv[0]);
-        return 1;
+        return kExitInvalidArgumentError;
     }
     if (!queryFile.empty() && haveQueryString) {
         std::cerr << "Error: --query and --query-file are mutually exclusive\n\n";
         printUsage(argv[0]);
-        return 1;
+        return kExitInvalidArgumentError;
     }
     if (format != "table" && format != "json") {
         std::cerr << "Error: --format must be 'table' or 'json'\n\n";
         printUsage(argv[0]);
-        return 1;
+        return kExitInvalidArgumentError;
     }
     if (groupByChorale && format != "json") {
         std::cerr << "Error: --group-by-chorale requires --format json\n\n";
         printUsage(argv[0]);
-        return 1;
+        return kExitInvalidArgumentError;
     }
 
     try {
@@ -120,10 +128,13 @@ int main(int argc, char** argv) {
         }
     } catch (const nlohmann::json::exception& e) {
         std::cerr << "Error: invalid JSON: " << e.what() << "\n";
-        return 1;
+        return kExitInvalidArgumentError;
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        return kExitValidationError;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
-        return 1;
+        return kExitError;
     }
 
     return 0;
