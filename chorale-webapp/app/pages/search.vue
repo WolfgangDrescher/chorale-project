@@ -93,6 +93,7 @@ function applyDemoQuery() {
                 <UFormField :label="$t('query')">
                     <MonacoEditor
                         v-model="query"
+                        :schema="choraleSearchQuerySchema"
                         :options="{
                             fontSize: 14,
                             // theme: 'vs-light',
