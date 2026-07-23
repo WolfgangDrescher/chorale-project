@@ -18,6 +18,13 @@ const props = defineProps({
 const monacoEl = ref();
 let editor = null;
 
+watch(modelValue, (newValue) => {
+    if (!editor) return;
+    if (newValue !== editor.getValue()) {
+        editor.setValue(newValue ?? '');
+    }
+});
+
 onMounted(() => {
     nextTick(() => {
         if (props.schema) {
