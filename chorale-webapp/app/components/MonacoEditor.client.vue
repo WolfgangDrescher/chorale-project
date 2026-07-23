@@ -24,6 +24,9 @@ onMounted(() => {
             minimap: {
                 enabled: false,
             },
+            stickyScroll: {
+                enabled: false,
+            },
             fontSize: 16,
             // readOnly: true,
             hideCursorInOverviewRuler: true,
