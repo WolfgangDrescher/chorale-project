@@ -5,3 +5,10 @@ sitemap: Sitemap
 search: Suchen
 submit: Absenden
 docs: Docs
+noResults: Keine Treffer gefunden.
+noResultsDescription: Bitte lesen Sie in der Dokumentation nach, wie ein Query aufgebaut wird, oder übernehmen Sie einen der dortigen Beispiel-Queries.
+exampleQueries: Beispiel-Queries
+choralesFound: "{count} Choräle gefunden"
+readDocs: Dokumentation lesen
+applyDemoQuery: Beispiel Query verwenden
+query: Query
