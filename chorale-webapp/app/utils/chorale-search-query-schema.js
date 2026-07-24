@@ -7,7 +7,7 @@ export const choraleSearchQuerySchema = {
     properties: {
         feature: {
             type: 'string',
-            enum: ['kern', 'deg', 'mint', 'fb'],
+            enum: ['kern', 'deg', 'mint', 'fb', 'metweight'],
             description: 'The driving feature: which analysis spine the search walks through.',
             suggestSortText: '0',
         },
@@ -27,7 +27,7 @@ export const choraleSearchQuerySchema = {
                 minProperties: 1,
                 additionalProperties: false,
                 patternProperties: {
-                    '^!?(kern|deg|mint|fb|duration|fermata)$': {
+                    '^!?(kern|deg|mint|fb|metweight|duration|fermata)$': {
                         description: 'An OR-list of acceptable values for this feature at this position (or a single value). Prefix the key with "!" to negate the whole position.',
                         oneOf: [
                             { type: 'string' },
@@ -37,7 +37,10 @@ export const choraleSearchQuerySchema = {
                     },
                 },
                 propertyNames: {
-                    enum: ['kern', 'deg', 'mint', 'fb', 'duration', 'fermata', '!kern', '!deg', '!mint', '!fb', '!duration', '!fermata'],
+                    enum: [
+                        'kern', 'deg', 'mint', 'fb', 'metweight', 'duration', 'fermata',
+                        '!kern', '!deg', '!mint', '!fb', '!metweight', '!duration', '!fermata',
+                    ],
                     description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position.',
                 },
             },

@@ -532,6 +532,71 @@ TEST_CASE(matcher_fb_compare_exact_chord_rejects_chords_with_extra_figures) {
     }
 }
 
+TEST_CASE(matcher_metweight_accepts_abbreviation_full_word_or_number_for_the_same_value) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher abbreviation("metweight", {AttributeMap{{"metweight", {"s"}}}});
+    AttributeMatcher fullWord("metweight", {AttributeMap{{"metweight", {"strong"}}}});
+    AttributeMatcher number("metweight", {AttributeMap{{"metweight", {"1"}}}});
+
+    auto abbreviationMatches = abbreviation.findAll(chorale, 4);
+    auto fullWordMatches = fullWord.findAll(chorale, 4);
+    auto numberMatches = number.findAll(chorale, 4);
+
+    REQUIRE(!abbreviationMatches.empty());
+    REQUIRE(fullWordMatches.size() == abbreviationMatches.size());
+    REQUIRE(numberMatches.size() == abbreviationMatches.size());
+    for (std::size_t i = 0; i < abbreviationMatches.size(); ++i) {
+        CHECK_EQ(fullWordMatches[i].startPosition, abbreviationMatches[i].startPosition);
+        CHECK_EQ(numberMatches[i].startPosition, abbreviationMatches[i].startPosition);
+    }
+}
+
+TEST_CASE(matcher_metweight_half_strong_also_accepts_its_full_word_and_number) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher abbreviation("metweight", {AttributeMap{{"metweight", {"hs"}}}});
+    AttributeMatcher fullWord("metweight", {AttributeMap{{"metweight", {"half-strong"}}}});
+    AttributeMatcher number("metweight", {AttributeMap{{"metweight", {"2"}}}});
+
+    auto abbreviationMatches = abbreviation.findAll(chorale, 4);
+    REQUIRE(!abbreviationMatches.empty());
+    CHECK_EQ(fullWord.findAll(chorale, 4).size(), abbreviationMatches.size());
+    CHECK_EQ(number.findAll(chorale, 4).size(), abbreviationMatches.size());
+}
+
+TEST_CASE(matcher_metweight_as_driving_feature_partitions_into_the_weight_classes) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher total("metweight", {AttributeMap{{"metweight", {"*"}}}});
+    AttributeMatcher strong("metweight", {AttributeMap{{"metweight", {"strong"}}}});
+    AttributeMatcher halfStrong("metweight", {AttributeMap{{"metweight", {"half-strong"}}}});
+    AttributeMatcher weak("metweight", {AttributeMap{{"metweight", {"weak"}}}});
+    AttributeMatcher unclassified("metweight", {AttributeMap{{"metweight", {"unclassified"}}}});
+
+    auto totalCount = total.findAll(chorale, 4).size();
+    REQUIRE(totalCount > 0u);
+    CHECK_EQ(strong.findAll(chorale, 4).size() + halfStrong.findAll(chorale, 4).size() +
+                 weak.findAll(chorale, 4).size() + unclassified.findAll(chorale, 4).size(),
+             totalCount);
+}
+
+TEST_CASE(matcher_metweight_works_as_a_cross_referenced_key) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Driving off kern, constrained on a literal metweight value -- exercises the
+    // cross-spine lookup path, not metweight as the driving feature.
+    AttributeMatcher matcher("kern", {AttributeMap{{"metweight", {"strong"}}}});
+    CHECK(!matcher.findAll(chorale, 4).empty());
+}
+
+TEST_CASE(matcher_metweight_compare_negative_matches_with_positive) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher positive("metweight", {AttributeMap{{"metweight", {"strong", "half-strong", "weak"}}}});
+    AttributeMatcher negative("metweight", {AttributeMap{{"!metweight", {"unclassified"}}}});
+
+    auto positiveMatches = positive.findAll(chorale, 4);
+    auto negativeMatches = negative.findAll(chorale, 4);
+    REQUIRE(!positiveMatches.empty());
+    CHECK_EQ(positiveMatches.size(), negativeMatches.size());
+}
+
 // A "!" prefix on a pattern key negates that whole position (De Morgan's over the
 // OR-list) -- checked by partitioning: count("!key") + count("key") must equal the
 // total onset count, for the plain, mint, and fb comparators alike.

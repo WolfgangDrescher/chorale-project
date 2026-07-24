@@ -17,6 +17,7 @@ const std::string kFermataKey = "fermata";
 const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
 const std::string kFbFeature = "fb";
+const std::string kMetweightFeature = "metweight";
 
 // Unlike kern/deg/mint, fb has a single spine per chorale (the bass's own figured-bass
 // analysis), not one per voice -- so any lookup against it always uses voice 1,
@@ -169,6 +170,26 @@ bool fbInList(const std::vector<std::string>& allowed, const std::string& actual
                         [&](const std::string& v) { return fbValueMatches(v, actual, exactChord); });
 }
 
+// Tool_metweight writes the **metweight spine in abbreviated form ("s"/"hs"/"w"/"u",
+// but a pattern value may spell a weight class out as an abbreviation, a full word,
+// or a numeric rank
+std::string normalizeMetweightValue(const std::string& value) {
+    if (value == "s" || value == "strong" || value == "1") return "s";
+    if (value == "hs" || value == "half-strong" || value == "2") return "hs";
+    if (value == "w" || value == "weak" || value == "3") return "w";
+    if (value == "u" || value == "unclassified" || value == "4") return "u";
+    return value;
+}
+
+bool metweightValueMatches(const std::string& patternValue, const std::string& actual) {
+    return normalizeMetweightValue(patternValue) == actual;
+}
+
+bool metweightInList(const std::vector<std::string>& allowed, const std::string& actual) {
+    return std::any_of(allowed.begin(), allowed.end(),
+                        [&](const std::string& v) { return metweightValueMatches(v, actual); });
+}
+
 hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineNumber, const std::string& feature) {
     hum::HTp start = chorale.spine(feature, voice);
     if (!start) return nullptr;
@@ -247,6 +268,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     if (key == kMintFeature) matched = mintInList(allowed, actual);
                     else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
                     else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_kernIgnoreOctave);
+                    else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
                     else matched = inList(allowed, actual);
                 }
                 if (negate) matched = !matched;

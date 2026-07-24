@@ -71,6 +71,12 @@ void applySpineAnalysisTools(hum::HumdrumFile& infile) {
         infile.readString(mintTool.getHumdrumText());
     }
 
+    hum::Tool_metweight metweightTool;
+    metweightTool.run(infile);
+    if (metweightTool.hasHumdrumText()) {
+        infile.readString(metweightTool.getHumdrumText());
+    }
+
     hum::Tool_fb fbTool;
     fbTool.process("-c -n --hint");
     fbTool.run(infile);
