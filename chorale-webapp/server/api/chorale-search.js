@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process';
 const CHORALE_SEARCH_BIN = '../chorale-search/build/chorale-search';
 const CORPUS_DIR = '../kern/bach-370-chorales';
 
+const EXEC_FILE_SYNC_TIMEOUT = 10_000;
+
 class ServiceUnavailableError extends Error {
     constructor(message, errors) {
         super(message);
@@ -71,8 +73,11 @@ function runChoraleSearch(body) {
             '--format',
             'json',
             '--group-by-chorale',
-        ], { encoding: 'utf8' });
+        ], { encoding: 'utf8', timeout: EXEC_FILE_SYNC_TIMEOUT });
     } catch (e) {
+        if (e.signal === 'SIGTERM' && e.status === null) {
+            throw new ServiceUnavailableError(`The chorale-search tool timed out after ${EXEC_FILE_SYNC_TIMEOUT / 1000} seconds`);
+        }
         if (typeof e.status !== 'number') {
             throw new ServiceUnavailableError('The chorale-search tool could not be started');
         }
