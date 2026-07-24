@@ -12,11 +12,34 @@ namespace choralesearch {
 // feature name -> OR-list of acceptable values ("*" anywhere in the list = wildcard)
 using AttributeMap = std::map<std::string, std::vector<std::string>>;
 
+// An additional pattern that must have a match starting at the exact same musical position
+// (hum::HumNum, quarter notes from the start of the piece) as each match of the query's own
+// top-level pattern -- e.g. "whatever the bass is doing when this soprano line happens".
+// Only whether a match exists at that position matters; the group's own matches aren't
+// themselves returned as results.
+struct SimultaneousGroup {
+    std::string feature;
+    std::string voices = "all";
+    std::vector<AttributeMap> pattern;
+
+    // nullopt means "inherit the top-level Query's own value of the same name" -- these
+    // are only ever overrides, not independent defaults.
+    std::optional<bool> mintStartAtPreviousToken;
+    std::optional<bool> fbCompareExactChord;
+    std::optional<bool> kernIgnoreOctave;
+    std::optional<std::string> simultaneousAlignment;
+};
+
 struct Query {
     std::string feature;
     std::string voices = "all";
 
     std::vector<AttributeMap> pattern;
+
+    // Additional patterns (typically in other voices) that must each have a match starting
+    // at the same musical position as a match of the query's own pattern, for that match to
+    // be kept. Empty means no such constraint. See SimultaneousGroup.
+    std::vector<SimultaneousGroup> simultaneousWith;
 
     std::optional<std::size_t> limit;
 
@@ -37,27 +60,54 @@ struct Query {
     // pattern value's register must match exactly, so "G" only matches "G", not "g"/"GG"/etc.
     // When set, register is ignored -- "G" matches every octave of that pitch class.
     bool kernIgnoreOctave = false;
+
+    // Only relevant with simultaneousWith: which of a group's own match's positions must
+    // line up with the primary match's. One of "start" (default -- just start together),
+    // "end" (just end together), or "start-end" (both -- runs for the same duration).
+    std::string simultaneousAlignment = "start";
 };
+
+inline nlohmann::json patternToJson(const std::vector<AttributeMap>& pattern) {
+    nlohmann::json arr = nlohmann::json::array();
+    for (const auto& position : pattern) {
+        nlohmann::json posJson = nlohmann::json::object();
+        for (const auto& [key, values] : position) {
+            posJson[key] = values;
+        }
+        arr.push_back(posJson);
+    }
+    return arr;
+}
+
+inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
+    nlohmann::json j;
+    j["feature"] = g.feature;
+    j["voices"] = g.voices;
+    j["pattern"] = patternToJson(g.pattern);
+    if (g.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = *g.mintStartAtPreviousToken;
+    if (g.fbCompareExactChord) j["fbCompareExactChord"] = *g.fbCompareExactChord;
+    if (g.kernIgnoreOctave) j["kernIgnoreOctave"] = *g.kernIgnoreOctave;
+    if (g.simultaneousAlignment) j["simultaneousAlignment"] = *g.simultaneousAlignment;
+    return j;
+}
 
 inline std::ostream& operator<<(std::ostream& os, const Query& q) {
     nlohmann::json j;
     j["feature"] = q.feature;
     j["voices"] = q.voices;
-
-    nlohmann::json pattern = nlohmann::json::array();
-    for (const auto& position : q.pattern) {
-        nlohmann::json posJson = nlohmann::json::object();
-        for (const auto& [key, values] : position) {
-            posJson[key] = values;
-        }
-        pattern.push_back(posJson);
-    }
-    j["pattern"] = pattern;
+    j["pattern"] = patternToJson(q.pattern);
 
     if (q.limit) j["limit"] = *q.limit;
     if (q.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = true;
     if (q.fbCompareExactChord) j["fbCompareExactChord"] = true;
     if (q.kernIgnoreOctave) j["kernIgnoreOctave"] = true;
+    if (q.simultaneousAlignment != "start") j["simultaneousAlignment"] = q.simultaneousAlignment;
+
+    if (!q.simultaneousWith.empty()) {
+        nlohmann::json groups = nlohmann::json::array();
+        for (const auto& g : q.simultaneousWith) groups.push_back(simultaneousGroupToJson(g));
+        j["simultaneousWith"] = groups;
+    }
 
     return os << j.dump(1, '\t') << std::endl;
 }

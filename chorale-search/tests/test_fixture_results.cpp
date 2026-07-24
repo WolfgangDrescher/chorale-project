@@ -9,6 +9,7 @@
 using choralesearch::AttributeMap;
 using choralesearch::CorpusSearch;
 using choralesearch::Query;
+using choralesearch::SimultaneousGroup;
 
 // A growing catalog of exact, hand-verified search results against the real
 // chorales in tests/fixtures/. Unlike test_attributematcher.cpp (which checks
@@ -416,6 +417,36 @@ TEST_CASE(fb_excluding_soprano_mint_2_or_1_or_bracketed_first_note) {
     CHECK_RESULT(results[3], "chor029", 4, "33", "33");
     CHECK_RESULT(results[4], "chor029", 4, "40", "40");
     CHECK_RESULT(results[5], "chor029", 4, "42", "42");
+}
+
+TEST_CASE(deg_cadential_soprano_descent_simultaneous_with_bass_3_4_5_1) {
+    Query q;
+    q.feature = "deg";
+    q.voices = "soprano";
+    q.pattern = {
+        AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
+        AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
+        AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    };
+    
+    SimultaneousGroup bass;
+    bass.feature = "deg";
+    bass.voices = "bass";
+    bass.pattern = {
+        AttributeMap{{"deg", {"3"}}, {"duration", {"8"}}},
+        AttributeMap{{"deg", {"4"}}, {"duration", {"8"}}},
+        AttributeMap{{"deg", {"5"}}, {"duration", {"4"}}},
+        AttributeMap{{"deg", {"1"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    };
+    q.simultaneousWith = {bass};
+    q.simultaneousAlignment = "start-end";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 2u);
+    CHECK_RESULT(results[0], "chor029", 4, "5", "7");
+    CHECK_RESULT(results[1], "chor029", 4, "12", "14");
 }
 
 TEST_MAIN()

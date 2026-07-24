@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <utility>
 
 #include "AttributeMatcher.hpp"
 #include "HumdrumChorale.hpp"
@@ -17,6 +18,34 @@ std::string getHumNumTwoPart(const hum::HumNum& n) {
     std::ostringstream oss;
     n.printTwoPart(oss);
     return oss.str();
+}
+
+// A group's own options (mint/fb/kern/alignment) are overrides -- nullopt falls back to the
+// top-level query's own value of the same name, not an independent default.
+struct ResolvedSimultaneousGroup {
+    std::vector<std::pair<hum::HumNum, hum::HumNum>> positions; // (startPosition, endPosition) per match
+    bool checkStart;
+    bool checkEnd;
+};
+
+ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale, const Query& query,
+                                                    const SimultaneousGroup& group) {
+    ResolvedSimultaneousGroup resolved;
+    std::string alignment = group.simultaneousAlignment.value_or(query.simultaneousAlignment);
+    resolved.checkStart = alignment != "end";
+    resolved.checkEnd = alignment != "start";
+
+    if (!chorale.hasFeature(group.feature)) return resolved;
+
+    AttributeMatcher matcher(group.feature, group.pattern, group.mintStartAtPreviousToken.value_or(query.mintStartAtPreviousToken),
+                              group.fbCompareExactChord.value_or(query.fbCompareExactChord),
+                              group.kernIgnoreOctave.value_or(query.kernIgnoreOctave));
+    for (std::size_t voice : resolveVoices(group.voices)) {
+        for (const auto& m : matcher.findAll(chorale, voice)) {
+            resolved.positions.emplace_back(m.startPosition, m.endPosition);
+        }
+    }
+    return resolved;
 }
 
 } // namespace
@@ -48,8 +77,26 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
     AttributeMatcher matcher(query.feature, query.pattern, query.mintStartAtPreviousToken, query.fbCompareExactChord,
                               query.kernIgnoreOctave);
 
+    // Precompute each simultaneousWith group's own match positions (and resolved options)
+    // once per chorale, rather than re-running its matcher for every one of the primary
+    // pattern's own matches.
+    std::vector<ResolvedSimultaneousGroup> resolvedGroups;
+    for (const auto& group : query.simultaneousWith) {
+        resolvedGroups.push_back(resolveSimultaneousGroup(chorale, query, group));
+    }
+
     for (std::size_t voice : resolveVoices(query.voices)) {
         for (auto& m : matcher.findAll(chorale, voice)) {
+            bool alignsWithEverySimultaneousGroup =
+                std::all_of(resolvedGroups.begin(), resolvedGroups.end(), [&](const ResolvedSimultaneousGroup& g) {
+                    return std::any_of(g.positions.begin(), g.positions.end(), [&](const auto& p) {
+                        if (g.checkStart && p.first != m.startPosition) return false;
+                        if (g.checkEnd && p.second != m.endPosition) return false;
+                        return true;
+                    });
+                });
+            if (!alignsWithEverySimultaneousGroup) continue;
+
             Result r;
             r.choraleId = chorale.id();
             r.feature = query.feature;

@@ -36,39 +36,80 @@ std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
     return result;
 }
 
+std::string simultaneousAlignmentFromJson(const nlohmann::json& j, const std::string& context) {
+    if (!j.is_string()) throw std::invalid_argument("'" + context + "' must be a string");
+    std::string alignment = j.get<std::string>();
+    if (alignment != "start" && alignment != "end" && alignment != "start-end") {
+        throw std::invalid_argument("'" + context + "' must be one of 'start', 'end', 'start-end' (got '" +
+                                     alignment + "')");
+    }
+    return alignment;
+}
+
+// Fields shared by Query and SimultaneousGroup, parsed once for both. Assignment works
+// whether target's members are plain values (Query) or std::optional (SimultaneousGroup,
+// nullopt = inherit from the top-level query -- see Query.hpp).
+template <typename T>
+void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::string& context) {
+    if (!j.contains("feature") || !j["feature"].is_string()) {
+        throw std::invalid_argument(context + " must contain a string field 'feature'");
+    }
+    target.feature = j["feature"].get<std::string>();
+
+    if (j.contains("voices") && j["voices"].is_string()) {
+        target.voices = j["voices"].get<std::string>();
+    }
+
+    if (!j.contains("pattern")) {
+        throw std::invalid_argument(context + " must contain a 'pattern' array");
+    }
+    target.pattern = patternFromJson(j["pattern"]);
+
+    if (j.contains("mintStartAtPreviousToken") && j["mintStartAtPreviousToken"].is_boolean()) {
+        target.mintStartAtPreviousToken = j["mintStartAtPreviousToken"].get<bool>();
+    }
+
+    if (j.contains("fbCompareExactChord") && j["fbCompareExactChord"].is_boolean()) {
+        target.fbCompareExactChord = j["fbCompareExactChord"].get<bool>();
+    }
+
+    if (j.contains("kernIgnoreOctave") && j["kernIgnoreOctave"].is_boolean()) {
+        target.kernIgnoreOctave = j["kernIgnoreOctave"].get<bool>();
+    }
+
+    if (j.contains("simultaneousAlignment")) {
+        target.simultaneousAlignment = simultaneousAlignmentFromJson(j["simultaneousAlignment"], "simultaneousAlignment");
+    }
+}
+
+SimultaneousGroup simultaneousGroupFromJson(const nlohmann::json& j, std::size_t index) {
+    std::string context = "'simultaneousWith[" + std::to_string(index) + "]'";
+    if (!j.is_object()) throw std::invalid_argument(context + " must be an object");
+
+    SimultaneousGroup group;
+    parseSearchRequestFields(j, group, context);
+    return group;
+}
+
+std::vector<SimultaneousGroup> simultaneousWithFromJson(const nlohmann::json& j) {
+    if (!j.is_array()) throw std::invalid_argument("'simultaneousWith' must be an array");
+    std::vector<SimultaneousGroup> groups;
+    for (std::size_t i = 0; i < j.size(); ++i) groups.push_back(simultaneousGroupFromJson(j[i], i));
+    return groups;
+}
+
 } // namespace
 
 Query queryFromJson(const nlohmann::json& j) {
     Query q;
-
-    if (!j.contains("feature") || !j["feature"].is_string()) {
-        throw std::invalid_argument("Query JSON must contain a string field 'feature'");
-    }
-    q.feature = j["feature"].get<std::string>();
-
-    if (j.contains("voices") && j["voices"].is_string()) {
-        q.voices = j["voices"].get<std::string>();
-    }
-
-    if (!j.contains("pattern")) {
-        throw std::invalid_argument("Query JSON must contain a 'pattern' array");
-    }
-    q.pattern = patternFromJson(j["pattern"]);
+    parseSearchRequestFields(j, q, "Query JSON");
 
     if (j.contains("limit") && j["limit"].is_number_unsigned()) {
         q.limit = j["limit"].get<std::size_t>();
     }
 
-    if (j.contains("mintStartAtPreviousToken") && j["mintStartAtPreviousToken"].is_boolean()) {
-        q.mintStartAtPreviousToken = j["mintStartAtPreviousToken"].get<bool>();
-    }
-
-    if (j.contains("fbCompareExactChord") && j["fbCompareExactChord"].is_boolean()) {
-        q.fbCompareExactChord = j["fbCompareExactChord"].get<bool>();
-    }
-
-    if (j.contains("kernIgnoreOctave") && j["kernIgnoreOctave"].is_boolean()) {
-        q.kernIgnoreOctave = j["kernIgnoreOctave"].get<bool>();
+    if (j.contains("simultaneousWith")) {
+        q.simultaneousWith = simultaneousWithFromJson(j["simultaneousWith"]);
     }
 
     return q;

@@ -51,6 +51,130 @@ TEST_CASE(query_from_json_defaults_kern_ignore_octave_to_false) {
     CHECK(!q.kernIgnoreOctave);
 }
 
+TEST_CASE(query_from_json_defaults_simultaneous_alignment_to_start) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}]})"));
+    CHECK_EQ(q.simultaneousAlignment, std::string("start"));
+}
+
+TEST_CASE(query_from_json_reads_simultaneous_alignment) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"simultaneousAlignment":"end"})"));
+    CHECK_EQ(q.simultaneousAlignment, std::string("end"));
+}
+
+TEST_CASE(query_from_json_accepts_start_end_as_simultaneous_alignment) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"simultaneousAlignment":"start-end"})"));
+    CHECK_EQ(q.simultaneousAlignment, std::string("start-end"));
+}
+
+TEST_CASE(query_from_json_rejects_unknown_simultaneous_alignment) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"simultaneousAlignment":"middle"})")));
+}
+
+TEST_CASE(query_from_json_defaults_simultaneous_with_to_empty) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}]})"));
+    CHECK(q.simultaneousWith.empty());
+}
+
+TEST_CASE(query_from_json_reads_a_minimal_simultaneous_with_group) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{"feature":"kern","pattern":[{"fermata":true}]}]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    const auto& group = q.simultaneousWith[0];
+    CHECK_EQ(group.feature, std::string("kern"));
+    CHECK_EQ(group.voices, std::string("all")); // default when omitted
+    REQUIRE(group.pattern.size() == 1u);
+
+    // nullopt everywhere: a group with no options of its own inherits the query's.
+    CHECK(!group.mintStartAtPreviousToken.has_value());
+    CHECK(!group.fbCompareExactChord.has_value());
+    CHECK(!group.kernIgnoreOctave.has_value());
+    CHECK(!group.simultaneousAlignment.has_value());
+}
+
+TEST_CASE(query_from_json_reads_simultaneous_with_group_options_as_overrides) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{
+            "feature":"mint",
+            "voices":"bass",
+            "pattern":[{"mint":"-2"}],
+            "mintStartAtPreviousToken":true,
+            "fbCompareExactChord":true,
+            "kernIgnoreOctave":true,
+            "simultaneousAlignment":"end"
+        }]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    const auto& group = q.simultaneousWith[0];
+    CHECK_EQ(group.voices, std::string("bass"));
+    REQUIRE(group.mintStartAtPreviousToken.has_value());
+    CHECK(*group.mintStartAtPreviousToken);
+    REQUIRE(group.fbCompareExactChord.has_value());
+    CHECK(*group.fbCompareExactChord);
+    REQUIRE(group.kernIgnoreOctave.has_value());
+    CHECK(*group.kernIgnoreOctave);
+    REQUIRE(group.simultaneousAlignment.has_value());
+    CHECK_EQ(*group.simultaneousAlignment, std::string("end"));
+}
+
+TEST_CASE(query_from_json_reads_several_simultaneous_with_groups_in_order) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[
+            {"feature":"kern","voices":"bass","pattern":[{"fermata":true}]},
+            {"feature":"kern","voices":"tenor","pattern":[{"fermata":true}]}
+        ]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 2u);
+    CHECK_EQ(q.simultaneousWith[0].voices, std::string("bass"));
+    CHECK_EQ(q.simultaneousWith[1].voices, std::string("tenor"));
+}
+
+TEST_CASE(query_from_json_rejects_non_array_simultaneous_with) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"simultaneousWith":"nope"})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_object_simultaneous_with_entry) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"simultaneousWith":["nope"]})")));
+}
+
+TEST_CASE(query_from_json_rejects_simultaneous_with_entry_missing_feature) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"simultaneousWith":[{"pattern":[{"fermata":true}]}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_simultaneous_with_entry_missing_pattern) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"simultaneousWith":[{"feature":"kern"}]})")));
+}
+
+TEST_CASE(query_from_json_error_message_references_the_failing_simultaneous_with_index) {
+    try {
+        queryFromJson(json::parse(R"({
+            "feature":"kern",
+            "pattern":[{"kern":"G"}],
+            "simultaneousWith":[
+                {"feature":"kern","pattern":[{"fermata":true}]},
+                {"feature":"kern"}
+            ]
+        })"));
+        REQUIRE(false); // must throw
+    } catch (const std::invalid_argument& e) {
+        std::string msg = e.what();
+        CHECK(msg.find("simultaneousWith[1]") != std::string::npos);
+    }
+}
+
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
     CHECK_EQ(q.pattern[0]["fermata"], (std::vector<std::string>{"true"}));
