@@ -20,8 +20,10 @@ TEST_CASE(available_features_lists_kern_and_the_derived_analysis_spines) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     auto features = chorale.availableFeatures();
     // std::map-backed storage, so this comes back key-sorted rather than in
-    // file order -- "deg" < "fb" < "kern" < "metweight" < "mint".
-    CHECK_EQ(features, (std::vector<std::string>{"deg", "fb", "kern", "metweight", "mint"}));
+    // file order -- "deg" < "fb" < "hint-12" < ... < "hint-34" < "kern" <
+    // "metweight" < "mint".
+    CHECK_EQ(features, (std::vector<std::string>{"deg", "fb", "hint-12", "hint-13", "hint-14", "hint-23", "hint-24",
+                                                  "hint-34", "kern", "metweight", "mint"}));
 }
 
 TEST_CASE(has_feature_is_true_for_present_and_false_for_absent) {
@@ -80,6 +82,23 @@ TEST_CASE(find_token_at_line_returns_null_for_a_non_data_line) {
 
 TEST_CASE(find_token_at_line_returns_null_for_a_null_spine) {
     CHECK(findTokenAtLine(nullptr, 23) == nullptr);
+}
+
+TEST_CASE(has_feature_is_true_for_all_six_hint_pair_spines) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    for (const std::string& pair : {"hint-12", "hint-13", "hint-14", "hint-23", "hint-24", "hint-34"}) {
+        CHECK(chorale.hasFeature(pair));
+    }
+    CHECK(!chorale.hasFeature("hint"));
+}
+
+TEST_CASE(hint_pair_spine_has_exactly_one_entry_regardless_of_the_pair) {
+    // Unlike kern/deg/mint (4 spines, one per voice), each hint-<pair> name has exactly
+    // one spine in the whole file -- voice 1 resolves it, any other voice is out of range.
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CHECK(chorale.spine("hint-14", 1) != nullptr);
+    CHECK(chorale.spine("hint-14", 2) == nullptr);
+    CHECK(chorale.spine("hint-14", 0) == nullptr);
 }
 
 TEST_MAIN()

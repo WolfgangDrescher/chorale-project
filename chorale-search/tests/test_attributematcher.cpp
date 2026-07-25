@@ -650,6 +650,131 @@ TEST_CASE(matcher_negated_key_partitions_fb_comparator_matches) {
     CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
 }
 
+TEST_CASE(matcher_hint_pair_as_driving_feature_gives_identical_matches_for_every_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher matcher("hint-14", {AttributeMap{}});
+    auto bass = matcher.findAll(chorale, 1);
+    auto tenor = matcher.findAll(chorale, 2);
+    auto alto = matcher.findAll(chorale, 3);
+    auto soprano = matcher.findAll(chorale, 4);
+
+    REQUIRE(!bass.empty());
+    REQUIRE(tenor.size() == bass.size());
+    REQUIRE(alto.size() == bass.size());
+    REQUIRE(soprano.size() == bass.size());
+    for (std::size_t i = 0; i < bass.size(); ++i) {
+        CHECK_EQ(tenor[i].startLineNumber, bass[i].startLineNumber);
+        CHECK_EQ(alto[i].startLineNumber, bass[i].startLineNumber);
+        CHECK_EQ(soprano[i].startLineNumber, bass[i].startLineNumber);
+    }
+}
+
+TEST_CASE(matcher_hint_pair_as_cross_referenced_key_resolves_the_same_regardless_of_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher matcher("kern", {AttributeMap{{"hint-14", {"P8"}}}});
+    CHECK(!matcher.findAll(chorale, 2).empty());
+}
+
+TEST_CASE(matcher_hint_pair_pattern_can_omit_quality_to_match_any_quality) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher major("hint-12", {AttributeMap{{"hint-12", {"M3"}}}});
+    AttributeMatcher minor("hint-12", {AttributeMap{{"hint-12", {"m3"}}}});
+    AttributeMatcher either("hint-12", {AttributeMap{{"hint-12", {"3"}}}});
+
+    auto majorMatches = major.findAll(chorale, 1);
+    auto minorMatches = minor.findAll(chorale, 1);
+    auto eitherMatches = either.findAll(chorale, 1);
+
+    REQUIRE(!majorMatches.empty());
+    REQUIRE(!minorMatches.empty());
+    CHECK_EQ(eitherMatches.size(), majorMatches.size() + minorMatches.size());
+}
+
+TEST_CASE(matcher_hint_pair_wildcard_key_matches_if_any_pair_satisfies) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher wildcard("kern", {AttributeMap{{"hint-*4", {"M6"}}}});
+    AttributeMatcher tenorSoprano("kern", {AttributeMap{{"hint-24", {"M6"}}}});
+    AttributeMatcher altoSoprano("kern", {AttributeMap{{"hint-34", {"M6"}}}});
+
+    auto wildcardMatches = wildcard.findAll(chorale, 1);
+    auto tenorSopranoMatches = tenorSoprano.findAll(chorale, 1);
+    auto altoSopranoMatches = altoSoprano.findAll(chorale, 1);
+
+    REQUIRE(!tenorSopranoMatches.empty());
+    REQUIRE(!altoSopranoMatches.empty());
+    for (const auto& m : tenorSopranoMatches) {
+        bool found = std::any_of(wildcardMatches.begin(), wildcardMatches.end(),
+                                  [&](const auto& x) { return x.startLineNumber == m.startLineNumber; });
+        CHECK(found);
+    }
+    for (const auto& m : altoSopranoMatches) {
+        bool found = std::any_of(wildcardMatches.begin(), wildcardMatches.end(),
+                                  [&](const auto& x) { return x.startLineNumber == m.startLineNumber; });
+        CHECK(found);
+    }
+}
+
+TEST_CASE(matcher_hint_relative_key_resolves_to_the_concrete_pair_relative_to_the_walked_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher relative("kern", {AttributeMap{{"hint-2", {"P5"}}}});
+    AttributeMatcher concrete("kern", {AttributeMap{{"hint-23", {"P5"}}}});
+
+    auto relativeMatches = relative.findAll(chorale, 3);
+    auto concreteMatches = concrete.findAll(chorale, 3);
+
+    REQUIRE(!relativeMatches.empty());
+    REQUIRE(relativeMatches.size() == concreteMatches.size());
+    for (std::size_t i = 0; i < relativeMatches.size(); ++i) {
+        CHECK_EQ(relativeMatches[i].startLineNumber, concreteMatches[i].startLineNumber);
+    }
+}
+
+TEST_CASE(matcher_hint_relative_key_never_matches_when_it_equals_the_walked_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher matcher("kern", {AttributeMap{{"hint-2", {"P1"}}}});
+    CHECK(matcher.findAll(chorale, 2).empty());
+}
+
+TEST_CASE(matcher_hint_relative_key_wildcard_bypasses_the_self_reference_check) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher wildcard("kern", {AttributeMap{{"hint-2", {"*"}}}});
+    AttributeMatcher total("kern", {AttributeMap{}});
+    CHECK_EQ(wildcard.findAll(chorale, 2).size(), total.findAll(chorale, 2).size());
+}
+
+TEST_CASE(matcher_hint_reduce_compound_folds_both_pattern_and_actual_to_within_an_octave) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher withoutReduce("hint-14", {AttributeMap{{"hint-14", {"M3"}}}});
+    AttributeMatcher m10("hint-14", {AttributeMap{{"hint-14", {"M10"}}}});
+    AttributeMatcher m17("hint-14", {AttributeMap{{"hint-14", {"M17"}}}});
+    AttributeMatcher withReduce("hint-14", {AttributeMap{{"hint-14", {"M3"}}}}, /*mintStartAtPreviousToken=*/false,
+                                /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                                /*hintReduceCompound=*/true);
+
+    CHECK(withoutReduce.findAll(chorale, 1).empty());
+    auto m10Matches = m10.findAll(chorale, 1);
+    auto m17Matches = m17.findAll(chorale, 1);
+    auto reducedMatches = withReduce.findAll(chorale, 1);
+
+    REQUIRE(!m10Matches.empty());
+    REQUIRE(!m17Matches.empty());
+    CHECK_EQ(reducedMatches.size(), m10Matches.size() + m17Matches.size());
+}
+
+TEST_CASE(matcher_negated_key_partitions_hint_comparator_matches) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher total("hint-14", {AttributeMap{}});
+    AttributeMatcher positive("hint-14", {AttributeMap{{"hint-14", {"P8"}}}});
+    AttributeMatcher negated("hint-14", {AttributeMap{{"!hint-14", {"P8"}}}});
+
+    auto totalMatches = total.findAll(chorale, 1);
+    auto positiveMatches = positive.findAll(chorale, 1);
+    auto negatedMatches = negated.findAll(chorale, 1);
+
+    REQUIRE(!totalMatches.empty());
+    CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
+}
+
 TEST_CASE(matcher_negated_key_as_a_cross_referenced_constraint) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // Driving off kern, negating a cross-referenced deg constraint -- not just the

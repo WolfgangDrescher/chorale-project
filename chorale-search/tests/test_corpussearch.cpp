@@ -301,4 +301,27 @@ TEST_CASE(simultaneous_with_group_can_override_kern_ignore_octave) {
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{1});
 }
 
+TEST_CASE(simultaneous_with_group_can_override_hint_reduce_compound) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "hint-14";
+    q.voices = "1";
+    q.pattern = {AttributeMap{{"hint-14", {"*"}}}};
+
+    SimultaneousGroup group;
+    group.feature = "hint-14";
+    group.voices = "1";
+    group.pattern = {AttributeMap{{"hint-14", {"M3"}}}};
+    q.simultaneousWith = {group};
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
+
+    q.simultaneousWith[0].hintReduceCompound = true; // group-level override
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{17});
+
+    q.simultaneousWith[0].hintReduceCompound.reset();
+    q.hintReduceCompound = true; // query-level, inherited by the group
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{17});
+}
+
 TEST_MAIN()

@@ -51,6 +51,32 @@ TEST_CASE(query_from_json_defaults_kern_ignore_octave_to_false) {
     CHECK(!q.kernIgnoreOctave);
 }
 
+TEST_CASE(query_from_json_reads_hint_reduce_compound) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"hint-14","pattern":[{"hint-14":"3"}],"hintReduceCompound":true})"));
+    CHECK(q.hintReduceCompound);
+}
+
+TEST_CASE(query_from_json_defaults_hint_reduce_compound_to_false) {
+    Query q = queryFromJson(json::parse(R"({"feature":"hint-14","pattern":[{"hint-14":"3"}]})"));
+    CHECK(!q.hintReduceCompound);
+}
+
+TEST_CASE(query_from_json_reads_simultaneous_with_group_hint_reduce_compound_override) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{
+            "feature":"hint-14",
+            "pattern":[{"hint-14":"3"}],
+            "hintReduceCompound":true
+        }]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    REQUIRE(q.simultaneousWith[0].hintReduceCompound.has_value());
+    CHECK(*q.simultaneousWith[0].hintReduceCompound);
+}
+
 TEST_CASE(query_from_json_defaults_simultaneous_alignment_to_start) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}]})"));
     CHECK_EQ(q.simultaneousAlignment, std::string("start"));
