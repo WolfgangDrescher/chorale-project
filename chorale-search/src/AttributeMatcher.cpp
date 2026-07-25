@@ -144,18 +144,19 @@ bool kernInList(const std::vector<std::string>& allowed, hum::HTp actualTok, boo
 }
 
 // Splits a **mint interval token ("+M2", "-m3", ...) into (sign, quality, number).
-// Sign and quality come back empty when the string has none (e.g. a bare "2"), which
-// mintValueMatches() below treats as "matches any" for that part.
+// Sign, quality, and number each come back empty when the string has none (e.g. a
+// bare "2", or a bare "+"), which mintValueMatches() below treats as "matches any".
 std::optional<std::tuple<std::string, std::string, std::string>> parseMintValue(const std::string& s) {
-    static const std::regex re(R"(^([+-]?)([A-Za-z]*)(\d+)$)");
+    static const std::regex re(R"(^([+-]?)([A-Za-z]*)(\d*)$)");
     std::smatch m;
     if (!std::regex_match(s, m, re)) return std::nullopt;
     return std::make_tuple(m[1].str(), m[2].str(), m[3].str());
 }
 
-// A pattern value may omit sign and/or quality to match any of them -- "+2" matches
-// "+M2"/"+m2"/..., a bare "2" any sign/quality. Unparseable values (e.g. mint's
-// bracketed "[G]" first-note marker) fall back to a literal comparison.
+// A pattern value may omit sign, quality, and/or number to match any of them -- "+2"
+// matches "+M2"/"+m2"/..., a bare "2" any sign/quality, a bare "+" any interval at all
+// as long as it goes up. Unparseable values (e.g. mint's bracketed "[G]" first-note
+// marker) fall back to a literal comparison.
 bool mintValueMatches(const std::string& patternValue, const std::string& actual) {
     auto pattern = parseMintValue(patternValue);
     auto value = parseMintValue(actual);
@@ -163,7 +164,7 @@ bool mintValueMatches(const std::string& patternValue, const std::string& actual
 
     const auto& [patternSign, patternQuality, patternNumber] = *pattern;
     const auto& [valueSign, valueQuality, valueNumber] = *value;
-    if (patternNumber != valueNumber) return false;
+    if (!patternNumber.empty() && patternNumber != valueNumber) return false;
     if (!patternSign.empty() && patternSign != valueSign) return false;
     if (!patternQuality.empty() && patternQuality != valueQuality) return false;
     return true;

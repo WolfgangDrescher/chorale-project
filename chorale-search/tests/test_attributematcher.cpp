@@ -379,6 +379,46 @@ TEST_CASE(matcher_mint_pattern_can_omit_sign_and_quality_to_match_any_direction)
     CHECK_EQ(eitherMatches.size(), ascendingMatches.size() + descendingMatches.size());
 }
 
+TEST_CASE(matcher_mint_pattern_can_omit_quality_and_number_to_match_any_interval_in_that_direction) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher up("mint", {AttributeMap{{"mint", {"+"}}}});
+    AttributeMatcher down("mint", {AttributeMap{{"mint", {"-"}}}});
+    AttributeMatcher upSecond("mint", {AttributeMap{{"mint", {"+2"}}}});
+    AttributeMatcher downThird("mint", {AttributeMap{{"mint", {"-3"}}}});
+
+    auto upMatches = up.findAll(chorale, 4);
+    auto downMatches = down.findAll(chorale, 4);
+    auto upSecondMatches = upSecond.findAll(chorale, 4);
+    auto downThirdMatches = downThird.findAll(chorale, 4);
+
+    REQUIRE(!upMatches.empty());
+    REQUIRE(!downMatches.empty());
+    REQUIRE(!upSecondMatches.empty());
+    REQUIRE(!downThirdMatches.empty());
+
+    // Every specific-interval match in a given direction must also satisfy the
+    // direction-only, any-interval-size, any-quality pattern for that same direction.
+    for (const auto& m : upSecondMatches) {
+        bool found = std::any_of(upMatches.begin(), upMatches.end(),
+                                  [&](const auto& u) { return u.startLineNumber == m.startLineNumber; });
+        CHECK(found);
+    }
+    for (const auto& m : downThirdMatches) {
+        bool found = std::any_of(downMatches.begin(), downMatches.end(),
+                                  [&](const auto& d) { return d.startLineNumber == m.startLineNumber; });
+        CHECK(found);
+    }
+    CHECK(upMatches.size() >= upSecondMatches.size());
+    CHECK(downMatches.size() >= downThirdMatches.size());
+
+    // "+" and "-" never overlap -- no onset is both ascending and descending at once.
+    for (const auto& m : upMatches) {
+        bool alsoDown = std::any_of(downMatches.begin(), downMatches.end(),
+                                     [&](const auto& d) { return d.startLineNumber == m.startLineNumber; });
+        CHECK(!alsoDown);
+    }
+}
+
 TEST_CASE(matcher_mint_pattern_mixes_partial_and_exact_values_across_positions) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     std::vector<AttributeMap> pattern = {
