@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <regex>
 #include <stdexcept>
+#include <sstream>
 
 namespace fs = std::filesystem;
 
@@ -85,6 +86,28 @@ void applySpineAnalysisTools(hum::HumdrumFile& infile) {
         // wouldn't update HumdrumFile's separately cached line text.
         static const std::regex hintRe(R"((^|\t)\*\*hint(?=\t|$))", std::regex::multiline);
         infile.readString(std::regex_replace(fbTool.getHumdrumText(), hintRe, "$1**fb"));
+    }
+
+    std::vector<std::tuple<std::size_t, std::size_t>> hintPairs = {
+        {1, 2}, {1, 3}, {1, 4},
+        {2, 3}, {2, 4},
+        {3, 4}
+    };
+
+    for (auto hintPair : hintPairs) {
+        std::stringstream cmd;
+        cmd << "--process-removes-this-argv -b " << std::get<0>(hintPair) << " -k " << std::get<1>(hintPair) << " --hint";
+        hum::Tool_fb fbTool;
+        fbTool.process(cmd.str());
+        fbTool.run(infile);
+        if (fbTool.hasHumdrumText()) {
+            // Rename **hint to **hint-xy before parsing -- renaming the token after the fact
+            // wouldn't update HumdrumFile's separately cached line text.
+            std::stringstream exinterp;
+            exinterp << "$1**hint-" << std::get<0>(hintPair) << std::get<1>(hintPair);
+            static const std::regex hintRe(R"((^|\t)\*\*hint(?=\t|$))", std::regex::multiline);
+            infile.readString(std::regex_replace(fbTool.getHumdrumText(), hintRe, exinterp.str()));
+        }
     }
 }
 

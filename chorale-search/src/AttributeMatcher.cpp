@@ -19,11 +19,63 @@ const std::string kMintFeature = "mint";
 const std::string kFbFeature = "fb";
 const std::string kMetweightFeature = "metweight";
 
-// Unlike kern/deg/mint, fb has a single spine per chorale (the bass's own figured-bass
-// analysis), not one per voice -- so any lookup against it always uses voice 1,
-// regardless of which voice is actually being searched.
+// The 6 voice-pair suffixes addIntervalPairSpines() (HumdrumChorale.cpp) generates spines
+// for: 1=bass, 2=tenor, 3=alto, 4=soprano, lower voice number first.
+const std::vector<std::string> kHintPairSuffixes = {"12", "13", "14", "23", "24", "34"};
+
+// A concrete pairwise-interval key, e.g. "hint-14" -- exactly "hint-" followed by two characters.
+bool isHintPairKey(const std::string& key) {
+    return key.rfind("hint-", 0) == 0 && key.size() == 7;
+}
+
+// A pairwise-interval key that uses "*" for one or both digits, e.g. "hint-*4", "hint-1*",
+// "hint-**", to mean "any pair matching this digit pattern".
+bool isHintPairWildcardKey(const std::string& key) {
+    return isHintPairKey(key) && key.find('*') != std::string::npos;
+}
+
+// Expands a (possibly wildcarded) pairwise-interval key's two-character suffix against the
+// 6 real pairs, e.g. "hint-*4" -> {"hint-14", "hint-24", "hint-34"}. A concrete,
+// non-wildcarded key that happens not to be one of the 6 real pairs (e.g. a typo) simply
+// expands to nothing.
+std::vector<std::string> expandHintPairKey(const std::string& key) {
+    std::string suffix = key.substr(5);
+    std::vector<std::string> matches;
+    for (const std::string& real : kHintPairSuffixes) {
+        bool ok = true;
+        for (std::size_t i = 0; i < 2; ++i) {
+            if (suffix[i] != '*' && suffix[i] != real[i]) { ok = false; break; }
+        }
+        if (ok) matches.push_back("hint-" + real);
+    }
+    return matches;
+}
+
+// Unlike kern/deg/mint, fb (and each hint-<pair> spine) has a single spine per chorale, not
+// one per voice -- so any lookup against it always uses voice 1, regardless of which voice
+// is actually being searched.
 std::size_t effectiveVoice(const std::string& feature, std::size_t voice) {
-    return feature == kFbFeature ? 1 : voice;
+    return (feature == kFbFeature || isHintPairKey(feature)) ? 1 : voice;
+}
+
+// A single-digit interval key, e.g. "hint-2" -- the interval between whichever voice is
+// currently being searched and this specific other voice. Unlike "hint-*4"/etc, the digit
+// here is never a wildcard: both sides of the pair need to stay fixed for the whole pattern
+// (the walked voice by construction, this digit by being a literal) for a match across
+// several positions to actually mean "the same two voices," e.g. genuine parallel motion.
+bool isHintRelativeKey(const std::string& key) {
+    return key.rfind("hint-", 0) == 0 && key.size() == 6 && key[5] >= '1' && key[5] <= '4';
+}
+
+// Resolves "hint-<other>" against whichever voice is currently being walked into the
+// concrete pair spine name, e.g. voice 3 + "hint-1" -> "hint-13". nullopt if other equals
+// the walked voice itself (no such spine -- a voice's interval to itself is meaningless).
+std::optional<std::string> resolveHintRelativeKey(const std::string& key, std::size_t voice) {
+    std::size_t other = static_cast<std::size_t>(key[5] - '0');
+    if (other == voice) return std::nullopt;
+    std::size_t lower = std::min(voice, other);
+    std::size_t upper = std::max(voice, other);
+    return "hint-" + std::to_string(lower) + std::to_string(upper);
 }
 
 bool isWildcard(const std::vector<std::string>& allowed) {
@@ -170,6 +222,38 @@ bool fbInList(const std::vector<std::string>& allowed, const std::string& actual
                         [&](const std::string& v) { return fbValueMatches(v, actual, exactChord); });
 }
 
+// Folds a hint interval's number back within an octave (10 -> 3, 15 -> 8, ...), leaving its
+// quality letter untouched; a unison and an octave stay distinct from each other. Mirrors
+// Tool_fb's own FiguredBassNumber::getNumberWithinOctave(), which isn't reusable standalone
+// outside Tool_fb -- humlib's Convert class has no free-standing equivalent for a bare
+// diatonic interval size. Unparsable input is returned as-is (so it simply won't match
+// anything afterward, same as any other bad data in this file).
+std::string reduceHintInterval(const std::string& value) {
+    auto parsed = parseFbValue(value);
+    if (!parsed) return value;
+    const auto& [quality, figureStr] = *parsed;
+    int figure = std::stoi(figureStr);
+    int reduced;
+    if (figure % 7 == 0) reduced = 7;
+    else if (figure % 7 == 1) reduced = (figure == 1) ? 1 : 8;
+    else reduced = figure % 7;
+    return quality + std::to_string(reduced);
+}
+
+// A hint-<pair>/hint-<voice> token is always a single interval, never a chord, so this
+// compares directly via fbIntervalMatches rather than fb's chord-aware fbValueMatches
+// (exactChord doesn't apply to a lone value). reduceCompound folds both sides first, so e.g.
+// a pattern of "3" also matches an actual tenth.
+bool hintValueMatches(const std::string& patternValue, const std::string& actual, bool reduceCompound) {
+    if (!reduceCompound) return fbIntervalMatches(patternValue, actual);
+    return fbIntervalMatches(reduceHintInterval(patternValue), reduceHintInterval(actual));
+}
+
+bool hintInList(const std::vector<std::string>& allowed, const std::string& actual, bool reduceCompound) {
+    return std::any_of(allowed.begin(), allowed.end(),
+                        [&](const std::string& v) { return hintValueMatches(v, actual, reduceCompound); });
+}
+
 // Tool_metweight writes the **metweight spine in abbreviated form ("s"/"hs"/"w"/"u",
 // but a pattern value may spell a weight class out as an abbreviation, a full word,
 // or a numeric rank
@@ -200,10 +284,10 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
                                     bool mintStartAtPreviousToken, bool fbCompareExactChord,
-                                    bool kernIgnoreOctave)
+                                    bool kernIgnoreOctave, bool hintReduceCompound)
     : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)),
       m_mintStartAtPreviousToken(mintStartAtPreviousToken), m_fbCompareExactChord(fbCompareExactChord),
-      m_kernIgnoreOctave(kernIgnoreOctave) {}
+      m_kernIgnoreOctave(kernIgnoreOctave), m_hintReduceCompound(hintReduceCompound) {}
 
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
@@ -244,6 +328,24 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                 bool matched;
                 if (isWildcard(allowed)) {
                     matched = true;
+                } else if (isHintPairWildcardKey(key)) {
+                    // "hint-*4"/"hint-1*"/"hint-**": true if ANY pair matching the digit
+                    // pattern currently satisfies the value, e.g. "is any voice a 10th
+                    // above the soprano right now" -- not "are all of them".
+                    std::vector<std::string> pairs = expandHintPairKey(key);
+                    const std::vector<std::string>& allowedRef = allowed;
+                    matched = std::any_of(pairs.begin(), pairs.end(), [&](const std::string& pairFeature) {
+                        hum::HTp valTok = lookupToken(chorale, 1, lineNumber, pairFeature);
+                        return valTok && hintInList(allowedRef, std::string(*valTok), m_hintReduceCompound);
+                    });
+                } else if (isHintRelativeKey(key)) {
+                    // "hint-2": the interval between whichever voice is currently being
+                    // searched and voice 2 specifically -- both sides fixed, so this stays
+                    // correct across several pattern positions (unlike wildcarding this
+                    // digit would, see isHintRelativeKey's comment).
+                    auto pairFeature = resolveHintRelativeKey(key, voice);
+                    hum::HTp valTok = pairFeature ? lookupToken(chorale, 1, lineNumber, *pairFeature) : nullptr;
+                    matched = valTok && hintInList(allowed, std::string(*valTok), m_hintReduceCompound);
                 } else {
                     std::string actual;
                     hum::HTp kernTok = nullptr;
@@ -267,6 +369,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     }
                     if (key == kMintFeature) matched = mintInList(allowed, actual);
                     else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
+                    else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_hintReduceCompound);
                     else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_kernIgnoreOctave);
                     else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
                     else matched = inList(allowed, actual);

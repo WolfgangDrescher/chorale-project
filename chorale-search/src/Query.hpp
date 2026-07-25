@@ -27,6 +27,7 @@ struct SimultaneousGroup {
     std::optional<bool> mintStartAtPreviousToken;
     std::optional<bool> fbCompareExactChord;
     std::optional<bool> kernIgnoreOctave;
+    std::optional<bool> hintReduceCompound;
     std::optional<std::string> simultaneousAlignment;
 };
 
@@ -61,6 +62,13 @@ struct Query {
     // When set, register is ignored -- "G" matches every octave of that pitch class.
     bool kernIgnoreOctave = false;
 
+    // Affects any "hint-<pair>"/"hint-<voice>" key comparison: by default a pattern value's
+    // interval size must match exactly, so "3" only matches a genuine third, not a compound
+    // third (a tenth, seventeenth, ...). When set, both the actual interval and the pattern
+    // value are reduced to their simple (within-octave) equivalent before comparing -- a
+    // unison and an octave stay distinct from each other.
+    bool hintReduceCompound = false;
+
     // Only relevant with simultaneousWith: which of a group's own match's positions must
     // line up with the primary match's. One of "start" (default -- just start together),
     // "end" (just end together), or "start-end" (both -- runs for the same duration).
@@ -87,6 +95,7 @@ inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
     if (g.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = *g.mintStartAtPreviousToken;
     if (g.fbCompareExactChord) j["fbCompareExactChord"] = *g.fbCompareExactChord;
     if (g.kernIgnoreOctave) j["kernIgnoreOctave"] = *g.kernIgnoreOctave;
+    if (g.hintReduceCompound) j["hintReduceCompound"] = *g.hintReduceCompound;
     if (g.simultaneousAlignment) j["simultaneousAlignment"] = *g.simultaneousAlignment;
     return j;
 }
@@ -101,6 +110,7 @@ inline std::ostream& operator<<(std::ostream& os, const Query& q) {
     if (q.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = true;
     if (q.fbCompareExactChord) j["fbCompareExactChord"] = true;
     if (q.kernIgnoreOctave) j["kernIgnoreOctave"] = true;
+    if (q.hintReduceCompound) j["hintReduceCompound"] = true;
     if (q.simultaneousAlignment != "start") j["simultaneousAlignment"] = q.simultaneousAlignment;
 
     if (!q.simultaneousWith.empty()) {

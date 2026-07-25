@@ -77,6 +77,10 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         target.kernIgnoreOctave = j["kernIgnoreOctave"].get<bool>();
     }
 
+    if (j.contains("hintReduceCompound") && j["hintReduceCompound"].is_boolean()) {
+        target.hintReduceCompound = j["hintReduceCompound"].get<bool>();
+    }
+
     if (j.contains("simultaneousAlignment")) {
         target.simultaneousAlignment = simultaneousAlignmentFromJson(j["simultaneousAlignment"], "simultaneousAlignment");
     }
