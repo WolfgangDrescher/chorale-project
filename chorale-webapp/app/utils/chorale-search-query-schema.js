@@ -3,8 +3,8 @@
 const searchRequestFieldSchemas = {
     feature: {
         type: 'string',
-        enum: ['kern', 'deg', 'mint', 'fb', 'metweight'],
-        description: 'The driving feature: which analysis spine the search walks through.',
+        enum: ['kern', 'deg', 'mint', 'fb', 'metweight', 'hint-12', 'hint-13', 'hint-14', 'hint-23', 'hint-24', 'hint-34'],
+        description: 'The driving feature: which analysis spine the search walks through. A hint-<pair> names a specific pair of voices (lower voice number first).',
         suggestSortText: '0',
     },
     voices: {
@@ -23,7 +23,7 @@ const searchRequestFieldSchemas = {
             minProperties: 1,
             additionalProperties: false,
             patternProperties: {
-                '^!?(kern|deg|mint|fb|metweight|duration|fermata)$': {
+                '^!?(kern|deg|mint|fb|metweight|duration|fermata|hint-(?:[1-4*][1-4*]|[1-4]))$': {
                     description: 'An OR-list of acceptable values for this feature at this position (or a single value). Prefix the key with "!" to negate the whole position.',
                     oneOf: [
                         { type: 'string' },
@@ -33,11 +33,8 @@ const searchRequestFieldSchemas = {
                 },
             },
             propertyNames: {
-                enum: [
-                    'kern', 'deg', 'mint', 'fb', 'metweight', 'duration', 'fermata',
-                    '!kern', '!deg', '!mint', '!fb', '!metweight', '!duration', '!fermata',
-                ],
-                description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position.',
+                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|hint-(?:[1-4*][1-4*]|[1-4]))$',
+                description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
             },
         },
     },
@@ -58,6 +55,12 @@ const searchRequestFieldSchemas = {
         default: true,
         description: 'Affects any "kern" pattern key: ignores register, so e.g. "G" matches every octave of that pitch class.',
         suggestSortText: '6',
+    },
+    hintReduceCompound: {
+        type: 'boolean',
+        default: true,
+        description: 'Affects any "hint-<pair>"/"hint-<voice>" pattern key: folds both the pattern value and the actual interval to within an octave before comparing, so e.g. "3" also matches a 10th.',
+        suggestSortText: '6.5',
     },
     simultaneousAlignment: {
         type: 'string',
