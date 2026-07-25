@@ -79,7 +79,7 @@ void applySpineAnalysisTools(hum::HumdrumFile& infile) {
     }
 
     hum::Tool_fb fbTool;
-    fbTool.process("-c -n --hint");
+    fbTool.process("--process-removes-this-argv -c -n --hint");
     fbTool.run(infile);
     if (fbTool.hasHumdrumText()) {
         // Rename **hint to **fb before parsing -- renaming the token after the fact
