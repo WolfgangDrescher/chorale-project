@@ -2,6 +2,7 @@
 
 #include "JsonIO.hpp"
 
+using choralesearch::queryArrayFromJson;
 using choralesearch::queryFromJson;
 using choralesearch::Result;
 using choralesearch::Query;
@@ -199,6 +200,71 @@ TEST_CASE(query_from_json_error_message_references_the_failing_simultaneous_with
         std::string msg = e.what();
         CHECK(msg.find("simultaneousWith[1]") != std::string::npos);
     }
+}
+
+TEST_CASE(query_from_json_reads_an_optional_id) {
+    Query q = queryFromJson(json::parse(R"({"id":"my-id","feature":"kern","pattern":[{"kern":"G"}]})"));
+    REQUIRE(q.id.has_value());
+    CHECK_EQ(*q.id, std::string("my-id"));
+}
+
+TEST_CASE(query_from_json_defaults_id_to_nullopt) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}]})"));
+    CHECK(!q.id.has_value());
+}
+
+TEST_CASE(query_from_json_rejects_non_string_id) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"id":5,"feature":"kern","pattern":[{"kern":"G"}]})")));
+}
+
+TEST_CASE(query_array_from_json_parses_each_element) {
+    auto queries = queryArrayFromJson(json::parse(R"([
+        {"feature":"kern","pattern":[{"kern":"G"}]},
+        {"id":"second","feature":"deg","pattern":[{"deg":"1"}]}
+    ])"));
+    REQUIRE(queries.size() == 2u);
+    CHECK_EQ(queries[0].feature, std::string("kern"));
+    CHECK(!queries[0].id.has_value());
+    CHECK_EQ(queries[1].feature, std::string("deg"));
+    REQUIRE(queries[1].id.has_value());
+    CHECK_EQ(*queries[1].id, std::string("second"));
+}
+
+TEST_CASE(query_array_from_json_rejects_a_plain_object) {
+    CHECK_THROWS(queryArrayFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}]})")));
+}
+
+TEST_CASE(query_array_from_json_rejects_an_empty_array) {
+    CHECK_THROWS(queryArrayFromJson(json::parse("[]")));
+}
+
+TEST_CASE(query_array_from_json_error_message_references_the_failing_element_index) {
+    try {
+        queryArrayFromJson(json::parse(R"([
+            {"feature":"kern","pattern":[{"kern":"G"}]},
+            {"feature":"kern"}
+        ])"));
+        REQUIRE(false); // must throw
+    } catch (const std::invalid_argument& e) {
+        std::string msg = e.what();
+        CHECK(msg.find("queries[1]") != std::string::npos);
+    }
+}
+
+TEST_CASE(result_to_json_omits_query_id_when_not_set) {
+    Result r;
+    r.choraleId = "chor029";
+    json j = resultToJson(r);
+    CHECK(!j.contains("queryId"));
+}
+
+TEST_CASE(result_to_json_includes_query_id_when_set) {
+    Result r;
+    r.choraleId = "chor029";
+    r.queryId = "my-id";
+    json j = resultToJson(r);
+    REQUIRE(j.contains("queryId"));
+    CHECK_EQ(j.at("queryId").get<std::string>(), std::string("my-id"));
 }
 
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {

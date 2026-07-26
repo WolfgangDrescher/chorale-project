@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -15,6 +16,12 @@ struct Result {
     std::string endPosition;         // same, for the last matched position without the duration of that slice
     std::size_t startLineNumber = 0; // 1-indexed line in the compiled Humdrum file; 0 = not set
     std::size_t endLineNumber = 0;   // same, for the last matched line number
+
+    // Which of a combined array of queries produced this result (see
+    // CorpusSearch::run(const std::vector<Query>&)) -- the query's own "id" if it set one,
+    // otherwise its position in the array. nullopt when this came from a single, non-array
+    // query, where there's nothing to disambiguate.
+    std::optional<std::string> queryId;
 };
 
 using Results = std::vector<Result>;

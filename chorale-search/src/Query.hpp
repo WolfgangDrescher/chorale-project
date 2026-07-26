@@ -32,6 +32,13 @@ struct SimultaneousGroup {
 };
 
 struct Query {
+    // Only meaningful when this query is run as part of a combined array of queries (see
+    // CorpusSearch::run(const std::vector<Query>&)): echoed onto every Result's queryId so
+    // the caller can tell which of the combined queries produced it. nullopt means "use this
+    // query's own position in the array instead" -- resolved to a string once up front, not
+    // re-derived per result. Ignored entirely for a single, non-array query.
+    std::optional<std::string> id;
+
     std::string feature;
     std::string voices = "all";
 
@@ -102,6 +109,7 @@ inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
 
 inline std::ostream& operator<<(std::ostream& os, const Query& q) {
     nlohmann::json j;
+    if (q.id) j["id"] = *q.id;
     j["feature"] = q.feature;
     j["voices"] = q.voices;
     j["pattern"] = patternToJson(q.pattern);

@@ -123,4 +123,54 @@ TEST_CASE(cli_table_format_has_a_header_plus_one_row_per_match) {
     CHECK_EQ(lineCount, std::ptrdiff_t{23}); // 1 header + 22 matches
 }
 
+TEST_CASE(cli_accepts_an_array_of_queries_and_tags_results_with_query_id) {
+    std::string queryJson = R"([
+        {"id":"soprano","feature":"kern","voices":"soprano","pattern":[{"fermata":true}]},
+        {"feature":"kern","voices":"bass","pattern":[{"fermata":true}]}
+    ])";
+    auto result = runCli({fixturesDir(), "--query", queryJson, "--format", "json"});
+    REQUIRE(result.exitCode == 0);
+
+    nlohmann::json parsed;
+    CHECK_NOTHROW(parsed = nlohmann::json::parse(result.stdOut));
+    REQUIRE(parsed.is_array());
+    REQUIRE(!parsed.empty());
+    CHECK(parsed[0].contains("queryId"));
+
+    bool sawCustomId = false;
+    bool sawPositionalIndex = false;
+    for (const auto& entry : parsed) {
+        std::string queryId = entry.at("queryId").get<std::string>();
+        if (queryId == "soprano") sawCustomId = true;
+        if (queryId == "1") sawPositionalIndex = true;
+    }
+    CHECK(sawCustomId);
+    CHECK(sawPositionalIndex);
+}
+
+TEST_CASE(cli_single_object_json_output_never_has_a_query_id_field) {
+    auto queryFile = writeTempQueryFile(R"({"feature":"kern","voices":"soprano","pattern":[{"fermata":true}]})");
+    auto result = runCli({fixturesDir(), "--query-file", queryFile, "--format", "json"});
+    REQUIRE(result.exitCode == 0);
+
+    nlohmann::json parsed;
+    CHECK_NOTHROW(parsed = nlohmann::json::parse(result.stdOut));
+    REQUIRE(!parsed.empty());
+    for (const auto& entry : parsed) CHECK(!entry.contains("queryId"));
+}
+
+TEST_CASE(cli_table_format_adds_query_id_column_only_for_array_input) {
+    std::string queryJson = R"([{"feature":"kern","voices":"soprano","pattern":[{"fermata":true}]}])";
+    auto result = runCli({fixturesDir(), "--query", queryJson}); // default format is "table"
+    REQUIRE(result.exitCode == 0);
+    auto headerEnd = result.stdOut.find('\n');
+    std::string header = result.stdOut.substr(0, headerEnd);
+    CHECK(header.find("query_id") != std::string::npos);
+}
+
+TEST_CASE(cli_rejects_an_empty_query_array) {
+    auto result = runCli({fixturesDir(), "--query", "[]"});
+    CHECK(result.exitCode != 0);
+}
+
 TEST_MAIN()

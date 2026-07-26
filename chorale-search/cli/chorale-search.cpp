@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -34,10 +35,18 @@ void printUsage(const char* argv0) {
 }
 
 void printTable(const Results& results) {
-    std::cout << "chorale\tfeature\tvoice\tstart_line\tend_line\tstart_position\tend_position\n";
+    // Only a combined array-of-queries run tags results with queryId; a single-query run's
+    // table output stays exactly as it always has, no extra column.
+    bool hasQueryId = std::any_of(results.begin(), results.end(), [](const Result& r) { return r.queryId.has_value(); });
+
+    std::cout << "chorale\tfeature\tvoice\tstart_line\tend_line\tstart_position\tend_position";
+    if (hasQueryId) std::cout << "\tquery_id";
+    std::cout << "\n";
     for (const auto& r : results) {
         std::cout << r.choraleId << '\t' << r.feature << '\t' << r.voiceLabel << '\t' << r.startLineNumber << '\t'
-                   << r.endLineNumber << '\t' << r.startPosition << '\t' << r.endPosition << '\n';
+                   << r.endLineNumber << '\t' << r.startPosition << '\t' << r.endPosition;
+        if (hasQueryId) std::cout << '\t' << r.queryId.value_or("");
+        std::cout << '\n';
     }
     std::cerr << results.size() << " match(es)\n";
 }
@@ -117,10 +126,16 @@ int main(int argc, char** argv) {
             if (!f.is_open()) throw std::runtime_error("Could not open query file: " + queryFile);
             f >> j;
         }
-        Query query = choralesearch::queryFromJson(j);
-
         CorpusSearch search(corpusDir);
-        Results results = search.run(query);
+        Results results;
+        if (j.is_array()) {
+            std::vector<Query> queries = choralesearch::queryArrayFromJson(j);
+            results = search.run(queries);
+        } else {
+            Query query = choralesearch::queryFromJson(j);
+            results = search.run(query);
+        }
+
         if (format == "json") {
             printJson(results, groupByChorale);
         } else {

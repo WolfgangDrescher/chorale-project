@@ -130,4 +130,46 @@ Results CorpusSearch::run(const Query& query) const {
     return allResults;
 }
 
+Results CorpusSearch::run(const std::vector<Query>& queries) const {
+    std::vector<std::string> queryIds;
+    queryIds.reserve(queries.size());
+    for (std::size_t i = 0; i < queries.size(); ++i) {
+        queryIds.push_back(queries[i].id.value_or(std::to_string(i)));
+    }
+
+    // Each query gets its own result bucket (so its own `limit`, if any, caps only its own
+    // matches) and its own `done` flag (so a query that already hit its limit is skipped
+    // for every remaining file, without stopping the others still running).
+    std::vector<Results> perQuery(queries.size());
+    std::vector<bool> done(queries.size(), false);
+
+    for (const auto& file : findChoraleFiles()) {
+        // The loop only ever reaches this point if at least one query is still pending (see
+        // the all_of(done) break below), so this is never wasted work -- no need to defer
+        // construction.
+        HumdrumChorale chorale(file.string()); // parsed once per file, shared by every query
+        for (std::size_t i = 0; i < queries.size(); ++i) {
+            if (done[i]) continue;
+            const Query& query = queries[i];
+            if (!chorale.hasFeature(query.feature)) continue;
+
+            auto results = runOne(chorale, query);
+            for (auto& r : results) r.queryId = queryIds[i];
+            Results& bucket = perQuery[i];
+            bucket.insert(bucket.end(), std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()));
+            if (query.limit && bucket.size() >= *query.limit) {
+                bucket.resize(*query.limit);
+                done[i] = true;
+            }
+        }
+        if (std::all_of(done.begin(), done.end(), [](bool d) { return d; })) break;
+    }
+
+    Results allResults;
+    for (auto& bucket : perQuery) {
+        allResults.insert(allResults.end(), std::make_move_iterator(bucket.begin()), std::make_move_iterator(bucket.end()));
+    }
+    return allResults;
+}
+
 } // namespace choralesearch

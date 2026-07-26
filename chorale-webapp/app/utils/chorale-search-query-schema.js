@@ -71,13 +71,17 @@ const searchRequestFieldSchemas = {
     },
 };
 
-export const choraleSearchQuerySchema = {
-    $schema: 'http://json-schema.org/draft-07/schema#',
-    title: 'Chorale Search Query',
+const singleQuerySchema = {
     type: 'object',
+    title: 'Chorale Search Query',
     required: ['feature', 'pattern'],
     additionalProperties: false,
     properties: {
+        id: {
+            type: 'string',
+            description: 'Only meaningful as an entry of a top-level array of queries: tags every result of this query with this id instead of its position in the array, so the caller can tell which query produced it.',
+            suggestSortText: '-1',
+        },
         ...searchRequestFieldSchemas,
         limit: {
             type: 'integer',
@@ -98,4 +102,18 @@ export const choraleSearchQuerySchema = {
             },
         },
     },
+};
+
+export const choraleSearchQuerySchema = {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'Chorale Search Query',
+    oneOf: [
+        singleQuerySchema,
+        {
+            type: 'array',
+            minItems: 1,
+            items: singleQuerySchema,
+            description: 'Several queries combined into one search: each runs independently across the corpus, and every result is tagged with queryId (that query\'s own "id", or its position in the array if it didn\'t set one) so the combined results can be told apart.',
+        },
+    ],
 };

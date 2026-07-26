@@ -99,6 +99,76 @@ TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
     for (std::size_t i = 6; i < 8; ++i) CHECK_EQ(results[i].choraleId, std::string("chor006"));
 }
 
+TEST_CASE(run_with_a_single_query_never_sets_query_id) {
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    auto results = search.run(q); // the plain Query overload, not the vector<Query> one
+
+    REQUIRE(!results.empty());
+    for (const auto& r : results) CHECK(!r.queryId.has_value());
+}
+
+TEST_CASE(run_with_multiple_queries_tags_each_result_with_its_own_id_or_index) {
+    auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    CorpusSearch search(fixturesDir);
+
+    Query withId;
+    withId.id = "sopranoFermatas";
+    withId.feature = "kern";
+    withId.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    withId.voices = "soprano";
+
+    Query withoutId;
+    withoutId.feature = "kern";
+    withoutId.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    withoutId.voices = "bass";
+
+    auto results = search.run(std::vector<Query>{withId, withoutId});
+
+    std::size_t taggedWithId = 0;
+    std::size_t taggedWithIndex = 0;
+    for (const auto& r : results) {
+        REQUIRE(r.queryId.has_value());
+        if (*r.queryId == "sopranoFermatas") ++taggedWithId;
+        else if (*r.queryId == "1") ++taggedWithIndex;
+    }
+    CHECK_EQ(taggedWithId, std::size_t{22});
+    CHECK(taggedWithIndex > 0u);
+    CHECK_EQ(taggedWithId + taggedWithIndex, results.size());
+}
+
+TEST_CASE(run_with_multiple_queries_respects_each_querys_own_limit_independently) {
+    auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    CorpusSearch search(fixturesDir);
+
+    Query capped3;
+    capped3.id = "capped3";
+    capped3.feature = "kern";
+    capped3.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    capped3.voices = "soprano";
+    capped3.limit = 3;
+
+    Query capped5;
+    capped5.id = "capped5";
+    capped5.feature = "kern";
+    capped5.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    capped5.voices = "soprano";
+    capped5.limit = 5;
+
+    auto results = search.run(std::vector<Query>{capped3, capped5});
+
+    std::size_t count3 = std::count_if(results.begin(), results.end(),
+                                        [](const Result& r) { return *r.queryId == "capped3"; });
+    std::size_t count5 = std::count_if(results.begin(), results.end(),
+                                        [](const Result& r) { return *r.queryId == "capped5"; });
+    CHECK_EQ(count3, std::size_t{3});
+    CHECK_EQ(count5, std::size_t{5});
+    CHECK_EQ(results.size(), std::size_t{8});
+}
+
 TEST_CASE(run_throws_when_the_corpus_root_does_not_exist) {
     CorpusSearch search("/nonexistent/corpus/root");
     Query q;

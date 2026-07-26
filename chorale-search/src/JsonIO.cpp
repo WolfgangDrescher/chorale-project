@@ -102,11 +102,19 @@ std::vector<SimultaneousGroup> simultaneousWithFromJson(const nlohmann::json& j)
     return groups;
 }
 
-} // namespace
+// Internal overload (not declared in the header) shared by the single-query and
+// array-of-queries entrypoints below, so the error message can name which array element
+// failed ("'queries[2]'") instead of always saying "Query JSON".
+Query queryFromJson(const nlohmann::json& j, const std::string& context) {
+    if (!j.is_object()) throw std::invalid_argument(context + " must be an object");
 
-Query queryFromJson(const nlohmann::json& j) {
     Query q;
-    parseSearchRequestFields(j, q, "Query JSON");
+    parseSearchRequestFields(j, q, context);
+
+    if (j.contains("id")) {
+        if (!j["id"].is_string()) throw std::invalid_argument("'id' in " + context + " must be a string");
+        q.id = j["id"].get<std::string>();
+    }
 
     if (j.contains("limit") && j["limit"].is_number_unsigned()) {
         q.limit = j["limit"].get<std::size_t>();
@@ -119,6 +127,23 @@ Query queryFromJson(const nlohmann::json& j) {
     return q;
 }
 
+} // namespace
+
+Query queryFromJson(const nlohmann::json& j) {
+    return queryFromJson(j, "Query JSON");
+}
+
+std::vector<Query> queryArrayFromJson(const nlohmann::json& j) {
+    if (!j.is_array()) throw std::invalid_argument("Query JSON array must be an array");
+    if (j.empty()) throw std::invalid_argument("Query JSON array must not be empty");
+
+    std::vector<Query> queries;
+    for (std::size_t i = 0; i < j.size(); ++i) {
+        queries.push_back(queryFromJson(j[i], "'queries[" + std::to_string(i) + "]'"));
+    }
+    return queries;
+}
+
 nlohmann::json resultToJson(const Result& r) {
     nlohmann::json j;
     j["chorale"] = r.choraleId;
@@ -129,6 +154,7 @@ nlohmann::json resultToJson(const Result& r) {
     j["endPosition"] = r.endPosition;
     j["startLine"] = r.startLineNumber;
     j["endLine"] = r.endLineNumber;
+    if (r.queryId) j["queryId"] = *r.queryId;
     return j;
 }
 
