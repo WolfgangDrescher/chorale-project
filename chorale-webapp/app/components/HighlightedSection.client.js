@@ -6,6 +6,22 @@ function getStaffIndexInMeasure(noteElem) {
     return index === -1 ? null : index;
 }
 
+// Finds any note/rest/whole-measure-rest belonging to `voice` inside `scopeElem` (a .measure
+// or .system), purely to read off which staff that voice occupies there. Used as a fallback
+// when the driving feature's own onset landed on a line where the target voice has no data
+// record of its own -- e.g. a hint-<pair> spine changes because the OTHER voice in the pair
+// moved while this one is still mid-note, so there's nothing at that exact line to anchor to
+// directly, but the voice is still present (and occupies a fixed staff) throughout the piece.
+function findVoiceStaffIndex(scopeElem, voice) {
+    if (!scopeElem || voice == null) return null;
+    const candidates = scopeElem.querySelectorAll('g[id^="note-L"], g[id^="rest-L"], g[id^="mrest-L"]');
+    for (const elem of candidates) {
+        const match = elem.id.match(/^(?:note|rest|mrest)-L\d+F(\d+)/);
+        if (match && Number(match[1]) === voice) return getStaffIndexInMeasure(elem);
+    }
+    return null;
+}
+
 function getVoiceStaffRect(systemElem, voiceStaffIndex) {
     const staffsInFirstMeasure = systemElem?.querySelector('.measure')?.querySelectorAll('.staff');
     return getBBoxElem(staffsInFirstMeasure?.[voiceStaffIndex])?.getBoundingClientRect();
@@ -87,24 +103,45 @@ export default {
         let startElem = null;
         let endElem = null;
         const containerElem = props.container;
-        const noteSelector = (line) => {
-            const suffix = props.voice != null ? `L${line}F${props.voice}` : `L${line}F`;
+        const noteSelector = (line, voice) => {
+            const suffix = voice != null ? `L${line}F${voice}` : `L${line}F`;
             return `g[id^="note-${suffix}"], g[id^="rest-${suffix}"], g[id^="mrest-${suffix}"]`;
         };
 
         for (let i = props.startLine; i <= props.endLine; i++) {
-            startElem = props.container?.querySelector(noteSelector(i));
+            startElem = props.container?.querySelector(noteSelector(i, props.voice));
             if (startElem) break;
         }
 
         for (let i = props.endLine; i >= props.startLine; i--) {
-            endElem = props.container?.querySelector(noteSelector(i));
+            endElem = props.container?.querySelector(noteSelector(i, props.voice));
             if (endElem) break;
         }
 
-        const voiceStaffIndex = props.voice != null
-            ? getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem)
-            : null;
+        // The target voice has no onset anywhere in [startLine, endLine] -- e.g. a driving
+        // feature shared between two voices (hint-<pair>) changed because the OTHER voice in
+        // the pair moved, while this one is still mid-note. Fall back to whichever voice DOES
+        // have something there for horizontal/system positioning, but keep the highlight on
+        // the correct voice's own staff (see findVoiceStaffIndex) rather than the fallback
+        // voice's -- anchoring it to the wrong voice would misrepresent the match.
+        let usedFallbackVoice = false;
+        if (props.voice != null && !startElem && !endElem) {
+            for (let i = props.startLine; i <= props.endLine; i++) {
+                startElem = props.container?.querySelector(noteSelector(i, null));
+                if (startElem) break;
+            }
+            for (let i = props.endLine; i >= props.startLine; i--) {
+                endElem = props.container?.querySelector(noteSelector(i, null));
+                if (endElem) break;
+            }
+            usedFallbackVoice = Boolean(startElem || endElem);
+        }
+
+        const voiceStaffIndex = props.voice == null
+            ? null
+            : usedFallbackVoice
+                ? findVoiceStaffIndex((startElem ?? endElem)?.closest('.measure') ?? (startElem ?? endElem)?.closest('.system'), props.voice)
+                : getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem);
 
         if (startElem && endElem && containerElem) {
 
