@@ -76,7 +76,10 @@ void setKeyOnLine(hum::HLp line, const std::set<int>& tracks, const std::string&
 hum::HumNum findTimestamp(hum::HumdrumFile& infile, int measure, hum::HumNum beat) {
     std::vector<int> measureNumbers = infile.getMeasureNumbers();
     for (int i = 0; i < infile.getLineCount(); ++i) {
-        if (!infile[i].isData()) continue;
+        // An unnumbered barline (e.g. "=:|!") resets the beat count without advancing the
+        // measure number, so the anacrusis after it is labeled (old measure, beat 1) instead
+        // of (old measure, last beat) -- only the barline itself still carries that combination.
+        if (!infile[i].isData() && !infile[i].isBarline()) continue;
         if (measureNumbers[i] == measure && infile[i].getBeat() == beat) {
             return infile[i].getDurationFromStart();
         }
