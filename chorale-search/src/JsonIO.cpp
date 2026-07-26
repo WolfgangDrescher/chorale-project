@@ -1,4 +1,6 @@
 #include "JsonIO.hpp"
+#include "QueryValidation.hpp"
+#include "VoiceMap.hpp"
 
 #include <stdexcept>
 
@@ -6,19 +8,41 @@ namespace choralesearch {
 
 namespace {
 
-std::vector<std::string> attributeValueFromJson(const nlohmann::json& v, const std::string& context) {
-    if (v.is_string()) return {v.get<std::string>()};
-    if (v.is_boolean()) return {v.get<bool>() ? "true" : "false"};
-    if (v.is_array()) {
-        std::vector<std::string> out;
+// A typo'd field name (e.g. "hintReduceCompund") would otherwise be silently ignored, quietly
+// falling back to that option's default and making a malformed query look identical to a
+// correct one that simply matched nothing. Rejecting anything outside the known set up front
+// turns that into an immediate, specific error instead.
+void rejectUnknownKeys(const nlohmann::json& j, bool (*isKnown)(const std::string&), const std::string& context) {
+    for (auto it = j.begin(); it != j.end(); ++it) {
+        if (!isKnown(it.key())) {
+            throw std::invalid_argument(context + " has an unknown field '" + it.key() + "'");
+        }
+    }
+}
+
+std::vector<std::string> attributeValueFromJson(const nlohmann::json& v, const std::string& key, const std::string& context) {
+    std::vector<std::string> values;
+    if (v.is_string()) {
+        values = {v.get<std::string>()};
+    } else if (v.is_boolean()) {
+        values = {v.get<bool>() ? "true" : "false"};
+    } else if (v.is_array()) {
         for (const auto& entry : v) {
             if (!entry.is_string()) throw std::invalid_argument(context + ": array entries must be strings");
-            out.push_back(entry.get<std::string>());
+            values.push_back(entry.get<std::string>());
         }
-        if (out.empty()) throw std::invalid_argument(context + ": OR-list must not be empty");
-        return out;
+        if (values.empty()) throw std::invalid_argument(context + ": OR-list must not be empty");
+    } else {
+        throw std::invalid_argument(context + ": must be a string, boolean, or an array of strings");
     }
-    throw std::invalid_argument(context + ": must be a string, boolean, or an array of strings");
+
+    for (const std::string& value : values) {
+        if (value == "*") continue; // universal wildcard, valid for any key
+        if (value.empty() || !isValidPatternValue(key, value)) {
+            throw std::invalid_argument(context + ": '" + value + "' is not a valid '" + key + "' value");
+        }
+    }
+    return values;
 }
 
 std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
@@ -28,7 +52,13 @@ std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
         if (!posJson.is_object()) throw std::invalid_argument("'pattern' entries must be objects");
         AttributeMap pos;
         for (auto it = posJson.begin(); it != posJson.end(); ++it) {
-            pos[it.key()] = attributeValueFromJson(it.value(), "'pattern[...][" + it.key() + "]'");
+            const std::string& rawKey = it.key();
+            // isKnownPatternKey/isValidPatternValue both accept a "!"-negated key directly (see
+            // docs/patterns#negating-a-feature) -- negation doesn't change what's known or valid.
+            if (!isKnownPatternKey(rawKey)) {
+                throw std::invalid_argument("'pattern' has an unknown key '" + rawKey + "'");
+            }
+            pos[rawKey] = attributeValueFromJson(it.value(), rawKey, "'pattern[...][" + rawKey + "]'");
         }
         result.push_back(std::move(pos));
     }
@@ -55,9 +85,22 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         throw std::invalid_argument(context + " must contain a string field 'feature'");
     }
     target.feature = j["feature"].get<std::string>();
+    if (!isKnownDrivingFeature(target.feature)) {
+        const auto& names = drivingFeatureNames();
+        std::string joined;
+        for (std::size_t i = 0; i < names.size(); ++i) joined += (i ? ", " : "") + names[i];
+        throw std::invalid_argument("'feature' in " + context + " must be one of " + joined +
+                                     " (got '" + target.feature + "')");
+    }
 
-    if (j.contains("voices") && j["voices"].is_string()) {
+    if (j.contains("voices")) {
+        if (!j["voices"].is_string()) throw std::invalid_argument("'voices' in " + context + " must be a string");
         target.voices = j["voices"].get<std::string>();
+        try {
+            resolveVoices(target.voices);
+        } catch (const std::exception& e) {
+            throw std::invalid_argument("'voices' in " + context + " is invalid: " + e.what());
+        }
     }
 
     if (!j.contains("pattern")) {
@@ -65,19 +108,31 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
     }
     target.pattern = patternFromJson(j["pattern"]);
 
-    if (j.contains("mintStartAtPreviousToken") && j["mintStartAtPreviousToken"].is_boolean()) {
+    if (j.contains("mintStartAtPreviousToken")) {
+        if (!j["mintStartAtPreviousToken"].is_boolean()) {
+            throw std::invalid_argument("'mintStartAtPreviousToken' in " + context + " must be a boolean");
+        }
         target.mintStartAtPreviousToken = j["mintStartAtPreviousToken"].get<bool>();
     }
 
-    if (j.contains("fbCompareExactChord") && j["fbCompareExactChord"].is_boolean()) {
+    if (j.contains("fbCompareExactChord")) {
+        if (!j["fbCompareExactChord"].is_boolean()) {
+            throw std::invalid_argument("'fbCompareExactChord' in " + context + " must be a boolean");
+        }
         target.fbCompareExactChord = j["fbCompareExactChord"].get<bool>();
     }
 
-    if (j.contains("kernIgnoreOctave") && j["kernIgnoreOctave"].is_boolean()) {
+    if (j.contains("kernIgnoreOctave")) {
+        if (!j["kernIgnoreOctave"].is_boolean()) {
+            throw std::invalid_argument("'kernIgnoreOctave' in " + context + " must be a boolean");
+        }
         target.kernIgnoreOctave = j["kernIgnoreOctave"].get<bool>();
     }
 
-    if (j.contains("hintReduceCompound") && j["hintReduceCompound"].is_boolean()) {
+    if (j.contains("hintReduceCompound")) {
+        if (!j["hintReduceCompound"].is_boolean()) {
+            throw std::invalid_argument("'hintReduceCompound' in " + context + " must be a boolean");
+        }
         target.hintReduceCompound = j["hintReduceCompound"].get<bool>();
     }
 
@@ -89,6 +144,7 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
 SimultaneousGroup simultaneousGroupFromJson(const nlohmann::json& j, std::size_t index) {
     std::string context = "'simultaneousWith[" + std::to_string(index) + "]'";
     if (!j.is_object()) throw std::invalid_argument(context + " must be an object");
+    rejectUnknownKeys(j, isKnownSimultaneousGroupKey, context);
 
     SimultaneousGroup group;
     parseSearchRequestFields(j, group, context);
@@ -107,6 +163,7 @@ std::vector<SimultaneousGroup> simultaneousWithFromJson(const nlohmann::json& j)
 // failed ("'queries[2]'") instead of always saying "Query JSON".
 Query queryFromJson(const nlohmann::json& j, const std::string& context) {
     if (!j.is_object()) throw std::invalid_argument(context + " must be an object");
+    rejectUnknownKeys(j, isKnownQueryKey, context);
 
     Query q;
     parseSearchRequestFields(j, q, context);
@@ -116,7 +173,10 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
         q.id = j["id"].get<std::string>();
     }
 
-    if (j.contains("limit") && j["limit"].is_number_unsigned()) {
+    if (j.contains("limit")) {
+        if (!j["limit"].is_number_unsigned()) {
+            throw std::invalid_argument("'limit' in " + context + " must be a non-negative integer");
+        }
         q.limit = j["limit"].get<std::size_t>();
     }
 

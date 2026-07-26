@@ -30,6 +30,7 @@ add_library(chorale_core STATIC
     src/AttributeMatcher.cpp
     src/CorpusSearch.cpp
     src/JsonIO.cpp
+    src/QueryValidation.cpp
 )
 target_include_directories(chorale_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -57,9 +58,13 @@ if(BUILD_TESTS)
     target_include_directories(test_voicemap PRIVATE src tests)
     add_test(NAME voicemap COMMAND test_voicemap)
 
-    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp)
+    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/QueryValidation.cpp src/VoiceMap.cpp)
     target_include_directories(test_jsonio PRIVATE src tests external/json/single_include)
     add_test(NAME jsonio COMMAND test_jsonio)
+
+    add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp)
+    target_include_directories(test_queryvalidation PRIVATE src tests)
+    add_test(NAME queryvalidation COMMAND test_queryvalidation)
 
     add_executable(test_humdrumchorale tests/test_humdrumchorale.cpp)
     target_include_directories(test_humdrumchorale PRIVATE tests)

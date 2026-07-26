@@ -319,6 +319,193 @@ TEST_CASE(query_from_json_rejects_wrong_typed_attribute_value) {
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":3.14}]})")));
 }
 
+TEST_CASE(query_from_json_accepts_every_known_driving_feature) {
+    for (const std::string& feature :
+         {"kern", "deg", "mint", "fb", "metweight", "hint-12", "hint-13", "hint-14", "hint-23", "hint-24", "hint-34"}) {
+        Query q = queryFromJson(json::parse(R"({"feature":")" + feature + R"(","pattern":[{"kern":"*"}]})"));
+        CHECK_EQ(q.feature, feature);
+    }
+}
+
+TEST_CASE(query_from_json_rejects_an_unknown_feature) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"unknown","pattern":[{"kern":"*"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_duration_or_fermata_as_the_driving_feature) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"duration","pattern":[{"kern":"*"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"fermata","pattern":[{"kern":"*"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_hint_voice_relative_form_as_the_driving_feature) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-2","pattern":[{"kern":"*"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_a_non_real_hint_pair_as_the_driving_feature) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-11","pattern":[{"kern":"*"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_an_unresolvable_voices_selector) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","voices":"baritone","pattern":[{"kern":"*"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","voices":"5","pattern":[{"kern":"*"}]})")));
+}
+
+TEST_CASE(query_from_json_accepts_a_resolvable_voices_selector) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","voices":"soprano,bass","pattern":[{"kern":"*"}]})"));
+    CHECK_EQ(q.voices, std::string("soprano,bass"));
+}
+
+TEST_CASE(query_from_json_rejects_an_unknown_pattern_key) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"unknown":"4"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"!unknown":"4"}]})")));
+}
+
+TEST_CASE(query_from_json_accepts_every_known_pattern_key) {
+    for (const std::string& key : {"kern", "deg", "mint", "fb", "metweight", "duration", "fermata", "hint-12", "hint-1",
+                                    "hint-2", "hint-3", "hint-4", "hint-*4", "hint-1*", "hint-**"}) {
+        Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{")" + key + R"(":"*"}]})"));
+        REQUIRE(q.pattern[0].count(key) == 1u);
+    }
+}
+
+TEST_CASE(query_from_json_rejects_a_non_real_hint_pair_pattern_key) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"hint-11":"3"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_a_hint_wildcard_key_with_a_non_voice_digit) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"hint-*9":"3"}]})")));
+}
+
+TEST_CASE(query_from_json_accepts_valid_deg_values) {
+    Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":["1","4+","6--","r"]}]})"));
+    CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"1", "4+", "6--", "r"}));
+}
+
+TEST_CASE(query_from_json_rejects_invalid_deg_values) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"8"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"nope"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_invalid_fermata_values) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":"yes"}]})")));
+}
+
+TEST_CASE(query_from_json_accepts_fermata_bool_value) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
+    CHECK_EQ(q.pattern[0]["fermata"], std::vector<std::string>{"true"});
+}
+
+TEST_CASE(query_from_json_accepts_every_way_to_write_a_metweight_value) {
+    for (const std::string& v : {"s", "hs", "w", "u", "strong", "half-strong", "weak", "unclassified", "1", "2", "3", "4"}) {
+        Query q = queryFromJson(json::parse(R"({"feature":"metweight","pattern":[{"metweight":")" + v + R"("}]})"));
+        CHECK_EQ(q.pattern[0]["metweight"], (std::vector<std::string>{v}));
+    }
+}
+
+TEST_CASE(query_from_json_rejects_an_invalid_metweight_value) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"metweight","pattern":[{"metweight":"invalid"}]})")));
+}
+
+TEST_CASE(query_from_json_accepts_the_mint_first_note_bracket_literal) {
+    Query q = queryFromJson(json::parse(R"({"feature":"mint","pattern":[{"mint":"[gg]"}]})"));
+    CHECK_EQ(q.pattern[0]["mint"], (std::vector<std::string>{"[gg]"}));
+}
+
+TEST_CASE(query_from_json_rejects_an_invalid_mint_value) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"mint","pattern":[{"mint":"nope123$"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_an_invalid_fb_value) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"fb","pattern":[{"fb":"six"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"fb","pattern":[{"fb":""}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_an_invalid_hint_value) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-14","pattern":[{"hint-14":"six"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_an_invalid_duration_value) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"duration":"invalid"}]})")));
+}
+
+TEST_CASE(query_from_json_accepts_wildcard_for_any_key) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"*","deg":"*","mint":"*","fb":"*","hint-14":"*","metweight":"*","duration":"*","fermata":"*"}]})"));
+    CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"*"}));
+}
+
+TEST_CASE(query_from_json_rejects_an_empty_pattern_value) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"deg":""}]})")));
+}
+
+TEST_CASE(query_from_json_applies_all_the_same_validation_inside_simultaneous_with) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"*"}],
+        "simultaneousWith":[{"feature":"baritone","pattern":[{"kern":"*"}]}]
+    })")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"*"}],
+        "simultaneousWith":[{"feature":"kern","voices":"baritone","pattern":[{"kern":"*"}]}]
+    })")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"*"}],
+        "simultaneousWith":[{"feature":"kern","pattern":[{"durration":"4"}]}]
+    })")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"*"}],
+        "simultaneousWith":[{"feature":"deg","pattern":[{"deg":"8"}]}]
+    })")));
+}
+
+TEST_CASE(query_from_json_rejects_an_unknown_top_level_field) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"unknown":true})")));
+}
+
+TEST_CASE(query_from_json_rejects_an_unknown_simultaneous_with_field) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{"feature":"kern","pattern":[{"fermata":true}],"limit":5}]
+    })")));
+}
+
+TEST_CASE(query_from_json_rejects_non_string_voices) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","voices":4,"pattern":[{"kern":"G"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_boolean_mint_start_at_previous_token) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-M2"}],"mintStartAtPreviousToken":"true"})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_boolean_fb_compare_exact_chord) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"fb","pattern":[{"fb":"6 3"}],"fbCompareExactChord":1})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_boolean_kern_ignore_octave) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"kernIgnoreOctave":"yes"})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_boolean_hint_reduce_compound) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"hint-14","pattern":[{"hint-14":"3"}],"hintReduceCompound":null})")));
+}
+
+TEST_CASE(query_from_json_rejects_negative_limit) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}],"limit":-1})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_integer_limit) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}],"limit":"5"})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"G"}],"limit":5.5})")));
+}
+
 TEST_CASE(result_to_json_round_trips_fields) {
     Result r;
     r.choraleId = "chor029";
