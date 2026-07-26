@@ -68,6 +68,35 @@ function onSubmit() {
     fetchSearchResults();
 }
 
+// Splits a chorale's results into one HighlightedScore section group per
+// queryId, so results from different combined queries get visually distinct
+// colors. Results without a queryId (a single, non-array query) all fall into
+// one group with no explicit color, picking up HighlightedScore's own default.
+function colorForQueryId(queryId) {
+    if (queryId === '') return undefined;
+    if (queryId in highlightColorsByName) return highlightColorsByName[queryId]; // e.g. a query id of "green" forces that exact color
+    const colorIndex = Number(queryId);
+    return Number.isInteger(colorIndex) ? defaultHighlightColors[colorIndex % defaultHighlightColors.length] : undefined;
+}
+
+function sectionsForItems(items) {
+    const itemsByQueryId = new Map();
+    for (const item of items) {
+        const queryId = item.queryId ?? '';
+        if (!itemsByQueryId.has(queryId)) itemsByQueryId.set(queryId, []);
+        itemsByQueryId.get(queryId).push({
+            voice: item.voice,
+            startLine: item.startLine,
+            endLine: item.endLine,
+        });
+    }
+
+    return Array.from(itemsByQueryId.entries()).map(([queryId, sectionItems]) => ({
+        items: sectionItems,
+        color: colorForQueryId(queryId),
+    }));
+}
+
 function applyDemoQuery() {
     query.value = `{
     "feature": "kern",
@@ -167,15 +196,7 @@ function applyDemoQuery() {
                                 scale: 35,
                                 pageMarginLeft: 42,
                             }"
-                            :sections="[
-                                {
-                                    items: items.map(i => ({
-                                        voice: i.voice,
-                                        startLine: i.startLine,
-                                        endLine: i.endLine,
-                                    })),
-                                }
-                            ]"
+                            :sections="sectionsForItems(items)"
                         />
                     </UCard>
                 </div>

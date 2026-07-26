@@ -39,18 +39,60 @@ export type NotesProp = NoteGroup[] | string[];
 export type LinesProp = LineGroup[] | number[];
 export type SectionsProp = SectionGroup[] | Section[];
 
+// All 17 standard Tailwind colors (500 shade, 40% opacity), keyed by name so a color can
+// also be picked explicitly by name (e.g. mapping queryId "green" to this exact color, see
+// search.vue) rather than only by position.
+export const highlightColorsByName: Record<string, string> = {
+    red: 'rgb(239 68 68 / 0.4)',
+    green: 'rgb(34 197 94 / 0.4)',
+    orange: 'rgb(249 115 22 / 0.4)',
+    amber: 'rgb(245 158 11 / 0.4)',
+    yellow: 'rgb(234 179 8 / 0.4)',
+    lime: 'rgb(132 204 22 / 0.4)',
+    emerald: 'rgb(16 185 129 / 0.4)',
+    teal: 'rgb(20 184 166 / 0.4)',
+    cyan: 'rgb(6 182 212 / 0.4)',
+    sky: 'rgb(14 165 233 / 0.4)',
+    blue: 'rgb(59 130 246 / 0.4)',
+    indigo: 'rgb(99 102 241 / 0.4)',
+    violet: 'rgb(139 92 246 / 0.4)',
+    purple: 'rgb(168 85 247 / 0.4)',
+    fuchsia: 'rgb(217 70 239 / 0.4)',
+    pink: 'rgb(236 72 153 / 0.4)',
+    rose: 'rgb(244 63 94 / 0.4)',
+};
+
+// Same 17 colors as a plain array, reordered so that each successive entry is as different
+// in hue as possible from every one before it (greedy farthest-point selection over hue,
+// starting from yellow) -- so even a small number of combined queries (see search.vue)
+// gets well-separated colors, not adjacent hues. Used as the fallback when a group doesn't
+// set its own color, by array position.
+export const defaultHighlightColors = [
+    'yellow',
+    'teal',
+    'blue',
+    'red',
+    'lime',
+    'cyan',
+    'purple',
+    'orange',
+    'green',
+    'sky',
+    'pink',
+    'emerald',
+    'fuchsia',
+    'indigo',
+    'amber',
+    'violet',
+    'rose',
+].map((name) => highlightColorsByName[name]);
+
 export function useResolveHighlightedScoreProps(props: {
     notes?: NotesProp;
     lines?: LinesProp;
     sections?: SectionsProp;
     filters?: Array<string>,
 }) {
-    const defaultColors = [
-        'rgb(234 179 8 / 0.4)', // yellow-500/40
-        'rgb(34 197 94 / 0.4)', // green-500/40
-        'rgb(59 130 246 / 0.4)', // blue-500/40
-    ];
-
     const lineShiftAmount = computed(() => {
         let lineShift = 0;
         if (props.filters?.includes('meter -f')) lineShift += 1;
@@ -107,7 +149,7 @@ export function useResolveHighlightedScoreProps(props: {
             return [
                 {
                     items: validIds,
-                    color: defaultColors[0],
+                    color: defaultHighlightColors[0],
                 },
             ];
         }
@@ -116,7 +158,7 @@ export function useResolveHighlightedScoreProps(props: {
         return (notes as NoteGroup[]).map((group, index) => ({
             ...group,
             items: group.items.filter(isValidLineField).map(applyLineShiftToNoteId),
-            color: group.color || defaultColors[index % defaultColors.length],
+            color: group.color || defaultHighlightColors[index % defaultHighlightColors.length],
         }));
     });
 
@@ -143,7 +185,7 @@ export function useResolveHighlightedScoreProps(props: {
             return [
                 {
                     items: valid,
-                    color: defaultColors[0],
+                    color: defaultHighlightColors[0],
                 },
             ];
         }
@@ -159,7 +201,7 @@ export function useResolveHighlightedScoreProps(props: {
                     voice: resolveVoice(s.voice),
                 }))
                 : [],
-            color: group.color || defaultColors[index % defaultColors.length],
+            color: group.color || defaultHighlightColors[index % defaultHighlightColors.length],
         }));
     });
 
@@ -177,7 +219,7 @@ export function useResolveHighlightedScoreProps(props: {
             return [
                 {
                     items: valid,
-                    color: defaultColors[0],
+                    color: defaultHighlightColors[0],
                 },
             ];
         }
@@ -204,13 +246,13 @@ export function useResolveHighlightedScoreProps(props: {
             return {
                 ...group,
                 items: resolvedItems,
-                color: group.color || defaultColors[index % defaultColors.length],
+                color: group.color || defaultHighlightColors[index % defaultHighlightColors.length],
             };
 });
     });
 
     return {
-        defaultColors,
+        defaultHighlightColors,
         resolvedNotes,
         resolvedSections,
         resolvedLines,
