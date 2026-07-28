@@ -29,6 +29,4 @@ private:
 
 hum::HTp findTokenAtLine(hum::HTp spineStart, int targetLineNumber);
 
-void applySpineAnalysisTools(hum::HumdrumFile& infile);
-
 } // namespace choralesearch

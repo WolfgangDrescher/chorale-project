@@ -31,6 +31,7 @@ add_library(chorale_core STATIC
     src/CorpusSearch.cpp
     src/JsonIO.cpp
     src/QueryValidation.cpp
+    src/SpineAnalysis.cpp
 )
 target_include_directories(chorale_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
