@@ -73,8 +73,9 @@ async function parseRequestBody(event) {
 }
 
 function runChoraleSearch(body) {
+    const startedAt = performance.now();
     try {
-        return execFileSync(CHORALE_SEARCH_BIN, [
+        const stdout = execFileSync(CHORALE_SEARCH_BIN, [
             CORPUS_DIR,
             '--query',
             JSON.stringify(body),
@@ -83,6 +84,7 @@ function runChoraleSearch(body) {
             '--group-by-chorale',
             '--no-analysis',
         ], { encoding: 'utf8', timeout: EXEC_FILE_SYNC_TIMEOUT, maxBuffer: EXEC_FILE_SYNC_MAX_BUFFER });
+        return { stdout, durationMs: Math.round(performance.now() - startedAt) };
     } catch (e) {
         if (e.code === 'ENOBUFS') {
             throw new ServiceUnavailableError(
@@ -118,8 +120,8 @@ export default defineEventHandler(async (event) => {
 
     try {
         const body = await parseRequestBody(event);
-        const stdout = runChoraleSearch(body);
-        return parseSearchOutput(stdout);
+        const { stdout, durationMs } = runChoraleSearch(body);
+        return { results: parseSearchOutput(stdout), durationMs };
     } catch (e) {
         setResponseStatus(event, e.statusCode ?? 500);
         return {

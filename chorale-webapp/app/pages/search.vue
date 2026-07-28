@@ -15,6 +15,7 @@ function useChoraleSearch() {
     const error = ref(null);
     const pending = ref(false);
     const page = ref(1);
+    const durationMs = ref(null);
     const query = ref(`{
     "feature": "deg",
     "voices": "all",
@@ -27,6 +28,8 @@ function useChoraleSearch() {
 
     const choraleEntries = computed(() => Object.entries(results.value));
 
+    const totalMatches = computed(() => choraleEntries.value.reduce((sum, [, items]) => sum + items.length, 0));
+
     const pagedChoraleEntries = computed(() => {
         const start = (page.value - 1) * CHORALES_PER_PAGE;
         return choraleEntries.value.slice(start, start + CHORALES_PER_PAGE);
@@ -37,11 +40,16 @@ function useChoraleSearch() {
         error.value = null;
         pending.value = true;
         page.value = 1;
+        durationMs.value = null;
         try {
-            results.value = await $fetch('/api/chorale-search', {
+            // durationMs is the server's measurement of the chorale-search binary
+            // alone, so the number stays independent of network and render time.
+            const response = await $fetch('/api/chorale-search', {
                 method: 'POST',
                 body: query.value,
             });
+            results.value = response.results;
+            durationMs.value = response.durationMs;
             searchFetchCompleted.value = true;
         } catch (e) {
             error.value = e;
@@ -50,7 +58,7 @@ function useChoraleSearch() {
         }
     }
 
-    return { searchFetchCompleted, choraleEntries, pagedChoraleEntries, page, error, pending, fetchSearchResults, query };
+    return { searchFetchCompleted, choraleEntries, totalMatches, pagedChoraleEntries, page, error, pending, durationMs, fetchSearchResults, query };
 }
 
 const {
@@ -58,9 +66,11 @@ const {
     query,
     fetchSearchResults,
     choraleEntries,
+    totalMatches,
     pagedChoraleEntries,
     page,
     pending,
+    durationMs,
     error,
 } = useChoraleSearch();
 
@@ -183,8 +193,13 @@ function applyDemoQuery() {
                 ]"
             />
             <template v-else>
-                <div class="flex items-center justify-between my-4">
-                    <span class="text-muted text-sm">{{ $t('choralesFound', { count: choraleEntries.length }) }}</span>
+                <div class="flex items-center justify-between gap-4 my-4">
+                    <i18n-t keypath="matchesFound" :plural="choraleEntries.length" tag="p" class="text-sm" scope="global">
+                        <template #matches>{{ totalMatches }}</template>
+                        <template #duration>
+                            <span v-if="durationMs !== null" class="text-dimmed tabular-nums">({{ $t('searchDuration', { ms: durationMs }) }})</span>
+                        </template>
+                    </i18n-t>
                     <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" size="xs" />
                 </div>
                 <div class="flex flex-col gap-4">
