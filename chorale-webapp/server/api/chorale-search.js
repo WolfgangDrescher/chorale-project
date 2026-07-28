@@ -9,6 +9,10 @@ const CORPUS_DIR = '../corpus/bach-370-chorales';
 
 const EXEC_FILE_SYNC_TIMEOUT = 10_000;
 
+// Node caps a child's stdout at 1 MB by default, which a broad query over the
+// full corpus blows past -- matching every note is ~16 MB of JSON.
+const EXEC_FILE_SYNC_MAX_BUFFER = 5 * 1024 * 1024;
+
 class ServiceUnavailableError extends Error {
     constructor(message, errors) {
         super(message);
@@ -78,8 +82,14 @@ function runChoraleSearch(body) {
             'json',
             '--group-by-chorale',
             '--no-analysis',
-        ], { encoding: 'utf8', timeout: EXEC_FILE_SYNC_TIMEOUT });
+        ], { encoding: 'utf8', timeout: EXEC_FILE_SYNC_TIMEOUT, maxBuffer: EXEC_FILE_SYNC_MAX_BUFFER });
     } catch (e) {
+        if (e.code === 'ENOBUFS') {
+            throw new ServiceUnavailableError(
+                `The search returned more than ${EXEC_FILE_SYNC_MAX_BUFFER / 1024 / 1024} MB of results`,
+                'Narrow the query, or cap it with "limit"',
+            );
+        }
         if (e.signal === 'SIGTERM' && e.status === null) {
             throw new ServiceUnavailableError(`The chorale-search tool timed out after ${EXEC_FILE_SYNC_TIMEOUT / 1000} seconds`);
         }
