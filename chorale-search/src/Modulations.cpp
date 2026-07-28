@@ -1,27 +1,16 @@
-#include <algorithm>
-#include <cstdlib>
-#include <filesystem>
+#include "Modulations.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <sstream>
 #include <stdexcept>
-#include <string>
-#include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include "humlib.h"
-
-namespace fs = std::filesystem;
+namespace choralesearch {
 
 namespace {
-
-struct Modulation {
-    std::string pos; // "measure/beat", e.g. "10/3.5"
-    int measure = 0;
-    hum::HumNum beat;
-    std::string key;
-};
 
 hum::HumNum parseDecimal(const std::string& s) {
     auto dot = s.find('.');
@@ -128,12 +117,27 @@ void applyModulation(hum::HumdrumFile& infile, const std::set<int>& tracks, cons
     setKeyOnLine(newLine, tracks, mod.key);
 }
 
-void processChorale(const std::string& choraleId, const std::vector<Modulation>& mods, const fs::path& sourceDir, const fs::path& outDir) {
-    fs::path sourcePath = sourceDir / (choraleId + ".krn");
-    hum::HumdrumFile infile;
-    if (!infile.read(sourcePath.string())) {
-        throw std::runtime_error("Could not parse Humdrum file: " + sourcePath.string());
+} // namespace
+
+std::map<std::string, std::vector<Modulation>> readModulations(const std::filesystem::path& path) {
+    std::ifstream f(path);
+    if (!f.is_open()) {
+        throw std::runtime_error("Could not open modulations file: " + path.string());
     }
+    nlohmann::json root = nlohmann::json::parse(f, nullptr, true, /*ignore_comments=*/true);
+
+    std::map<std::string, std::vector<Modulation>> byChorale;
+    for (const auto& [choraleId, modsJson] : root.items()) {
+        std::vector<Modulation>& mods = byChorale[choraleId];
+        for (const auto& entry : modsJson) {
+            mods.push_back(parseModulation(entry.at(0).get<std::string>(), entry.at(1).get<std::string>()));
+        }
+    }
+    return byChorale;
+}
+
+void applyModulations(hum::HumdrumFile& infile, const std::string& choraleId, const std::vector<Modulation>& mods) {
+    if (mods.empty()) return;
 
     std::set<int> tracks = kernTracks(infile);
 
@@ -151,65 +155,11 @@ void processChorale(const std::string& choraleId, const std::vector<Modulation>&
         applyModulation(infile, tracks, choraleId, mod);
     }
 
-    fs::path outPath = outDir / (choraleId + ".krn");
-    std::ofstream out(outPath);
-    if (!out.is_open()) {
-        throw std::runtime_error("Could not write file: " + outPath.string());
-    }
-    out << infile;
-    std::cout << "added modulations for " << choraleId << "\n";
+    // See the header: the inserted lines are text-only until this round trip, which is what
+    // lets the caller run the analysis tools over the result.
+    std::stringstream modulated;
+    modulated << infile;
+    infile.readString(modulated.str());
 }
 
-void printUsage(const char* argv0) {
-    std::cerr << "Usage: " << argv0 << " ANNOTATIONS_JSON SOURCE_KERN_DIR OUT_KERN_DIR [CHORALE_ID...]\n";
-}
-
-} // namespace
-
-int main(int argc, char** argv) {
-    if (argc < 4) {
-        printUsage(argv[0]);
-        return 1;
-    }
-
-    fs::path annotationsPath = argv[1];
-    fs::path sourceDir = argv[2];
-    fs::path outDir = argv[3];
-    std::vector<std::string> requestedIds(argv + 4, argv + argc);
-
-    try {
-        std::ifstream f(annotationsPath);
-        if (!f.is_open()) {
-            throw std::runtime_error("Could not open annotations file: " + annotationsPath.string());
-        }
-        nlohmann::json root = nlohmann::json::parse(f, nullptr, true, /*ignore_comments=*/true);
-
-        fs::create_directories(outDir);
-
-        for (const std::string& choraleId : requestedIds) {
-            if (!root.contains(choraleId)) {
-                throw std::runtime_error("No modulations found for chorale: " + choraleId);
-            }
-        }
-
-        for (const auto& [choraleId, modsJson] : root.items()) {
-            if (!requestedIds.empty() &&
-                std::find(requestedIds.begin(), requestedIds.end(), choraleId) == requestedIds.end()) {
-                continue;
-            }
-            std::vector<Modulation> mods;
-            for (const auto& entry : modsJson) {
-                mods.push_back(parseModulation(entry.at(0).get<std::string>(), entry.at(1).get<std::string>()));
-            }
-            processChorale(choraleId, mods, sourceDir, outDir);
-        }
-    } catch (const nlohmann::json::exception& e) {
-        std::cerr << "Error: invalid JSON in annotations file: " << e.what() << "\n";
-        return 1;
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        return 1;
-    }
-
-    return 0;
-}
+} // namespace choralesearch

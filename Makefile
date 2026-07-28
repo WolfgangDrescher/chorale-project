@@ -25,6 +25,10 @@ CHORALES += $(filter-out kern clean fixtures test,$(MAKECMDGOALS))
 
 FIXTURE_CHORALES := chor001 chor006 chor009 chor029
 
+GENERATE := ./chorale-search/build/chorale-generate
+MODULATIONS := annotations/bach-modulations.json
+SOURCE_KERN := bach-370-chorales/kern
+
 kern:
 	$(MAKE) -C chorale-search
 	./chorale-search/build/add-modulations \
@@ -40,10 +44,8 @@ fixtures:
 	$(MAKE) -C chorale-search
 	rm -rf chorale-search/tests/fixtures
 	mkdir -p chorale-search/tests/fixtures
-	./chorale-search/build/add-modulations \
-		annotations/bach-modulations.json \
-		bach-370-chorales/kern \
-		chorale-search/tests/fixtures \
+	$(GENERATE) $(SOURCE_KERN) chorale-search/tests/fixtures \
+		--modulations $(MODULATIONS) \
 		$(FIXTURE_CHORALES)
 
 test:
