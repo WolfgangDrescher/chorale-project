@@ -51,7 +51,8 @@ ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale
 
 } // namespace
 
-CorpusSearch::CorpusSearch(fs::path corpusRoot) : m_corpusRoot(std::move(corpusRoot)) {}
+CorpusSearch::CorpusSearch(fs::path corpusRoot, bool applyAnalysis)
+    : m_corpusRoot(std::move(corpusRoot)), m_applyAnalysis(applyAnalysis) {}
 
 std::vector<fs::path> CorpusSearch::findChoraleFiles() const {
     if (!fs::exists(m_corpusRoot)) {
@@ -118,7 +119,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
 Results CorpusSearch::run(const Query& query) const {
     Results allResults;
     for (const auto& file : findChoraleFiles()) {
-        HumdrumChorale chorale(file.string());
+        HumdrumChorale chorale(file.string(), m_applyAnalysis);
         if (!chorale.hasFeature(query.feature)) continue;
         auto results = runOne(chorale, query);
         allResults.insert(allResults.end(), std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()));
@@ -147,7 +148,7 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
         // The loop only ever reaches this point if at least one query is still pending (see
         // the all_of(done) break below), so this is never wasted work -- no need to defer
         // construction.
-        HumdrumChorale chorale(file.string()); // parsed once per file, shared by every query
+        HumdrumChorale chorale(file.string(), m_applyAnalysis); // parsed once per file, shared by every query
         for (std::size_t i = 0; i < queries.size(); ++i) {
             if (done[i]) continue;
             const Query& query = queries[i];

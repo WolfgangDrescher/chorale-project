@@ -10,7 +10,10 @@ namespace choralesearch {
 
 class HumdrumChorale {
 public:
-    explicit HumdrumChorale(const std::string& path);
+    // `applyAnalysis` false means the file is expected to carry the analysis spines already
+    // (a corpus built by chorale-generate --analysis); the spines are then read straight from
+    // the file instead of being derived on load.
+    explicit HumdrumChorale(const std::string& path, bool applyAnalysis = true);
 
     const std::string& id() const { return m_id; }
     const std::string& path() const { return m_path; }

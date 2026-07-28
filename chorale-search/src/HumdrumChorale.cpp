@@ -9,7 +9,7 @@ namespace fs = std::filesystem;
 
 namespace choralesearch {
 
-HumdrumChorale::HumdrumChorale(const std::string& path) : m_path(path) {
+HumdrumChorale::HumdrumChorale(const std::string& path, bool applyAnalysis) : m_path(path) {
     m_id = fs::path(path).stem().string();
 
     if (!m_infile.read(path)) {
@@ -17,8 +17,10 @@ HumdrumChorale::HumdrumChorale(const std::string& path) : m_path(path) {
     }
 
     // Apply analysis spines such as **deg and **mint so every chorale has them
-    // available before search runs
-    applySpineAnalysisTools(m_infile);
+    // available before search runs -- unless the corpus was generated with them
+    // already baked in (see chorale-generate), in which case redoing the work
+    // would cost ~90ms per file for nothing.
+    if (applyAnalysis) applySpineAnalysisTools(m_infile);
 
     int maxTrack = m_infile.getMaxTrack();
     for (int track = 1; track <= maxTrack; ++track) {

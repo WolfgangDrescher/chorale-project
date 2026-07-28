@@ -31,6 +31,9 @@ void printUsage(const char* argv0) {
         "    --format table|json   output format (default: table)\n"
         "    --group-by-chorale    with --format json, group results into an object keyed\n"
         "                          by choraleId instead of a flat array\n"
+        "    --no-analysis         read the analysis spines (**deg, **mint, ...) straight from\n"
+        "                          the corpus instead of deriving them per run -- for a corpus\n"
+        "                          built by chorale-generate --analysis\n"
         "    --help, -h            show this help\n";
 }
 
@@ -72,6 +75,7 @@ int main(int argc, char** argv) {
     bool haveQueryString = false;
     std::string format = "table";
     bool groupByChorale = false;
+    bool applyAnalysis = true;
 
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
@@ -84,6 +88,7 @@ int main(int argc, char** argv) {
             else if (arg == "--query") { queryString = next("--query"); haveQueryString = true; }
             else if (arg == "--format") { format = next("--format"); }
             else if (arg == "--group-by-chorale") { groupByChorale = true; }
+            else if (arg == "--no-analysis") { applyAnalysis = false; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else {
                 std::cerr << "Unknown option: " << arg << "\n";
@@ -126,7 +131,7 @@ int main(int argc, char** argv) {
             if (!f.is_open()) throw std::runtime_error("Could not open query file: " + queryFile);
             f >> j;
         }
-        CorpusSearch search(corpusDir);
+        CorpusSearch search(corpusDir, applyAnalysis);
         Results results;
         if (j.is_array()) {
             std::vector<Query> queries = choralesearch::queryArrayFromJson(j);

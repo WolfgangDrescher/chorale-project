@@ -1,7 +1,11 @@
 import { execFileSync } from 'node:child_process';
 
 const CHORALE_SEARCH_BIN = '../chorale-search/build/chorale-search';
-const CORPUS_DIR = '../kern/bach-370-chorales';
+
+// The generated corpus (`make corpus`), carries the analysis spines already,
+// which is what --no-analysis below relies on. Deriving them per request costs
+// ~90ms per chorale and would blow EXEC_FILE_SYNC_TIMEOUT on the full corpus.
+const CORPUS_DIR = '../corpus/bach-370-chorales';
 
 const EXEC_FILE_SYNC_TIMEOUT = 10_000;
 
@@ -73,6 +77,7 @@ function runChoraleSearch(body) {
             '--format',
             'json',
             '--group-by-chorale',
+            '--no-analysis',
         ], { encoding: 'utf8', timeout: EXEC_FILE_SYNC_TIMEOUT });
     } catch (e) {
         if (e.signal === 'SIGTERM' && e.status === null) {
