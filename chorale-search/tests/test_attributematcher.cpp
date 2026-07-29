@@ -429,6 +429,155 @@ TEST_CASE(matcher_mint_pattern_mixes_partial_and_exact_values_across_positions) 
     CHECK(!matcher.findAll(chorale, 4).empty());
 }
 
+TEST_CASE(matcher_mint_does_not_match_complementary_intervals_by_default) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher fifthDown("mint", {AttributeMap{{"mint", {"-5"}}}});
+    AttributeMatcher fourthUp("mint", {AttributeMap{{"mint", {"+4"}}}});
+
+    auto fifthDownMatches = fifthDown.findAll(chorale, 1);
+    auto fourthUpMatches = fourthUp.findAll(chorale, 1);
+
+    REQUIRE(!fifthDownMatches.empty());
+    REQUIRE(!fourthUpMatches.empty());
+    // Without the option the two are strictly separate result sets -- no onset is in both.
+    for (const auto& m : fifthDownMatches) {
+        bool alsoFourthUp = std::any_of(fourthUpMatches.begin(), fourthUpMatches.end(),
+                                         [&](const auto& other) { return other.startLineNumber == m.startLineNumber; });
+        CHECK(!alsoFourthUp);
+    }
+}
+
+TEST_CASE(matcher_mint_allow_interval_complementation_also_matches_the_complementary_interval) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher fifthDown("mint", {AttributeMap{{"mint", {"-5"}}}});
+    AttributeMatcher fourthUp("mint", {AttributeMap{{"mint", {"+4"}}}});
+    AttributeMatcher fifthDownOrItsComplement("mint", {AttributeMap{{"mint", {"-5"}}}},
+                                               /*mintStartAtPreviousToken=*/false, /*fbCompareExactChord=*/false,
+                                               /*kernIgnoreOctave=*/false, /*hintReduceCompound=*/false, {"5"});
+
+    auto fifthDownMatches = fifthDown.findAll(chorale, 1);
+    auto fourthUpMatches = fourthUp.findAll(chorale, 1);
+    auto complementedMatches = fifthDownOrItsComplement.findAll(chorale, 1);
+
+    REQUIRE(!fifthDownMatches.empty());
+    REQUIRE(!fourthUpMatches.empty());
+    CHECK_EQ(complementedMatches.size(), fifthDownMatches.size() + fourthUpMatches.size());
+    for (const auto& m : fourthUpMatches) {
+        bool found = std::any_of(complementedMatches.begin(), complementedMatches.end(),
+                                  [&](const auto& c) { return c.startLineNumber == m.startLineNumber; });
+        CHECK(found);
+    }
+}
+
+TEST_CASE(matcher_mint_allow_interval_complementation_inverts_the_quality_too) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // A major 2nd up complements to a *minor* 7th down, not a major one.
+    AttributeMatcher majorSecondUp("mint", {AttributeMap{{"mint", {"+M2"}}}});
+    AttributeMatcher minorSeventhDown("mint", {AttributeMap{{"mint", {"-m7"}}}});
+    AttributeMatcher majorSeventhDown("mint", {AttributeMap{{"mint", {"-M7"}}}});
+    AttributeMatcher complemented("mint", {AttributeMap{{"mint", {"+M2"}}}}, /*mintStartAtPreviousToken=*/false,
+                                   /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                                   /*hintReduceCompound=*/false, {"2"});
+
+    auto majorSecondUpMatches = majorSecondUp.findAll(chorale, 1);
+    auto minorSeventhDownMatches = minorSeventhDown.findAll(chorale, 1);
+    auto complementedMatches = complemented.findAll(chorale, 1);
+
+    REQUIRE(!majorSecondUpMatches.empty());
+    REQUIRE(!minorSeventhDownMatches.empty());
+    CHECK(majorSeventhDown.findAll(chorale, 1).empty()); // nothing a wrong inversion could pick up
+    CHECK_EQ(complementedMatches.size(), majorSecondUpMatches.size() + minorSeventhDownMatches.size());
+}
+
+TEST_CASE(matcher_mint_allow_interval_complementation_only_opts_in_the_listed_numbers) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher fifthDown("mint", {AttributeMap{{"mint", {"-5"}}}});
+    // The number as written in the pattern is what opts in, so a pattern of "-5" is untouched
+    // by a list of {"4"} -- that one opts in patterns written as a 4th instead.
+    AttributeMatcher listedFour("mint", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
+                                 /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                                 /*hintReduceCompound=*/false, {"4"});
+    AttributeMatcher listedThreeAndFive("mint", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
+                                         /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                                         /*hintReduceCompound=*/false, {"3", "5"});
+
+    auto fifthDownMatches = fifthDown.findAll(chorale, 1);
+    auto listedFourMatches = listedFour.findAll(chorale, 1);
+    auto listedThreeAndFiveMatches = listedThreeAndFive.findAll(chorale, 1);
+
+    REQUIRE(!fifthDownMatches.empty());
+    CHECK_EQ(listedFourMatches.size(), fifthDownMatches.size());
+    CHECK(listedThreeAndFiveMatches.size() > fifthDownMatches.size()); // "5" is in the list here
+}
+
+TEST_CASE(matcher_mint_allow_interval_complementation_wildcard_opts_in_every_number) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher listedFive("mint", {AttributeMap{{"mint", {"-P5"}}}}, /*mintStartAtPreviousToken=*/false,
+                                 /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                                 /*hintReduceCompound=*/false, {"5"});
+    AttributeMatcher wildcard("mint", {AttributeMap{{"mint", {"-P5"}}}}, /*mintStartAtPreviousToken=*/false,
+                               /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                               /*hintReduceCompound=*/false, {"*"});
+
+    auto listedFiveMatches = listedFive.findAll(chorale, 1);
+    auto wildcardMatches = wildcard.findAll(chorale, 1);
+
+    REQUIRE(!listedFiveMatches.empty());
+    CHECK_EQ(wildcardMatches.size(), listedFiveMatches.size());
+}
+
+TEST_CASE(matcher_mint_allow_interval_complementation_ignores_values_without_an_interval_number) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // "+" pins down a direction but no interval size, so there's nothing to complement --
+    // complementing it would otherwise quietly turn it into "any motion at all".
+    AttributeMatcher up("mint", {AttributeMap{{"mint", {"+"}}}});
+    AttributeMatcher upWithComplementation("mint", {AttributeMap{{"mint", {"+"}}}}, /*mintStartAtPreviousToken=*/false,
+                                            /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                                            /*hintReduceCompound=*/false, {"*"});
+
+    auto upMatches = up.findAll(chorale, 1);
+    auto upWithComplementationMatches = upWithComplementation.findAll(chorale, 1);
+
+    REQUIRE(!upMatches.empty());
+    CHECK_EQ(upWithComplementationMatches.size(), upMatches.size());
+}
+
+TEST_CASE(matcher_mint_allow_interval_complementation_applies_to_a_cross_referenced_mint_key) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Driven by kern, with mint only checked alongside it: the option is about the "mint" key,
+    // not about mint being the driving feature.
+    AttributeMatcher plain("kern", {AttributeMap{{"mint", {"-5"}}}});
+    AttributeMatcher complemented("kern", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
+                                   /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                                   /*hintReduceCompound=*/false, {"5"});
+
+    auto plainMatches = plain.findAll(chorale, 1);
+    auto complementedMatches = complemented.findAll(chorale, 1);
+
+    REQUIRE(!plainMatches.empty());
+    CHECK(complementedMatches.size() > plainMatches.size());
+}
+
+TEST_CASE(matcher_mint_allow_interval_complementation_composes_with_negation) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Negation still flips the whole position's result, so the negated set is the complement
+    // (in the set sense) of the positive one, over the same total onset count.
+    AttributeMatcher total("mint", {AttributeMap{}});
+    AttributeMatcher positive("mint", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
+                               /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                               /*hintReduceCompound=*/false, {"5"});
+    AttributeMatcher negated("mint", {AttributeMap{{"!mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
+                              /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
+                              /*hintReduceCompound=*/false, {"5"});
+
+    auto totalMatches = total.findAll(chorale, 1);
+    auto positiveMatches = positive.findAll(chorale, 1);
+    auto negatedMatches = negated.findAll(chorale, 1);
+
+    REQUIRE(!positiveMatches.empty());
+    CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
+}
+
 TEST_CASE(matcher_fb_as_driving_feature_gives_identical_matches_for_every_voice) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher matcher("fb", {AttributeMap{}});

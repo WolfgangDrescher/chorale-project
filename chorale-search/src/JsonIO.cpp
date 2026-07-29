@@ -66,6 +66,37 @@ std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
     return result;
 }
 
+// The diatonic numbers "mintAllowIntervalComplementation" opts in: a single value or an array
+// of them, each either a string ("5") or a plain JSON number (5), since writing an interval
+// size as a number is the obvious thing to reach for and stringifying it here costs nothing.
+std::vector<std::string> mintComplementationFromJson(const nlohmann::json& j, const std::string& context) {
+    auto entryToString = [&](const nlohmann::json& entry) {
+        if (entry.is_string()) return entry.get<std::string>();
+        if (entry.is_number_unsigned()) return std::to_string(entry.get<std::size_t>());
+        throw std::invalid_argument("'mintAllowIntervalComplementation' in " + context +
+                                     " must hold strings or numbers");
+    };
+
+    std::vector<std::string> values;
+    if (j.is_array()) {
+        for (const auto& entry : j) values.push_back(entryToString(entry));
+        if (values.empty()) {
+            throw std::invalid_argument("'mintAllowIntervalComplementation' in " + context +
+                                         " must not be an empty array (omit it to switch complementation off)");
+        }
+    } else {
+        values.push_back(entryToString(j));
+    }
+
+    for (const std::string& value : values) {
+        if (!isValidMintComplementationValue(value)) {
+            throw std::invalid_argument("'mintAllowIntervalComplementation' in " + context + ": '" + value +
+                                         "' is not a diatonic number 1-8 (or '*')");
+        }
+    }
+    return values;
+}
+
 std::string simultaneousAlignmentFromJson(const nlohmann::json& j, const std::string& context) {
     if (!j.is_string()) throw std::invalid_argument("'" + context + "' must be a string");
     std::string alignment = j.get<std::string>();
@@ -113,6 +144,11 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
             throw std::invalid_argument("'mintStartAtPreviousToken' in " + context + " must be a boolean");
         }
         target.mintStartAtPreviousToken = j["mintStartAtPreviousToken"].get<bool>();
+    }
+
+    if (j.contains("mintAllowIntervalComplementation")) {
+        target.mintAllowIntervalComplementation =
+            mintComplementationFromJson(j["mintAllowIntervalComplementation"], context);
     }
 
     if (j.contains("fbCompareExactChord")) {

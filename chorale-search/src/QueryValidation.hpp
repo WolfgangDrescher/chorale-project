@@ -37,4 +37,9 @@ bool isKnownPatternKey(const std::string& key);
 // feature-specific grammar.
 bool isValidPatternValue(const std::string& key, const std::string& value);
 
+// True if `value` is a legal entry of the "mintAllowIntervalComplementation" option: a single
+// diatonic number "1"-"8" (the simple intervals, the only ones with a complement inside the
+// octave), or "*" for every number at once.
+bool isValidMintComplementationValue(const std::string& value);
+
 } // namespace choralesearch

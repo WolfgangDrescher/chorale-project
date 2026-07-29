@@ -20,7 +20,8 @@ class AttributeMatcher {
 public:
     AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
                       bool mintStartAtPreviousToken = false, bool fbCompareExactChord = false,
-                      bool kernIgnoreOctave = false, bool hintReduceCompound = false);
+                      bool kernIgnoreOctave = false, bool hintReduceCompound = false,
+                      std::vector<std::string> mintAllowIntervalComplementation = {});
 
     std::vector<AttributeMatch> findAll(const HumdrumChorale& chorale, std::size_t voice) const;
 
@@ -31,6 +32,7 @@ private:
     bool m_fbCompareExactChord;
     bool m_kernIgnoreOctave;
     bool m_hintReduceCompound;
+    std::vector<std::string> m_mintAllowIntervalComplementation;
 };
 
 } // namespace choralesearch

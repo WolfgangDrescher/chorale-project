@@ -394,4 +394,30 @@ TEST_CASE(simultaneous_with_group_can_override_hint_reduce_compound) {
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{17});
 }
 
+TEST_CASE(simultaneous_with_group_can_override_mint_allow_interval_complementation) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "mint";
+    q.voices = "1";
+    q.pattern = {AttributeMap{{"mint", {"+4"}}}};
+
+    SimultaneousGroup group;
+    group.feature = "mint";
+    group.voices = "1";
+    group.pattern = {AttributeMap{{"mint", {"-5"}}}}; // never true where the primary "+4" is
+    q.simultaneousWith = {group};
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
+    
+    q.simultaneousWith[0].mintAllowIntervalComplementation = {"5"}; // group-level override
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{2});
+
+    q.simultaneousWith[0].mintAllowIntervalComplementation.reset();
+    q.mintAllowIntervalComplementation = {"5"}; // query-level, inherited by the group
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{2});
+
+    q.mintAllowIntervalComplementation = {};
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0});
+}
+
 TEST_MAIN()

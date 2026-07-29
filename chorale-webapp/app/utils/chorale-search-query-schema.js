@@ -44,6 +44,25 @@ const searchRequestFieldSchemas = {
         description: 'Only relevant for feature "mint": shifts the reported match start back by one onset.',
         suggestSortText: '4',
     },
+    mintAllowIntervalComplementation: {
+        default: '*',
+        description: 'Only relevant for the "mint" pattern key: the diatonic numbers (1-8, or "*" for all) whose pattern values may also be satisfied by their complementary interval, so e.g. ["5"] lets "-5" also match "+4".',
+        suggestSortText: '4.5',
+        oneOf: [
+            { type: 'string', enum: ['1', '2', '3', '4', '5', '6', '7', '8', '*'] },
+            { type: 'integer', minimum: 1, maximum: 8 },
+            {
+                type: 'array',
+                minItems: 1,
+                items: {
+                    oneOf: [
+                        { type: 'string', enum: ['1', '2', '3', '4', '5', '6', '7', '8', '*'] },
+                        { type: 'integer', minimum: 1, maximum: 8 },
+                    ],
+                },
+            },
+        ],
+    },
     fbCompareExactChord: {
         type: 'boolean',
         default: true,

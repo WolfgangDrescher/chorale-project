@@ -40,7 +40,8 @@ ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale
     AttributeMatcher matcher(group.feature, group.pattern, group.mintStartAtPreviousToken.value_or(query.mintStartAtPreviousToken),
                               group.fbCompareExactChord.value_or(query.fbCompareExactChord),
                               group.kernIgnoreOctave.value_or(query.kernIgnoreOctave),
-                              group.hintReduceCompound.value_or(query.hintReduceCompound));
+                              group.hintReduceCompound.value_or(query.hintReduceCompound),
+                              group.mintAllowIntervalComplementation.value_or(query.mintAllowIntervalComplementation));
     for (std::size_t voice : resolveVoices(group.voices)) {
         for (const auto& m : matcher.findAll(chorale, voice)) {
             resolved.positions.emplace_back(m.startPosition, m.endPosition);
@@ -77,7 +78,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
     if (!chorale.hasFeature(query.feature)) return results;
 
     AttributeMatcher matcher(query.feature, query.pattern, query.mintStartAtPreviousToken, query.fbCompareExactChord,
-                              query.kernIgnoreOctave, query.hintReduceCompound);
+                              query.kernIgnoreOctave, query.hintReduceCompound, query.mintAllowIntervalComplementation);
 
     // Precompute each simultaneousWith group's own match positions (and resolved options)
     // once per chorale, rather than re-running its matcher for every one of the primary

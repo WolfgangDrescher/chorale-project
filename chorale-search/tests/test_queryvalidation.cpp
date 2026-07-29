@@ -7,11 +7,13 @@ using choralesearch::isKnownDrivingFeature;
 using choralesearch::isKnownPatternKey;
 using choralesearch::isKnownQueryKey;
 using choralesearch::isKnownSimultaneousGroupKey;
+using choralesearch::isValidMintComplementationValue;
 using choralesearch::isValidPatternValue;
 
 TEST_CASE(is_known_simultaneous_group_key_accepts_every_shared_field) {
-    for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken", "fbCompareExactChord",
-                                    "kernIgnoreOctave", "hintReduceCompound", "simultaneousAlignment"}) {
+    for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
+                                    "mintAllowIntervalComplementation", "fbCompareExactChord", "kernIgnoreOctave",
+                                    "hintReduceCompound", "simultaneousAlignment"}) {
         CHECK(isKnownSimultaneousGroupKey(key));
     }
 }
@@ -28,8 +30,9 @@ TEST_CASE(is_known_simultaneous_group_key_rejects_unknown_fields) {
 }
 
 TEST_CASE(is_known_query_key_accepts_every_shared_field_plus_the_query_only_ones) {
-    for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken", "fbCompareExactChord",
-                                    "kernIgnoreOctave", "hintReduceCompound", "simultaneousAlignment", "id", "limit",
+    for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
+                                    "mintAllowIntervalComplementation", "fbCompareExactChord", "kernIgnoreOctave",
+                                    "hintReduceCompound", "simultaneousAlignment", "id", "limit",
                                     "simultaneousWith"}) {
         CHECK(isKnownQueryKey(key));
     }
@@ -241,6 +244,18 @@ TEST_CASE(is_valid_pattern_value_for_duration_accepts_recip_notation) {
 TEST_CASE(is_valid_pattern_value_for_duration_rejects_garbage) {
     CHECK(!isValidPatternValue("duration", "abc"));
     CHECK(!isValidPatternValue("duration", "4x"));
+}
+
+TEST_CASE(is_valid_mint_complementation_value_accepts_simple_interval_numbers_and_the_wildcard) {
+    for (const std::string& v : {"1", "2", "3", "4", "5", "6", "7", "8", "*"}) {
+        CHECK(isValidMintComplementationValue(v));
+    }
+}
+
+TEST_CASE(is_valid_mint_complementation_value_rejects_compound_and_non_numeric_values) {
+    for (const std::string& v : {"0", "9", "10", "", "P5", "+5", "5 4"}) {
+        CHECK(!isValidMintComplementationValue(v));
+    }
 }
 
 TEST_MAIN()

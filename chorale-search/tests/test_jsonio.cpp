@@ -35,6 +35,58 @@ TEST_CASE(query_from_json_reads_mint_start_at_previous_token) {
     CHECK(q.mintStartAtPreviousToken);
 }
 
+TEST_CASE(query_from_json_reads_mint_allow_interval_complementation_array) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":["4","5"]})"));
+    CHECK_EQ(q.mintAllowIntervalComplementation, (std::vector<std::string>{"4", "5"}));
+}
+
+TEST_CASE(query_from_json_reads_a_single_mint_allow_interval_complementation_value) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":"5"})"));
+    CHECK_EQ(q.mintAllowIntervalComplementation, (std::vector<std::string>{"5"}));
+}
+
+TEST_CASE(query_from_json_reads_mint_allow_interval_complementation_written_as_numbers) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":[4,5]})"));
+    CHECK_EQ(q.mintAllowIntervalComplementation, (std::vector<std::string>{"4", "5"}));
+
+    Query bare = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":5})"));
+    CHECK_EQ(bare.mintAllowIntervalComplementation, (std::vector<std::string>{"5"}));
+}
+
+TEST_CASE(query_from_json_reads_the_mint_allow_interval_complementation_wildcard) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":["*"]})"));
+    CHECK_EQ(q.mintAllowIntervalComplementation, (std::vector<std::string>{"*"}));
+
+    Query q2 = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":"*"})"));
+    CHECK_EQ(q2.mintAllowIntervalComplementation, (std::vector<std::string>{"*"}));
+}
+
+TEST_CASE(query_from_json_defaults_mint_allow_interval_complementation_to_empty) {
+    Query q = queryFromJson(json::parse(R"({"feature":"mint","pattern":[{"mint":"-5"}]})"));
+    CHECK(q.mintAllowIntervalComplementation.empty());
+}
+
+TEST_CASE(query_from_json_reads_simultaneous_with_group_mint_allow_interval_complementation_override) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{
+            "feature":"mint",
+            "pattern":[{"mint":"-5"}],
+            "mintAllowIntervalComplementation":["5"]
+        }]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    REQUIRE(q.simultaneousWith[0].mintAllowIntervalComplementation.has_value());
+    CHECK_EQ(*q.simultaneousWith[0].mintAllowIntervalComplementation, (std::vector<std::string>{"5"}));
+}
+
 TEST_CASE(query_from_json_reads_fb_compare_exact_chord) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"fb","pattern":[{"fb":"6 3"}],"fbCompareExactChord":true})"));
@@ -119,6 +171,7 @@ TEST_CASE(query_from_json_reads_a_minimal_simultaneous_with_group) {
 
     // nullopt everywhere: a group with no options of its own inherits the query's.
     CHECK(!group.mintStartAtPreviousToken.has_value());
+    CHECK(!group.mintAllowIntervalComplementation.has_value());
     CHECK(!group.fbCompareExactChord.has_value());
     CHECK(!group.kernIgnoreOctave.has_value());
     CHECK(!group.simultaneousAlignment.has_value());
@@ -495,6 +548,26 @@ TEST_CASE(query_from_json_rejects_non_boolean_kern_ignore_octave) {
 TEST_CASE(query_from_json_rejects_non_boolean_hint_reduce_compound) {
     CHECK_THROWS(queryFromJson(json::parse(
         R"({"feature":"hint-14","pattern":[{"hint-14":"3"}],"hintReduceCompound":null})")));
+}
+
+TEST_CASE(query_from_json_rejects_a_compound_mint_allow_interval_complementation_value) {
+    // Only simple intervals (1-8) have a complement inside the octave.
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":["10"]})")));
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":9})")));
+}
+
+TEST_CASE(query_from_json_rejects_a_non_numeric_mint_allow_interval_complementation_value) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":["P5"]})")));
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":[true]})")));
+}
+
+TEST_CASE(query_from_json_rejects_an_empty_mint_allow_interval_complementation_array) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":[]})")));
 }
 
 TEST_CASE(query_from_json_rejects_negative_limit) {

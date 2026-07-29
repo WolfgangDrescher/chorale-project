@@ -13,7 +13,7 @@ namespace {
 // parseSearchRequestFields). "id", "limit", and "simultaneousWith" are Query-only additions on
 // top of this, handled by isKnownQueryKey below.
 const std::vector<std::string> kSharedRequestFieldNames = {
-    "feature", "voices", "pattern", "mintStartAtPreviousToken",
+    "feature", "voices", "pattern", "mintStartAtPreviousToken", "mintAllowIntervalComplementation",
     "fbCompareExactChord", "kernIgnoreOctave", "hintReduceCompound", "simultaneousAlignment",
 };
 
@@ -133,6 +133,13 @@ bool isKnownPatternKey(const std::string& rawKey) {
     std::string key = stripNegationPrefix(rawKey);
     return isKnownDrivingFeature(key) || key == "duration" || key == "fermata" ||
            isHintRelativeKey(key) || isHintWildcardKey(key);
+}
+
+bool isValidMintComplementationValue(const std::string& value) {
+    // Only simple intervals have a complement within the octave (see AttributeMatcher.cpp's
+    // complementMintValue), so anything beyond a single 1-8 digit is a mistake worth naming
+    // rather than a silently ineffective entry.
+    return value == "*" || (value.size() == 1 && value[0] >= '1' && value[0] <= '8');
 }
 
 bool isValidPatternValue(const std::string& rawKey, const std::string& value) {

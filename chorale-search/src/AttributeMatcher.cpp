@@ -170,9 +170,59 @@ bool mintValueMatches(const std::string& patternValue, const std::string& actual
     return true;
 }
 
-bool mintInList(const std::vector<std::string>& allowed, const std::string& actual) {
+// Inverts an interval quality the way complementation does: a major interval's complement is
+// minor and vice versa, an augmented one's diminished and vice versa, a perfect one stays
+// perfect. Letter by letter, so mint's doubled forms (AA, dd) invert as a whole.
+std::string invertMintQuality(const std::string& quality) {
+    std::string inverted;
+    for (char c : quality) {
+        switch (c) {
+            case 'M': inverted += 'm'; break;
+            case 'm': inverted += 'M'; break;
+            case 'A': inverted += 'd'; break;
+            case 'd': inverted += 'A'; break;
+            default: inverted += c; break; // 'P' stays perfect
+        }
+    }
+    return inverted;
+}
+
+// The complementary interval of a **mint pattern value: the one filling the rest of the octave
+// in the opposite direction, e.g. "-P5" -> "+P4", "+M2" -> "-m7", "5" -> "4". A value that
+// doesn't pin down a direction keeps that openness -- its complement doesn't either.
+// nullopt when there's nothing to complement: a value without a diatonic number ("+", "M"),
+// a compound interval (a 9th and up -- only simple intervals invert within the octave), or an
+// unparseable literal (mint's bracketed first-note marker, e.g. "[gg]").
+std::optional<std::string> complementMintValue(const std::string& patternValue) {
+    auto parsed = parseMintValue(patternValue);
+    if (!parsed) return std::nullopt;
+    const auto& [sign, quality, number] = *parsed;
+    if (number.size() != 1 || number[0] < '1' || number[0] > '8') return std::nullopt;
+    std::string complementSign = sign == "+" ? "-" : (sign == "-" ? "+" : "");
+    return complementSign + invertMintQuality(quality) + std::to_string(9 - (number[0] - '0'));
+}
+
+// True if `patternValue`'s own diatonic number is one the query opted into complementing.
+// It's the number as *written in the pattern* that decides, not the complement's: opting in
+// "5" lets a pattern's "-5" also match an actual "+4", but not the other way round (that's
+// what opting in "4" does), so each direction of the shorthand stays something the query
+// asks for explicitly. "*" opts in every number.
+bool mintComplementationAllowedFor(const std::vector<std::string>& allowedNumbers, const std::string& patternValue) {
+    auto parsed = parseMintValue(patternValue);
+    if (!parsed) return false;
+    const std::string& number = std::get<2>(*parsed);
+    if (number.empty()) return false;
+    return isWildcard(allowedNumbers) || inList(allowedNumbers, number);
+}
+
+bool mintInList(const std::vector<std::string>& allowed, const std::string& actual,
+                 const std::vector<std::string>& allowComplementationFor) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        return mintValueMatches(v, actual);
+        if (mintValueMatches(v, actual)) return true;
+        if (allowComplementationFor.empty()) return false; // complementation off (the default)
+        if (!mintComplementationAllowedFor(allowComplementationFor, v)) return false;
+        auto complement = complementMintValue(v);
+        return complement && mintValueMatches(*complement, actual);
     });
 }
 
@@ -285,10 +335,12 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
                                     bool mintStartAtPreviousToken, bool fbCompareExactChord,
-                                    bool kernIgnoreOctave, bool hintReduceCompound)
+                                    bool kernIgnoreOctave, bool hintReduceCompound,
+                                    std::vector<std::string> mintAllowIntervalComplementation)
     : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)),
       m_mintStartAtPreviousToken(mintStartAtPreviousToken), m_fbCompareExactChord(fbCompareExactChord),
-      m_kernIgnoreOctave(kernIgnoreOctave), m_hintReduceCompound(hintReduceCompound) {}
+      m_kernIgnoreOctave(kernIgnoreOctave), m_hintReduceCompound(hintReduceCompound),
+      m_mintAllowIntervalComplementation(std::move(mintAllowIntervalComplementation)) {}
 
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
@@ -368,7 +420,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                         actual = std::string(*valTok);
                         kernTok = valTok;
                     }
-                    if (key == kMintFeature) matched = mintInList(allowed, actual);
+                    if (key == kMintFeature) matched = mintInList(allowed, actual, m_mintAllowIntervalComplementation);
                     else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
                     else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_hintReduceCompound);
                     else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_kernIgnoreOctave);

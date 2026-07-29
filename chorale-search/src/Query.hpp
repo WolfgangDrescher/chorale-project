@@ -25,6 +25,7 @@ struct SimultaneousGroup {
     // nullopt means "inherit the top-level Query's own value of the same name" -- these
     // are only ever overrides, not independent defaults.
     std::optional<bool> mintStartAtPreviousToken;
+    std::optional<std::vector<std::string>> mintAllowIntervalComplementation;
     std::optional<bool> fbCompareExactChord;
     std::optional<bool> kernIgnoreOctave;
     std::optional<bool> hintReduceCompound;
@@ -58,6 +59,14 @@ struct Query {
     // (e.g. an explicit {"mint": "*"}), which signals the caller included that lead-in
     // token in the pattern themselves.
     bool mintStartAtPreviousToken = false;
+
+    // Affects any "mint" key comparison (driving or cross-referenced): the diatonic numbers
+    // whose pattern values may also be satisfied by their complementary interval, i.e. the
+    // interval filling the rest of the octave in the opposite direction ("-P5" <-> "+P4",
+    // "+M2" <-> "-m7"). A number listed here opts in every pattern value *written* with that
+    // number, so {"mint": "-5"} with {"5"} also matches "+4"; "*" opts in every number.
+    // Empty (the default) means no complementation at all.
+    std::vector<std::string> mintAllowIntervalComplementation;
 
     // Only relevant when feature == "fb": by default an fb pattern value's figures are a
     // minimum requirement, so "2 4" also matches a chord actually voiced as "2 4 6". When
@@ -100,6 +109,7 @@ inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
     j["voices"] = g.voices;
     j["pattern"] = patternToJson(g.pattern);
     if (g.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = *g.mintStartAtPreviousToken;
+    if (g.mintAllowIntervalComplementation) j["mintAllowIntervalComplementation"] = *g.mintAllowIntervalComplementation;
     if (g.fbCompareExactChord) j["fbCompareExactChord"] = *g.fbCompareExactChord;
     if (g.kernIgnoreOctave) j["kernIgnoreOctave"] = *g.kernIgnoreOctave;
     if (g.hintReduceCompound) j["hintReduceCompound"] = *g.hintReduceCompound;
@@ -116,6 +126,7 @@ inline std::ostream& operator<<(std::ostream& os, const Query& q) {
 
     if (q.limit) j["limit"] = *q.limit;
     if (q.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = true;
+    if (!q.mintAllowIntervalComplementation.empty()) j["mintAllowIntervalComplementation"] = q.mintAllowIntervalComplementation;
     if (q.fbCompareExactChord) j["fbCompareExactChord"] = true;
     if (q.kernIgnoreOctave) j["kernIgnoreOctave"] = true;
     if (q.hintReduceCompound) j["hintReduceCompound"] = true;
