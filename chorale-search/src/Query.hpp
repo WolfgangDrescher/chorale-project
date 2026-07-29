@@ -12,6 +12,15 @@ namespace choralesearch {
 // feature name -> OR-list of acceptable values ("*" anywhere in the list = wildcard)
 using AttributeMap = std::map<std::string, std::vector<std::string>>;
 
+// What AttributeMatcher is allowed to treat as equal beyond a literal comparison
+struct MatcherOptions {
+    bool mintStartAtPreviousToken = false;
+    std::vector<std::string> mintAllowIntervalComplementation;
+    bool fbCompareExactChord = false;
+    bool kernIgnoreOctave = false;
+    bool hintReduceCompound = false;
+};
+
 // An additional pattern that must have a match starting at the exact same musical position
 // (hum::HumNum, quarter notes from the start of the piece) as each match of the query's own
 // top-level pattern -- e.g. "whatever the bass is doing when this soprano line happens".

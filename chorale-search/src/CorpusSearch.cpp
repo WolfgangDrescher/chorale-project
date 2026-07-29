@@ -20,8 +20,32 @@ std::string getHumNumTwoPart(const hum::HumNum& n) {
     return oss.str();
 }
 
-// A group's own options (mint/fb/kern/alignment) are overrides -- nullopt falls back to the
-// top-level query's own value of the same name, not an independent default.
+MatcherOptions matcherOptions(const Query& query) {
+    MatcherOptions options;
+    options.mintStartAtPreviousToken = query.mintStartAtPreviousToken;
+    options.mintAllowIntervalComplementation = query.mintAllowIntervalComplementation;
+    options.fbCompareExactChord = query.fbCompareExactChord;
+    options.kernIgnoreOctave = query.kernIgnoreOctave;
+    options.hintReduceCompound = query.hintReduceCompound;
+    return options;
+}
+
+// A group's own options are overrides -- nullopt falls back to the top-level query's own value
+// of the same name, not an independent default.
+MatcherOptions matcherOptions(const Query& query, const SimultaneousGroup& group) {
+    MatcherOptions options;
+    options.mintStartAtPreviousToken = group.mintStartAtPreviousToken.value_or(query.mintStartAtPreviousToken);
+    options.mintAllowIntervalComplementation =
+        group.mintAllowIntervalComplementation.value_or(query.mintAllowIntervalComplementation);
+    options.fbCompareExactChord = group.fbCompareExactChord.value_or(query.fbCompareExactChord);
+    options.kernIgnoreOctave = group.kernIgnoreOctave.value_or(query.kernIgnoreOctave);
+    options.hintReduceCompound = group.hintReduceCompound.value_or(query.hintReduceCompound);
+    return options;
+}
+
+// simultaneousAlignment is resolved the same way, but it isn't a MatcherOptions field: it
+// decides which of a group's match positions must line up with the primary match, which is
+// this file's own job rather than anything the matcher does.
 struct ResolvedSimultaneousGroup {
     std::vector<std::pair<hum::HumNum, hum::HumNum>> positions; // (startPosition, endPosition) per match
     bool checkStart;
@@ -37,11 +61,7 @@ ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale
 
     if (!chorale.hasFeature(group.feature)) return resolved;
 
-    AttributeMatcher matcher(group.feature, group.pattern, group.mintStartAtPreviousToken.value_or(query.mintStartAtPreviousToken),
-                              group.fbCompareExactChord.value_or(query.fbCompareExactChord),
-                              group.kernIgnoreOctave.value_or(query.kernIgnoreOctave),
-                              group.hintReduceCompound.value_or(query.hintReduceCompound),
-                              group.mintAllowIntervalComplementation.value_or(query.mintAllowIntervalComplementation));
+    AttributeMatcher matcher(group.feature, group.pattern, matcherOptions(query, group));
     for (std::size_t voice : resolveVoices(group.voices)) {
         for (const auto& m : matcher.findAll(chorale, voice)) {
             resolved.positions.emplace_back(m.startPosition, m.endPosition);
@@ -77,8 +97,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
     Results results;
     if (!chorale.hasFeature(query.feature)) return results;
 
-    AttributeMatcher matcher(query.feature, query.pattern, query.mintStartAtPreviousToken, query.fbCompareExactChord,
-                              query.kernIgnoreOctave, query.hintReduceCompound, query.mintAllowIntervalComplementation);
+    AttributeMatcher matcher(query.feature, query.pattern, matcherOptions(query));
 
     // Precompute each simultaneousWith group's own match positions (and resolved options)
     // once per chorale, rather than re-running its matcher for every one of the primary

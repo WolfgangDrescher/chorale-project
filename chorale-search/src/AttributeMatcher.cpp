@@ -333,14 +333,8 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
 
 } // namespace
 
-AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
-                                    bool mintStartAtPreviousToken, bool fbCompareExactChord,
-                                    bool kernIgnoreOctave, bool hintReduceCompound,
-                                    std::vector<std::string> mintAllowIntervalComplementation)
-    : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)),
-      m_mintStartAtPreviousToken(mintStartAtPreviousToken), m_fbCompareExactChord(fbCompareExactChord),
-      m_kernIgnoreOctave(kernIgnoreOctave), m_hintReduceCompound(hintReduceCompound),
-      m_mintAllowIntervalComplementation(std::move(mintAllowIntervalComplementation)) {}
+AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern, MatcherOptions options)
+    : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)), m_options(std::move(options)) {}
 
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
@@ -360,7 +354,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
     if (onsets.size() < n) return matches;
 
     bool shiftStartToPreviousToken = false;
-    if (m_mintStartAtPreviousToken && m_drivingFeature == "mint") {
+    if (m_options.mintStartAtPreviousToken && m_drivingFeature == "mint") {
         auto it = m_pattern[0].find(m_drivingFeature);
         bool firstPositionIsExplicitWildcard = it != m_pattern[0].end() && isWildcard(it->second);
         shiftStartToPreviousToken = !firstPositionIsExplicitWildcard;
@@ -389,7 +383,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     const std::vector<std::string>& allowedRef = allowed;
                     matched = std::any_of(pairs.begin(), pairs.end(), [&](const std::string& pairFeature) {
                         hum::HTp valTok = lookupToken(chorale, 1, lineNumber, pairFeature);
-                        return valTok && hintInList(allowedRef, std::string(*valTok), m_hintReduceCompound);
+                        return valTok && hintInList(allowedRef, std::string(*valTok), m_options.hintReduceCompound);
                     });
                 } else if (isHintRelativeKey(key)) {
                     // "hint-2": the interval between whichever voice is currently being
@@ -398,7 +392,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                     // digit would, see isHintRelativeKey's comment).
                     auto pairFeature = resolveHintRelativeKey(key, voice);
                     hum::HTp valTok = pairFeature ? lookupToken(chorale, 1, lineNumber, *pairFeature) : nullptr;
-                    matched = valTok && hintInList(allowed, std::string(*valTok), m_hintReduceCompound);
+                    matched = valTok && hintInList(allowed, std::string(*valTok), m_options.hintReduceCompound);
                 } else {
                     std::string actual;
                     hum::HTp kernTok = nullptr;
@@ -420,10 +414,10 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                         actual = std::string(*valTok);
                         kernTok = valTok;
                     }
-                    if (key == kMintFeature) matched = mintInList(allowed, actual, m_mintAllowIntervalComplementation);
-                    else if (key == kFbFeature) matched = fbInList(allowed, actual, m_fbCompareExactChord);
-                    else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_hintReduceCompound);
-                    else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_kernIgnoreOctave);
+                    if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation);
+                    else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
+                    else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
+                    else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave);
                     else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
                     else matched = inList(allowed, actual);
                 }

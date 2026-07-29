@@ -8,6 +8,7 @@
 using choralesearch::AttributeMap;
 using choralesearch::AttributeMatcher;
 using choralesearch::HumdrumChorale;
+using choralesearch::MatcherOptions;
 
 // General AttributeMatcher mechanics against chor029.krn: literal/duration/fermata/
 // cross-spine matching, wildcards, multi-position patterns, voice scoping. Exhaustive
@@ -282,8 +283,10 @@ TEST_CASE(matcher_returns_empty_when_the_pattern_is_longer_than_the_voice_has_on
 TEST_CASE(matcher_mint_start_at_previous_token_has_no_effect_on_other_driving_features) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}};
-    AttributeMatcher withoutFlag("kern", pattern, /*mintStartAtPreviousToken=*/false);
-    AttributeMatcher withFlag("kern", pattern, /*mintStartAtPreviousToken=*/true);
+    AttributeMatcher withoutFlag("kern", pattern);
+    MatcherOptions withFlagOptions;
+    withFlagOptions.mintStartAtPreviousToken = true;
+    AttributeMatcher withFlag("kern", pattern, withFlagOptions);
 
     auto without = withoutFlag.findAll(chorale, 1);
     auto with = withFlag.findAll(chorale, 1);
@@ -302,7 +305,9 @@ TEST_CASE(matcher_mint_start_at_previous_token_shifts_every_start_back_by_one_on
     // the shift, which would make this test check nothing.
     std::vector<AttributeMap> pattern = {AttributeMap{}, AttributeMap{}};
     AttributeMatcher withoutShift("mint", pattern);
-    AttributeMatcher withShift("mint", pattern, /*mintStartAtPreviousToken=*/true);
+    MatcherOptions withShiftOptions;
+    withShiftOptions.mintStartAtPreviousToken = true;
+    AttributeMatcher withShift("mint", pattern, withShiftOptions);
 
     auto unshifted = withoutShift.findAll(chorale, 4);
     auto shifted = withShift.findAll(chorale, 4);
@@ -333,8 +338,10 @@ TEST_CASE(matcher_mint_start_at_previous_token_is_a_noop_after_an_explicit_wildc
         AttributeMap{{"mint", {"*"}}},
         AttributeMap{{"mint", {"*"}}},
     };
-    AttributeMatcher withoutFlag("mint", pattern, /*mintStartAtPreviousToken=*/false);
-    AttributeMatcher withFlag("mint", pattern, /*mintStartAtPreviousToken=*/true);
+    AttributeMatcher withoutFlag("mint", pattern);
+    MatcherOptions withFlagOptions;
+    withFlagOptions.mintStartAtPreviousToken = true;
+    AttributeMatcher withFlag("mint", pattern, withFlagOptions);
 
     auto without = withoutFlag.findAll(chorale, 4);
     auto with = withFlag.findAll(chorale, 4);
@@ -451,9 +458,9 @@ TEST_CASE(matcher_mint_allow_interval_complementation_also_matches_the_complemen
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher fifthDown("mint", {AttributeMap{{"mint", {"-5"}}}});
     AttributeMatcher fourthUp("mint", {AttributeMap{{"mint", {"+4"}}}});
-    AttributeMatcher fifthDownOrItsComplement("mint", {AttributeMap{{"mint", {"-5"}}}},
-                                               /*mintStartAtPreviousToken=*/false, /*fbCompareExactChord=*/false,
-                                               /*kernIgnoreOctave=*/false, /*hintReduceCompound=*/false, {"5"});
+    MatcherOptions complementFifths;
+    complementFifths.mintAllowIntervalComplementation = {"5"};
+    AttributeMatcher fifthDownOrItsComplement("mint", {AttributeMap{{"mint", {"-5"}}}}, complementFifths);
 
     auto fifthDownMatches = fifthDown.findAll(chorale, 1);
     auto fourthUpMatches = fourthUp.findAll(chorale, 1);
@@ -475,9 +482,9 @@ TEST_CASE(matcher_mint_allow_interval_complementation_inverts_the_quality_too) {
     AttributeMatcher majorSecondUp("mint", {AttributeMap{{"mint", {"+M2"}}}});
     AttributeMatcher minorSeventhDown("mint", {AttributeMap{{"mint", {"-m7"}}}});
     AttributeMatcher majorSeventhDown("mint", {AttributeMap{{"mint", {"-M7"}}}});
-    AttributeMatcher complemented("mint", {AttributeMap{{"mint", {"+M2"}}}}, /*mintStartAtPreviousToken=*/false,
-                                   /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                                   /*hintReduceCompound=*/false, {"2"});
+    MatcherOptions complementedOptions;
+    complementedOptions.mintAllowIntervalComplementation = {"2"};
+    AttributeMatcher complemented("mint", {AttributeMap{{"mint", {"+M2"}}}}, complementedOptions);
 
     auto majorSecondUpMatches = majorSecondUp.findAll(chorale, 1);
     auto minorSeventhDownMatches = minorSeventhDown.findAll(chorale, 1);
@@ -494,12 +501,12 @@ TEST_CASE(matcher_mint_allow_interval_complementation_only_opts_in_the_listed_nu
     AttributeMatcher fifthDown("mint", {AttributeMap{{"mint", {"-5"}}}});
     // The number as written in the pattern is what opts in, so a pattern of "-5" is untouched
     // by a list of {"4"} -- that one opts in patterns written as a 4th instead.
-    AttributeMatcher listedFour("mint", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
-                                 /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                                 /*hintReduceCompound=*/false, {"4"});
-    AttributeMatcher listedThreeAndFive("mint", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
-                                         /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                                         /*hintReduceCompound=*/false, {"3", "5"});
+    MatcherOptions listedFourOptions;
+    listedFourOptions.mintAllowIntervalComplementation = {"4"};
+    AttributeMatcher listedFour("mint", {AttributeMap{{"mint", {"-5"}}}}, listedFourOptions);
+    MatcherOptions listedThreeAndFiveOptions;
+    listedThreeAndFiveOptions.mintAllowIntervalComplementation = {"3", "5"};
+    AttributeMatcher listedThreeAndFive("mint", {AttributeMap{{"mint", {"-5"}}}}, listedThreeAndFiveOptions);
 
     auto fifthDownMatches = fifthDown.findAll(chorale, 1);
     auto listedFourMatches = listedFour.findAll(chorale, 1);
@@ -512,12 +519,12 @@ TEST_CASE(matcher_mint_allow_interval_complementation_only_opts_in_the_listed_nu
 
 TEST_CASE(matcher_mint_allow_interval_complementation_wildcard_opts_in_every_number) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    AttributeMatcher listedFive("mint", {AttributeMap{{"mint", {"-P5"}}}}, /*mintStartAtPreviousToken=*/false,
-                                 /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                                 /*hintReduceCompound=*/false, {"5"});
-    AttributeMatcher wildcard("mint", {AttributeMap{{"mint", {"-P5"}}}}, /*mintStartAtPreviousToken=*/false,
-                               /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                               /*hintReduceCompound=*/false, {"*"});
+    MatcherOptions listedFiveOptions;
+    listedFiveOptions.mintAllowIntervalComplementation = {"5"};
+    AttributeMatcher listedFive("mint", {AttributeMap{{"mint", {"-P5"}}}}, listedFiveOptions);
+    MatcherOptions wildcardOptions;
+    wildcardOptions.mintAllowIntervalComplementation = {"*"};
+    AttributeMatcher wildcard("mint", {AttributeMap{{"mint", {"-P5"}}}}, wildcardOptions);
 
     auto listedFiveMatches = listedFive.findAll(chorale, 1);
     auto wildcardMatches = wildcard.findAll(chorale, 1);
@@ -531,9 +538,9 @@ TEST_CASE(matcher_mint_allow_interval_complementation_ignores_values_without_an_
     // "+" pins down a direction but no interval size, so there's nothing to complement --
     // complementing it would otherwise quietly turn it into "any motion at all".
     AttributeMatcher up("mint", {AttributeMap{{"mint", {"+"}}}});
-    AttributeMatcher upWithComplementation("mint", {AttributeMap{{"mint", {"+"}}}}, /*mintStartAtPreviousToken=*/false,
-                                            /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                                            /*hintReduceCompound=*/false, {"*"});
+    MatcherOptions complementEverything;
+    complementEverything.mintAllowIntervalComplementation = {"*"};
+    AttributeMatcher upWithComplementation("mint", {AttributeMap{{"mint", {"+"}}}}, complementEverything);
 
     auto upMatches = up.findAll(chorale, 1);
     auto upWithComplementationMatches = upWithComplementation.findAll(chorale, 1);
@@ -547,9 +554,9 @@ TEST_CASE(matcher_mint_allow_interval_complementation_applies_to_a_cross_referen
     // Driven by kern, with mint only checked alongside it: the option is about the "mint" key,
     // not about mint being the driving feature.
     AttributeMatcher plain("kern", {AttributeMap{{"mint", {"-5"}}}});
-    AttributeMatcher complemented("kern", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
-                                   /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                                   /*hintReduceCompound=*/false, {"5"});
+    MatcherOptions complementedOptions;
+    complementedOptions.mintAllowIntervalComplementation = {"5"};
+    AttributeMatcher complemented("kern", {AttributeMap{{"mint", {"-5"}}}}, complementedOptions);
 
     auto plainMatches = plain.findAll(chorale, 1);
     auto complementedMatches = complemented.findAll(chorale, 1);
@@ -563,12 +570,12 @@ TEST_CASE(matcher_mint_allow_interval_complementation_composes_with_negation) {
     // Negation still flips the whole position's result, so the negated set is the complement
     // (in the set sense) of the positive one, over the same total onset count.
     AttributeMatcher total("mint", {AttributeMap{}});
-    AttributeMatcher positive("mint", {AttributeMap{{"mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
-                               /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                               /*hintReduceCompound=*/false, {"5"});
-    AttributeMatcher negated("mint", {AttributeMap{{"!mint", {"-5"}}}}, /*mintStartAtPreviousToken=*/false,
-                              /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                              /*hintReduceCompound=*/false, {"5"});
+    MatcherOptions positiveOptions;
+    positiveOptions.mintAllowIntervalComplementation = {"5"};
+    AttributeMatcher positive("mint", {AttributeMap{{"mint", {"-5"}}}}, positiveOptions);
+    MatcherOptions negatedOptions;
+    negatedOptions.mintAllowIntervalComplementation = {"5"};
+    AttributeMatcher negated("mint", {AttributeMap{{"!mint", {"-5"}}}}, negatedOptions);
 
     auto totalMatches = total.findAll(chorale, 1);
     auto positiveMatches = positive.findAll(chorale, 1);
@@ -658,9 +665,9 @@ TEST_CASE(matcher_kern_ignore_octave_matches_every_register_of_a_pitch_class) {
     // a different register) matches none of them without the flag.
     AttributeMatcher upperCaseOnly("kern", {AttributeMap{{"kern", {"G"}}}});
     AttributeMatcher lowerCaseOnly("kern", {AttributeMap{{"kern", {"g"}}}});
-    AttributeMatcher upperCaseIgnoringOctave("kern", {AttributeMap{{"kern", {"G"}}}},
-                                              /*mintStartAtPreviousToken=*/false, /*fbCompareExactChord=*/false,
-                                              /*kernIgnoreOctave=*/true);
+    MatcherOptions ignoreOctave;
+    ignoreOctave.kernIgnoreOctave = true;
+    AttributeMatcher upperCaseIgnoringOctave("kern", {AttributeMap{{"kern", {"G"}}}}, ignoreOctave);
 
     auto upperCaseMatches = upperCaseOnly.findAll(chorale, 4);
     auto lowerCaseMatches = lowerCaseOnly.findAll(chorale, 4);
@@ -678,8 +685,9 @@ TEST_CASE(matcher_kern_ignore_octave_still_honors_rhythm_and_fermata_in_the_same
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // "4D;" (bass, position 7) is a quarter-note D with a fermata -- ignoring octave must
     // still require the rhythm and fermata components, just not the D's own register.
-    AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4D;"}}}}, /*mintStartAtPreviousToken=*/false,
-                              /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/true);
+    MatcherOptions matcherOptions;
+    matcherOptions.kernIgnoreOctave = true;
+    AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4D;"}}}}, matcherOptions);
     auto matches = matcher.findAll(chorale, 1);
     REQUIRE(matches.size() == 1u);
     CHECK_EQ(matches.front().startPosition, 7);
@@ -687,10 +695,12 @@ TEST_CASE(matcher_kern_ignore_octave_still_honors_rhythm_and_fermata_in_the_same
 
 TEST_CASE(matcher_kern_ignore_octave_does_not_conflate_rests_with_pitches) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
-    AttributeMatcher restOnly("kern", {AttributeMap{{"kern", {"r"}}}}, /*mintStartAtPreviousToken=*/false,
-                               /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/true);
-    AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"g"}}}}, /*mintStartAtPreviousToken=*/false,
-                                /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/true);
+    MatcherOptions restOnlyOptions;
+    restOnlyOptions.kernIgnoreOctave = true;
+    AttributeMatcher restOnly("kern", {AttributeMap{{"kern", {"r"}}}}, restOnlyOptions);
+    MatcherOptions pitchOnlyOptions;
+    pitchOnlyOptions.kernIgnoreOctave = true;
+    AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"g"}}}}, pitchOnlyOptions);
     auto restMatches = restOnly.findAll(chorale, 4);
     auto pitchMatches = pitchOnly.findAll(chorale, 4);
     CHECK(!restMatches.empty());
@@ -705,8 +715,9 @@ TEST_CASE(matcher_kern_ignore_octave_does_not_conflate_rests_with_pitches) {
 TEST_CASE(matcher_fb_compare_exact_chord_rejects_chords_with_extra_figures) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher permissive("fb", {AttributeMap{{"fb", {"6 3"}}}});
-    AttributeMatcher exact("fb", {AttributeMap{{"fb", {"6 3"}}}}, /*mintStartAtPreviousToken=*/false,
-                            /*fbCompareExactChord=*/true);
+    MatcherOptions exactOptions;
+    exactOptions.fbCompareExactChord = true;
+    AttributeMatcher exact("fb", {AttributeMap{{"fb", {"6 3"}}}}, exactOptions);
 
     auto permissiveMatches = permissive.findAll(chorale, 1);
     auto exactMatches = exact.findAll(chorale, 1);
@@ -936,9 +947,9 @@ TEST_CASE(matcher_hint_reduce_compound_folds_both_pattern_and_actual_to_within_a
     AttributeMatcher withoutReduce("hint-14", {AttributeMap{{"hint-14", {"M3"}}}});
     AttributeMatcher m10("hint-14", {AttributeMap{{"hint-14", {"M10"}}}});
     AttributeMatcher m17("hint-14", {AttributeMap{{"hint-14", {"M17"}}}});
-    AttributeMatcher withReduce("hint-14", {AttributeMap{{"hint-14", {"M3"}}}}, /*mintStartAtPreviousToken=*/false,
-                                /*fbCompareExactChord=*/false, /*kernIgnoreOctave=*/false,
-                                /*hintReduceCompound=*/true);
+    MatcherOptions withReduceOptions;
+    withReduceOptions.hintReduceCompound = true;
+    AttributeMatcher withReduce("hint-14", {AttributeMap{{"hint-14", {"M3"}}}}, withReduceOptions);
 
     CHECK(withoutReduce.findAll(chorale, 1).empty());
     auto m10Matches = m10.findAll(chorale, 1);
