@@ -35,6 +35,34 @@ TEST_CASE(query_from_json_reads_mint_start_at_previous_token) {
     CHECK(q.mintStartAtPreviousToken);
 }
 
+TEST_CASE(query_from_json_rejects_mint_start_at_previous_token_for_another_driving_feature) {
+    // The shift only means anything while walking mint's own onsets.
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"mintStartAtPreviousToken":true})")));
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"hint-14","pattern":[{"hint-14":"3"}],"mintStartAtPreviousToken":true})")));
+}
+
+TEST_CASE(query_from_json_accepts_mint_start_at_previous_token_set_to_false_for_any_feature) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"mintStartAtPreviousToken":false})"));
+    CHECK(!q.mintStartAtPreviousToken);
+}
+
+TEST_CASE(query_from_json_rejects_mint_start_at_previous_token_for_a_non_mint_simultaneous_group) {
+    // Each group carries its own driving feature, so the check follows that one, not the
+    // top-level query's.
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"mint",
+        "pattern":[{"mint":"-2"}],
+        "simultaneousWith":[{
+            "feature":"kern",
+            "pattern":[{"kern":"G"}],
+            "mintStartAtPreviousToken":true
+        }]
+    })")));
+}
+
 TEST_CASE(query_from_json_reads_mint_allow_interval_complementation_array) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"mint","pattern":[{"mint":"-5"}],"mintAllowIntervalComplementation":["4","5"]})"));

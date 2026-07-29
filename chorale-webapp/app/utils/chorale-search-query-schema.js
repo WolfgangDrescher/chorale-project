@@ -90,11 +90,33 @@ const searchRequestFieldSchemas = {
     },
 };
 
+// mintStartAtPreviousToken shifts the reported start by one onset of the driving feature, which
+// only means anything while walking mint itself -- the backend rejects `true` next to any other
+// feature, so flag it here too instead of letting the editor suggest a query that can't run.
+// Applies per object: a simultaneousWith group is judged by its own feature, not the query's.
+const mintStartAtPreviousTokenOnlyForMint = [
+    {
+        if: {
+            required: ['feature'],
+            properties: { feature: { not: { const: 'mint' } } },
+        },
+        then: {
+            properties: {
+                mintStartAtPreviousToken: {
+                    const: false,
+                    description: 'mintStartAtPreviousToken can only be true when feature is "mint".',
+                },
+            },
+        },
+    },
+];
+
 const singleQuerySchema = {
     type: 'object',
     title: 'Chorale Search Query',
     required: ['feature', 'pattern'],
     additionalProperties: false,
+    allOf: mintStartAtPreviousTokenOnlyForMint,
     properties: {
         id: {
             type: 'string',
@@ -117,6 +139,7 @@ const singleQuerySchema = {
                 type: 'object',
                 required: ['feature', 'pattern'],
                 additionalProperties: false,
+                allOf: mintStartAtPreviousTokenOnlyForMint,
                 properties: searchRequestFieldSchemas,
             },
         },
