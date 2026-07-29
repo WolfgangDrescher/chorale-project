@@ -427,7 +427,20 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         }
         if (!ok) continue;
 
-        hum::HTp startTok = (shiftStartToPreviousToken && start > 0) ? onsets[start - 1] : onsets[start];
+        // The note the first interval was measured from is the nearest preceding onset that
+        // actually sounds -- rests carry a **mint token of their own but are transparent to
+        // the interval calculation, so they must be skipped here too. If nothing sounds before
+        // the match (the voice starts here, or only rests precede it) there is nothing to shift
+        // back to and the match keeps its own first onset.
+        hum::HTp startTok = onsets[start];
+        if (shiftStartToPreviousToken) {
+            for (std::size_t i = start; i-- > 0;) {
+                if (std::string(*onsets[i]) !=  "r") {
+                    startTok = onsets[i];
+                    break;
+                }
+            }
+        }
 
         AttributeMatch m;
         m.voice = voice;

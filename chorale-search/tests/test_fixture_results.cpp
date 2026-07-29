@@ -311,6 +311,25 @@ TEST_CASE(mint_mixed_input) {
     CHECK_RESULT(results[0], "chor009", 4, "32", "39");
 }
 
+TEST_CASE(mint_start_at_previous_token_skips_a_rest_back_to_the_last_sounding_note) {
+    // chor006's alto has f (whole note, position 13), a quarter rest (position 15), then
+    // a (position 16). **mint reports the a as +M3 because the interval is measured across
+    // the rest from the f -- so the shifted start must be the f at 13, not the rest at 15.
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"mint", {"+M3"}}},
+    };
+    q.voices = "alto";
+    q.mintStartAtPreviousToken = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor006"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 1u);
+    CHECK_RESULT(results[0], "chor006", 3, "13", "16");
+}
+
 TEST_CASE(fb_6_3_exact_chord_in_bass) {
     // Same "6 3" pattern as a permissive search would use, but with fbCompareExactChord
     // set: chords voiced with an extra component beyond the 6th and 3rd (e.g. an added
