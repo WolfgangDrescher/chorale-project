@@ -27,6 +27,7 @@ MatcherOptions matcherOptions(const Query& query) {
     options.fbCompareExactChord = query.fbCompareExactChord;
     options.kernIgnoreOctave = query.kernIgnoreOctave;
     options.hintReduceCompound = query.hintReduceCompound;
+    options.durationAllowSplitNotes = query.durationAllowSplitNotes;
     return options;
 }
 
@@ -40,6 +41,7 @@ MatcherOptions matcherOptions(const Query& query, const SimultaneousGroup& group
     options.fbCompareExactChord = group.fbCompareExactChord.value_or(query.fbCompareExactChord);
     options.kernIgnoreOctave = group.kernIgnoreOctave.value_or(query.kernIgnoreOctave);
     options.hintReduceCompound = group.hintReduceCompound.value_or(query.hintReduceCompound);
+    options.durationAllowSplitNotes = group.durationAllowSplitNotes.value_or(query.durationAllowSplitNotes);
     return options;
 }
 

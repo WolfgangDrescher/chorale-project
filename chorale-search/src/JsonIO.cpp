@@ -180,6 +180,13 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         target.hintReduceCompound = j["hintReduceCompound"].get<bool>();
     }
 
+    if (j.contains("durationAllowSplitNotes")) {
+        if (!j["durationAllowSplitNotes"].is_boolean()) {
+            throw std::invalid_argument("'durationAllowSplitNotes' in " + context + " must be a boolean");
+        }
+        target.durationAllowSplitNotes = j["durationAllowSplitNotes"].get<bool>();
+    }
+
     if (j.contains("simultaneousAlignment")) {
         target.simultaneousAlignment = simultaneousAlignmentFromJson(j["simultaneousAlignment"], "simultaneousAlignment");
     }

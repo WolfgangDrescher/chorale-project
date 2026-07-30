@@ -81,6 +81,12 @@ const searchRequestFieldSchemas = {
         description: 'Affects any "hint-<pair>"/"hint-<voice>" pattern key: folds both the pattern value and the actual interval to within an octave before comparing, so e.g. "3" also matches a 10th.',
         suggestSortText: '6.5',
     },
+    durationAllowSplitNotes: {
+        type: 'boolean',
+        default: true,
+        description: 'Affects any "duration" pattern key: lets a position also be satisfied by consecutive onsets that re-articulate the same note and whose durations add up to one of its values, so e.g. "2" also matches two repeated quarters.',
+        suggestSortText: '6.7',
+    },
     simultaneousAlignment: {
         type: 'string',
         enum: ['start', 'end', 'start-end'],

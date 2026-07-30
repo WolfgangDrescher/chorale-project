@@ -468,4 +468,52 @@ TEST_CASE(deg_cadential_soprano_descent_simultaneous_with_bass_3_4_5_1) {
     CHECK_RESULT(results[1], "chor029", 4, "12", "14");
 }
 
+TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_without_split_notes) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"duration", {"2"}}},
+        AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "4";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor039"));
+    auto results = search.run(q);
+
+    CHECK(results.empty());
+
+    Query q2;
+    q2.feature = "mint";
+    q2.pattern = {
+        AttributeMap{{"duration", {"*"}}},
+        AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+    };
+    q2.voices = "4";
+    
+    CorpusSearch search2(FIXTURE_CHORALE("chor039"));
+    auto results2 = search2.run(q2);
+    
+    CHECK_EQ(results2.size(), 4u);
+}
+
+TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_with_split_notes) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"duration", {"2"}}},
+        AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "4";
+    q.durationAllowSplitNotes = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor039"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 4u);
+    CHECK_RESULT(results[0], "chor039", 4, "12", "14");
+    CHECK_RESULT(results[1], "chor039", 4, "20", "22");
+    CHECK_RESULT(results[2], "chor039", 4, "36", "38");
+    CHECK_RESULT(results[3], "chor039", 4, "44", "46");
+}
+
 TEST_MAIN()

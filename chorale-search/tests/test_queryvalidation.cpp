@@ -13,7 +13,7 @@ using choralesearch::isValidPatternValue;
 TEST_CASE(is_known_simultaneous_group_key_accepts_every_shared_field) {
     for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
                                     "mintAllowIntervalComplementation", "fbCompareExactChord", "kernIgnoreOctave",
-                                    "hintReduceCompound", "simultaneousAlignment"}) {
+                                    "hintReduceCompound", "durationAllowSplitNotes", "simultaneousAlignment"}) {
         CHECK(isKnownSimultaneousGroupKey(key));
     }
 }
@@ -32,7 +32,7 @@ TEST_CASE(is_known_simultaneous_group_key_rejects_unknown_fields) {
 TEST_CASE(is_known_query_key_accepts_every_shared_field_plus_the_query_only_ones) {
     for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
                                     "mintAllowIntervalComplementation", "fbCompareExactChord", "kernIgnoreOctave",
-                                    "hintReduceCompound", "simultaneousAlignment", "id", "limit",
+                                    "hintReduceCompound", "durationAllowSplitNotes", "simultaneousAlignment", "id", "limit",
                                     "simultaneousWith"}) {
         CHECK(isKnownQueryKey(key));
     }

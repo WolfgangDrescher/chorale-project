@@ -32,7 +32,7 @@
 
 CHORALES += $(filter-out kern corpus clean fixtures test,$(MAKECMDGOALS))
 
-FIXTURE_CHORALES := chor001 chor006 chor009 chor029
+FIXTURE_CHORALES := chor001 chor006 chor009 chor029 chor039
 
 GENERATE := ./chorale-search/build/chorale-generate
 MODULATIONS := annotations/bach-modulations.json

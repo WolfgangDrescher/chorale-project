@@ -991,4 +991,96 @@ TEST_CASE(matcher_negated_key_as_a_cross_referenced_constraint) {
     CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
 }
 
+TEST_CASE(matcher_duration_split_matches_a_note_written_as_repeated_shorter_notes) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // The alto opens on a quarter d (pickup) that is re-attacked as another quarter d in
+    // bar 1 -- a half note's worth of d, but never written as one.
+    AttributeMap position{{"kern", {"d"}}, {"duration", {"2"}}};
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+    AttributeMatcher withoutSplits("kern", {position});
+    AttributeMatcher withSplits("kern", {position}, splitOptions);
+
+    auto plainMatches = withoutSplits.findAll(chorale, 3);
+    auto splitMatches = withSplits.findAll(chorale, 3);
+
+    REQUIRE(!plainMatches.empty());
+    CHECK_EQ(splitMatches.size(), plainMatches.size() + 1);
+    // The extra match is the split one, and it spans both onsets of the run.
+    CHECK_EQ(splitMatches[0].startPosition, 0);
+    CHECK_EQ(splitMatches[0].endPosition, 1);
+}
+
+TEST_CASE(matcher_duration_split_requires_the_onsets_to_be_the_same_note) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // Two quarters also add up to a half note when they're different notes (the alto's
+    // d-e in bar 1) -- that isn't one logical note and must not match.
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+    AttributeMatcher withSplits("kern", {AttributeMap{{"duration", {"2"}}}}, splitOptions);
+
+    for (const auto& m : withSplits.findAll(chorale, 3)) {
+        CHECK(m.endPosition - m.startPosition < 2); // no run of two quarters d + e
+    }
+}
+
+TEST_CASE(matcher_duration_split_continues_the_pattern_after_the_run) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // The repeated d's are followed by a quarter e: the split position consumes two onsets,
+    // the next position is checked against the third.
+    std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"d"}}, {"duration", {"2"}}},
+                                       AttributeMap{{"kern", {"e"}}, {"duration", {"4"}}}};
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+
+    CHECK(AttributeMatcher("kern", pattern).findAll(chorale, 3).empty());
+    auto splitMatches = AttributeMatcher("kern", pattern, splitOptions).findAll(chorale, 3);
+    REQUIRE(splitMatches.size() == 1u);
+    CHECK_EQ(splitMatches[0].startPosition, 0);
+    CHECK_EQ(splitMatches[0].endPosition, 2);
+}
+
+TEST_CASE(matcher_duration_split_leaves_a_wildcard_duration_alone) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // Nothing to sum towards, so the position stays a plain one-onset check.
+    AttributeMap position{{"duration", {"*"}}};
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+
+    CHECK_EQ(AttributeMatcher("kern", {position}, splitOptions).findAll(chorale, 3).size(),
+              AttributeMatcher("kern", {position}).findAll(chorale, 3).size());
+}
+
+TEST_CASE(matcher_duration_split_works_off_a_mint_driving_feature) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // **mint writes a unison for a re-attacked note, which is how a split run is recognised
+    // when mint is the feature being walked.
+    AttributeMap position{{"mint", {"+2"}}, {"duration", {"2"}}};
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+
+    auto plainMatches = AttributeMatcher("mint", {position}).findAll(chorale, 3);
+    auto splitMatches = AttributeMatcher("mint", {position}, splitOptions).findAll(chorale, 3);
+    REQUIRE(!plainMatches.empty());
+    CHECK_EQ(splitMatches.size(), plainMatches.size() + 1);
+}
+
+TEST_CASE(matcher_duration_split_keeps_every_plain_match_it_had_without_the_option) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMap position{{"duration", {"2"}}};
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto plainMatches = AttributeMatcher("kern", {position}).findAll(chorale, voice);
+        auto splitMatches = AttributeMatcher("kern", {position}, splitOptions).findAll(chorale, voice);
+        for (const auto& plain : plainMatches) {
+            bool kept = std::any_of(splitMatches.begin(), splitMatches.end(), [&](const auto& s) {
+                return s.startPosition == plain.startPosition;
+            });
+            CHECK(kept);
+        }
+    }
+}
+
 TEST_MAIN()

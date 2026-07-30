@@ -72,12 +72,12 @@ TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
     q.voices = "soprano";
     auto results = search.run(q);
 
-    CHECK_EQ(results.size(), std::size_t{22}); // 6+6+6 fermatas x 3 fixture chorales, plus chor006's 4
+    CHECK_EQ(results.size(), std::size_t{28}); // 6 fermatas x 4 fixture chorales, plus chor006's 4
     std::vector<std::string> ids;
     for (const auto& r : results) ids.push_back(r.choraleId);
     std::sort(ids.begin(), ids.end());
     ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
-    CHECK_EQ(ids, (std::vector<std::string>{"chor001", "chor006", "chor009", "chor029"}));
+    CHECK_EQ(ids, (std::vector<std::string>{"chor001", "chor006", "chor009", "chor029", "chor039"}));
 }
 
 TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
@@ -135,7 +135,7 @@ TEST_CASE(run_with_multiple_queries_tags_each_result_with_its_own_id_or_index) {
         if (*r.queryId == "sopranoFermatas") ++taggedWithId;
         else if (*r.queryId == "1") ++taggedWithIndex;
     }
-    CHECK_EQ(taggedWithId, std::size_t{22});
+    CHECK_EQ(taggedWithId, std::size_t{28});
     CHECK(taggedWithIndex > 0u);
     CHECK_EQ(taggedWithId + taggedWithIndex, results.size());
 }
@@ -392,6 +392,29 @@ TEST_CASE(simultaneous_with_group_can_override_hint_reduce_compound) {
     q.simultaneousWith[0].hintReduceCompound.reset();
     q.hintReduceCompound = true; // query-level, inherited by the group
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{17});
+}
+
+TEST_CASE(simultaneous_with_group_can_override_duration_allow_split_notes) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "kern";
+    q.voices = "3";
+    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+
+    SimultaneousGroup group;
+    group.feature = "kern";
+    group.voices = "3";
+    group.pattern = {AttributeMap{{"kern", {"d"}}, {"duration", {"2"}}}};
+    q.simultaneousWith = {group};
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{3}); // neither overridden nor inherited
+
+    q.simultaneousWith[0].durationAllowSplitNotes = true; // group-level override
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{4});
+
+    q.simultaneousWith[0].durationAllowSplitNotes.reset();
+    q.durationAllowSplitNotes = true; // query-level, inherited by the group
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{4});
 }
 
 TEST_CASE(simultaneous_with_group_can_override_mint_allow_interval_complementation) {

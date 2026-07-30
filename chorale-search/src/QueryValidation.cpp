@@ -14,7 +14,8 @@ namespace {
 // top of this, handled by isKnownQueryKey below.
 const std::vector<std::string> kSharedRequestFieldNames = {
     "feature", "voices", "pattern", "mintStartAtPreviousToken", "mintAllowIntervalComplementation",
-    "fbCompareExactChord", "kernIgnoreOctave", "hintReduceCompound", "simultaneousAlignment",
+    "fbCompareExactChord", "kernIgnoreOctave", "hintReduceCompound", "durationAllowSplitNotes",
+    "simultaneousAlignment",
 };
 
 // The 6 voice-pair spines addIntervalPairSpines() (HumdrumChorale.cpp) generates -- always the

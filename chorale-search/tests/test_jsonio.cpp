@@ -143,6 +143,32 @@ TEST_CASE(query_from_json_defaults_hint_reduce_compound_to_false) {
     CHECK(!q.hintReduceCompound);
 }
 
+TEST_CASE(query_from_json_reads_duration_allow_split_notes) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"duration":"2"}],"durationAllowSplitNotes":true})"));
+    CHECK(q.durationAllowSplitNotes);
+}
+
+TEST_CASE(query_from_json_defaults_duration_allow_split_notes_to_false) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"duration":"2"}]})"));
+    CHECK(!q.durationAllowSplitNotes);
+}
+
+TEST_CASE(query_from_json_reads_simultaneous_with_group_duration_allow_split_notes_override) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{
+            "feature":"kern",
+            "pattern":[{"duration":"2"}],
+            "durationAllowSplitNotes":true
+        }]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    REQUIRE(q.simultaneousWith[0].durationAllowSplitNotes.has_value());
+    CHECK(*q.simultaneousWith[0].durationAllowSplitNotes);
+}
+
 TEST_CASE(query_from_json_reads_simultaneous_with_group_hint_reduce_compound_override) {
     Query q = queryFromJson(json::parse(R"({
         "feature":"kern",
@@ -576,6 +602,11 @@ TEST_CASE(query_from_json_rejects_non_boolean_kern_ignore_octave) {
 TEST_CASE(query_from_json_rejects_non_boolean_hint_reduce_compound) {
     CHECK_THROWS(queryFromJson(json::parse(
         R"({"feature":"hint-14","pattern":[{"hint-14":"3"}],"hintReduceCompound":null})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_boolean_duration_allow_split_notes) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"duration":"2"}],"durationAllowSplitNotes":"yes"})")));
 }
 
 TEST_CASE(query_from_json_rejects_a_compound_mint_allow_interval_complementation_value) {

@@ -19,6 +19,7 @@ struct MatcherOptions {
     bool fbCompareExactChord = false;
     bool kernIgnoreOctave = false;
     bool hintReduceCompound = false;
+    bool durationAllowSplitNotes = false;
 };
 
 // An additional pattern that must have a match starting at the exact same musical position
@@ -38,6 +39,7 @@ struct SimultaneousGroup {
     std::optional<bool> fbCompareExactChord;
     std::optional<bool> kernIgnoreOctave;
     std::optional<bool> hintReduceCompound;
+    std::optional<bool> durationAllowSplitNotes;
     std::optional<std::string> simultaneousAlignment;
 };
 
@@ -94,6 +96,15 @@ struct Query {
     // unison and an octave stay distinct from each other.
     bool hintReduceCompound = false;
 
+    // Affects any "duration" pattern key: by default a position's duration must be the sounding
+    // duration of the single onset it is checked against. When set, a position may instead be
+    // satisfied by a run of consecutive onsets that re-articulate one and the same note (the
+    // same pitch for "kern", a unison step for "mint", the same token otherwise) and whose
+    // durations add up to one of the position's allowed values -- so a pattern asking for a
+    // half note also finds it written as two repeated quarters. Every other key of that
+    // position must hold for the whole run; "fermata" is checked on its closing onset.
+    bool durationAllowSplitNotes = false;
+
     // Only relevant with simultaneousWith: which of a group's own match's positions must
     // line up with the primary match's. One of "start" (default -- just start together),
     // "end" (just end together), or "start-end" (both -- runs for the same duration).
@@ -122,6 +133,7 @@ inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
     if (g.fbCompareExactChord) j["fbCompareExactChord"] = *g.fbCompareExactChord;
     if (g.kernIgnoreOctave) j["kernIgnoreOctave"] = *g.kernIgnoreOctave;
     if (g.hintReduceCompound) j["hintReduceCompound"] = *g.hintReduceCompound;
+    if (g.durationAllowSplitNotes) j["durationAllowSplitNotes"] = *g.durationAllowSplitNotes;
     if (g.simultaneousAlignment) j["simultaneousAlignment"] = *g.simultaneousAlignment;
     return j;
 }
@@ -139,6 +151,7 @@ inline std::ostream& operator<<(std::ostream& os, const Query& q) {
     if (q.fbCompareExactChord) j["fbCompareExactChord"] = true;
     if (q.kernIgnoreOctave) j["kernIgnoreOctave"] = true;
     if (q.hintReduceCompound) j["hintReduceCompound"] = true;
+    if (q.durationAllowSplitNotes) j["durationAllowSplitNotes"] = true;
     if (q.simultaneousAlignment != "start") j["simultaneousAlignment"] = q.simultaneousAlignment;
 
     if (!q.simultaneousWith.empty()) {

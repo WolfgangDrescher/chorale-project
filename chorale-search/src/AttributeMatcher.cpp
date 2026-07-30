@@ -331,10 +331,153 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
     return findTokenAtLine(start, lineNumber);
 }
 
+// Strips the "!" negation prefix (see the pattern loop below). A lone "!" isn't a prefix --
+// there'd be nothing left to negate.
+bool isNegatedKey(const std::string& rawKey) {
+    return rawKey.size() > 1 && rawKey[0] == '!';
+}
+
+std::string stripNegationPrefix(const std::string& rawKey) {
+    return isNegatedKey(rawKey) ? rawKey.substr(1) : rawKey;
+}
+
+// How long the note at this onset actually sounds. tok isn't necessarily **kern (duration can
+// be checked against any driving feature), so getTiedDuration() -- **kern-specific -- is only
+// safe to call once we know it is one.
+hum::HumNum soundingDuration(hum::HTp tok) {
+    return tok->isKern() ? tok->getTiedDuration() : tok->getDuration();
+}
+
+// Whether `tok` continues the logical note `first` started, i.e. whether the two onsets are a
+// re-articulation of one and the same note rather than a move to a new one. What that means
+// depends on the driving feature: **kern re-attacks the same pitch (rhythm and beam/slur
+// markup differ between the two onsets, so only the pitch is compared), **mint records the
+// step *into* each note and so writes a unison for a repetition, and every other spine simply
+// repeats its own token.
+bool continuesLogicalNote(const std::string& drivingFeature, hum::HTp first, hum::HTp tok) {
+    if (drivingFeature == kKernFeature) return kernToPitch(std::string(*first)) == kernToPitch(std::string(*tok));
+    if (drivingFeature == kMintFeature) return mintValueMatches("P1", std::string(*tok));
+    return std::string(*first) == std::string(*tok);
+}
+
 } // namespace
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern, MatcherOptions options)
     : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)), m_options(std::move(options)) {}
+
+std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, std::size_t voice, hum::HTp tok,
+                                                const std::string& rawKey,
+                                                const std::vector<std::string>& allowed) const {
+    // A "!" prefix negates the whole position's result (De Morgan's over the OR-list:
+    // {"!deg": ["3","5"]} means "neither 3 nor 5"), not individual values -- negating single
+    // OR-list entries doesn't compose sensibly.
+    bool negate = isNegatedKey(rawKey);
+    const std::string key = stripNegationPrefix(rawKey);
+    int lineNumber = tok->getLineNumber();
+
+    bool matched;
+    if (isWildcard(allowed)) {
+        matched = true;
+    } else if (isHintPairWildcardKey(key)) {
+        // "hint-*4"/"hint-1*"/"hint-**": true if ANY pair matching the digit pattern
+        // currently satisfies the value, e.g. "is any voice a 10th above the soprano
+        // right now" -- not "are all of them".
+        std::vector<std::string> pairs = expandHintPairKey(key);
+        const std::vector<std::string>& allowedRef = allowed;
+        matched = std::any_of(pairs.begin(), pairs.end(), [&](const std::string& pairFeature) {
+            hum::HTp valTok = lookupToken(chorale, 1, lineNumber, pairFeature);
+            return valTok && hintInList(allowedRef, std::string(*valTok), m_options.hintReduceCompound);
+        });
+    } else if (isHintRelativeKey(key)) {
+        // "hint-2": the interval between whichever voice is currently being searched and
+        // voice 2 specifically -- both sides fixed, so this stays correct across several
+        // pattern positions (unlike wildcarding this digit would, see isHintRelativeKey's
+        // comment).
+        auto pairFeature = resolveHintRelativeKey(key, voice);
+        hum::HTp valTok = pairFeature ? lookupToken(chorale, 1, lineNumber, *pairFeature) : nullptr;
+        matched = valTok && hintInList(allowed, std::string(*valTok), m_options.hintReduceCompound);
+    } else {
+        std::string actual;
+        hum::HTp kernTok = nullptr;
+        if (key == kDurationKey) {
+            actual = hum::Convert::durationToRecip(soundingDuration(tok));
+        } else if (key == kFermataKey) {
+            hum::HTp fermataTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
+            if (!fermataTok) return std::nullopt;
+            actual = fermataTok->hasFermata() ? "true" : "false";
+        } else if (key == m_drivingFeature) {
+            actual = std::string(*tok);
+            kernTok = tok;
+        } else {
+            hum::HTp valTok = lookupToken(chorale, effectiveVoice(key, voice), lineNumber, key);
+            if (!valTok) return std::nullopt;
+            actual = std::string(*valTok);
+            kernTok = valTok;
+        }
+        if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation);
+        else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
+        else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
+        else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave);
+        else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
+        else matched = inList(allowed, actual);
+    }
+    return negate ? !matched : matched;
+}
+
+std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumChorale& chorale, std::size_t voice,
+                                                                 const std::vector<hum::HTp>& onsets,
+                                                                 std::size_t onsetIndex,
+                                                                 const AttributeMap& position) const {
+    const std::vector<std::string>& allowedDurations = position.at(kDurationKey);
+    if (allowedDurations.empty()) return std::nullopt;
+
+    std::vector<hum::HumNum> targets;
+    targets.reserve(allowedDurations.size());
+    for (const std::string& recip : allowedDurations) targets.push_back(hum::Convert::recipToDuration(recip));
+    hum::HumNum maxTarget = *std::max_element(targets.begin(), targets.end());
+
+    hum::HumNum sum(0);
+    for (std::size_t idx = onsetIndex; idx < onsets.size(); ++idx) {
+        hum::HTp tok = onsets[idx];
+        bool isContinuation = idx != onsetIndex;
+        if (isContinuation && !continuesLogicalNote(m_drivingFeature, onsets[onsetIndex], tok)) return std::nullopt;
+
+        for (const auto& [rawKey, allowed] : position) {
+            const std::string key = stripNegationPrefix(rawKey);
+            // duration is what the run as a whole is being summed towards, and fermata belongs
+            // to the note's release -- both are judged once the run closes, below.
+            if (key == kDurationKey || key == kFermataKey) continue;
+            // The driving feature describes the logical note itself, which continuesLogicalNote
+            // has already vouched for; on a continuation onset it says something else entirely
+            // (a **mint unison, a re-attack's own rhythm) and isn't re-checked. Every other
+            // attribute has to hold for the whole run, not just its first onset.
+            if (isContinuation && key == m_drivingFeature) continue;
+            auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+            if (!matched || !*matched) return std::nullopt;
+        }
+
+        sum += soundingDuration(tok);
+
+        if (std::find(targets.begin(), targets.end(), sum) != targets.end()) {
+            std::string sumRecip = hum::Convert::durationToRecip(sum);
+            for (const auto& [rawKey, allowed] : position) {
+                const std::string key = stripNegationPrefix(rawKey);
+                if (key == kFermataKey) {
+                    auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+                    if (!matched || !*matched) return std::nullopt;
+                } else if (key == kDurationKey && isNegatedKey(rawKey)) {
+                    // A negated duration is judged against the summed duration too, so
+                    // "!duration" keeps excluding exactly what "duration" would have matched.
+                    if (isWildcard(allowed) || inList(allowed, sumRecip)) return std::nullopt;
+                }
+            }
+            return idx - onsetIndex + 1;
+        }
+
+        if (sum > maxTarget) return std::nullopt;
+    }
+    return std::nullopt;
+}
 
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
@@ -361,69 +504,30 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
     }
 
     for (std::size_t start = 0; start + n <= onsets.size(); ++start) {
+        // A position may consume more than one onset (see matchSplitPosition), so how far the
+        // pattern has walked is tracked separately from how many positions it has checked.
+        std::size_t idx = start;
         bool ok = true;
         for (std::size_t offset = 0; ok && offset < n; ++offset) {
-            hum::HTp tok = onsets[start + offset];
-            int lineNumber = tok->getLineNumber();
-            for (const auto& [rawKey, allowed] : m_pattern[offset]) {
-                // A "!" prefix negates the whole position's result (De Morgan's over the
-                // OR-list: {"!deg": ["3","5"]} means "neither 3 nor 5"), not individual
-                // values -- negating single OR-list entries doesn't compose sensibly.
-                bool negate = rawKey.size() > 1 && rawKey[0] == '!';
-                const std::string key = negate ? rawKey.substr(1) : rawKey;
+            const AttributeMap& position = m_pattern[offset];
+            auto durationIt = position.find(kDurationKey);
+            bool splitPosition = m_options.durationAllowSplitNotes && durationIt != position.end() &&
+                                 !isWildcard(durationIt->second);
 
-                bool matched;
-                if (isWildcard(allowed)) {
-                    matched = true;
-                } else if (isHintPairWildcardKey(key)) {
-                    // "hint-*4"/"hint-1*"/"hint-**": true if ANY pair matching the digit
-                    // pattern currently satisfies the value, e.g. "is any voice a 10th
-                    // above the soprano right now" -- not "are all of them".
-                    std::vector<std::string> pairs = expandHintPairKey(key);
-                    const std::vector<std::string>& allowedRef = allowed;
-                    matched = std::any_of(pairs.begin(), pairs.end(), [&](const std::string& pairFeature) {
-                        hum::HTp valTok = lookupToken(chorale, 1, lineNumber, pairFeature);
-                        return valTok && hintInList(allowedRef, std::string(*valTok), m_options.hintReduceCompound);
-                    });
-                } else if (isHintRelativeKey(key)) {
-                    // "hint-2": the interval between whichever voice is currently being
-                    // searched and voice 2 specifically -- both sides fixed, so this stays
-                    // correct across several pattern positions (unlike wildcarding this
-                    // digit would, see isHintRelativeKey's comment).
-                    auto pairFeature = resolveHintRelativeKey(key, voice);
-                    hum::HTp valTok = pairFeature ? lookupToken(chorale, 1, lineNumber, *pairFeature) : nullptr;
-                    matched = valTok && hintInList(allowed, std::string(*valTok), m_options.hintReduceCompound);
-                } else {
-                    std::string actual;
-                    hum::HTp kernTok = nullptr;
-                    if (key == kDurationKey) {
-                        // tok isn't necessarily **kern here (duration can be checked
-                        // against any driving feature), so getTiedDuration() -- **kern-
-                        // specific -- is only safe to call once we know it is one.
-                        actual = hum::Convert::durationToRecip(tok->isKern() ? tok->getTiedDuration() : tok->getDuration());
-                    } else if (key == kFermataKey) {
-                        hum::HTp fermataTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
-                        if (!fermataTok) { ok = false; break; }
-                        actual = fermataTok->hasFermata() ? "true" : "false";
-                    } else if (key == m_drivingFeature) {
-                        actual = std::string(*tok);
-                        kernTok = tok;
-                    } else {
-                        hum::HTp valTok = lookupToken(chorale, effectiveVoice(key, voice), lineNumber, key);
-                        if (!valTok) { ok = false; break; }
-                        actual = std::string(*valTok);
-                        kernTok = valTok;
-                    }
-                    if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation);
-                    else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
-                    else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
-                    else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave);
-                    else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
-                    else matched = inList(allowed, actual);
-                }
-                if (negate) matched = !matched;
-                if (!matched) { ok = false; break; }
+            if (splitPosition) {
+                auto consumed = matchSplitPosition(chorale, voice, onsets, idx, position);
+                if (!consumed) { ok = false; break; }
+                idx += *consumed;
+                continue;
             }
+
+            if (idx >= onsets.size()) { ok = false; break; }
+            hum::HTp tok = onsets[idx];
+            for (const auto& [rawKey, allowed] : position) {
+                auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+                if (!matched || !*matched) { ok = false; break; }
+            }
+            ++idx;
         }
         if (!ok) continue;
 
@@ -445,9 +549,9 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         AttributeMatch m;
         m.voice = voice;
         m.startLineNumber = static_cast<std::size_t>(startTok->getLineNumber());
-        m.endLineNumber = static_cast<std::size_t>(onsets[start + n - 1]->getLineNumber());
+        m.endLineNumber = static_cast<std::size_t>(onsets[idx - 1]->getLineNumber());
         m.startPosition = startTok->getDurationFromStart();
-        m.endPosition = onsets[start + n - 1]->getDurationFromStart();
+        m.endPosition = onsets[idx - 1]->getDurationFromStart();
         matches.push_back(std::move(m));
     }
     return matches;
