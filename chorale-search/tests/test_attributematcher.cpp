@@ -1065,6 +1065,65 @@ TEST_CASE(matcher_duration_split_works_off_a_mint_driving_feature) {
     CHECK_EQ(splitMatches.size(), plainMatches.size() + 1);
 }
 
+TEST_CASE(matcher_duration_split_takes_an_octave_leap_for_a_re_attack_under_complementation) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // The bass leaps GG -> G over the first barline (**mint "+P8"): the same note an octave
+    // up, twice a quarter. P8 is P1's complement, so the run only closes over it once the
+    // query has opted into interval complementation.
+    AttributeMap position{{"duration", {"2"}}};
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitAndComplementOptions = splitOptions;
+    splitAndComplementOptions.mintAllowIntervalComplementation = {"1"};
+
+    auto splitMatches = AttributeMatcher("mint", {position}, splitOptions).findAll(chorale, 1);
+    auto complementMatches = AttributeMatcher("mint", {position}, splitAndComplementOptions).findAll(chorale, 1);
+
+    auto startsAtZero = [](const auto& matches) {
+        return std::any_of(matches.begin(), matches.end(), [](const auto& m) {
+            return m.startPosition == 0 && m.endPosition == 1;
+        });
+    };
+    CHECK(!startsAtZero(splitMatches));
+    CHECK(startsAtZero(complementMatches));
+    CHECK_EQ(complementMatches.size(), splitMatches.size() + 1);
+}
+
+TEST_CASE(matcher_duration_split_octave_re_attack_needs_the_unison_octave_pair_opted_in) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // Only "1", "8" or "*" unlock the octave re-attack -- opting in an unrelated number says
+    // nothing about octaves and leaves the run exactly as it was without the option.
+    AttributeMap position{{"duration", {"2"}}};
+    MatcherOptions options;
+    options.durationAllowSplitNotes = true;
+    auto matchesWith = [&](std::vector<std::string> complementation) {
+        options.mintAllowIntervalComplementation = std::move(complementation);
+        return AttributeMatcher("mint", {position}, options).findAll(chorale, 1).size();
+    };
+
+    std::size_t withoutOctaves = matchesWith({});
+    CHECK_EQ(matchesWith({"5"}), withoutOctaves);
+    CHECK_EQ(matchesWith({"2", "3"}), withoutOctaves);
+    CHECK_EQ(matchesWith({"1"}), withoutOctaves + 1);
+    CHECK_EQ(matchesWith({"8"}), withoutOctaves + 1);
+    CHECK_EQ(matchesWith({"*"}), withoutOctaves + 1);
+    CHECK_EQ(matchesWith({"5", "8"}), withoutOctaves + 1);
+}
+
+TEST_CASE(matcher_duration_split_octave_re_attack_does_not_apply_to_a_kern_driving_feature) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // The same GG -> G leap, walked as **kern: complementation is a mint notion, so the run
+    // still needs the identical pitch and this stays two separate quarters.
+    AttributeMap position{{"duration", {"2"}}};
+    MatcherOptions options;
+    options.durationAllowSplitNotes = true;
+    options.mintAllowIntervalComplementation = {"*"};
+
+    auto matches = AttributeMatcher("kern", {position}, options).findAll(chorale, 1);
+    CHECK(std::none_of(matches.begin(), matches.end(),
+                        [](const auto& m) { return m.startPosition == 0; }));
+}
+
 TEST_CASE(matcher_duration_split_keeps_every_plain_match_it_had_without_the_option) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMap position{{"duration", {"2"}}};

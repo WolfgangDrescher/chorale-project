@@ -348,15 +348,25 @@ hum::HumNum soundingDuration(hum::HTp tok) {
     return tok->isKern() ? tok->getTiedDuration() : tok->getDuration();
 }
 
-// Whether `tok` continues the logical note `first` started, i.e. whether the two onsets are a
-// re-articulation of one and the same note rather than a move to a new one. What that means
-// depends on the driving feature: **kern re-attacks the same pitch (rhythm and beam/slur
-// markup differ between the two onsets, so only the pitch is compared), **mint records the
-// step *into* each note and so writes a unison for a repetition, and every other spine simply
-// repeats its own token.
-bool continuesLogicalNote(const std::string& drivingFeature, hum::HTp first, hum::HTp tok) {
+// Whether a **mint octave leap may pass for a re-attack: only for a query that opted the
+// unison-octave pair itself into complementation, P8 being P1's complement.
+bool mintOctaveIsReAttack(const std::vector<std::string>& mintAllowComplementation) {
+    return isWildcard(mintAllowComplementation) || inList(mintAllowComplementation, "1") ||
+           inList(mintAllowComplementation, "8");
+}
+
+// Whether `tok` re-articulates the note `first` started rather than moving to a new one: the
+// same pitch for **kern (rhythm and beam/slur markup differ between the onsets, so only the
+// pitch is compared), a unison -- or, opted in, an octave -- for **mint, which records the
+// step *into* each note, and its own token repeated for every other spine.
+bool continuesLogicalNote(const std::string& drivingFeature, hum::HTp first, hum::HTp tok,
+                           const std::vector<std::string>& mintAllowComplementation) {
     if (drivingFeature == kKernFeature) return kernToPitch(std::string(*first)) == kernToPitch(std::string(*tok));
-    if (drivingFeature == kMintFeature) return mintValueMatches("P1", std::string(*tok));
+    if (drivingFeature == kMintFeature) {
+        std::string actual = std::string(*tok);
+        if (mintValueMatches("P1", actual)) return true;
+        return mintOctaveIsReAttack(mintAllowComplementation) && mintValueMatches("P8", actual);
+    }
     return std::string(*first) == std::string(*tok);
 }
 
@@ -440,7 +450,10 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
     for (std::size_t idx = onsetIndex; idx < onsets.size(); ++idx) {
         hum::HTp tok = onsets[idx];
         bool isContinuation = idx != onsetIndex;
-        if (isContinuation && !continuesLogicalNote(m_drivingFeature, onsets[onsetIndex], tok)) return std::nullopt;
+        if (isContinuation && !continuesLogicalNote(m_drivingFeature, onsets[onsetIndex], tok,
+                                                    m_options.mintAllowIntervalComplementation)) {
+            return std::nullopt;
+        }
 
         for (const auto& [rawKey, allowed] : position) {
             const std::string key = stripNegationPrefix(rawKey);

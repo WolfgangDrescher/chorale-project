@@ -516,4 +516,54 @@ TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_with_split_notes) {
     CHECK_RESULT(results[3], "chor039", 4, "44", "46");
 }
 
+TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata_needs_both_options) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"duration", {"2"}}},
+        AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "bass";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor009"));
+    CHECK(search.run(q).empty()); // neither option
+
+    q.mintAllowIntervalComplementation = {"*"};
+    CHECK(search.run(q).empty()); // the half note still isn't written as one
+
+    q.mintAllowIntervalComplementation.clear();
+    q.durationAllowSplitNotes = true;
+    CHECK(search.run(q).empty()); // the octave leap still isn't a re-attack
+
+    // ...and the two things complementation does here need their own numbers: "8" (or "1")
+    // unlocks the octave re-attack, "5" lets position 1's "-P5" match the written "+P4".
+    q.mintAllowIntervalComplementation = {"5"};
+    CHECK(search.run(q).empty()); // no octave re-attack, so no half note to begin with
+    q.mintAllowIntervalComplementation = {"8"};
+    CHECK(search.run(q).empty()); // the run closes now, but "-P5" doesn't reach the "+P4"
+    q.mintAllowIntervalComplementation = {"5", "8"};
+    CHECK_EQ(search.run(q).size(), 4u); // both, same as the "*" below
+}
+
+TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata) {
+    Query q;
+    q.feature = "mint";
+    q.pattern = {
+        AttributeMap{{"duration", {"2"}}},
+        AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "bass";
+    q.durationAllowSplitNotes = true;
+    q.mintAllowIntervalComplementation = {"*"};
+
+    CorpusSearch search(FIXTURE_CHORALE("chor009"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 4u);
+    CHECK_RESULT(results[0], "chor009", 1, "5", "7");
+    CHECK_RESULT(results[1], "chor009", 1, "13", "15");
+    CHECK_RESULT(results[2], "chor009", 1, "21", "23");
+    CHECK_RESULT(results[3], "chor009", 1, "29", "31");
+}
+
 TEST_MAIN()

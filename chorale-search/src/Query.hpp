@@ -76,7 +76,9 @@ struct Query {
     // interval filling the rest of the octave in the opposite direction ("-P5" <-> "+P4",
     // "+M2" <-> "-m7"). A number listed here opts in every pattern value *written* with that
     // number, so {"mint": "-5"} with {"5"} also matches "+4"; "*" opts in every number.
-    // Empty (the default) means no complementation at all.
+    // Empty (the default) means no complementation at all. Listing the unison-octave pair
+    // itself ("1", "8" or "*") additionally lets an octave leap continue a
+    // durationAllowSplitNotes run (see there).
     std::vector<std::string> mintAllowIntervalComplementation;
 
     // Only relevant when feature == "fb": by default an fb pattern value's figures are a
@@ -99,7 +101,8 @@ struct Query {
     // Affects any "duration" pattern key: by default a position's duration must be the sounding
     // duration of the single onset it is checked against. When set, a position may instead be
     // satisfied by a run of consecutive onsets that re-articulate one and the same note (the
-    // same pitch for "kern", a unison step for "mint", the same token otherwise) and whose
+    // same pitch for "kern", a unison step -- or an octave leap, with "1"/"8"/"*" in
+    // mintAllowIntervalComplementation -- for "mint", the same token otherwise) and whose
     // durations add up to one of the position's allowed values -- so a pattern asking for a
     // half note also finds it written as two repeated quarters. Every other key of that
     // position must hold for the whole run; "fermata" is checked on its closing onset.
