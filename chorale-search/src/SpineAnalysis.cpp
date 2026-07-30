@@ -2,28 +2,49 @@
 
 #include <regex>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 #include <tuple>
 #include <vector>
 
 namespace choralesearch {
 
+namespace {
+
+// The analysis tools are only supposed to add spines, never lines. A differing line count means
+// the following analyses would be misaligned with the original file, so bail out instead.
+void verifyLineCount(const hum::HumdrumFile& infile, int expectedLineCount, const std::string& toolName) {
+    if (infile.getLineCount() != expectedLineCount) {
+        throw std::runtime_error("Tool " + toolName + " changed the line count of the file from " +
+                                 std::to_string(expectedLineCount) + " to " +
+                                 std::to_string(infile.getLineCount()));
+    }
+}
+
+} // namespace
+
 void applySpineAnalysisTools(hum::HumdrumFile& infile) {
+    const int lineCount = infile.getLineCount();
+
     hum::Tool_deg degTool;
     degTool.run(infile);
     if (degTool.hasHumdrumText()) {
         infile.readString(degTool.getHumdrumText());
+        verifyLineCount(infile, lineCount, "deg");
     }
 
     hum::Tool_mint mintTool;
     mintTool.run(infile);
     if (mintTool.hasHumdrumText()) {
         infile.readString(mintTool.getHumdrumText());
+        verifyLineCount(infile, lineCount, "mint");
     }
 
     hum::Tool_metweight metweightTool;
     metweightTool.run(infile);
     if (metweightTool.hasHumdrumText()) {
         infile.readString(metweightTool.getHumdrumText());
+        verifyLineCount(infile, lineCount, "metweight");
     }
 
     hum::Tool_fb fbTool;
@@ -34,6 +55,7 @@ void applySpineAnalysisTools(hum::HumdrumFile& infile) {
         // wouldn't update HumdrumFile's separately cached line text.
         static const std::regex hintRe(R"((^|\t)\*\*hint(?=\t|$))", std::regex::multiline);
         infile.readString(std::regex_replace(fbTool.getHumdrumText(), hintRe, "$1**fb"));
+        verifyLineCount(infile, lineCount, "fb");
     }
 
     std::vector<std::tuple<std::size_t, std::size_t>> hintPairs = {
@@ -55,6 +77,9 @@ void applySpineAnalysisTools(hum::HumdrumFile& infile) {
             exinterp << "$1**hint-" << std::get<0>(hintPair) << std::get<1>(hintPair);
             static const std::regex hintRe(R"((^|\t)\*\*hint(?=\t|$))", std::regex::multiline);
             infile.readString(std::regex_replace(fbTool.getHumdrumText(), hintRe, exinterp.str()));
+            std::stringstream toolName;
+            toolName << "fb --hint " << std::get<0>(hintPair) << std::get<1>(hintPair);
+            verifyLineCount(infile, lineCount, toolName.str());
         }
     }
 }
