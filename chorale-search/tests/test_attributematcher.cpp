@@ -1142,4 +1142,256 @@ TEST_CASE(matcher_duration_split_keeps_every_plain_match_it_had_without_the_opti
     }
 }
 
+TEST_CASE(matcher_duration_merge_matches_positions_written_as_one_longer_note) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // Bar 4's soprano is a half note a followed by the fermata g -- what the other three
+    // voices spell out as a, a, g. Asked for as three quarters, only merging finds it.
+    std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                       AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                       AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}};
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    CHECK(AttributeMatcher("kern", pattern).findAll(chorale, 4).empty());
+    auto mergedMatches = AttributeMatcher("kern", pattern, mergeOptions).findAll(chorale, 4);
+    REQUIRE(mergedMatches.size() == 2u);
+    // The first two positions share the half note, so the match spans two onsets, not three.
+    CHECK_EQ(mergedMatches[0].startPosition, 13);
+    CHECK_EQ(mergedMatches[0].endPosition, 15);
+}
+
+TEST_CASE(matcher_duration_merge_requires_the_positions_to_add_up_exactly) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // A quarter plus a half overshoots a half note, so no run of these two positions can
+    // divide one up -- and no onset in the voice is a dotted whole either.
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+    std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"2"}}}};
+
+    auto plainMatches = AttributeMatcher("kern", pattern).findAll(chorale, 4);
+    auto mergedMatches = AttributeMatcher("kern", pattern, mergeOptions).findAll(chorale, 4);
+    CHECK_EQ(mergedMatches.size(), plainMatches.size());
+}
+
+TEST_CASE(matcher_duration_merge_continues_the_pattern_after_the_run) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // The merged run consumes the half note alone; the position after it is checked against
+    // the next onset, the fermata g.
+    std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4"}}},
+                                       AttributeMap{{"duration", {"4"}}},
+                                       AttributeMap{{"kern", {"g"}}, {"fermata", {"true"}}}};
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    auto mergedMatches = AttributeMatcher("kern", pattern, mergeOptions).findAll(chorale, 4);
+    bool foundBar4 = std::any_of(mergedMatches.begin(), mergedMatches.end(),
+                                  [](const auto& m) { return m.startPosition == 13 && m.endPosition == 15; });
+    CHECK(foundBar4);
+}
+
+TEST_CASE(matcher_duration_merge_leaves_a_wildcard_duration_alone) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // Nothing to divide the onset up by, so the position stays a plain one-onset check.
+    AttributeMap position{{"duration", {"*"}}};
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    CHECK_EQ(AttributeMatcher("kern", {position}, mergeOptions).findAll(chorale, 4).size(),
+              AttributeMatcher("kern", {position}).findAll(chorale, 4).size());
+}
+
+TEST_CASE(matcher_duration_merge_checks_every_other_key_against_the_merged_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // Both positions of the run describe the same single onset, so a fermata asked for by
+    // either of them is the one that onset carries -- bar 4's half note has none.
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+    std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                       AttributeMap{{"duration", {"4"}}, {"fermata", {"true"}}}};
+
+    CHECK(AttributeMatcher("kern", pattern, mergeOptions).findAll(chorale, 4).empty());
+}
+
+TEST_CASE(matcher_duration_merge_holds_a_kern_continuation_to_the_merged_notes_pitch) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // A merged run re-articulates the note it started on, so a "kern" pitch on a later
+    // position is that same pitch. Asking for a different one must not simply be waved
+    // through -- the whole run would otherwise collapse onto one note of the wrong shape.
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    std::vector<AttributeMap> samePitch{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                         AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}}};
+    std::vector<AttributeMap> otherPitch{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                          AttributeMap{{"kern", {"b"}}, {"duration", {"4"}}}};
+
+    // Both patterns also match plain pairs of written quarters, so it is the matches that
+    // collapse onto a single onset -- the merged ones -- that this is about.
+    auto onOneOnset = [](const auto& m) { return m.startPosition == m.endPosition; };
+    auto samePitchMatches = AttributeMatcher("kern", samePitch, mergeOptions).findAll(chorale, 4);
+    auto otherPitchMatches = AttributeMatcher("kern", otherPitch, mergeOptions).findAll(chorale, 4);
+    CHECK_EQ(std::count_if(samePitchMatches.begin(), samePitchMatches.end(), onOneOnset), 3);
+    CHECK_EQ(std::count_if(otherPitchMatches.begin(), otherPitchMatches.end(), onOneOnset), 0);
+}
+
+TEST_CASE(matcher_duration_merge_does_not_let_a_whole_pattern_collapse_onto_one_note) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor039"));
+    // Every position of the pattern adding up to a single onset's duration is a legitimate
+    // run, but only if the onset really answers all of them. A pattern whose last position
+    // asks for a different pitch than its first cannot be one note, however neatly the
+    // durations divide it.
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+    std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                       AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                       AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}};
+
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        for (const auto& m : AttributeMatcher("kern", pattern, mergeOptions).findAll(chorale, voice)) {
+            CHECK(m.endPosition > m.startPosition); // never all three positions on one onset
+        }
+    }
+}
+
+TEST_CASE(matcher_duration_merge_ignores_only_the_rhythm_of_a_kern_continuation) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // The rhythm spelled into a "kern" value is the one thing a merged onset cannot answer
+    // for a later position: its duration is the whole note's, not that position's share of
+    // it. That component is dropped -- "duration" is what constrains the share -- while the
+    // pitch beside it still has to hold.
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    std::vector<AttributeMap> withRhythm{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                          AttributeMap{{"kern", {"4a"}}, {"duration", {"4"}}}};
+    std::vector<AttributeMap> withRhythmWrongPitch{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                                    AttributeMap{{"kern", {"4b"}}, {"duration", {"4"}}}};
+
+    // Same merged runs as the bare "a"/"b" above: the "4" changed nothing, the pitch did.
+    auto onOneOnset = [](const auto& m) { return m.startPosition == m.endPosition; };
+    auto rhythmMatches = AttributeMatcher("kern", withRhythm, mergeOptions).findAll(chorale, 4);
+    auto wrongPitchMatches = AttributeMatcher("kern", withRhythmWrongPitch, mergeOptions).findAll(chorale, 4);
+    CHECK_EQ(std::count_if(rhythmMatches.begin(), rhythmMatches.end(), onOneOnset), 3);
+    CHECK_EQ(std::count_if(wrongPitchMatches.begin(), wrongPitchMatches.end(), onOneOnset), 0);
+}
+
+TEST_CASE(matcher_duration_merge_checks_a_non_driving_features_continuation_against_the_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // Everything that isn't "mint" or "kern" describes the merged note itself, which a
+    // re-attack of it shares -- so a later position's "deg" is judged against the onset like
+    // any other key, whether or not "deg" happens to drive the walk.
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    auto onOneOnset = [](const auto& m) { return m.startPosition == m.endPosition; };
+    for (const std::string& feature : {"kern", "deg"}) {
+        auto degOf = [&](const std::string& deg) {
+            return std::vector<AttributeMap>{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                              AttributeMap{{"deg", {deg}}, {"duration", {"4"}}}};
+        };
+        auto matching = AttributeMatcher(feature, degOf("2"), mergeOptions).findAll(chorale, 4);
+        auto mismatching = AttributeMatcher(feature, degOf("7"), mergeOptions).findAll(chorale, 4);
+        // the merged a's are scale degree 2 in G
+        CHECK_EQ(std::count_if(matching.begin(), matching.end(), onOneOnset), 2);
+        CHECK_EQ(std::count_if(mismatching.begin(), mismatching.end(), onOneOnset), 0);
+    }
+}
+
+TEST_CASE(matcher_duration_merge_judges_a_mint_continuation_as_a_re_attack_under_any_feature) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // The bass's half note D before the final fermata, asked for as a dotted quarter plus a
+    // repeated eighth. Position 1's "mint" describes the step into a re-attack the merged
+    // note doesn't have, so it is judged against the unison such a re-attack would be -- and
+    // that has to hold no matter which feature drives the walk.
+    std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4."}}},
+                                       AttributeMap{{"mint", {"P1"}}, {"duration", {"8"}}},
+                                       AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}}};
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+    mergeOptions.mintAllowIntervalComplementation = {"*"};
+
+    for (const std::string& feature : {"deg", "mint", "kern"}) {
+        auto matches = AttributeMatcher(feature, pattern, mergeOptions).findAll(chorale, 1);
+        REQUIRE(matches.size() == 1u);
+        CHECK_EQ(matches[0].startPosition, 48);
+        CHECK_EQ(matches[0].endPosition, 50);
+    }
+}
+
+TEST_CASE(matcher_duration_merge_rejects_a_mint_continuation_that_is_no_re_attack) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Nothing inside a merged note can be a descending fifth -- there is no second attack for
+    // the interval to be measured into.
+    std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4."}}},
+                                       AttributeMap{{"mint", {"-P5"}}, {"duration", {"8"}}},
+                                       AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}}};
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+    mergeOptions.mintAllowIntervalComplementation = {"*"};
+
+    for (const std::string& feature : {"deg", "mint", "kern"}) {
+        CHECK(AttributeMatcher(feature, pattern, mergeOptions).findAll(chorale, 1).empty());
+    }
+}
+
+TEST_CASE(matcher_duration_merge_takes_an_octave_mint_continuation_only_when_opted_in) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // An octave leap passes for a re-attack on the same terms durationAllowSplitNotes gives
+    // it: the unison-octave pair has to be opted into complementation.
+    std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4."}}},
+                                       AttributeMap{{"mint", {"P8"}}, {"duration", {"8"}}},
+                                       AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}}};
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    mergeOptions.mintAllowIntervalComplementation = {"5"}; // enough for position 2, not for the octave
+    CHECK(AttributeMatcher("deg", pattern, mergeOptions).findAll(chorale, 1).empty());
+
+    mergeOptions.mintAllowIntervalComplementation = {"5", "8"};
+    CHECK_EQ(AttributeMatcher("deg", pattern, mergeOptions).findAll(chorale, 1).size(), std::size_t{1});
+}
+
+TEST_CASE(matcher_duration_merge_keeps_every_plain_match_it_had_without_the_option) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMap position{{"duration", {"2"}}};
+    MatcherOptions mergeOptions;
+    mergeOptions.durationAllowMergedNotes = true;
+
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto plainMatches = AttributeMatcher("kern", {position}).findAll(chorale, voice);
+        auto mergedMatches = AttributeMatcher("kern", {position}, mergeOptions).findAll(chorale, voice);
+        CHECK_EQ(plainMatches.size(), mergedMatches.size()); // a lone position has nothing to merge with
+        for (const auto& plain : plainMatches) {
+            bool kept = std::any_of(mergedMatches.begin(), mergedMatches.end(), [&](const auto& m) {
+                return m.startPosition == plain.startPosition;
+            });
+            CHECK(kept);
+        }
+    }
+}
+
+TEST_CASE(matcher_duration_merge_and_split_can_be_combined) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // The two options describe opposite mismatches between pattern and score, so switching
+    // both on keeps each of them working. In the soprano, bar 4's half note a answers a
+    // pattern of two quarters (merged), and bar 5's repeated quarter cc answers a pattern of
+    // one half note (split).
+    MatcherOptions bothOptions;
+    bothOptions.durationAllowSplitNotes = true;
+    bothOptions.durationAllowMergedNotes = true;
+
+    std::vector<AttributeMap> mergePattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                                            AttributeMap{{"duration", {"4"}}},
+                                            AttributeMap{{"kern", {"g"}}, {"fermata", {"true"}}}};
+    std::vector<AttributeMap> splitPattern{AttributeMap{{"kern", {"cc"}}, {"duration", {"2"}}}};
+
+    CHECK(AttributeMatcher("kern", mergePattern).findAll(chorale, 4).empty());
+    CHECK(AttributeMatcher("kern", splitPattern).findAll(chorale, 4).empty());
+
+    auto mergedMatches = AttributeMatcher("kern", mergePattern, bothOptions).findAll(chorale, 4);
+    CHECK(std::any_of(mergedMatches.begin(), mergedMatches.end(),
+                       [](const auto& m) { return m.startPosition == 13 && m.endPosition == 15; }));
+    CHECK_EQ(AttributeMatcher("kern", splitPattern, bothOptions).findAll(chorale, 4).size(), std::size_t{1});
+}
+
 TEST_MAIN()

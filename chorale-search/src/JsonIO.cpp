@@ -187,6 +187,13 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         target.durationAllowSplitNotes = j["durationAllowSplitNotes"].get<bool>();
     }
 
+    if (j.contains("durationAllowMergedNotes")) {
+        if (!j["durationAllowMergedNotes"].is_boolean()) {
+            throw std::invalid_argument("'durationAllowMergedNotes' in " + context + " must be a boolean");
+        }
+        target.durationAllowMergedNotes = j["durationAllowMergedNotes"].get<bool>();
+    }
+
     if (j.contains("simultaneousAlignment")) {
         target.simultaneousAlignment = simultaneousAlignmentFromJson(j["simultaneousAlignment"], "simultaneousAlignment");
     }

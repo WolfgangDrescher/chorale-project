@@ -566,4 +566,109 @@ TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata) {
     CHECK_RESULT(results[3], "chor009", 1, "29", "31");
 }
 
+TEST_CASE(kern_three_quarters_onto_a_fermata_without_merged_notes) {
+    Query q;
+    q.feature = "kern";
+    q.pattern = {
+        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+        AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "4";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor009"));
+    CHECK(search.run(q).empty());
+}
+
+TEST_CASE(kern_three_quarters_onto_a_fermata_with_merged_notes) {
+    // chor009's soprano writes both of these cadences as a half note a plus the fermata g,
+    // where the lower voices spell the a out as two quarters.
+    Query q;
+    q.feature = "kern";
+    q.pattern = {
+        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+        AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "4";
+    q.durationAllowMergedNotes = true;
+
+    CorpusSearch search(FIXTURE_CHORALE("chor009"));
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 2u);
+    CHECK_RESULT(results[0], "chor009", 4, "13", "15");
+    CHECK_RESULT(results[1], "chor009", 4, "45", "47");
+}
+
+TEST_CASE(mint_dotted_quarter_plus_repeated_eighth_merged_into_a_half_note) {
+    // chor029's bass walks into the final fermata as a half note D plus the cadential fifth
+    // down to GG. Asked for as a dotted quarter plus a repeated eighth, only merging finds
+    // it -- and it has to be found identically whichever feature drives the walk, since the
+    // pattern says nothing about the driving feature either way.
+    for (const std::string& feature : {"mint", "deg", "kern"}) {
+        Query q;
+        q.feature = feature;
+        q.pattern = {
+            AttributeMap{{"mint", {"*"}}, {"duration", {"4."}}},
+            AttributeMap{{"mint", {"P1"}}, {"duration", {"8"}}},
+            AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        };
+        q.voices = "all";
+        q.mintAllowIntervalComplementation = {"*"};
+
+        CorpusSearch search(FIXTURE_CHORALE("chor029"));
+        CHECK(search.run(q).empty()); // without the option the half note is just a half note
+
+        q.durationAllowMergedNotes = true;
+        auto results = search.run(q);
+
+        REQUIRE(results.size() == 1u);
+        CHECK_RESULT(results[0], "chor029", 1, "48", "50");
+    }
+}
+
+TEST_CASE(kern_cadence_needing_a_split_run_and_a_merged_run_in_the_same_match) {
+    // chor103's alto walks into the bar-4 fermata as: a a | g g | c, where the score writes
+    // the two a's out as repeated quarters but the two g's as a single half note. One pattern
+    // spelling both pairs out therefore needs each option for a different position of itself:
+    //
+    //   position 0  "duration": "2"   <- split:  the two written quarter a's, summed
+    //   position 1  "mint": "-M2"     <- merged: the written half note g, shared with...
+    //   position 2  "mint": "P1"      <- ...this position, the repetition the score merged away
+    //   position 3  "mint": "-P5"     <- the fermata c, a fifth below, on its own onset
+    //
+    // Position 2 is also the case that has to stay independent of the driving feature: "kern"
+    // drives here, so its "mint" is a cross-referenced key, and it is judged against the
+    // unison the merged-away re-attack would have been rather than against the half note's
+    // own token.
+    Query q;
+    q.feature = "kern";
+    q.pattern = {
+        AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
+        AttributeMap{{"mint", {"-M2"}}, {"duration", {"4"}}},
+        AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
+        AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    };
+    q.voices = "all";
+    q.mintAllowIntervalComplementation = {"*"};
+
+    CorpusSearch search(FIXTURE_CHORALE("chor103"));
+
+    CHECK(search.run(q).empty()); // neither option
+
+    q.durationAllowSplitNotes = true;
+    CHECK(search.run(q).empty()); // the half note g still answers only one position
+
+    q.durationAllowSplitNotes = false;
+    q.durationAllowMergedNotes = true;
+    CHECK(search.run(q).empty()); // the repeated a's still aren't a half note
+
+    q.durationAllowSplitNotes = true;
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 1u);
+    CHECK_RESULT(results[0], "chor103", 3, "11", "15");
+}
+
 TEST_MAIN()

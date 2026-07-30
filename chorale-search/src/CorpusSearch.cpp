@@ -28,6 +28,7 @@ MatcherOptions matcherOptions(const Query& query) {
     options.kernIgnoreOctave = query.kernIgnoreOctave;
     options.hintReduceCompound = query.hintReduceCompound;
     options.durationAllowSplitNotes = query.durationAllowSplitNotes;
+    options.durationAllowMergedNotes = query.durationAllowMergedNotes;
     return options;
 }
 
@@ -42,6 +43,7 @@ MatcherOptions matcherOptions(const Query& query, const SimultaneousGroup& group
     options.kernIgnoreOctave = group.kernIgnoreOctave.value_or(query.kernIgnoreOctave);
     options.hintReduceCompound = group.hintReduceCompound.value_or(query.hintReduceCompound);
     options.durationAllowSplitNotes = group.durationAllowSplitNotes.value_or(query.durationAllowSplitNotes);
+    options.durationAllowMergedNotes = group.durationAllowMergedNotes.value_or(query.durationAllowMergedNotes);
     return options;
 }
 

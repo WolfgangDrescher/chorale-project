@@ -370,6 +370,36 @@ bool continuesLogicalNote(const std::string& drivingFeature, hum::HTp first, hum
     return std::string(*first) == std::string(*tok);
 }
 
+// The mirror image of continuesLogicalNote's **mint case, for a note the score merged rather
+// than split: whether an OR-list of **mint pattern values would be satisfied by a re-attack of
+// the note a merged run started on. Such a re-attack is a unison by definition -- or an
+// octave, with the same opt-in continuesLogicalNote asks for. Nothing in the score is
+// consulted: the re-attack the values describe is precisely what isn't written there.
+bool mintReAttackInList(const std::vector<std::string>& allowed,
+                         const std::vector<std::string>& mintAllowComplementation) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
+        if (mintValueMatches(v, "P1")) return true;
+        return mintOctaveIsReAttack(mintAllowComplementation) && mintValueMatches(v, "P8");
+    });
+}
+
+// The same for **kern. A re-attack re-articulates the note the merged run started on, so its
+// pitch *is* the merged onset's -- that part is judged exactly as anywhere else, and so is a
+// fermata, which the onset either carries or doesn't. Only the rhythm component has to be
+// dropped: the onset's duration is the whole merged note's, not this position's share of it.
+// Constrain the share with "duration" instead, which is what the run divides the onset up by.
+bool kernReAttackInList(const std::vector<std::string>& allowed, hum::HTp tok, bool ignoreOctave) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
+        auto parsed = parseKernValue(v);
+        if (!parsed) return kernValueMatches(v, tok, ignoreOctave); // literal markup -- no rhythm to drop
+        const auto& [recip, pitch, fermata] = *parsed;
+        if (recip.empty()) return kernValueMatches(v, tok, ignoreOctave);
+        std::string withoutRhythm = pitch + (fermata ? ";" : "");
+        if (withoutRhythm.empty()) return true; // a rhythm and nothing else -- nothing left to judge
+        return kernValueMatches(withoutRhythm, tok, ignoreOctave);
+    });
+}
+
 } // namespace
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern, MatcherOptions options)
@@ -492,6 +522,73 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
     return std::nullopt;
 }
 
+std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& chorale, std::size_t voice, hum::HTp tok,
+                                                        const std::string& rawKey,
+                                                        const std::vector<std::string>& allowed) const {
+    bool negate = isNegatedKey(rawKey);
+    const std::string key = stripNegationPrefix(rawKey);
+
+    bool matched;
+    if (isWildcard(allowed)) {
+        matched = true;
+    } else if (key == kMintFeature) {
+        matched = mintReAttackInList(allowed, m_options.mintAllowIntervalComplementation);
+    } else {
+        hum::HTp kernTok = m_drivingFeature == kKernFeature
+                                ? tok
+                                : lookupToken(chorale, voice, tok->getLineNumber(), kKernFeature);
+        if (!kernTok) return std::nullopt;
+        matched = kernReAttackInList(allowed, kernTok, m_options.kernIgnoreOctave);
+    }
+    return negate ? !matched : matched;
+}
+
+std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumChorale& chorale, std::size_t voice,
+                                                                   hum::HTp tok, std::size_t patternIndex,
+                                                                   hum::HumNum remaining, bool isContinuation) const {
+    if (patternIndex >= m_pattern.size()) return std::nullopt;
+    const AttributeMap& position = m_pattern[patternIndex];
+    auto durationIt = position.find(kDurationKey);
+    // Without a concrete duration there is no share of the onset this position could claim,
+    // so the run cannot reach across it.
+    if (durationIt == position.end() || isWildcard(durationIt->second)) return std::nullopt;
+
+    for (const auto& [rawKey, allowed] : position) {
+        const std::string key = stripNegationPrefix(rawKey);
+        // duration is what the positions of the run are dividing the onset up by, judged below.
+        if (key == kDurationKey) continue;
+        // A later position of the run describes a re-attack the merged onset doesn't have.
+        // Two features say something about that re-attack which the onset's own token can't
+        // answer, and each is judged against what the re-attack *would* have been instead --
+        // see matchReAttackKey. Which feature drives the walk has nothing to do with it:
+        // asking for the same repetition has to mean the same thing either way.
+        if (isContinuation && (key == kMintFeature || key == kKernFeature)) {
+            auto matched = matchReAttackKey(chorale, voice, tok, rawKey, allowed);
+            if (!matched || !*matched) return std::nullopt;
+            continue;
+        }
+        // Everything else is talking about this one onset, the run's own position in the
+        // pattern included: a re-attack of a note has the note's scale degree, its figured
+        // bass, its intervals to the other voices.
+        auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+        if (!matched || !*matched) return std::nullopt;
+    }
+
+    auto negatedDurationIt = position.find("!" + kDurationKey);
+    for (const std::string& recip : durationIt->second) {
+        hum::HumNum value = hum::Convert::recipToDuration(recip);
+        if (value > remaining) continue;
+        // A negated duration excludes the very share this position would be claiming, so
+        // "!duration" keeps excluding exactly what "duration" would have matched.
+        if (negatedDurationIt != position.end() &&
+            (isWildcard(negatedDurationIt->second) || inList(negatedDurationIt->second, recip))) continue;
+        if (value == remaining) return 1;
+        auto rest = matchMergedPositions(chorale, voice, tok, patternIndex + 1, remaining - value, true);
+        if (rest) return *rest + 1;
+    }
+    return std::nullopt;
+}
+
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
     std::size_t n = m_pattern.size();
@@ -507,7 +604,11 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         t = t->getNextToken();
     }
 
-    if (onsets.size() < n) return matches;
+    // A pattern normally needs one onset per position, but a merged run covers several
+    // positions with a single onset (see matchMergedPositions), so with that option on even a
+    // single remaining onset can still carry the rest of the pattern.
+    std::size_t minOnsets = m_options.durationAllowMergedNotes ? 1 : n;
+    if (onsets.size() < minOnsets) return matches;
 
     bool shiftStartToPreviousToken = false;
     if (m_options.mintStartAtPreviousToken && m_drivingFeature == "mint") {
@@ -516,31 +617,45 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         shiftStartToPreviousToken = !firstPositionIsExplicitWildcard;
     }
 
-    for (std::size_t start = 0; start + n <= onsets.size(); ++start) {
-        // A position may consume more than one onset (see matchSplitPosition), so how far the
-        // pattern has walked is tracked separately from how many positions it has checked.
+    for (std::size_t start = 0; start + minOnsets <= onsets.size(); ++start) {
+        // A position may consume more than one onset (matchSplitPosition) and an onset may
+        // cover more than one position (matchMergedPositions), so how far the pattern has
+        // walked is tracked separately from how many positions it has checked.
         std::size_t idx = start;
+        std::size_t offset = 0;
         bool ok = true;
-        for (std::size_t offset = 0; ok && offset < n; ++offset) {
+        while (offset < n) {
             const AttributeMap& position = m_pattern[offset];
             auto durationIt = position.find(kDurationKey);
-            bool splitPosition = m_options.durationAllowSplitNotes && durationIt != position.end() &&
-                                 !isWildcard(durationIt->second);
+            bool concreteDuration = durationIt != position.end() && !isWildcard(durationIt->second);
 
-            if (splitPosition) {
+            if (concreteDuration && m_options.durationAllowSplitNotes) {
                 auto consumed = matchSplitPosition(chorale, voice, onsets, idx, position);
-                if (!consumed) { ok = false; break; }
-                idx += *consumed;
-                continue;
+                if (consumed) { idx += *consumed; ++offset; continue; }
+                // With both options on, a position the pattern splits notes for may still be
+                // the start of a merged run instead -- the two describe opposite mismatches
+                // between pattern and score and never the same one.
+                if (!m_options.durationAllowMergedNotes) { ok = false; break; }
             }
 
             if (idx >= onsets.size()) { ok = false; break; }
             hum::HTp tok = onsets[idx];
+
+            if (concreteDuration && m_options.durationAllowMergedNotes) {
+                auto consumed = matchMergedPositions(chorale, voice, tok, offset, soundingDuration(tok), false);
+                if (!consumed) { ok = false; break; }
+                offset += *consumed;
+                ++idx;
+                continue;
+            }
+
             for (const auto& [rawKey, allowed] : position) {
                 auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
                 if (!matched || !*matched) { ok = false; break; }
             }
+            if (!ok) break;
             ++idx;
+            ++offset;
         }
         if (!ok) continue;
 

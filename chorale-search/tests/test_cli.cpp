@@ -108,7 +108,7 @@ TEST_CASE(cli_json_format_matches_what_corpussearch_finds_directly) {
     nlohmann::json parsed;
     CHECK_NOTHROW(parsed = nlohmann::json::parse(result.stdOut));
     REQUIRE(parsed.is_array());
-    CHECK_EQ(parsed.size(), std::size_t{28}); // 6+4+6+6+6 soprano fermatas across the 5 fixture chorales, see test_corpussearch.cpp
+    CHECK_EQ(parsed.size(), std::size_t{34}); // 6+4+6+6+6+6 soprano fermatas across the 6 fixture chorales, see test_corpussearch.cpp
     REQUIRE(!parsed.empty());
     CHECK(parsed[0].contains("chorale"));
     CHECK(parsed[0].contains("voice"));
@@ -120,7 +120,7 @@ TEST_CASE(cli_table_format_has_a_header_plus_one_row_per_match) {
     REQUIRE(result.exitCode == 0);
     CHECK_EQ(result.stdOut.substr(0, 7), std::string("chorale"));
     auto lineCount = std::count(result.stdOut.begin(), result.stdOut.end(), '\n');
-    CHECK_EQ(lineCount, std::ptrdiff_t{29}); // 1 header + 28 matches
+    CHECK_EQ(lineCount, std::ptrdiff_t{35}); // 1 header + 34 matches
 }
 
 TEST_CASE(cli_accepts_an_array_of_queries_and_tags_results_with_query_id) {

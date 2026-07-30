@@ -43,6 +43,26 @@ private:
                                                    const std::vector<hum::HTp>& onsets, std::size_t onsetIndex,
                                                    const AttributeMap& position) const;
 
+    // Judges a "mint" or "kern" key (possibly "!"-negated) that a merged run's later position
+    // states about the re-attack the merged onset doesn't have, against what that re-attack
+    // *would* have been rather than against the onset's own token -- see the two ...ReAttackInList
+    // helpers. Same contract as matchKey otherwise: negation applied, nullopt when the key
+    // can't be judged at all.
+    std::optional<bool> matchReAttackKey(const HumdrumChorale& chorale, std::size_t voice, hum::HTp tok,
+                                          const std::string& rawKey, const std::vector<std::string>& allowed) const;
+
+    // The converse of matchSplitPosition: consumes one or more consecutive pattern positions
+    // starting at m_pattern[patternIndex] that together describe the single onset `tok`,
+    // until their durations have used up exactly `remaining` (the onset's sounding duration,
+    // minus whatever earlier positions of the run already claimed). Returns how many positions
+    // were consumed, or nullopt if no prefix of them divides the onset up exactly before
+    // overshooting or running into a position without a concrete duration. isContinuation says
+    // whether m_pattern[patternIndex] is itself already part of a started run. Only used when
+    // MatcherOptions::durationAllowMergedNotes is set.
+    std::optional<std::size_t> matchMergedPositions(const HumdrumChorale& chorale, std::size_t voice, hum::HTp tok,
+                                                     std::size_t patternIndex, hum::HumNum remaining,
+                                                     bool isContinuation) const;
+
     std::string m_drivingFeature;
     std::vector<AttributeMap> m_pattern;
     MatcherOptions m_options;

@@ -87,6 +87,12 @@ const searchRequestFieldSchemas = {
         description: 'Affects any "duration" pattern key: lets a position also be satisfied by consecutive onsets that re-articulate the same note and whose durations add up to one of its values, so e.g. "2" also matches two repeated quarters.',
         suggestSortText: '6.7',
     },
+    durationAllowMergedNotes: {
+        type: 'boolean',
+        default: true,
+        description: 'Affects any "duration" pattern key: lets a single onset also satisfy several consecutive positions whose durations add up to exactly its own, so e.g. two quarters also match one half note.',
+        suggestSortText: '6.8',
+    },
     simultaneousAlignment: {
         type: 'string',
         enum: ['start', 'end', 'start-end'],

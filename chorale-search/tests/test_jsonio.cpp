@@ -154,6 +154,32 @@ TEST_CASE(query_from_json_defaults_duration_allow_split_notes_to_false) {
     CHECK(!q.durationAllowSplitNotes);
 }
 
+TEST_CASE(query_from_json_reads_duration_allow_merged_notes) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"duration":"4"}],"durationAllowMergedNotes":true})"));
+    CHECK(q.durationAllowMergedNotes);
+}
+
+TEST_CASE(query_from_json_defaults_duration_allow_merged_notes_to_false) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"duration":"4"}]})"));
+    CHECK(!q.durationAllowMergedNotes);
+}
+
+TEST_CASE(query_from_json_reads_simultaneous_with_group_duration_allow_merged_notes_override) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{
+            "feature":"kern",
+            "pattern":[{"duration":"4"}],
+            "durationAllowMergedNotes":true
+        }]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    REQUIRE(q.simultaneousWith[0].durationAllowMergedNotes.has_value());
+    CHECK(*q.simultaneousWith[0].durationAllowMergedNotes);
+}
+
 TEST_CASE(query_from_json_reads_simultaneous_with_group_duration_allow_split_notes_override) {
     Query q = queryFromJson(json::parse(R"({
         "feature":"kern",
@@ -607,6 +633,11 @@ TEST_CASE(query_from_json_rejects_non_boolean_hint_reduce_compound) {
 TEST_CASE(query_from_json_rejects_non_boolean_duration_allow_split_notes) {
     CHECK_THROWS(queryFromJson(json::parse(
         R"({"feature":"kern","pattern":[{"duration":"2"}],"durationAllowSplitNotes":"yes"})")));
+}
+
+TEST_CASE(query_from_json_rejects_non_boolean_duration_allow_merged_notes) {
+    CHECK_THROWS(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"duration":"4"}],"durationAllowMergedNotes":"yes"})")));
 }
 
 TEST_CASE(query_from_json_rejects_a_compound_mint_allow_interval_complementation_value) {
