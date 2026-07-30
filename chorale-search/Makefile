@@ -17,12 +17,22 @@
 #     own output with none of ctest's own reporter scaffolding around it
 #
 # make clean
+#     remove build/. Leaves external/ alone on purpose, so the next build
+#     needs no network -- fetch-deps.sh sees its .fetched marker and skips
+#
+# make clean-deps
+#     remove external/, forcing the next `make deps` to download again.
+#     Rarely needed: changing a pin in deps.json already invalidates the
+#     marker by itself. This is for a half-extracted or corrupt state
+#
+# make distclean
+#     clean + clean-deps, i.e. back to a freshly cloned tree
 
 SHELL     := /bin/bash
 BUILD_DIR := build
 JOBS      ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: all deps debug clean run-cli test
+.PHONY: all deps debug clean clean-deps distclean run-cli test
 .DEFAULT_GOAL := all
 
 deps:
@@ -38,6 +48,11 @@ debug: deps
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+clean-deps:
+	rm -rf external
+
+distclean: clean clean-deps
 
 run-cli: all
 	./$(BUILD_DIR)/chorale-search $(ARGS)
