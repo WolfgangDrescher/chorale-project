@@ -29,6 +29,7 @@ MatcherOptions matcherOptions(const Query& query) {
     options.hintReduceCompound = query.hintReduceCompound;
     options.durationAllowSplitNotes = query.durationAllowSplitNotes;
     options.durationAllowMergedNotes = query.durationAllowMergedNotes;
+    options.metweightSkipUnclassified = query.metweightSkipUnclassified;
     return options;
 }
 
@@ -44,6 +45,7 @@ MatcherOptions matcherOptions(const Query& query, const SimultaneousGroup& group
     options.hintReduceCompound = group.hintReduceCompound.value_or(query.hintReduceCompound);
     options.durationAllowSplitNotes = group.durationAllowSplitNotes.value_or(query.durationAllowSplitNotes);
     options.durationAllowMergedNotes = group.durationAllowMergedNotes.value_or(query.durationAllowMergedNotes);
+    options.metweightSkipUnclassified = group.metweightSkipUnclassified.value_or(query.metweightSkipUnclassified);
     return options;
 }
 

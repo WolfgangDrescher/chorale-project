@@ -15,9 +15,10 @@ using choralesearch::Result;
 using choralesearch::SimultaneousGroup;
 
 // Every fixture chorale has exactly 6 soprano fermatas except chor006.krn (added
-// for rest-matching coverage), which has only 4 and sorts between chor001 and
-// chor009. Tests below exercise CorpusSearch behaviour (file discovery,
-// aggregation, result mapping, limit truncation), not AttributeMatcher.
+// for rest-matching coverage) with 4, chor005.krn with 8 and chor008.krn with 9
+// (both added for ornament coverage); all three sort between chor001 and chor009.
+// Tests below exercise CorpusSearch behaviour (file discovery, aggregation,
+// result mapping, limit truncation), not AttributeMatcher.
 
 TEST_CASE(run_one_populates_result_fields_from_a_real_match) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
@@ -72,19 +73,20 @@ TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
     q.voices = "soprano";
     auto results = search.run(q);
 
-    CHECK_EQ(results.size(), std::size_t{34}); // 6 fermatas x 5 fixture chorales, plus chor006's 4
+    CHECK_EQ(results.size(), std::size_t{51}); // 6 fermatas x 5 fixture chorales, plus chor005's 8, chor006's 4, chor008's 9
     std::vector<std::string> ids;
     for (const auto& r : results) ids.push_back(r.choraleId);
     std::sort(ids.begin(), ids.end());
     ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
-    CHECK_EQ(ids, (std::vector<std::string>{"chor001", "chor006", "chor009", "chor029", "chor039", "chor103"}));
+    CHECK_EQ(ids, (std::vector<std::string>{"chor001", "chor005", "chor006", "chor008", "chor009", "chor029",
+                                            "chor039", "chor103"}));
 }
 
 TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
-    // findChoraleFiles() sorts, so chor001 < chor006 < chor009 < chor029. chor001 alone has
-    // 6 soprano fermatas, so a limit of 8 must exhaust chor001 and then take 2 more from
-    // chor006 -- exercising the cross-file accumulate-then-truncate logic that's unique to
-    // CorpusSearch::run, not something a single-file test (or AttributeMatcher) can show.
+    // findChoraleFiles() sorts, so chor001 < chor005 < chor006 < chor008 < chor009 < chor029.
+    // chor001 alone has 6 soprano fermatas, so a limit of 8 must exhaust chor001 and then take
+    // 2 more from chor005 -- exercising the cross-file accumulate-then-truncate logic that's
+    // unique to CorpusSearch::run, not something a single-file test (or AttributeMatcher) can show.
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
     Query q;
@@ -96,7 +98,7 @@ TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
 
     REQUIRE(results.size() == 8u);
     for (std::size_t i = 0; i < 6; ++i) CHECK_EQ(results[i].choraleId, std::string("chor001"));
-    for (std::size_t i = 6; i < 8; ++i) CHECK_EQ(results[i].choraleId, std::string("chor006"));
+    for (std::size_t i = 6; i < 8; ++i) CHECK_EQ(results[i].choraleId, std::string("chor005"));
 }
 
 TEST_CASE(run_with_a_single_query_never_sets_query_id) {
@@ -135,7 +137,7 @@ TEST_CASE(run_with_multiple_queries_tags_each_result_with_its_own_id_or_index) {
         if (*r.queryId == "sopranoFermatas") ++taggedWithId;
         else if (*r.queryId == "1") ++taggedWithIndex;
     }
-    CHECK_EQ(taggedWithId, std::size_t{34});
+    CHECK_EQ(taggedWithId, std::size_t{51});
     CHECK(taggedWithIndex > 0u);
     CHECK_EQ(taggedWithId + taggedWithIndex, results.size());
 }
@@ -442,6 +444,33 @@ TEST_CASE(simultaneous_with_group_can_override_duration_allow_merged_notes) {
     q.simultaneousWith[0].durationAllowMergedNotes.reset();
     q.durationAllowMergedNotes = true; // query-level, inherited by the group
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{2});
+}
+
+TEST_CASE(simultaneous_with_group_can_override_metweight_skip_unclassified) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "kern";
+    q.voices = "4";
+    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+
+    SimultaneousGroup group;
+    group.feature = "kern";
+    group.voices = "4";
+    // The soprano's bar-4 cadence with its offbeat neighbour note folded away, so the two a's
+    // it decorates are adjacent -- see test_fixture_results.cpp.
+    group.pattern = {AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
+                      AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
+                      AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}};
+    q.simultaneousWith = {group};
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
+
+    q.simultaneousWith[0].metweightSkipUnclassified = true; // group-level override
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{1});
+
+    q.simultaneousWith[0].metweightSkipUnclassified.reset();
+    q.metweightSkipUnclassified = true; // query-level, inherited by the group
+    CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{1});
 }
 
 TEST_CASE(simultaneous_with_group_can_override_mint_allow_interval_complementation) {

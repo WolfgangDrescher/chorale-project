@@ -194,6 +194,13 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         target.durationAllowMergedNotes = j["durationAllowMergedNotes"].get<bool>();
     }
 
+    if (j.contains("metweightSkipUnclassified")) {
+        if (!j["metweightSkipUnclassified"].is_boolean()) {
+            throw std::invalid_argument("'metweightSkipUnclassified' in " + context + " must be a boolean");
+        }
+        target.metweightSkipUnclassified = j["metweightSkipUnclassified"].get<bool>();
+    }
+
     if (j.contains("simultaneousAlignment")) {
         target.simultaneousAlignment = simultaneousAlignmentFromJson(j["simultaneousAlignment"], "simultaneousAlignment");
     }

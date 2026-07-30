@@ -63,7 +63,7 @@ TARGETS := all build kern corpus clean clean-build clean-deps distclean fixtures
 
 CHORALES += $(filter-out $(TARGETS),$(MAKECMDGOALS))
 
-FIXTURE_CHORALES := chor001 chor006 chor009 chor029 chor039 chor103
+FIXTURE_CHORALES := chor001 chor005 chor006 chor008 chor009 chor029 chor039 chor103
 
 GENERATE := ./chorale-search/build/chorale-generate
 MODULATIONS := annotations/bach-modulations.json

@@ -21,6 +21,7 @@ struct MatcherOptions {
     bool hintReduceCompound = false;
     bool durationAllowSplitNotes = false;
     bool durationAllowMergedNotes = false;
+    bool metweightSkipUnclassified = false;
 };
 
 // An additional pattern that must have a match starting at the exact same musical position
@@ -42,6 +43,7 @@ struct SimultaneousGroup {
     std::optional<bool> hintReduceCompound;
     std::optional<bool> durationAllowSplitNotes;
     std::optional<bool> durationAllowMergedNotes;
+    std::optional<bool> metweightSkipUnclassified;
     std::optional<std::string> simultaneousAlignment;
 };
 
@@ -118,6 +120,15 @@ struct Query {
     // on the run's first position, since the later ones describe re-attacks that aren't there.
     bool durationAllowMergedNotes = false;
 
+    // When set, an onset the walked voice attacks on a metrically unclassified position (its
+    // **metweight is "u") counts as an ornament rather than as a note of its own: the pattern
+    // never sees it, its duration falls to the note it decorates, and the next note's "mint" is
+    // measured across it, from the note before it. So one pattern spelling out the plain
+    // skeleton of a phrase finds both the plain reading and the diminished one -- a neighbour
+    // note, an anticipation, a leap away and back. Rests are never ornaments, and neither is a
+    // voice's very first onset (there is no note in front of it to decorate).
+    bool metweightSkipUnclassified = false;
+
     // Only relevant with simultaneousWith: which of a group's own match's positions must
     // line up with the primary match's. One of "start" (default -- just start together),
     // "end" (just end together), or "start-end" (both -- runs for the same duration).
@@ -148,6 +159,7 @@ inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
     if (g.hintReduceCompound) j["hintReduceCompound"] = *g.hintReduceCompound;
     if (g.durationAllowSplitNotes) j["durationAllowSplitNotes"] = *g.durationAllowSplitNotes;
     if (g.durationAllowMergedNotes) j["durationAllowMergedNotes"] = *g.durationAllowMergedNotes;
+    if (g.metweightSkipUnclassified) j["metweightSkipUnclassified"] = *g.metweightSkipUnclassified;
     if (g.simultaneousAlignment) j["simultaneousAlignment"] = *g.simultaneousAlignment;
     return j;
 }
@@ -167,6 +179,7 @@ inline std::ostream& operator<<(std::ostream& os, const Query& q) {
     if (q.hintReduceCompound) j["hintReduceCompound"] = true;
     if (q.durationAllowSplitNotes) j["durationAllowSplitNotes"] = true;
     if (q.durationAllowMergedNotes) j["durationAllowMergedNotes"] = true;
+    if (q.metweightSkipUnclassified) j["metweightSkipUnclassified"] = true;
     if (q.simultaneousAlignment != "start") j["simultaneousAlignment"] = q.simultaneousAlignment;
 
     if (!q.simultaneousWith.empty()) {

@@ -93,6 +93,12 @@ const searchRequestFieldSchemas = {
         description: 'Affects any "duration" pattern key: lets a single onset also satisfy several consecutive positions whose durations add up to exactly its own, so e.g. two quarters also match one half note.',
         suggestSortText: '6.8',
     },
+    metweightSkipUnclassified: {
+        type: 'boolean',
+        default: true,
+        description: 'Treats an onset on a metrically unclassified position ("metweight": "u") as an ornament rather than a note of its own: the pattern never sees it, its duration falls to the note it decorates, and the next note\'s "mint" is measured across it. Lets one pattern spelling out a plain skeleton find the diminished readings of it too.',
+        suggestSortText: '6.9',
+    },
     simultaneousAlignment: {
         type: 'string',
         enum: ['start', 'end', 'start-end'],

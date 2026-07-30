@@ -1394,4 +1394,143 @@ TEST_CASE(matcher_duration_merge_and_split_can_be_combined) {
     CHECK_EQ(AttributeMatcher("kern", splitPattern, bothOptions).findAll(chorale, 4).size(), std::size_t{1});
 }
 
+TEST_CASE(matcher_metweight_skip_takes_ornamental_onsets_out_of_the_walk) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
+    // The soprano's bar 4 is 8a 8g 4a 4g; -- the offbeat g is a lower neighbour, unclassified
+    // by **metweight. Skipped, it is no onset of its own any more, so the note right after
+    // bar 4's downbeat is the second a rather than that g.
+    MatcherOptions skipOptions;
+    skipOptions.metweightSkipUnclassified = true;
+
+    std::vector<AttributeMap> aThenG{AttributeMap{{"kern", {"a"}}}, AttributeMap{{"kern", {"g"}}}};
+    std::vector<AttributeMap> aThenA{AttributeMap{{"kern", {"a"}}}, AttributeMap{{"kern", {"a"}}}};
+    auto startsAt13 = [](const auto& m) { return m.startPosition == 13; };
+
+    auto plainNeighbour = AttributeMatcher("kern", aThenG).findAll(chorale, 4);
+    auto skippedNeighbour = AttributeMatcher("kern", aThenG, skipOptions).findAll(chorale, 4);
+    CHECK(std::any_of(plainNeighbour.begin(), plainNeighbour.end(), startsAt13));
+    CHECK(!std::any_of(skippedNeighbour.begin(), skippedNeighbour.end(), startsAt13));
+
+    auto plainRepeat = AttributeMatcher("kern", aThenA).findAll(chorale, 4);
+    auto skippedRepeat = AttributeMatcher("kern", aThenA, skipOptions).findAll(chorale, 4);
+    CHECK(!std::any_of(plainRepeat.begin(), plainRepeat.end(), startsAt13));
+    CHECK(std::any_of(skippedRepeat.begin(), skippedRepeat.end(), startsAt13));
+}
+
+TEST_CASE(matcher_metweight_skip_hands_the_ornaments_duration_to_the_note_it_decorates) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    // The soprano's bar 4 is 4.b- 8a- 2a-; -- the offbeat a- anticipates the fermata note and
+    // takes its time from the b- in front of it. With the ornament gone that b- is what it
+    // musically is, a half note, for "duration" and for a "kern" value's own rhythm alike.
+    MatcherOptions skipOptions;
+    skipOptions.metweightSkipUnclassified = true;
+    auto startsAt12 = [](const auto& m) { return m.startPosition == 12; };
+
+    for (const AttributeMap& halfNoteBFlat :
+         {AttributeMap{{"kern", {"b-"}}, {"duration", {"2"}}}, AttributeMap{{"kern", {"2b-"}}}}) {
+        auto plain = AttributeMatcher("kern", {halfNoteBFlat}).findAll(chorale, 4);
+        auto skipped = AttributeMatcher("kern", {halfNoteBFlat}, skipOptions).findAll(chorale, 4);
+        CHECK(!std::any_of(plain.begin(), plain.end(), startsAt12));
+        CHECK(std::any_of(skipped.begin(), skipped.end(), startsAt12));
+    }
+}
+
+TEST_CASE(matcher_metweight_skip_measures_mint_across_the_skipped_ornament) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
+    // Bar 3's last beat is 8cc 8b, bar 4 opens on 8a: **mint writes -M2 into that a, measured
+    // from the passing b. With the b skipped the step is the one the phrase actually makes,
+    // cc down to a -- a minor third.
+    MatcherOptions skipOptions;
+    skipOptions.metweightSkipUnclassified = true;
+    auto startsAt13 = [](const auto& m) { return m.startPosition == 13; };
+
+    AttributeMap writtenStep{{"kern", {"a"}}, {"mint", {"-M2"}}};
+    AttributeMap stepAcrossTheOrnament{{"kern", {"a"}}, {"mint", {"-m3"}}};
+
+    auto written = AttributeMatcher("kern", {writtenStep}, skipOptions).findAll(chorale, 4);
+    auto across = AttributeMatcher("kern", {stepAcrossTheOrnament}, skipOptions).findAll(chorale, 4);
+    CHECK(!std::any_of(written.begin(), written.end(), startsAt13));
+    CHECK(std::any_of(across.begin(), across.end(), startsAt13));
+
+    // Only the interval into the note *after* an ornament is recomputed. Bar 4's second a
+    // follows the skipped neighbour g, so it reads as the repetition it is (P1) rather than
+    // as the +M2 the spine wrote; the fermata g after it has no ornament in front of it and
+    // keeps the spine's own -M2.
+    std::vector<AttributeMap> reducedBar4{AttributeMap{{"kern", {"a"}}, {"mint", {"-m3"}}},
+                                           AttributeMap{{"kern", {"a"}}, {"mint", {"P1"}}},
+                                           AttributeMap{{"kern", {"g"}}, {"mint", {"-M2"}}}};
+    auto matches = AttributeMatcher("kern", reducedBar4, skipOptions).findAll(chorale, 4);
+    REQUIRE(matches.size() == 1u);
+    CHECK_EQ(matches[0].startPosition, 13);
+    CHECK_EQ(matches[0].endPosition, 15);
+}
+
+TEST_CASE(matcher_metweight_skip_never_skips_a_rest_or_a_voices_first_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    // **metweight calls every rest unclassified wherever it falls, and chor006's bar 5 is a
+    // quarter rest in all four voices -- skipping those would silently swallow the rest and
+    // hand its time to the note before it.
+    MatcherOptions skipOptions;
+    skipOptions.metweightSkipUnclassified = true;
+    AttributeMap rest{{"kern", {"r"}}};
+
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        CHECK_EQ(AttributeMatcher("kern", {rest}, skipOptions).findAll(chorale, voice).size(),
+                  AttributeMatcher("kern", {rest}).findAll(chorale, voice).size());
+    }
+
+    // A voice's very first onset has no note in front of it to decorate, so it stays a note of
+    // its own however its own metric position is classified.
+    AttributeMap anyOnset{{"kern", {"*"}}};
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto plain = AttributeMatcher("kern", {anyOnset}).findAll(chorale, voice);
+        auto skipped = AttributeMatcher("kern", {anyOnset}, skipOptions).findAll(chorale, voice);
+        REQUIRE(!plain.empty());
+        REQUIRE(!skipped.empty());
+        CHECK_EQ(skipped[0].startPosition, plain[0].startPosition);
+    }
+}
+
+TEST_CASE(matcher_metweight_skip_keeps_an_ornament_free_voice_exactly_as_it_was) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    // Nothing to fold away means nothing changes: same onsets, same durations, same intervals.
+    MatcherOptions skipOptions;
+    skipOptions.metweightSkipUnclassified = true;
+    AttributeMap anyOnset{{"kern", {"*"}}};
+
+    auto hasNoUnclassifiedOnset = [&](std::size_t voice) {
+        return AttributeMatcher("kern", {AttributeMap{{"metweight", {"u"}}}}).findAll(chorale, voice).empty();
+    };
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        if (!hasNoUnclassifiedOnset(voice)) continue;
+        auto plain = AttributeMatcher("kern", {anyOnset}).findAll(chorale, voice);
+        auto skipped = AttributeMatcher("kern", {anyOnset}, skipOptions).findAll(chorale, voice);
+        REQUIRE(plain.size() == skipped.size());
+        for (std::size_t i = 0; i < plain.size(); ++i) CHECK_EQ(skipped[i].startPosition, plain[i].startPosition);
+    }
+}
+
+TEST_CASE(matcher_metweight_skip_lets_a_split_run_close_over_an_ornament) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
+    // Bar 4's soprano a is a half note's worth of a, written 8a 8g 4a with a neighbour note in
+    // the middle. Skipping the neighbour makes the two a's adjacent, which is what lets a split
+    // run join them -- neither option finds it alone.
+    AttributeMap halfNoteA{{"kern", {"a"}}, {"duration", {"2"}}};
+    MatcherOptions splitOnly;
+    splitOnly.durationAllowSplitNotes = true;
+    MatcherOptions skipOnly;
+    skipOnly.metweightSkipUnclassified = true;
+    MatcherOptions bothOptions;
+    bothOptions.durationAllowSplitNotes = true;
+    bothOptions.metweightSkipUnclassified = true;
+    auto startsAt13 = [](const auto& m) { return m.startPosition == 13; };
+
+    for (const MatcherOptions& tooLittle : {MatcherOptions{}, splitOnly, skipOnly}) {
+        auto matches = AttributeMatcher("kern", {halfNoteA}, tooLittle).findAll(chorale, 4);
+        CHECK(!std::any_of(matches.begin(), matches.end(), startsAt13));
+    }
+    auto matches = AttributeMatcher("kern", {halfNoteA}, bothOptions).findAll(chorale, 4);
+    CHECK(std::any_of(matches.begin(), matches.end(), startsAt13));
+}
+
 TEST_MAIN()

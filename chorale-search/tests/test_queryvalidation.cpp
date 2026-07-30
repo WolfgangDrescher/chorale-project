@@ -14,7 +14,8 @@ TEST_CASE(is_known_simultaneous_group_key_accepts_every_shared_field) {
     for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
                                     "mintAllowIntervalComplementation", "fbCompareExactChord", "kernIgnoreOctave",
                                     "hintReduceCompound", "durationAllowSplitNotes",
-                                    "durationAllowMergedNotes", "simultaneousAlignment"}) {
+                                    "durationAllowMergedNotes", "metweightSkipUnclassified",
+                                    "simultaneousAlignment"}) {
         CHECK(isKnownSimultaneousGroupKey(key));
     }
 }
@@ -34,8 +35,8 @@ TEST_CASE(is_known_query_key_accepts_every_shared_field_plus_the_query_only_ones
     for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
                                     "mintAllowIntervalComplementation", "fbCompareExactChord", "kernIgnoreOctave",
                                     "hintReduceCompound", "durationAllowSplitNotes",
-                                    "durationAllowMergedNotes", "simultaneousAlignment", "id", "limit",
-                                    "simultaneousWith"}) {
+                                    "durationAllowMergedNotes", "metweightSkipUnclassified",
+                                    "simultaneousAlignment", "id", "limit", "simultaneousWith"}) {
         CHECK(isKnownQueryKey(key));
     }
 }

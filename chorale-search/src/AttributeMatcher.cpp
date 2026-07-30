@@ -1,6 +1,7 @@
 #include "AttributeMatcher.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <iterator>
 #include <optional>
 #include <regex>
@@ -18,6 +19,10 @@ const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
 const std::string kFbFeature = "fb";
 const std::string kMetweightFeature = "metweight";
+
+// How Tool_metweight abbreviates a metrically unclassified position -- an onset that falls
+// between the beats the meter classifies, which in these chorales is where the diminution sits.
+const std::string kUnclassifiedMetweight = "u";
 
 // The 6 voice-pair suffixes addIntervalPairSpines() (HumdrumChorale.cpp) generates spines
 // for: 1=bass, 2=tenor, 3=alto, 4=soprano, lower voice number first.
@@ -120,13 +125,17 @@ std::optional<std::tuple<std::string, std::string, bool>> parseKernValue(const s
 // A **kern pattern value independently checks rhythm, pitch-or-rest, and/or fermata,
 // ignoring tie/beam/slur markup. Falls back to a raw literal comparison only for values
 // with characters outside those three components (markup spelled out literally).
-bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok, bool ignoreOctave) {
+// `duration` is how long the note actually lasts -- the onset's own tied duration, except where
+// a skipped ornament handed its own time over to it (see buildOnsets()). It is the same value
+// the "duration" pattern key is judged against, so both stay in step.
+bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok, bool ignoreOctave,
+                       hum::HumNum duration) {
     std::string actual = (std::string)*actualTok;
     auto parsed = parseKernValue(patternValue);
     if (!parsed) return patternValue == actual;
 
     const auto& [recip, pitch, fermata] = *parsed;
-    if (!recip.empty() && recip != hum::Convert::durationToRecip(actualTok->getTiedDuration())) return false;
+    if (!recip.empty() && recip != hum::Convert::durationToRecip(duration)) return false;
     if (!pitch.empty()) {
         std::string actualPitch = kernToPitch(actual);
         bool pitchMatches = ignoreOctave ? hum::Convert::kernToBase40PC(pitch) == hum::Convert::kernToBase40PC(actualPitch)
@@ -137,9 +146,10 @@ bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok, bool 
     return true;
 }
 
-bool kernInList(const std::vector<std::string>& allowed, hum::HTp actualTok, bool ignoreOctave) {
+bool kernInList(const std::vector<std::string>& allowed, hum::HTp actualTok, bool ignoreOctave,
+                 hum::HumNum duration) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        return kernValueMatches(v, actualTok, ignoreOctave);
+        return kernValueMatches(v, actualTok, ignoreOctave, duration);
     });
 }
 
@@ -355,17 +365,19 @@ bool mintOctaveIsReAttack(const std::vector<std::string>& mintAllowComplementati
            inList(mintAllowComplementation, "8");
 }
 
-// Whether `tok` re-articulates the note `first` started rather than moving to a new one: the
-// same pitch for **kern (rhythm and beam/slur markup differ between the onsets, so only the
-// pitch is compared), a unison -- or, opted in, an octave -- for **mint, which records the
-// step *into* each note, and its own token repeated for every other spine.
+// Whether the onset whose token is `tok` (and whose interval into it is `mint`, already
+// measured across any skipped ornament) re-articulates the note `first` started rather than
+// moving to a new one: the same pitch for **kern (rhythm and beam/slur markup differ between
+// the onsets, so only the pitch is compared), a unison -- or, opted in, an octave -- for
+// **mint, which records the step *into* each note, and its own token repeated for every
+// other spine.
 bool continuesLogicalNote(const std::string& drivingFeature, hum::HTp first, hum::HTp tok,
+                           const std::string& mint,
                            const std::vector<std::string>& mintAllowComplementation) {
     if (drivingFeature == kKernFeature) return kernToPitch(std::string(*first)) == kernToPitch(std::string(*tok));
     if (drivingFeature == kMintFeature) {
-        std::string actual = std::string(*tok);
-        if (mintValueMatches("P1", actual)) return true;
-        return mintOctaveIsReAttack(mintAllowComplementation) && mintValueMatches("P8", actual);
+        if (mintValueMatches("P1", mint)) return true;
+        return mintOctaveIsReAttack(mintAllowComplementation) && mintValueMatches("P8", mint);
     }
     return std::string(*first) == std::string(*tok);
 }
@@ -389,15 +401,66 @@ bool mintReAttackInList(const std::vector<std::string>& allowed,
 // dropped: the onset's duration is the whole merged note's, not this position's share of it.
 // Constrain the share with "duration" instead, which is what the run divides the onset up by.
 bool kernReAttackInList(const std::vector<std::string>& allowed, hum::HTp tok, bool ignoreOctave) {
+    // Every value below has had its rhythm component dropped one way or another, so the
+    // duration handed on is never actually consulted.
+    hum::HumNum duration = soundingDuration(tok);
     return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
         auto parsed = parseKernValue(v);
-        if (!parsed) return kernValueMatches(v, tok, ignoreOctave); // literal markup -- no rhythm to drop
+        if (!parsed) return kernValueMatches(v, tok, ignoreOctave, duration); // literal markup -- no rhythm to drop
         const auto& [recip, pitch, fermata] = *parsed;
-        if (recip.empty()) return kernValueMatches(v, tok, ignoreOctave);
+        if (recip.empty()) return kernValueMatches(v, tok, ignoreOctave, duration);
         std::string withoutRhythm = pitch + (fermata ? ";" : "");
         if (withoutRhythm.empty()) return true; // a rhythm and nothing else -- nothing left to judge
-        return kernValueMatches(withoutRhythm, tok, ignoreOctave);
+        return kernValueMatches(withoutRhythm, tok, ignoreOctave, duration);
     });
+}
+
+// The token `spineStart`'s spine has on the line `tok` sits on. The spines run side by side
+// down the file, so this is a step sideways along one line -- the line `tok` already knows it
+// belongs to -- rather than a walk down a spine from its beginning as findTokenAtLine() does.
+// buildOnsets() asks this of every onset it walks, which that one would make quadratic.
+hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart) {
+    if (!tok || !spineStart) return nullptr;
+    int track = spineStart->getTrack();
+    hum::HLp line = tok->getOwner();
+    for (int field = 0; field < line->getFieldCount(); ++field) {
+        hum::HTp candidate = line->token(field);
+        // The leftmost field of the track, which for a split spine is the branch
+        // findTokenAtLine() reaches too -- getNextToken() follows the left side of a split.
+        if (candidate->getTrack() == track) return candidate->isNull() ? nullptr : candidate;
+    }
+    return nullptr;
+}
+
+// The **mint token Tool_mint would have written for the step from `from` to `to`, had the notes
+// in between not been there. Tool_mint::getIntervalToken() spells an interval as quality plus
+// diatonic size out of its own getIntervalQuality() table, and that table is
+// Convert::base40ToIntervalAbbr()'s -- the same entries down to the "X" for the base-40 slots
+// that name no interval at all -- so the public Convert function is used rather than a copy of
+// the protected one. Two things about its output differ from **mint's and are fixed up here: it
+// writes "p"/"a"/"aa" where **mint writes "P"/"A"/"AA", and it marks a descending interval but
+// leaves an ascending one unsigned. (Tool_fb::getIntervalQuality() is a third table, not this
+// one: it reads those unnamed slots as doubly diminished.) The chorales are generated with a
+// plain Tool_mint, no -a/-c/-d/-l, so the highest note of a chord represents the voice. Empty
+// when either side has no pitch to measure from, which leaves the spine's own token in charge.
+std::string mintIntervalToken(hum::HTp from, hum::HTp to) {
+    auto representativePitch = [](hum::HTp tok) {
+        for (int pitch : tok->getBase40PitchesSortHL()) {
+            if (pitch != 0) return std::abs(pitch);
+        }
+        return 0;
+    };
+    int fromPitch = representativePitch(from);
+    int toPitch = representativePitch(to);
+    if (fromPitch == 0 || toPitch == 0) return "";
+
+    int interval = toPitch - fromPitch;
+    std::string token = hum::Convert::base40ToIntervalAbbr(std::abs(interval));
+    for (char& c : token) {
+        if (c == 'p') c = 'P';
+        else if (c == 'a') c = 'A';
+    }
+    return (interval > 0 ? "+" : interval < 0 ? "-" : "") + token;
 }
 
 } // namespace
@@ -405,7 +468,62 @@ bool kernReAttackInList(const std::vector<std::string>& allowed, hum::HTp tok, b
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern, MatcherOptions options)
     : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)), m_options(std::move(options)) {}
 
-std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, std::size_t voice, hum::HTp tok,
+std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const HumdrumChorale& chorale,
+                                                                    std::size_t voice) const {
+    std::vector<Onset> onsets;
+    hum::HTp drivingStart = chorale.spine(m_drivingFeature, effectiveVoice(m_drivingFeature, voice));
+    if (!drivingStart) return onsets;
+
+    std::vector<hum::HTp> tokens;
+    for (hum::HTp t = drivingStart->getNextToken(); t; t = t->getNextToken()) {
+        if (t->getOwner()->isData() && !t->isNull() && !t->isSecondaryTiedNote()) tokens.push_back(t);
+    }
+    onsets.reserve(tokens.size());
+
+    if (!m_options.metweightSkipUnclassified) {
+        for (hum::HTp tok : tokens) onsets.push_back(Onset{tok, soundingDuration(tok), std::nullopt});
+        return onsets;
+    }
+
+    // What makes an onset an ornament is where the *voice* attacks, so both spines are read for
+    // the voice being walked -- the same one "fermata" is looked up in, not the (shared) spine
+    // the driving feature may happen to live in.
+    hum::HTp kernSpine = chorale.spine(kKernFeature, voice);
+    hum::HTp metweightSpine = chorale.spine(kMetweightFeature, voice);
+
+    // The last kept note that actually sounds: what a skipped ornament's successor measures its
+    // interval from, rests being transparent to **mint the same way Tool_mint treats them.
+    hum::HTp lastSoundingNote = nullptr;
+    bool skippedSincePreviousOnset = false;
+
+    for (hum::HTp tok : tokens) {
+        hum::HTp kernTok = tokenBesideOnLine(tok, kernSpine);
+        hum::HTp metweightTok = tokenBesideOnLine(tok, metweightSpine);
+        bool isSoundingNote = kernTok && !kernTok->isRest();
+        // A rest's **metweight is unclassified wherever it falls, so requiring a sounding note
+        // is what keeps rests out; the very first onset has no note in front of it to decorate.
+        bool ornamental = !onsets.empty() && isSoundingNote && metweightTok &&
+                           std::string(*metweightTok) == kUnclassifiedMetweight;
+
+        if (ornamental) {
+            onsets.back().duration += soundingDuration(tok);
+            skippedSincePreviousOnset = true;
+            continue;
+        }
+
+        Onset onset{tok, soundingDuration(tok), std::nullopt};
+        if (skippedSincePreviousOnset && lastSoundingNote && isSoundingNote) {
+            std::string interval = mintIntervalToken(lastSoundingNote, kernTok);
+            if (!interval.empty()) onset.mint = interval;
+        }
+        onsets.push_back(std::move(onset));
+        skippedSincePreviousOnset = false;
+        if (isSoundingNote) lastSoundingNote = kernTok;
+    }
+    return onsets;
+}
+
+std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
                                                 const std::string& rawKey,
                                                 const std::vector<std::string>& allowed) const {
     // A "!" prefix negates the whole position's result (De Morgan's over the OR-list:
@@ -413,6 +531,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
     // OR-list entries doesn't compose sensibly.
     bool negate = isNegatedKey(rawKey);
     const std::string key = stripNegationPrefix(rawKey);
+    hum::HTp tok = onset.token;
     int lineNumber = tok->getLineNumber();
 
     bool matched;
@@ -440,11 +559,16 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         std::string actual;
         hum::HTp kernTok = nullptr;
         if (key == kDurationKey) {
-            actual = hum::Convert::durationToRecip(soundingDuration(tok));
+            actual = hum::Convert::durationToRecip(onset.duration);
         } else if (key == kFermataKey) {
             hum::HTp fermataTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
             if (!fermataTok) return std::nullopt;
             actual = fermataTok->hasFermata() ? "true" : "false";
+        } else if (key == kMintFeature && onset.mint) {
+            // An ornament was skipped in front of this onset, so the spine's own token states
+            // the interval out of that ornament rather than out of the note the pattern is
+            // stepping off -- see buildOnsets().
+            actual = *onset.mint;
         } else if (key == m_drivingFeature) {
             actual = std::string(*tok);
             kernTok = tok;
@@ -457,7 +581,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation);
         else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
         else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
-        else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave);
+        else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave, onset.duration);
         else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
         else matched = inList(allowed, actual);
     }
@@ -465,7 +589,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
 }
 
 std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumChorale& chorale, std::size_t voice,
-                                                                 const std::vector<hum::HTp>& onsets,
+                                                                 const std::vector<Onset>& onsets,
                                                                  std::size_t onsetIndex,
                                                                  const AttributeMap& position) const {
     const std::vector<std::string>& allowedDurations = position.at(kDurationKey);
@@ -478,10 +602,12 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
 
     hum::HumNum sum(0);
     for (std::size_t idx = onsetIndex; idx < onsets.size(); ++idx) {
-        hum::HTp tok = onsets[idx];
+        const Onset& onset = onsets[idx];
         bool isContinuation = idx != onsetIndex;
-        if (isContinuation && !continuesLogicalNote(m_drivingFeature, onsets[onsetIndex], tok,
-                                                    m_options.mintAllowIntervalComplementation)) {
+        if (isContinuation &&
+            !continuesLogicalNote(m_drivingFeature, onsets[onsetIndex].token, onset.token,
+                                  onset.mint.value_or(std::string(*onset.token)),
+                                  m_options.mintAllowIntervalComplementation)) {
             return std::nullopt;
         }
 
@@ -495,18 +621,18 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
             // (a **mint unison, a re-attack's own rhythm) and isn't re-checked. Every other
             // attribute has to hold for the whole run, not just its first onset.
             if (isContinuation && key == m_drivingFeature) continue;
-            auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+            auto matched = matchKey(chorale, voice, onset, rawKey, allowed);
             if (!matched || !*matched) return std::nullopt;
         }
 
-        sum += soundingDuration(tok);
+        sum += onset.duration;
 
         if (std::find(targets.begin(), targets.end(), sum) != targets.end()) {
             std::string sumRecip = hum::Convert::durationToRecip(sum);
             for (const auto& [rawKey, allowed] : position) {
                 const std::string key = stripNegationPrefix(rawKey);
                 if (key == kFermataKey) {
-                    auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+                    auto matched = matchKey(chorale, voice, onset, rawKey, allowed);
                     if (!matched || !*matched) return std::nullopt;
                 } else if (key == kDurationKey && isNegatedKey(rawKey)) {
                     // A negated duration is judged against the summed duration too, so
@@ -522,11 +648,12 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
     return std::nullopt;
 }
 
-std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& chorale, std::size_t voice, hum::HTp tok,
-                                                        const std::string& rawKey,
+std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& chorale, std::size_t voice,
+                                                        const Onset& onset, const std::string& rawKey,
                                                         const std::vector<std::string>& allowed) const {
     bool negate = isNegatedKey(rawKey);
     const std::string key = stripNegationPrefix(rawKey);
+    hum::HTp tok = onset.token;
 
     bool matched;
     if (isWildcard(allowed)) {
@@ -544,7 +671,7 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
 }
 
 std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumChorale& chorale, std::size_t voice,
-                                                                   hum::HTp tok, std::size_t patternIndex,
+                                                                   const Onset& onset, std::size_t patternIndex,
                                                                    hum::HumNum remaining, bool isContinuation) const {
     if (patternIndex >= m_pattern.size()) return std::nullopt;
     const AttributeMap& position = m_pattern[patternIndex];
@@ -563,14 +690,14 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
         // see matchReAttackKey. Which feature drives the walk has nothing to do with it:
         // asking for the same repetition has to mean the same thing either way.
         if (isContinuation && (key == kMintFeature || key == kKernFeature)) {
-            auto matched = matchReAttackKey(chorale, voice, tok, rawKey, allowed);
+            auto matched = matchReAttackKey(chorale, voice, onset, rawKey, allowed);
             if (!matched || !*matched) return std::nullopt;
             continue;
         }
         // Everything else is talking about this one onset, the run's own position in the
         // pattern included: a re-attack of a note has the note's scale degree, its figured
         // bass, its intervals to the other voices.
-        auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+        auto matched = matchKey(chorale, voice, onset, rawKey, allowed);
         if (!matched || !*matched) return std::nullopt;
     }
 
@@ -583,7 +710,7 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
         if (negatedDurationIt != position.end() &&
             (isWildcard(negatedDurationIt->second) || inList(negatedDurationIt->second, recip))) continue;
         if (value == remaining) return 1;
-        auto rest = matchMergedPositions(chorale, voice, tok, patternIndex + 1, remaining - value, true);
+        auto rest = matchMergedPositions(chorale, voice, onset, patternIndex + 1, remaining - value, true);
         if (rest) return *rest + 1;
     }
     return std::nullopt;
@@ -594,15 +721,8 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
     std::size_t n = m_pattern.size();
     if (n == 0) return matches;
 
-    hum::HTp drivingStart = chorale.spine(m_drivingFeature, effectiveVoice(m_drivingFeature, voice));
-    if (!drivingStart) return matches;
-
-    std::vector<hum::HTp> onsets;
-    hum::HTp t = drivingStart->getNextToken();
-    while (t) {
-        if (t->getOwner()->isData() && !t->isNull() && !t->isSecondaryTiedNote()) onsets.push_back(t);
-        t = t->getNextToken();
-    }
+    std::vector<Onset> onsets = buildOnsets(chorale, voice);
+    if (onsets.empty()) return matches;
 
     // A pattern normally needs one onset per position, but a merged run covers several
     // positions with a single onset (see matchMergedPositions), so with that option on even a
@@ -639,10 +759,10 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
             }
 
             if (idx >= onsets.size()) { ok = false; break; }
-            hum::HTp tok = onsets[idx];
+            const Onset& onset = onsets[idx];
 
             if (concreteDuration && m_options.durationAllowMergedNotes) {
-                auto consumed = matchMergedPositions(chorale, voice, tok, offset, soundingDuration(tok), false);
+                auto consumed = matchMergedPositions(chorale, voice, onset, offset, onset.duration, false);
                 if (!consumed) { ok = false; break; }
                 offset += *consumed;
                 ++idx;
@@ -650,7 +770,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
             }
 
             for (const auto& [rawKey, allowed] : position) {
-                auto matched = matchKey(chorale, voice, tok, rawKey, allowed);
+                auto matched = matchKey(chorale, voice, onset, rawKey, allowed);
                 if (!matched || !*matched) { ok = false; break; }
             }
             if (!ok) break;
@@ -664,22 +784,23 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         // the interval calculation, so they must be skipped here too. If nothing sounds before
         // the match (the voice starts here, or only rests precede it) there is nothing to shift
         // back to and the match keeps its own first onset.
-        hum::HTp startTok = onsets[start];
+        hum::HTp startTok = onsets[start].token;
         if (shiftStartToPreviousToken) {
             for (std::size_t i = start; i-- > 0;) {
-                if (std::string(*onsets[i]) !=  "r") {
-                    startTok = onsets[i];
+                if (std::string(*onsets[i].token) !=  "r") {
+                    startTok = onsets[i].token;
                     break;
                 }
             }
         }
 
+        hum::HTp endTok = onsets[idx - 1].token;
         AttributeMatch m;
         m.voice = voice;
         m.startLineNumber = static_cast<std::size_t>(startTok->getLineNumber());
-        m.endLineNumber = static_cast<std::size_t>(onsets[idx - 1]->getLineNumber());
+        m.endLineNumber = static_cast<std::size_t>(endTok->getLineNumber());
         m.startPosition = startTok->getDurationFromStart();
-        m.endPosition = onsets[idx - 1]->getDurationFromStart();
+        m.endPosition = endTok->getDurationFromStart();
         matches.push_back(std::move(m));
     }
     return matches;
