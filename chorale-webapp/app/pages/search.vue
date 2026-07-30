@@ -212,6 +212,7 @@ function applyDemoQuery() {
                                 pageMarginLeft: 42,
                             }"
                             :sections="sectionsForItems(items)"
+                            :scroll-to-first-section="true"
                         />
                     </UCard>
                 </div>
