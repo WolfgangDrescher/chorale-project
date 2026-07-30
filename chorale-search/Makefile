@@ -16,6 +16,10 @@
 #     each test binary directly instead of through ctest, so you get its
 #     own output with none of ctest's own reporter scaffolding around it
 #
+# make run-tests
+#     the same test run, but without building first -- for when you know
+#     build/ is current and want to skip the cmake round trip
+#
 # make clean
 #     remove build/. Leaves external/ alone on purpose, so the next build
 #     needs no network -- fetch-deps.sh sees its .fetched marker and skips
@@ -32,7 +36,7 @@ SHELL     := /bin/bash
 BUILD_DIR := build
 JOBS      ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: all deps debug clean clean-deps distclean run-cli test
+.PHONY: all deps debug clean clean-deps distclean run-cli test run-tests
 .DEFAULT_GOAL := all
 
 deps:
@@ -58,6 +62,12 @@ run-cli: all
 	./$(BUILD_DIR)/chorale-search $(ARGS)
 
 test: all
+	$(MAKE) run-tests
+
+# The test run without a build in front of it. The root Makefile uses this so
+# it can do its single `make -C chorale-search` up front and still run the
+# suite, instead of triggering a second configure+build through `test`.
+run-tests:
 	@status=0; \
 	while IFS= read -r cmd; do \
 		(cd $(BUILD_DIR) && eval "$$cmd") || status=1; \

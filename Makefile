@@ -1,3 +1,14 @@
+# make
+# make all
+#     the whole project: ./kern, ./corpus, and the test suite. The
+#     chorale-search build the three of them need runs exactly once, because
+#     they share it as the `build` prerequisite below rather than each
+#     invoking $(MAKE) -C chorale-search for themselves
+#
+# make build
+#     just the chorale-search binaries (forwards to `make -C chorale-search`).
+#     Rarely needed on its own -- kern, corpus, fixtures and test all pull it in
+#
 # make kern
 #     generate ./kern (bach-370-chorales scores with modulations) from
 #     annotations/bach-modulations.json -- never committed, always derived.
@@ -39,14 +50,16 @@
 #     FIXTURE_CHORALES below -- these ARE committed, unlike ./kern
 #
 # make test
-#     forwards to `make -C chorale-search test`
+#     run the chorale-search test suite (after `build`, via its run-tests
+#     target -- so it does not configure and build a second time)
 
 # Single source of truth for "this is a target, not a chorale id". The catch-all
 # rule at the bottom means anything missing from this list would silently be
 # passed to chorale-generate as a chorale id instead.
-TARGETS := kern corpus clean clean-build clean-deps distclean fixtures test
+TARGETS := all build kern corpus clean clean-build clean-deps distclean fixtures test
 
 .PHONY: $(TARGETS)
+.DEFAULT_GOAL := all
 
 CHORALES += $(filter-out $(TARGETS),$(MAKECMDGOALS))
 
@@ -56,14 +69,17 @@ GENERATE := ./chorale-search/build/chorale-generate
 MODULATIONS := annotations/bach-modulations.json
 SOURCE_KERN := bach-370-chorales/kern
 
-kern:
+all: build kern corpus test
+
+build:
 	$(MAKE) -C chorale-search
+
+kern: build
 	$(GENERATE) $(SOURCE_KERN) kern/bach-370-chorales \
 		--modulations $(MODULATIONS) \
 		$(CHORALES)
 
-corpus:
-	$(MAKE) -C chorale-search
+corpus: build
 	$(GENERATE) $(SOURCE_KERN) corpus/bach-370-chorales \
 		--modulations $(MODULATIONS) \
 		--analysis \
@@ -81,16 +97,15 @@ clean-deps:
 distclean: clean
 	$(MAKE) -C chorale-search distclean
 
-fixtures:
-	$(MAKE) -C chorale-search
+fixtures: build
 	rm -rf chorale-search/tests/fixtures
 	mkdir -p chorale-search/tests/fixtures
 	$(GENERATE) $(SOURCE_KERN) chorale-search/tests/fixtures \
 		--modulations $(MODULATIONS) \
 		$(FIXTURE_CHORALES)
 
-test:
-	$(MAKE) -C chorale-search test
+test: build
+	$(MAKE) -C chorale-search run-tests
 
 # lets chorale IDs passed after `kern` (e.g. `make kern chor001`) be picked up
 # as $(CHORALES) above instead of make trying to build them as targets.
