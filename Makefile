@@ -18,7 +18,20 @@
 #     Takes chorale ids the same way `make kern` does.
 #
 # make clean
-#     remove the generated ./kern and ./corpus directories
+#     remove the generated ./kern and ./corpus directories -- only what this
+#     Makefile itself produces. The chorale-search build survives, so the
+#     next `make kern` does not recompile it; use clean-build for that
+#
+# make clean-build
+#     forwards to `make -C chorale-search clean` (removes its build/)
+#
+# make clean-deps
+#     forwards to `make -C chorale-search clean-deps` (removes its
+#     external/, so the next build downloads the pinned libraries again)
+#
+# make distclean
+#     clean plus everything chorale-search generates, i.e. back to a freshly
+#     cloned tree. Leaves chorale-webapp/ alone -- it has no make targets here
 #
 # make fixtures
 #     wipe chorale-search/tests/fixtures/ and regenerate it (with
@@ -28,9 +41,14 @@
 # make test
 #     forwards to `make -C chorale-search test`
 
-.PHONY: kern corpus clean fixtures test
+# Single source of truth for "this is a target, not a chorale id". The catch-all
+# rule at the bottom means anything missing from this list would silently be
+# passed to chorale-generate as a chorale id instead.
+TARGETS := kern corpus clean clean-build clean-deps distclean fixtures test
 
-CHORALES += $(filter-out kern corpus clean fixtures test,$(MAKECMDGOALS))
+.PHONY: $(TARGETS)
+
+CHORALES += $(filter-out $(TARGETS),$(MAKECMDGOALS))
 
 FIXTURE_CHORALES := chor001 chor006 chor009 chor029 chor039 chor103
 
@@ -53,6 +71,15 @@ corpus:
 
 clean:
 	rm -rf kern corpus
+
+clean-build:
+	$(MAKE) -C chorale-search clean
+
+clean-deps:
+	$(MAKE) -C chorale-search clean-deps
+
+distclean: clean
+	$(MAKE) -C chorale-search distclean
 
 fixtures:
 	$(MAKE) -C chorale-search
