@@ -1,4 +1,5 @@
 #include "AttributeMatcher.hpp"
+#include "HumdrumUtils.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -349,13 +350,6 @@ bool isNegatedKey(const std::string& rawKey) {
 
 std::string stripNegationPrefix(const std::string& rawKey) {
     return isNegatedKey(rawKey) ? rawKey.substr(1) : rawKey;
-}
-
-// How long the note at this onset actually sounds. tok isn't necessarily **kern (duration can
-// be checked against any driving feature), so getTiedDuration() -- **kern-specific -- is only
-// safe to call once we know it is one.
-hum::HumNum soundingDuration(hum::HTp tok) {
-    return tok->isKern() ? tok->getTiedDuration() : tok->getDuration();
 }
 
 // Whether a **mint octave leap may pass for a re-attack: only for a query that opted the

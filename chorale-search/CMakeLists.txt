@@ -31,6 +31,7 @@ add_library(chorale_core STATIC
     src/CorpusSearch.cpp
     src/JsonIO.cpp
     src/QueryValidation.cpp
+    src/Segmentation.cpp
     src/SpineAnalysis.cpp
 )
 target_include_directories(chorale_core PUBLIC
@@ -43,6 +44,9 @@ target_link_libraries(chorale_core PUBLIC humlib)
 add_executable(chorale-search cli/chorale-search.cpp)
 target_link_libraries(chorale-search PRIVATE chorale_core)
 
+add_executable(chorale-segment cli/chorale-segment.cpp)
+target_link_libraries(chorale-segment PRIVATE chorale_core)
+
 add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/SpineAnalysis.cpp)
 target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -51,7 +55,7 @@ target_include_directories(chorale-generate PRIVATE
 target_compile_options(chorale-generate PRIVATE -Wall -Wextra)
 target_link_libraries(chorale-generate PRIVATE humlib)
 
-install(TARGETS chorale-search RUNTIME DESTINATION bin)
+install(TARGETS chorale-search chorale-segment RUNTIME DESTINATION bin)
 
 option(BUILD_TESTS "Build the minitest test binaries in tests/" ON)
 

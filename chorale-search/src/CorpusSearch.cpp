@@ -6,6 +6,7 @@
 
 #include "AttributeMatcher.hpp"
 #include "HumdrumChorale.hpp"
+#include "HumdrumUtils.hpp"
 #include "VoiceMap.hpp"
 
 namespace fs = std::filesystem;
@@ -13,12 +14,6 @@ namespace fs = std::filesystem;
 namespace choralesearch {
 
 namespace {
-
-std::string getHumNumTwoPart(const hum::HumNum& n) {
-    std::ostringstream oss;
-    n.printTwoPart(oss);
-    return oss.str();
-}
 
 MatcherOptions matcherOptions(const Query& query) {
     MatcherOptions options;
@@ -130,8 +125,8 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
             r.feature = query.feature;
             r.voiceLabel = voiceLabel(voice);
             r.voice = m.voice;
-            r.startPosition = getHumNumTwoPart(m.startPosition);
-            r.endPosition = getHumNumTwoPart(m.endPosition);
+            r.startPosition = humNumToString(m.startPosition);
+            r.endPosition = humNumToString(m.endPosition);
             r.startLineNumber = m.startLineNumber;
             r.endLineNumber = m.endLineNumber;
             results.push_back(std::move(r));

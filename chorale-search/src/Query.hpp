@@ -140,7 +140,12 @@ inline nlohmann::json patternToJson(const std::vector<AttributeMap>& pattern) {
     for (const auto& position : pattern) {
         nlohmann::json posJson = nlohmann::json::object();
         for (const auto& [key, values] : position) {
-            posJson[key] = values;
+            // A single acceptable value is written as the plain string a query would spell it
+            // as, not as a one-entry OR-list -- the two mean the same thing (see
+            // docs/patterns#values), and the array form only earns its brackets with a choice
+            // in it.
+            if (values.size() == 1) posJson[key] = values.front();
+            else posJson[key] = values;
         }
         arr.push_back(posJson);
     }
@@ -164,7 +169,10 @@ inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
     return j;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const Query& q) {
+// The inverse of JsonIO's queryFromJson: a query written back out in the form the CLI and the
+// webapp send it in. Every option is omitted while it still holds its default, so a query only
+// ever states what it actually asks for.
+inline nlohmann::json queryToJson(const Query& q) {
     nlohmann::json j;
     if (q.id) j["id"] = *q.id;
     j["feature"] = q.feature;
@@ -188,7 +196,11 @@ inline std::ostream& operator<<(std::ostream& os, const Query& q) {
         j["simultaneousWith"] = groups;
     }
 
-    return os << j.dump(1, '\t') << std::endl;
+    return j;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const Query& q) {
+    return os << queryToJson(q).dump(1, '\t') << std::endl;
 }
 
 } // namespace choralesearch

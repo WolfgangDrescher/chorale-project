@@ -11,6 +11,10 @@
 #
 # make run-cli ARGS="data --query '{...}'"
 #
+# make run-segment ARGS="score.krn --length 4"
+#     the same for chorale-segment, which cuts a score into segments and writes
+#     the query that searches the corpus for each of them
+#
 # make test
 #     build and run the tests/ suite (see tests/test_framework.hpp). Runs
 #     each test binary directly instead of through ctest, so you get its
@@ -36,7 +40,7 @@ SHELL     := /bin/bash
 BUILD_DIR := build
 JOBS      ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: all deps debug clean clean-deps distclean run-cli test run-tests
+.PHONY: all deps debug clean clean-deps distclean run-cli run-segment test run-tests
 .DEFAULT_GOAL := all
 
 deps:
@@ -60,6 +64,9 @@ distclean: clean clean-deps
 
 run-cli: all
 	./$(BUILD_DIR)/chorale-search $(ARGS)
+
+run-segment: all
+	./$(BUILD_DIR)/chorale-segment $(ARGS)
 
 test: all
 	$(MAKE) run-tests
