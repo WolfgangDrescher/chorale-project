@@ -16,7 +16,7 @@
     "@pinia/nuxt": "^1.0.1",
     "better-sqlite3": "^12.11.1",
     "monaco-editor": "^0.56.0",
-    "nuxt": "^4.5.0",
+    "nuxt": "^4.5.1",
     "pinia": "^4.0.2",
     "tailwindcss": "^4.3.3",
     "verovio": "^6.2.0",
