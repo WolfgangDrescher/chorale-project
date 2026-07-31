@@ -27,7 +27,17 @@ function getVoiceStaffRect(systemElem, voiceStaffIndex) {
     return getBBoxElem(staffsInFirstMeasure?.[voiceStaffIndex])?.getBoundingClientRect();
 }
 
+// Verovio keeps the accidental in its own <g class="accid"> next to the notehead, so the
+// note's own bounding box starts at the notehead and cuts the accidental off. Return the
+// accidental's box so the marker's left edge can include it.
+function getAccidRect(elem) {
+    const accidElem = elem?.querySelector?.('.accid:not(.bounding-box)');
+    const rect = getBBoxElem(accidElem)?.getBoundingClientRect();
+    return rect?.width > 0 ? rect : null;
+}
+
 function createMarker(startElem, endElem, systemElem, containerElem, color, voiceStaffIndex = null) {
+    const startAccidRect = getAccidRect(startElem);
     endElem = getBBoxElem(endElem) || endElem;
 
     const systemFirstMeasureStaffRect = selectBBoxElem(systemElem, '.measure .staff')?.getBoundingClientRect();
@@ -44,7 +54,9 @@ function createMarker(startElem, endElem, systemElem, containerElem, color, voic
     const heightExtender = 15;
     const height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y  + heightExtender;
 
-    const xPosStart = startRect ? startRect.x : (systemFirstMeasureStaffRect ? systemFirstMeasureStaffRect.x: systemRect.x);
+    const xPosStart = startRect
+        ? Math.min(startRect.x, startAccidRect?.x ?? startRect.x)
+        : (systemFirstMeasureStaffRect ? systemFirstMeasureStaffRect.x: systemRect.x);
     const xPosEnd = endRect ? endRect.right : getBBoxElem([...systemElem.querySelectorAll('.measure:not(.bounding-box)')].at(-1).querySelector('.staff:not(.bounding-box)'))?.getBoundingClientRect().right;
 
     const widthExtender = 15;
