@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <set>
 
 #include <nlohmann/json.hpp>
 
@@ -31,6 +33,9 @@ void printUsage(const char* argv0) {
         "    --format table|json   output format (default: table)\n"
         "    --group-by-chorale    with --format json, group results into an object keyed\n"
         "                          by choraleId instead of a flat array\n"
+        "    --stats               output aggregated statistics about the matches as JSON\n"
+        "                          (total matches, chorales hit, per-query breakdown)\n"
+        "                          instead of the matches themselves\n"
         "    --no-analysis         read the analysis spines (**deg, **mint, ...) straight from\n"
         "                          the corpus instead of deriving them per run -- for a corpus\n"
         "                          built by chorale-generate --analysis\n"
@@ -61,6 +66,49 @@ void printJson(const Results& results, bool groupByChorale) {
     std::cerr << results.size() << " match(es)\n";
 }
 
+// How the matches are spread, not where they are: what a caller wants when a query's results
+// are only ever counted -- e.g. one segment query of many, judged by how common its passage is.
+void printStats(const Results& results) {
+    std::set<std::string> chorales;
+    std::map<std::string, std::size_t> matchesPerChorale;
+    for (const Result& r : results) {
+        chorales.insert(r.choraleId);
+        ++matchesPerChorale[r.choraleId];
+    }
+
+    nlohmann::json j;
+    j["matches"] = results.size();
+    j["choraleCount"] = chorales.size();
+
+    // Per-query breakdown, in first-seen order (the order the caller sent them in), so a
+    // combined run of segment queries reads back as the segments do. Queries that matched
+    // nothing can't appear here -- the caller knows its own query list and reads absence as 0.
+    bool hasQueryId = std::any_of(results.begin(), results.end(), [](const Result& r) { return r.queryId.has_value(); });
+    if (hasQueryId) {
+        std::vector<std::string> order;
+        std::map<std::string, std::pair<std::size_t, std::set<std::string>>> byQuery; // matches, chorales
+        for (const Result& r : results) {
+            const std::string id = r.queryId.value_or("");
+            if (!byQuery.count(id)) order.push_back(id);
+            auto& entry = byQuery[id];
+            ++entry.first;
+            entry.second.insert(r.choraleId);
+        }
+        nlohmann::json queries = nlohmann::json::array();
+        for (const std::string& id : order) {
+            queries.push_back({
+                {"queryId", id},
+                {"matches", byQuery[id].first},
+                {"choraleCount", byQuery[id].second.size()},
+            });
+        }
+        j["byQuery"] = std::move(queries);
+    }
+
+    std::cout << j.dump(1, '\t') << '\n';
+    std::cerr << results.size() << " match(es)\n";
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -76,6 +124,7 @@ int main(int argc, char** argv) {
     std::string format = "table";
     bool groupByChorale = false;
     bool applyAnalysis = true;
+    bool stats = false;
 
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
@@ -88,6 +137,7 @@ int main(int argc, char** argv) {
             else if (arg == "--query") { queryString = next("--query"); haveQueryString = true; }
             else if (arg == "--format") { format = next("--format"); }
             else if (arg == "--group-by-chorale") { groupByChorale = true; }
+            else if (arg == "--stats") { stats = true; }
             else if (arg == "--no-analysis") { applyAnalysis = false; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else {
@@ -121,6 +171,11 @@ int main(int argc, char** argv) {
         printUsage(argv[0]);
         return kExitInvalidArgumentError;
     }
+    if (stats && groupByChorale) {
+        std::cerr << "Error: --stats and --group-by-chorale are mutually exclusive\n\n";
+        printUsage(argv[0]);
+        return kExitInvalidArgumentError;
+    }
 
     try {
         nlohmann::json j;
@@ -141,7 +196,9 @@ int main(int argc, char** argv) {
             results = search.run(query);
         }
 
-        if (format == "json") {
+        if (stats) {
+            printStats(results); // stats are always JSON
+        } else if (format == "json") {
             printJson(results, groupByChorale);
         } else {
             printTable(results);
