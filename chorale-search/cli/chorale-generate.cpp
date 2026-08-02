@@ -33,11 +33,18 @@ void processChorale(const std::string& choraleId, const std::vector<Modulation>&
     // relative to the key in effect, so a key designation added above changes the degrees.
     if (applyAnalysis) choralesearch::applySpineAnalysisTools(infile);
 
+    // Remove instrument tandem interpretations (*ICvox, *Ibass, *I" names, *I' abbreviations)
+    // Backwards, since deleteLine shifts everything after it.
+    for (int i = infile.getLineCount() - 1; i >= 0; --i) {
+        if (infile[i].compare(0, 2, "*I") == 0) infile.deleteLine(i);
+    }
+
     fs::path outPath = outDir / (choraleId + ".krn");
     std::ofstream out(outPath);
     if (!out.is_open()) {
         throw std::runtime_error("Could not write file: " + outPath.string());
     }
+
     out << infile;
     std::cout << "generated " << choraleId << "\n";
 }
