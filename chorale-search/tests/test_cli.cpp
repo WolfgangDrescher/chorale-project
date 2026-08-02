@@ -173,4 +173,36 @@ TEST_CASE(cli_rejects_an_empty_query_array) {
     CHECK(result.exitCode != 0);
 }
 
+TEST_CASE(cli_accepts_comments_inside_query_json) {
+    auto queryFile = writeTempQueryFile(
+        "{\n"
+        "    // the driving feature\n"
+        "    \"feature\": \"kern\",\n"
+        "    \"voices\": \"soprano\",\n"
+        "    \"pattern\": [{\"fermata\": true}] /* every held note */\n"
+        "}\n");
+    auto viaQuery = runCli({fixturesDir(), "--query", "{\"feature\":\"kern\",\"voices\":\"soprano\",\n// held\n\"pattern\":[{\"fermata\":true}]}", "--format", "json"});
+    auto viaQueryFile = runCli({fixturesDir(), "--query-file", queryFile, "--format", "json"});
+    REQUIRE(viaQuery.exitCode == 0);
+    REQUIRE(viaQueryFile.exitCode == 0);
+    CHECK_EQ(viaQuery.stdOut, viaQueryFile.stdOut);
+}
+
+TEST_CASE(cli_stats_reports_aggregates_instead_of_matches) {
+    auto queryFile = writeTempQueryFile(R"({"feature":"kern","voices":"soprano","pattern":[{"fermata":true}]})");
+    auto result = runCli({fixturesDir(), "--query-file", queryFile, "--stats"});
+    REQUIRE(result.exitCode == 0);
+
+    nlohmann::json parsed;
+    CHECK_NOTHROW(parsed = nlohmann::json::parse(result.stdOut));
+    CHECK_EQ(parsed.at("matches").get<std::size_t>(), std::size_t{51}); // same matches the json format reports
+    CHECK_EQ(parsed.at("choraleCount").get<std::size_t>(), std::size_t{8});
+    CHECK(!parsed.contains("byQuery")); // a single query has no per-query breakdown
+}
+
+TEST_CASE(cli_stats_and_group_by_chorale_are_mutually_exclusive) {
+    auto result = runCli({fixturesDir(), "--query", "{}", "--stats", "--group-by-chorale", "--format", "json"});
+    CHECK(result.exitCode != 0);
+}
+
 TEST_MAIN()
