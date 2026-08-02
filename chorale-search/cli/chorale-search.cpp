@@ -125,11 +125,11 @@ int main(int argc, char** argv) {
     try {
         nlohmann::json j;
         if (haveQueryString) {
-            j = nlohmann::json::parse(queryString);
+            j = nlohmann::json::parse(queryString, nullptr, true, /*ignore_comments=*/true);
         } else {
             std::ifstream f(queryFile);
             if (!f.is_open()) throw std::runtime_error("Could not open query file: " + queryFile);
-            f >> j;
+            j = nlohmann::json::parse(f, nullptr, true, /*ignore_comments=*/true);
         }
         CorpusSearch search(corpusDir, applyAnalysis);
         Results results;
