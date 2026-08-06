@@ -5,6 +5,28 @@
 using choralesearch::findTokenAtLine;
 using choralesearch::HumdrumChorale;
 
+namespace {
+
+// The line a spine's data token sits on `position` quarter notes into the piece. The tests name
+// where in the music they mean and look the line up, because a line number moves whenever
+// anything above it does -- a header record dropped from the fixtures moved all of them once.
+int dataLineAtPosition(hum::HTp spineStart, hum::HumNum position) {
+    for (hum::HTp token = spineStart; token; token = token->getNextToken()) {
+        if (token->isData() && token->getDurationFromStart() == position) return token->getLineNumber();
+    }
+    return -1;
+}
+
+// The same for the barline a spine reaches at that position.
+int barlineAtPosition(hum::HTp spineStart, hum::HumNum position) {
+    for (hum::HTp token = spineStart; token; token = token->getNextToken()) {
+        if (token->isBarline() && token->getDurationFromStart() == position) return token->getLineNumber();
+    }
+    return -1;
+}
+
+} // namespace
+
 TEST_CASE(constructor_sets_path_and_id_from_the_filename_stem) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CHECK_EQ(chorale.id(), std::string("chor029"));
@@ -50,10 +72,12 @@ TEST_CASE(spine_returns_null_for_an_out_of_range_voice) {
 
 TEST_CASE(spine_voice_order_matches_bass_tenor_alto_soprano_columns) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // Line 23 is the chorale's first full onset in every voice, with a
-    // different pitch in each column: 4G(bass) 4B(tenor) 4d(alto) 4g(soprano).
+    // The downbeat of bar 1, the chorale's first full onset, with a different pitch in every
+    // column: 4G(bass) 4B(tenor) 4d(alto) 4g(soprano).
+    const int line = dataLineAtPosition(chorale.spine("kern", 1), 0);
+    REQUIRE(line > 0);
     auto tokenTextAt = [&](std::size_t voice) {
-        auto tok = findTokenAtLine(chorale.spine("kern", voice), 23);
+        auto tok = findTokenAtLine(chorale.spine("kern", voice), line);
         REQUIRE(tok != nullptr);
         return std::string(*tok);
     };
@@ -65,23 +89,29 @@ TEST_CASE(spine_voice_order_matches_bass_tenor_alto_soprano_columns) {
 
 TEST_CASE(find_token_at_line_returns_null_for_a_null_token) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // Line 27's bass column is "." (still sounding the previous note) --
-    // no onset there, so this must not be treated as a match.
-    CHECK(findTokenAtLine(chorale.spine("kern", 1), 27) == nullptr);
+    // The second half of beat 4 in bar 1, where the tenor moves and the bass does not: the
+    // bass column is "." there, still sounding its previous note, so it has no onset and must
+    // not be read as a match. The line is looked up through the tenor, the voice that moves.
+    const int line = dataLineAtPosition(chorale.spine("kern", 2), hum::HumNum(7, 2));
+    REQUIRE(line > 0);
+    CHECK(findTokenAtLine(chorale.spine("kern", 1), line) == nullptr);
     // Same line, tenor column has a real (if tied) onset: "8F#J".
-    auto tenorTok = findTokenAtLine(chorale.spine("kern", 2), 27);
+    auto tenorTok = findTokenAtLine(chorale.spine("kern", 2), line);
     REQUIRE(tenorTok != nullptr);
     CHECK_EQ(std::string(*tenorTok), std::string("8F#J"));
 }
 
 TEST_CASE(find_token_at_line_returns_null_for_a_non_data_line) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // Line 22 is a barline ("=1-"), not a data line.
-    CHECK(findTokenAtLine(chorale.spine("kern", 1), 22) == nullptr);
+    // The barline opening bar 1 ("=1-") stands at the same position as the first onset and is
+    // not a data line.
+    const int line = barlineAtPosition(chorale.spine("kern", 1), 0);
+    REQUIRE(line > 0);
+    CHECK(findTokenAtLine(chorale.spine("kern", 1), line) == nullptr);
 }
 
 TEST_CASE(find_token_at_line_returns_null_for_a_null_spine) {
-    CHECK(findTokenAtLine(nullptr, 23) == nullptr);
+    CHECK(findTokenAtLine(nullptr, 1) == nullptr);
 }
 
 TEST_CASE(has_feature_is_true_for_all_six_hint_pair_spines) {
