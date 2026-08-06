@@ -1,133 +1,29 @@
-import { execFileSync } from 'node:child_process';
-
 const CHORALE_SEARCH_BIN = '../chorale-search/build/chorale-search';
 
 // The generated corpus (`make corpus`), carries the analysis spines already,
 // which is what --no-analysis below relies on. Deriving them per request costs
-// ~90ms per chorale and would blow EXEC_FILE_SYNC_TIMEOUT on the full corpus.
+// ~90ms per chorale and would blow the tool timeout on the full corpus.
 const CORPUS_DIR = '../corpus/bach-370-chorales';
 
-const EXEC_FILE_SYNC_TIMEOUT = 10_000;
-
-// Node caps a child's stdout at 1 MB by default, which a broad query over the
-// full corpus blows past -- matching every note is ~16 MB of JSON.
-const EXEC_FILE_SYNC_MAX_BUFFER = 5 * 1024 * 1024;
-
-class ServiceUnavailableError extends Error {
-    constructor(message, errors) {
-        super(message);
-        this.statusCode = 500;
-        this.errors = errors;
-    }
-}
-class ValidationError extends Error {
-    constructor(message, errors) {
-        super(message);
-        this.statusCode = 400;
-        this.errors = errors;
-    }
-}
-
-class InvalidQueryError extends Error {
-    constructor(message, errors) {
-        super(message);
-        this.statusCode = 400;
-        this.errors = errors;
-    }
-}
-
-class InvalidArgumentError extends Error {
-    constructor(message, errors) {
-        super(message);
-        this.statusCode = 500;
-        this.errors = errors;
-    }
-}
-
-class InvalidSearchOutputError extends Error {
-    constructor(message, errors) {
-        super(message);
-        this.statusCode = 500;
-        this.errors = errors;
-    }
-}
-
-function parseCliErrorMessage(stderrText) {
-	const line = (stderrText ?? '')
-		.split('\n')
-		.map((line) => line.trim())
-		.find((line) => line.startsWith('Error'));
-
-	return line ? line.replace(/^Error:\s*/, '') : undefined;
-}
-
-async function parseRequestBody(event) {
-	try {
-		const body = await readBody(event);
-		if (!body) throw new InvalidQueryError('JSON is empty');
-		return body;
-	} catch (e) {
-		if (e instanceof InvalidQueryError) throw e;
-		throw new InvalidQueryError('Invalid JSON body');
-	}
-}
-
-function runChoraleSearch(body) {
-    const startedAt = performance.now();
-    try {
-        const stdout = execFileSync(CHORALE_SEARCH_BIN, [
-            CORPUS_DIR,
-            '--query',
-            JSON.stringify(body),
-            '--format',
-            'json',
-            '--group-by-chorale',
-            '--no-analysis',
-        ], { encoding: 'utf8', timeout: EXEC_FILE_SYNC_TIMEOUT, maxBuffer: EXEC_FILE_SYNC_MAX_BUFFER });
-        return { stdout, durationMs: Math.round(performance.now() - startedAt) };
-    } catch (e) {
-        if (e.code === 'ENOBUFS') {
-            throw new ServiceUnavailableError(
-                `The search returned more than ${EXEC_FILE_SYNC_MAX_BUFFER / 1024 / 1024} MB of results`,
-                'Narrow the query, or cap it with "limit"',
-            );
-        }
-        if (e.signal === 'SIGTERM' && e.status === null) {
-            throw new ServiceUnavailableError(`The chorale-search tool timed out after ${EXEC_FILE_SYNC_TIMEOUT / 1000} seconds`);
-        }
-        if (typeof e.status !== 'number') {
-            throw new ServiceUnavailableError('The chorale-search tool could not be started');
-        }
-        const message = parseCliErrorMessage(e.stderr?.toString());
-        switch (e.status) {
-            case 3: throw new ValidationError('The search query contains one or more validation errors', message);
-            case 2: throw new InvalidArgumentError('The chorale-search tool received invalid command-line arguments', message);
-        }
-        throw new Error(message);
-    }
-}
-
-function parseSearchOutput(stdout) {
-    try {
-        return JSON.parse(stdout);
-    } catch (e) {
-        throw new InvalidSearchOutputError('The chorale-search tool returned output that could not be parsed as JSON');
-    }
-}
+const EXIT_CODE_ERRORS = {
+    3: (message) => new ValidationError('The search query contains one or more validation errors', message),
+    2: (message) => new InvalidArgumentError('The chorale-search tool received invalid command-line arguments', message),
+};
 
 export default defineEventHandler(async (event) => {
     setResponseHeader(event, 'Content-Type', 'application/json');
 
     try {
         const body = await parseRequestBody(event);
-        const { stdout, durationMs } = runChoraleSearch(body);
-        return { results: parseSearchOutput(stdout), durationMs };
+        const { stdout, durationMs } = runCliTool({
+            bin: CHORALE_SEARCH_BIN,
+            toolName: 'chorale-search',
+            args: [CORPUS_DIR, '--query', JSON.stringify(body), '--format', 'json', '--group-by-chorale', '--no-analysis'],
+            exitCodeErrors: EXIT_CODE_ERRORS,
+            overflowHint: 'Narrow the query, or cap it with "limit"',
+        });
+        return { results: parseToolJsonOutput(stdout, 'chorale-search'), durationMs };
     } catch (e) {
-        setResponseStatus(event, e.statusCode ?? 500);
-        return {
-            name: e.constructor.name,
-            message: e.message,
-            errors: e.errors ? (Array.isArray(e.errors) ? e.errors : [e.errors]) : [],
-        };
+        return toErrorResponse(event, e);
     }
 });
