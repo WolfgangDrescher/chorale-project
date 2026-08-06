@@ -200,6 +200,23 @@ TEST_CASE(cli_stats_reports_aggregates_instead_of_matches) {
     CHECK(!parsed.contains("byQuery")); // a single query has no per-query breakdown
 }
 
+TEST_CASE(cli_stats_breaks_a_query_array_down_by_query_id) {
+    std::string queryJson = R"([
+        {"id":"soprano","feature":"kern","voices":"soprano","pattern":[{"fermata":true}]},
+        {"feature":"kern","voices":"bass","pattern":[{"fermata":true}]}
+    ])";
+    auto result = runCli({fixturesDir(), "--query", queryJson, "--stats"});
+    REQUIRE(result.exitCode == 0);
+
+    nlohmann::json parsed;
+    CHECK_NOTHROW(parsed = nlohmann::json::parse(result.stdOut));
+    REQUIRE(parsed.contains("byQuery"));
+    REQUIRE(parsed.at("byQuery").is_array());
+    CHECK_EQ(parsed.at("byQuery").size(), std::size_t{2});
+    CHECK_EQ(parsed.at("byQuery")[0].at("queryId").get<std::string>(), std::string("soprano"));
+    CHECK_EQ(parsed.at("byQuery")[1].at("queryId").get<std::string>(), std::string("1"));
+}
+
 TEST_CASE(cli_stats_and_group_by_chorale_are_mutually_exclusive) {
     auto result = runCli({fixturesDir(), "--query", "{}", "--stats", "--group-by-chorale", "--format", "json"});
     CHECK(result.exitCode != 0);
