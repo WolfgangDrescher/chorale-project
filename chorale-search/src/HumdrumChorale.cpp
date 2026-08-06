@@ -16,6 +16,18 @@ HumdrumChorale::HumdrumChorale(const std::string& path, bool applyAnalysis) : m_
         throw std::runtime_error("Could not parse Humdrum file: " + path);
     }
 
+    prepare(applyAnalysis);
+}
+
+HumdrumChorale::HumdrumChorale(std::istream& contents, const std::string& id, bool applyAnalysis) : m_id(id) {
+    if (!m_infile.read(contents)) {
+        throw std::runtime_error("Could not parse Humdrum data: " + id);
+    }
+
+    prepare(applyAnalysis);
+}
+
+void HumdrumChorale::prepare(bool applyAnalysis) {
     // Apply analysis spines such as **deg and **mint so every chorale has them
     // available before search runs -- unless the corpus was generated with them
     // already baked in (see chorale-generate), in which case redoing the work
