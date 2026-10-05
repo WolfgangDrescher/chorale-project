@@ -122,14 +122,14 @@ onMounted(async () => {
     <div class="relative" :class="horizontal && 'overflow-x-auto'" ref="wrapperElem" :key="horizontal ? 'horizontal' : 'vertical'">
         <div class="absolute h-full top-0 left-0 overflow-hidden" :class="!horizontal && 'w-full'" ref="markerContainer" :key="scoreKey" :style="markerContainerStyle">
             <template v-if="scoreContainer">
-                <template v-for="noteGroup in resolvedNotes">
-                    <HighlightedNote v-for="noteId in noteGroup.items" :note-id="noteId" :color="noteGroup.color" :container="scoreContainer" />
+                <template v-for="(noteGroup, groupIndex) in resolvedNotes" :key="groupIndex">
+                    <HighlightedNote v-for="noteId in noteGroup.items" :key="`${noteId}-${noteGroup.color}`" :note-id="noteId" :color="noteGroup.color" :container="scoreContainer" />
                 </template>
-                <template v-for="sectionGroup in resolvedSections">
-                    <HighlightedSection v-for="section in sectionGroup.items" :start-line="section.startLine" :end-line="section.endLine" :label="section.label" :voice="section.voice" :color="sectionGroup.color" :container="scoreContainer" />
+                <template v-for="(sectionGroup, groupIndex) in resolvedSections" :key="groupIndex">
+                    <HighlightedSection v-for="section in sectionGroup.items" :key="`${section.startLine}-${section.endLine}-${section.voice}-${section.label?.value}-${sectionGroup.color}`" :start-line="section.startLine" :end-line="section.endLine" :label="section.label" :voice="section.voice" :color="sectionGroup.color" :container="scoreContainer" />
                 </template>
-                <template v-for="lineGroup in resolvedLines">
-                    <HighlightedSection v-for="line in lineGroup.items" :start-line="line.lineNumber" :end-line="line.lineNumber" :label="line.label" :color="lineGroup.color" :container="scoreContainer" />
+                <template v-for="(lineGroup, groupIndex) in resolvedLines" :key="groupIndex">
+                    <HighlightedSection v-for="line in lineGroup.items" :key="`${line.lineNumber}-${line.label?.value}-${lineGroup.color}`" :start-line="line.lineNumber" :end-line="line.lineNumber" :label="line.label" :color="lineGroup.color" :container="scoreContainer" />
                 </template>
             </template>
         </div>
