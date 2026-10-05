@@ -41,3 +41,10 @@ splitIntoVoices: Stimmen getrennt
 noSegments: Keine Segmente gefunden.
 noSegmentsDescription: Laden Sie eine Partitur hoch oder verwenden Sie die Demo-Partitur. Der Satz wird in überlappende Fenster zerlegt; zu jedem entsteht ein Query, der sofort gegen den Korpus gezählt wird.
 segmentAnalysisError: Die Segmentanalyse ist fehlgeschlagen.
+progressConvertMusicxml: MusicXML wird konvertiert
+progressSplitScoreIntoVoices: Stimmen werden getrennt
+progressAnalyzeScore: Partitur wird analysiert
+progressSegmentScore: Partitur wird segmentiert
+progressSearchCorpus: Korpus wird durchsucht
+progressChoralesSearched: "{searched} von {total} Chorälen"
+progressMatchesSoFar: "kein Treffer bisher | ein Treffer bisher | {count} Treffer bisher"

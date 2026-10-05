@@ -47,6 +47,7 @@ function useSegmentAnalysis() {
     const file = ref(null);
     const options = reactive(Object.fromEntries(CHECK_OPTIONS.map((option) => [option.key, option.default])));
     const pending = ref(false);
+    const progress = ref(null);
     const error = ref(null);
     const result = ref(null); // { inputFormat, layout, kern, segments, durationMs }
 
@@ -58,6 +59,7 @@ function useSegmentAnalysis() {
 
     async function analyze(data) {
         pending.value = true;
+        progress.value = null;
         error.value = null;
         result.value = null;
         position.value = 1;
@@ -65,9 +67,11 @@ function useSegmentAnalysis() {
             // The segments arrive with their stats already on them: the endpoint runs
             // chorale-segment --stats, which counts every segment's query against the corpus
             // in the same run.
-            result.value = await $fetch('/api/chorale-segment', {
-                method: 'POST',
+            result.value = await fetchWithProgress('/api/chorale-segment', {
                 body: { data, ...options },
+                onProgress: (event) => {
+                    progress.value = { ...progress.value, ...event };
+                },
             });
         } catch (e) {
             error.value = e;
@@ -90,14 +94,33 @@ function useSegmentAnalysis() {
     }
 
     return {
-        file, options, pending, error, result, position, segments, activeSegment,
-        analyze, analyzeUploadedFile, analyzeDemoScore,
+        file,
+        options,
+        pending,
+        progress,
+        error,
+        result,
+        position,
+        segments,
+        activeSegment,
+        analyze,
+        analyzeUploadedFile,
+        analyzeDemoScore,
     };
 }
 
 const {
-    file, options, pending, error, result, position, segments, activeSegment,
-    analyzeUploadedFile, analyzeDemoScore,
+    file,
+    options,
+    pending,
+    progress,
+    error,
+    result,
+    position,
+    segments,
+    activeSegment,
+    analyzeUploadedFile,
+    analyzeDemoScore,
 } = useSegmentAnalysis();
 
 // What the extension says the file is. It gates submitting: a file no extension vouches for
@@ -315,12 +338,7 @@ function onSubmit() {
             </UAlert>
         </template>
         <template v-else>
-            <div v-if="pending" class="flex flex-col gap-6 mt-8">
-                <div v-for="n in 3" :key="n" class="grid gap-2 mx-auto">
-                    <USkeleton class="h-4 w-[250px]" />
-                    <USkeleton class="h-4 w-[200px]" />
-                </div>
-            </div>
+            <SearchProgress v-if="pending" :progress="progress" class="mt-8" />
             <UEmpty
                 v-else-if="!result || segments.length === 0"
                 :title="result ? $t('noSegments') : undefined"

@@ -14,6 +14,7 @@ function useChoraleSearch() {
     const results = ref([]);
     const error = ref(null);
     const pending = ref(false);
+    const progress = ref(null);
     const page = ref(1);
     const durationMs = ref(null);
     const query = ref(`{
@@ -39,14 +40,17 @@ function useChoraleSearch() {
         results.value = [];
         error.value = null;
         pending.value = true;
+        progress.value = null;
         page.value = 1;
         durationMs.value = null;
         try {
             // durationMs is the server's measurement of the chorale-search binary
             // alone, so the number stays independent of network and render time.
-            const response = await $fetch('/api/chorale-search', {
-                method: 'POST',
+            const response = await fetchWithProgress('/api/chorale-search', {
                 body: query.value,
+                onProgress: (event) => {
+                    progress.value = { ...progress.value, ...event };
+                },
             });
             results.value = response.results;
             durationMs.value = response.durationMs;
@@ -58,7 +62,19 @@ function useChoraleSearch() {
         }
     }
 
-    return { searchFetchCompleted, choraleEntries, totalMatches, pagedChoraleEntries, page, error, pending, durationMs, fetchSearchResults, query };
+    return {
+        searchFetchCompleted,
+        choraleEntries,
+        totalMatches,
+        pagedChoraleEntries,
+        page,
+        error,
+        pending,
+        progress,
+        durationMs,
+        fetchSearchResults,
+        query,
+    };
 }
 
 const {
@@ -70,6 +86,7 @@ const {
     pagedChoraleEntries,
     page,
     pending,
+    progress,
     durationMs,
     error,
 } = useChoraleSearch();
@@ -158,12 +175,7 @@ function applyDemoQuery() {
             </UAlert>
        </template>
         <template v-else>
-            <div v-if="pending" class="flex flex-col gap-6 mt-8">
-                <div  v-for="n in 3" class="grid gap-2 mx-auto">
-                    <USkeleton class="h-4 w-[250px]" />
-                    <USkeleton class="h-4 w-[200px]" />
-                </div>
-            </div>
+            <SearchProgress v-if="pending" :progress="progress" class="mt-8" />
             <UEmpty
                 v-else-if="(searchFetchCompleted && choraleEntries.length === 0) || !searchFetchCompleted"
                 :title="searchFetchCompleted ? $t('noResults') : undefined"
