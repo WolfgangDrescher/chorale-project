@@ -240,6 +240,14 @@ function goToSegment(n) {
     position.value = Math.min(Math.max(n, 1), segments.value.length);
 }
 
+// A clicked note selects the segment starting on its line. A note that opens no segment (an
+// unclassified one, say) takes the latest segment that started before it.
+function onNoteClick({ line }) {
+    const exact = segments.value.findIndex((segment) => segment.startLine === line);
+    const index = exact !== -1 ? exact : segments.value.findLastIndex((segment) => segment.startLine < line);
+    if (index !== -1) goToSegment(index + 1);
+}
+
 // Arrow keys page through the segments, unless a modal is open or the cursor is in a field.
 defineShortcuts({
     arrowleft: () => {
@@ -357,6 +365,7 @@ function onSubmit() {
                             }"
                             :sections="activeSections"
                             :scroll-to-line="activeSegment?.startLine"
+                            @note-click="onNoteClick"
                         />
                     </UCard>
 

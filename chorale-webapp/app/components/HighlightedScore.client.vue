@@ -20,6 +20,11 @@ const props = defineProps<{
     scrollToLine?: Number,
 }>();
 
+const emit = defineEmits<{
+    // A click on (or near) a note: its element id, and the line and voice read off it.
+    noteClick: [note: { id: string, line: number, voice: number }],
+}>();
+
 defineOptions({ inheritAttrs: false });
 
 const { resolvedNotes, resolvedLines, resolvedSections } = useResolveHighlightedScoreProps(props);
@@ -59,6 +64,35 @@ const markerContainerStyle = reactive<{
 });
 
 const { scrollElementIntoView } = useHorizontalScroll();
+
+// How far from a notehead, in pixels, a click still counts as a click on it.
+const NOTE_CLICK_PADDING = 10;
+
+function noteAtPoint(x: number, y: number) {
+    let nearest: Element | null = null;
+    let nearestDistance = Infinity;
+    for (const note of scoreContainer.value?.querySelectorAll('g.note:not(.bounding-box)') ?? []) {
+        const rect = (note.querySelector('.notehead') ?? note).getBoundingClientRect();
+        const dx = Math.max(rect.left - x, 0, x - rect.right);
+        const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+        if (dx > NOTE_CLICK_PADDING || dy > NOTE_CLICK_PADDING) continue;
+        const distance = Math.hypot(rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y);
+        if (distance < nearestDistance) {
+            nearest = note;
+            nearestDistance = distance;
+        }
+    }
+    return nearest;
+}
+
+// Listens on the wrapper rather than on the notes, so a click on a highlight marker above a
+// note reaches it too.
+function onClick(event: MouseEvent) {
+    const note = noteAtPoint(event.clientX, event.clientY);
+    const match = note?.id.match(/^note-L(\d+)F(\d+)/);
+    if (!note || !match) return;
+    emit('noteClick', { id: note.id, line: Number(match[1]), voice: Number(match[2]) });
+}
 
 async function scrollToLineNumber(line: number) {
     if (!props.horizontal || !scoreContainer.value || !wrapperElem.value) return;
@@ -141,7 +175,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="relative" :class="horizontal && 'overflow-x-auto'" ref="wrapperElem" :key="horizontal ? 'horizontal' : 'vertical'">
+    <div class="relative" :class="horizontal && 'overflow-x-auto'" ref="wrapperElem" :key="horizontal ? 'horizontal' : 'vertical'" @click="onClick">
         <div class="absolute h-full top-0 left-0 overflow-hidden" :class="!horizontal && 'w-full'" ref="markerContainer" :key="scoreKey" :style="markerContainerStyle">
             <template v-if="scoreContainer">
                 <template v-for="(noteGroup, groupIndex) in resolvedNotes" :key="groupIndex">
