@@ -15,6 +15,9 @@ const props = defineProps<{
     filters?: Array<string>,
     horizontal?: Boolean,
     scrollToFirstSection?: Boolean,
+    // In the horizontal view: the line of a note to keep in view, scrolled to again whenever
+    // it changes. Wins over scrollToFirstSection.
+    scrollToLine?: Number,
 }>();
 
 defineOptions({ inheritAttrs: false });
@@ -57,7 +60,17 @@ const markerContainerStyle = reactive<{
 
 const { scrollElementIntoView } = useHorizontalScroll();
 
+async function scrollToLineNumber(line: number) {
+    if (!props.horizontal || !scoreContainer.value || !wrapperElem.value) return;
+    await scrollElementIntoView(`g[id^="note-L${line}F"]`, scoreContainer.value, wrapperElem.value, true);
+}
+
+watch(() => props.scrollToLine, (line) => {
+    if (line) scrollToLineNumber(line);
+});
+
 async function onScoreIsReady() {
+    if (props.scrollToLine) return scrollToLineNumber(props.scrollToLine);
     if (!props.scrollToFirstSection) return;
     if (!resolvedSections.value?.length) return;
     if (!scoreContainer.value || !wrapperElem.value) return;

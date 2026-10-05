@@ -356,6 +356,7 @@ function onSubmit() {
                                 pageMarginTop: 130,
                             }"
                             :sections="activeSections"
+                            :scroll-to-line="activeSegment?.startLine"
                         />
                     </UCard>
 
