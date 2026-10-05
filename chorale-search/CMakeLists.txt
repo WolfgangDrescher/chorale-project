@@ -32,6 +32,7 @@ add_library(chorale_core STATIC
     src/SplitScoreIntoVoices.cpp
     src/JsonIO.cpp
     src/QueryValidation.cpp
+    src/ScoreImport.cpp
     src/Segmentation.cpp
     src/SpineAnalysis.cpp
 )
