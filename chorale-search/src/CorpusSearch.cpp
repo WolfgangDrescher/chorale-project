@@ -94,6 +94,11 @@ std::vector<fs::path> CorpusSearch::findChoraleFiles() const {
     return files;
 }
 
+void CorpusSearch::reportProgress(std::size_t choralesSearched, std::size_t choralesTotal,
+                                  const std::string& choraleId, std::size_t matchesSoFar) const {
+    if (m_onProgress) m_onProgress(SearchProgress{choralesSearched, choralesTotal, choraleId, matchesSoFar});
+}
+
 Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) const {
     Results results;
     if (!chorale.hasFeature(query.feature)) return results;
@@ -139,11 +144,14 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
 
 Results CorpusSearch::run(const Query& query) const {
     Results allResults;
-    for (const auto& file : findChoraleFiles()) {
-        HumdrumChorale chorale(file.string(), m_applyAnalysis);
-        if (!chorale.hasFeature(query.feature)) continue;
-        auto results = runOne(chorale, query);
-        allResults.insert(allResults.end(), std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()));
+    const auto files = findChoraleFiles();
+    for (std::size_t i = 0; i < files.size(); ++i) {
+        HumdrumChorale chorale(files[i].string(), m_applyAnalysis);
+        if (chorale.hasFeature(query.feature)) {
+            auto results = runOne(chorale, query);
+            allResults.insert(allResults.end(), std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()));
+        }
+        reportProgress(i + 1, files.size(), chorale.id(), allResults.size());
         if (query.limit && allResults.size() >= *query.limit) {
             allResults.resize(*query.limit);
             break;
@@ -165,11 +173,12 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
     std::vector<Results> perQuery(queries.size());
     std::vector<bool> done(queries.size(), false);
 
-    for (const auto& file : findChoraleFiles()) {
+    const auto files = findChoraleFiles();
+    for (std::size_t fileIndex = 0; fileIndex < files.size(); ++fileIndex) {
         // The loop only ever reaches this point if at least one query is still pending (see
         // the all_of(done) break below), so this is never wasted work -- no need to defer
         // construction.
-        HumdrumChorale chorale(file.string(), m_applyAnalysis); // parsed once per file, shared by every query
+        HumdrumChorale chorale(files[fileIndex].string(), m_applyAnalysis); // parsed once per file, shared by every query
         for (std::size_t i = 0; i < queries.size(); ++i) {
             if (done[i]) continue;
             const Query& query = queries[i];
@@ -184,6 +193,9 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
                 done[i] = true;
             }
         }
+        std::size_t matchesSoFar = 0;
+        for (const Results& bucket : perQuery) matchesSoFar += bucket.size();
+        reportProgress(fileIndex + 1, files.size(), chorale.id(), matchesSoFar);
         if (std::all_of(done.begin(), done.end(), [](bool d) { return d; })) break;
     }
 

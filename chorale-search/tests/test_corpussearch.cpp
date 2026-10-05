@@ -41,6 +41,29 @@ TEST_CASE(run_one_populates_result_fields_from_a_real_match) {
     CHECK_EQ(r.endPosition, std::string("7"));
 }
 
+TEST_CASE(run_reports_progress_once_per_chorale_file) {
+    auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    std::size_t files = 0;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(fixturesDir)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".krn") ++files;
+    }
+
+    CorpusSearch search(fixturesDir);
+    std::vector<choralesearch::SearchProgress> reports;
+    search.setProgressCallback([&](const choralesearch::SearchProgress& progress) { reports.push_back(progress); });
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    search.run(q);
+
+    REQUIRE(reports.size() == files);
+    for (std::size_t i = 0; i < reports.size(); ++i) {
+        CHECK_EQ(reports[i].choralesSearched, i + 1);
+        CHECK_EQ(reports[i].choralesTotal, files);
+    }
+}
+
 TEST_CASE(run_one_truncates_results_at_the_query_limit) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());

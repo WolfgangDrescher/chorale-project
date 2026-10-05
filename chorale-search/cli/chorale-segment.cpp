@@ -17,6 +17,7 @@
 #include "SplitScoreIntoVoices.hpp"
 #include "HumdrumChorale.hpp"
 #include "HumdrumUtils.hpp"
+#include "ProgressReport.hpp"
 #include "Query.hpp"
 #include "Result.hpp"
 #include "ScoreImport.hpp"
@@ -56,6 +57,9 @@ void printUsage(const char* argv0) {
         "    --no-analysis         with --stats: read the analysis spines straight from the\n"
         "                          corpus instead of deriving them per run -- for a corpus\n"
         "                          built by chorale-generate --analysis\n"
+        "    --progress            write the progress to stderr, one JSON object per line: the\n"
+        "                          stage being worked on, and with --stats one event for every\n"
+        "                          chorale file searched\n"
         "    --help, -h            show this help\n";
 }
 
@@ -98,12 +102,14 @@ std::string readInput(const std::string& inputPath) {
 // topChorales ranking this tool adds -- a segment is looked at one at a time, so where its
 // passage turns up is worth naming.
 std::map<std::string, nlohmann::json> statsForSegments(const std::vector<Segment>& segments,
-                                                        const std::string& corpusDir, bool applyAnalysis) {
+                                                        const std::string& corpusDir, bool applyAnalysis,
+                                                        bool reportProgress) {
     std::vector<Query> queries;
     queries.reserve(segments.size());
     for (const Segment& segment : segments) queries.push_back(segment.query);
 
     CorpusSearch search(corpusDir, applyAnalysis);
+    if (reportProgress) search.setProgressCallback(choralesearch::progressToStderr());
     const choralesearch::Results results = search.run(queries);
 
     std::map<std::string, std::map<std::string, std::size_t>> matchesPerChorale; // by queryId, then choraleId
@@ -160,6 +166,7 @@ int main(int argc, char** argv) {
     bool includeKern = true;
     std::string statsCorpusDir;
     bool applyAnalysis = true;
+    bool progress = false;
     SegmentationOptions segmentationOptions;
 
     for (int i = 1; i < argc; ++i) {
@@ -173,6 +180,7 @@ int main(int argc, char** argv) {
             else if (arg == "--no-kern") { includeKern = false; }
             else if (arg == "--stats") { statsCorpusDir = next("--stats"); }
             else if (arg == "--no-analysis") { applyAnalysis = false; }
+            else if (arg == "--progress") { progress = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else if (!arg.empty() && arg[0] == '-' && arg != "-") {
                 std::cerr << "Unknown option: " << arg << "\n";
@@ -222,6 +230,7 @@ int main(int argc, char** argv) {
         // spines, bass to soprano): MusicXML converts first, a two-staff grand staff score is
         // pulled apart into voices, a four-voice score passes through as it is.
         const std::string inputFormat = choralesearch::looksLikeMusicXml(input) ? "musicxml" : "kern";
+        if (progress && inputFormat == "musicxml") choralesearch::reportPhase("convert-musicxml");
         const std::string kernText = inputFormat == "musicxml" ? choralesearch::musicXmlToKern(input) : input;
 
         hum::HumdrumFile infile;
@@ -237,6 +246,7 @@ int main(int argc, char** argv) {
             kern = kernText;
         } else if (voices == 2) {
             layout = "grand-staff";
+            if (progress) choralesearch::reportPhase("split-score-into-voices");
             kern = choralesearch::splitScoreIntoVoices(infile);
         } else {
             throw std::invalid_argument("expected a score with 4 voices or a two-staff grand staff score, got " +
@@ -248,9 +258,13 @@ int main(int argc, char** argv) {
         // this same text, so the segments' line numbers mean lines of the output.
         kern = choralesearch::normalizeChoraleHeader(kern);
 
+        // Building the chorale derives its analysis spines (**deg, **mint, **metweight, ...),
+        // which is where most of the time before the search goes, so it is a phase of its own.
+        if (progress) choralesearch::reportPhase("analyze-score");
         std::istringstream contents(kern);
         HumdrumChorale chorale(contents, inputPath == "-" ? "stdin" : inputPath);
 
+        if (progress) choralesearch::reportPhase("segment-score");
         const std::vector<Segment> segments = choralesearch::segmentScore(chorale, segmentationOptions,
                                                                            SegmentQueryOptions{});
 
@@ -260,7 +274,10 @@ int main(int argc, char** argv) {
         j["layout"] = layout;
         if (includeKern) j["kern"] = kern;
         std::map<std::string, nlohmann::json> stats;
-        if (!statsCorpusDir.empty()) stats = statsForSegments(segments, statsCorpusDir, applyAnalysis);
+        if (!statsCorpusDir.empty()) {
+            if (progress) choralesearch::reportPhase("search-corpus");
+            stats = statsForSegments(segments, statsCorpusDir, applyAnalysis, progress);
+        }
 
         j["segments"] = nlohmann::json::array();
         for (const Segment& segment : segments) {
