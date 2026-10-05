@@ -13,3 +13,4 @@ searchDuration: "in {ms} ms"
 readDocs: Dokumentation lesen
 applyDemoQuery: Beispiel Query verwenden
 query: Query
+searchError: Die Suche ist fehlgeschlagen.
