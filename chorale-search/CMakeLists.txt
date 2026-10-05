@@ -29,6 +29,7 @@ add_library(chorale_core STATIC
     src/VoiceMap.cpp
     src/AttributeMatcher.cpp
     src/CorpusSearch.cpp
+    src/SplitScoreIntoVoices.cpp
     src/JsonIO.cpp
     src/QueryValidation.cpp
     src/Segmentation.cpp

@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "humlib.h"
 
@@ -24,6 +25,18 @@ inline std::string humNumToString(const hum::HumNum& value) {
     std::ostringstream oss;
     value.printTwoPart(oss);
     return oss.str();
+}
+
+// The track numbers of the **kern spines, in spine order. How many voices (or staves) a score
+// has is this list's size; everything else about a spine is asked through the track number.
+inline std::vector<int> kernTracks(hum::HumdrumFile& infile) {
+    std::vector<hum::HTp> starts;
+    infile.getSpineStartList(starts);
+    std::vector<int> tracks;
+    for (hum::HTp start : starts) {
+        if (start->isKern()) tracks.push_back(start->getTrack());
+    }
+    return tracks;
 }
 
 } // namespace choralesearch
