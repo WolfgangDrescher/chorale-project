@@ -1,16 +1,24 @@
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
+#include "CorpusSearch.hpp"
 #include "HumdrumChorale.hpp"
 #include "HumdrumUtils.hpp"
 #include "Query.hpp"
+#include "Result.hpp"
 #include "Segmentation.hpp"
 
+using choralesearch::CorpusSearch;
 using choralesearch::HumdrumChorale;
+using choralesearch::Query;
+using choralesearch::Result;
 using choralesearch::Segment;
 using choralesearch::SegmentationOptions;
 using choralesearch::SegmentQueryOptions;
@@ -31,6 +39,12 @@ void printUsage(const char* argv0) {
         "\n"
         "Options:\n"
         "    --length N            segment length in quarter notes (default: 4)\n"
+        "    --stats CORPUS_DIR    search the corpus for every segment's query and add a\n"
+        "                          \"stats\" property to each segment: matches, choraleCount\n"
+        "                          and topChorales\n"
+        "    --no-analysis         with --stats: read the analysis spines straight from the\n"
+        "                          corpus instead of deriving them per run -- for a corpus\n"
+        "                          built by chorale-generate --analysis\n"
         "    --help, -h            show this help\n";
 }
 
@@ -46,7 +60,58 @@ hum::HumNum parseLength(const std::string& value) {
     }
 }
 
-void printSegmentsAsJson(const HumdrumChorale& chorale, const std::vector<Segment>& segments) {
+// The full stats per segment id, gathered in one corpus pass over all the segments' queries:
+// what chorale-search --stats says about a single query (matches, choraleCount), plus the
+// topChorales ranking this tool adds -- a segment is looked at one at a time, so where its
+// passage turns up is worth naming.
+std::map<std::string, nlohmann::json> statsForSegments(const std::vector<Segment>& segments,
+                                                        const std::string& corpusDir, bool applyAnalysis) {
+    std::vector<Query> queries;
+    queries.reserve(segments.size());
+    for (const Segment& segment : segments) queries.push_back(segment.query);
+
+    CorpusSearch search(corpusDir, applyAnalysis);
+    const choralesearch::Results results = search.run(queries);
+
+    std::map<std::string, std::map<std::string, std::size_t>> matchesPerChorale; // by queryId, then choraleId
+    for (const Result& result : results) {
+        ++matchesPerChorale[result.queryId.value_or("")][result.choraleId];
+    }
+
+    // Walked over the segments rather than over what the corpus answered, so a segment whose
+    // query matched nothing is built by these same lines and states its zeroes. Nowhere else
+    // does a stats object have to be spelled out, so renaming a property is one edit.
+    std::map<std::string, nlohmann::json> stats;
+    for (const Segment& segment : segments) {
+        const std::string id = segment.query.id.value_or("");
+        const std::map<std::string, std::size_t>& perChorale = matchesPerChorale[id];
+
+        std::size_t matches = 0;
+        for (const auto& [choraleId, count] : perChorale) matches += count;
+
+        // Where the matches pile up, most first. Capped, so a segment whose passage is
+        // everywhere doesn't answer with the whole corpus -- five is enough to see whether the
+        // matches cluster or scatter. Ties keep chorale order, which the map already has.
+        std::vector<std::pair<std::string, std::size_t>> ranked(perChorale.begin(), perChorale.end());
+        std::stable_sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) { return a.second > b.second; });
+        constexpr std::size_t kTopChorales = 5;
+        nlohmann::json top = nlohmann::json::array();
+        for (std::size_t i = 0; i < ranked.size() && i < kTopChorales; ++i) {
+            top.push_back({{"choraleId", ranked[i].first}, {"matches", ranked[i].second}});
+        }
+
+        stats[id] = {
+            {"matches", matches},
+            {"choraleCount", perChorale.size()},
+            {"topChorales", std::move(top)},
+        };
+    }
+    return stats;
+}
+
+// `stats` is empty unless --stats asked for it; when it did, it has an entry for every segment.
+void printSegmentsAsJson(const HumdrumChorale& chorale, const std::vector<Segment>& segments,
+                          const std::map<std::string, nlohmann::json>& stats) {
     nlohmann::json j;
     j["source"] = chorale.path();
     j["segments"] = nlohmann::json::array();
@@ -58,6 +123,7 @@ void printSegmentsAsJson(const HumdrumChorale& chorale, const std::vector<Segmen
         entry["startLine"] = segment.startLineNumber;
         entry["endLine"] = segment.endLineNumber;
         entry["query"] = choralesearch::queryToJson(segment.query);
+        if (!stats.empty()) entry["stats"] = stats.at(segment.query.id.value_or(""));
         j["segments"].push_back(std::move(entry));
     }
     std::cout << j.dump(1, '\t') << '\n';
@@ -73,6 +139,8 @@ int main(int argc, char** argv) {
     }
 
     std::string inputPath = argv[1];
+    std::string statsCorpusDir;
+    bool applyAnalysis = true;
     SegmentationOptions segmentationOptions;
 
     for (int i = 2; i < argc; ++i) {
@@ -83,6 +151,8 @@ int main(int argc, char** argv) {
         };
         try {
             if (arg == "--length") { segmentationOptions.length = parseLength(next("--length")); }
+            else if (arg == "--stats") { statsCorpusDir = next("--stats"); }
+            else if (arg == "--no-analysis") { applyAnalysis = false; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else {
                 std::cerr << "Unknown option: " << arg << "\n";
@@ -100,9 +170,21 @@ int main(int argc, char** argv) {
         return kExitInvalidArgumentError;
     }
 
+    // On its own it would say nothing: without a corpus to search there are no analysis spines
+    // to read from one, and the segments' own are derived from the score either way.
+    if (!applyAnalysis && statsCorpusDir.empty()) {
+        std::cerr << "Error: --no-analysis requires --stats\n\n";
+        printUsage(argv[0]);
+        return kExitInvalidArgumentError;
+    }
+
     try {
         HumdrumChorale chorale(inputPath);
-        printSegmentsAsJson(chorale, choralesearch::segmentScore(chorale, segmentationOptions, SegmentQueryOptions{}));
+        const std::vector<Segment> segments = choralesearch::segmentScore(chorale, segmentationOptions,
+                                                                           SegmentQueryOptions{});
+        std::map<std::string, nlohmann::json> stats;
+        if (!statsCorpusDir.empty()) stats = statsForSegments(segments, statsCorpusDir, applyAnalysis);
+        printSegmentsAsJson(chorale, segments, stats);
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return kExitError;
