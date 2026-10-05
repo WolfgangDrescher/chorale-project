@@ -125,7 +125,12 @@ Query buildQuery(const HumdrumChorale& chorale, const std::vector<hum::HTp>& ons
     query.id = id;
     query.feature = options.feature;
     query.voices = std::to_string(options.voice); // a voice selector takes the number as it is
-    query.pattern = buildPattern(chorale, onsets, options.voice, windowEnd, options, true);
+    // The query's own pattern stays the plain cantus firmus -- melody, durations, fermatas,
+    // nothing else -- so it can be lifted out and used alone. The vertical anchoring lives in
+    // the groups instead (see below); for the match set that placement makes no difference,
+    // since with both voices' lines and durations pinned down, the interval at any one common
+    // onset already fixes all the others.
+    query.pattern = buildPattern(chorale, onsets, options.voice, windowEnd, options, false);
 
     const hum::HumNum patternStart = onsets.front()->getDurationFromStart();
     for (std::size_t voice : options.simultaneousVoices) {
@@ -143,7 +148,7 @@ Query buildQuery(const HumdrumChorale& chorale, const std::vector<hum::HTp>& ons
         SimultaneousGroup group;
         group.feature = options.feature;
         group.voices = std::to_string(voice);
-        group.pattern = buildPattern(chorale, groupOnsets, voice, windowEnd, options, false);
+        group.pattern = buildPattern(chorale, groupOnsets, voice, windowEnd, options, true);
         query.simultaneousWith.push_back(std::move(group));
     }
 

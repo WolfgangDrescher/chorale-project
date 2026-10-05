@@ -15,6 +15,19 @@ struct SegmentationOptions {
     hum::HumNum step = 1;   // how far the window rolls between two segments, in quarter notes
 };
 
+// The matcher tolerances a segment query asks for by default: everything that widens a match
+// without ever losing the segment's own source. Compound intervals fold to their simple ones,
+// complementary intervals count for every number, and a note may be found written as its own
+// split or merger.
+inline MatcherOptions defaultSegmentMatcherOptions() {
+    MatcherOptions options;
+    options.hintReduceCompound = true;
+    options.mintAllowIntervalComplementation = {"*"};
+    options.durationAllowSplitNotes = true;
+    options.durationAllowMergedNotes = true;
+    return options;
+}
+
 // How a segment is turned into a query. The outer voices, the soprano driving the search -- and
 // the rest is what the frontend's checkboxes will set, which is why they're options rather than
 // constants inside the builder.
@@ -33,8 +46,11 @@ struct SegmentQueryOptions {
     bool includeDuration = true;
     bool includeFermata = true;
 
-    // hint spines stated at every position of the query's own pattern. Not repeated inside the
-    // groups: with both voices' own lines pinned down, the same pair there says nothing new.
+    // hint spines stated at every position of each simultaneous group's pattern -- not the
+    // query's own, which stays the plain cantus firmus so it can be lifted out and used alone.
+    // With both voices' lines pinned down either placement selects the same passages; a window
+    // that loses its group (see buildQuery) loses the vertical anchoring with it and falls
+    // back to matching the outer voices' contours at any distance.
     std::vector<std::string> hintPairs = {"hint-14"};
 
     // Handed to the query verbatim (see Query.hpp): none of them change what the pattern asks
@@ -42,7 +58,7 @@ struct SegmentQueryOptions {
     // second half here first -- it takes the ornaments out of what a search walks, so a pattern
     // still spelling out its own would match nothing, its source included, until it is built
     // from the same folded onsets (AttributeMatcher's buildOnsets).
-    MatcherOptions matcherOptions = {};
+    MatcherOptions matcherOptions = defaultSegmentMatcherOptions();
 };
 
 // One position of the window, and the query that searches the corpus for what happens there.
