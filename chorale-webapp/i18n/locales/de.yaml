@@ -14,3 +14,30 @@ readDocs: Dokumentation lesen
 applyDemoQuery: Beispiel Query verwenden
 query: Query
 searchError: Die Suche ist fehlgeschlagen.
+segmentAnalysis: Segmentanalyse
+uploadScoreDescription: Vierstimmiger Satz als Humdrum-Kern oder MusicXML
+uploadScoreLabel: Datei hierher ziehen oder klicken
+uploadScoreFormats: .krn, .musicxml oder .xml
+removeFile: Entfernen
+useDemoScore: Demo ({id})
+fileTooLarge: "Die Datei ist zu gross. Erlaubt: maximal {size}"
+fileUnsupported: "Dateiformat nicht unterstützt. Erlaubt: .krn, .kern, .musicxml, .xml"
+previousSegment: Vorheriges Segment
+nextSegment: Nächstes Segment
+segmentLength: Segmentlänge
+segmentLengthDescription: Länge eines Segments in Viertelnoten.
+segmentsFound: "{segments} Segment {duration} | {segments} Segmente {duration}"
+segmentStats: "keine Treffer im Korpus | {matches} Treffer in einem Choral | {matches} Treffer in {count} Chorälen"
+segmentsWithoutMatches: "{count} Segment ohne Treffer | {count} Segmente ohne Treffer"
+topChorales: Choräle mit den meisten Treffern
+matchCount: "ein Treffer | {count} Treffer"
+copy: Kopieren
+copied: Kopiert
+stats: Stats
+showMatches: Treffer im Korpus anzeigen
+matchesInCorpus: Treffer im Korpus
+convertedFromMusicxml: aus MusicXML konvertiert
+splitIntoVoices: Stimmen getrennt
+noSegments: Keine Segmente gefunden.
+noSegmentsDescription: Laden Sie eine Partitur hoch oder verwenden Sie die Demo-Partitur. Der Satz wird in überlappende Fenster zerlegt; zu jedem entsteht ein Query, der sofort gegen den Korpus gezählt wird.
+segmentAnalysisError: Die Segmentanalyse ist fehlgeschlagen.

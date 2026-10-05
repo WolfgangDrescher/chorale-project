@@ -8,6 +8,10 @@ const items = [
         to: localePath({name: 'index'}),
     },
     {
+        label: t('segmentAnalysis'),
+        to: localePath({name: 'segment-analysis'}),
+    },
+    {
         label: t('search'),
         to: localePath({name: 'search'}),
     },
