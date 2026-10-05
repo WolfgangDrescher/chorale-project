@@ -1,22 +1,12 @@
 export function useScoreFormatter() {
 
     const { localScoreUrlGenerator } = useScoreUrlGenerator();
-    const scoreOptions = useScoreOptions();
     const rawScoreData = ref(null);
     const formattedScoreData = ref(null);
-    const currentId = ref(null);
-    const currentFilters = ref(null);
-
-    watch(() => scoreOptions.showDcmlAnnotations, async (newValue) => {
-        rawScoreData.value = null;
-        await loadScore(currentId.value, currentFilters.value)
-    });
 
     async function loadScore(id, filters) {
-        currentId.value = id;
-        currentFilters.value = filters;
         if (!rawScoreData.value) {
-            const data = await $fetch(localScoreUrlGenerator(id, scoreOptions.showDcmlAnnotations), {
+            const data = await $fetch(localScoreUrlGenerator(id), {
                 parseResponse: (txt) => txt,
             });
             rawScoreData.value = data;
