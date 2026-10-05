@@ -1,6 +1,10 @@
 <script setup lang="ts">
 const props = defineProps<{
-    pieceId: String,
+    // Where the score comes from: a piece served by the app (pieceId), or -- for a score that
+    // only exists as text, like an upload -- the **kern data itself. scoreData wins when both
+    // are given.
+    pieceId?: String,
+    scoreData?: String,
     verovioOptions?: {
         type: Object,
         default: () => ({}),
@@ -19,7 +23,7 @@ const { resolvedNotes, resolvedLines, resolvedSections } = useResolveHighlighted
 
 const verovioCanvas = ref(null);
 
-const { loadScore, applyScoreFormatting, formattedScoreData } = useScoreFormatter();
+const { loadScore, setScore, applyScoreFormatting, formattedScoreData } = useScoreFormatter();
 
 watch(() => props.filters, (filters) => {
     applyScoreFormatting([], filters);
@@ -110,11 +114,16 @@ watch(() => props.horizontal, async () => {
     setupMutationObserver();
 });
 
+watch(() => props.scoreData, (data) => {
+    if (data) setScore(data, props.filters);
+});
+
 onMounted(async () => {
-    loadScore(props.pieceId, props.filters);
+    if (props.scoreData) setScore(props.scoreData, props.filters);
+    else loadScore(props.pieceId, props.filters);
     await nextTick();
     updateMarkerWidth();
-    setupMutationObserver(); 
+    setupMutationObserver();
 });
 </script>
 

@@ -25,6 +25,14 @@ export function useScoreFormatter() {
         return rawScoreData.value;
     }
 
+    // The counterpart of loadScore for a score that only exists as text -- an upload, or a
+    // server response carrying the prepared kern. Same formatting pipeline, no fetch.
+    function setScore(data, filters) {
+        rawScoreData.value = data;
+        applyScoreFormatting([], filters);
+        return rawScoreData.value;
+    }
+
     function applyScoreFormatting(highlightLineNumbers = [], filters = []) {
         if (!rawScoreData.value) return null;
 
@@ -65,6 +73,7 @@ export function useScoreFormatter() {
         rawScoreData,
         formattedScoreData,
         loadScore,
+        setScore,
         applyScoreFormatting,
     };
 }
