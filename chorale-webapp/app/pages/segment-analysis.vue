@@ -359,7 +359,7 @@ function onSubmit() {
                         <i18n-t keypath="segmentsFound" :plural="segments.length" tag="span" scope="global">
                             <template #segments>{{ segments.length }}</template>
                             <template #duration>
-                                <span class="text-dimmed tabular-nums">({{ $t('searchDuration', { ms: result.durationMs }) }})</span>
+                                <span class="text-dimmed tabular-nums">({{ $t('searchDuration', { duration: formatDuration(result.durationMs) }) }})</span>
                             </template>
                         </i18n-t>
                         <UBadge v-if="unmatchedSegments.length" color="error" variant="subtle">

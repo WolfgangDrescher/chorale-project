@@ -9,7 +9,7 @@ noResults: Keine Treffer gefunden.
 noResultsDescription: Lesen Sie in der Dokumentation nach, wie ein Query aufgebaut wird, oder übernehmen Sie einen der dortigen Beispiel-Queries.
 exampleQueries: Beispiel-Queries
 matchesFound: "{matches} Treffer in einem Choral {duration} | {matches} Treffer in {count} Chorälen {duration}"
-searchDuration: "in {ms} ms"
+searchDuration: "in {duration}"
 readDocs: Dokumentation lesen
 applyDemoQuery: Beispiel Query verwenden
 query: Query

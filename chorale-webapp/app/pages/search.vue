@@ -209,7 +209,7 @@ function applyDemoQuery() {
                     <i18n-t keypath="matchesFound" :plural="choraleEntries.length" tag="p" class="text-sm" scope="global">
                         <template #matches>{{ totalMatches }}</template>
                         <template #duration>
-                            <span v-if="durationMs !== null" class="text-dimmed tabular-nums">({{ $t('searchDuration', { ms: durationMs }) }})</span>
+                            <span v-if="durationMs !== null" class="text-dimmed tabular-nums">({{ $t('searchDuration', { duration: formatDuration(durationMs) }) }})</span>
                         </template>
                     </i18n-t>
                     <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" size="xs" />
