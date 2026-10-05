@@ -12,8 +12,10 @@
 # make run-cli ARGS="data --query '{...}'"
 #
 # make run-segment ARGS="score.krn --length 4"
-#     the same for chorale-segment, which cuts a score into segments and writes
-#     the query that searches the corpus for each of them
+#     the same for chorale-segment, which prepares a score (MusicXML
+#     conversion, grand staff split -- four-voice **kern passes through)
+#     and cuts it into segments, each with the query that searches the
+#     corpus for it
 #
 # make test
 #     build and run the tests/ suite (see tests/test_framework.hpp). Runs
