@@ -46,6 +46,8 @@ function parseScoreData(value) {
 }
 
 // Takes { data, length? } and returns the prepared kern and the segments with their corpus stats.
+// Answers with the JSON result, or as a stream of progress events ending in the result for a
+// caller that accepts one (see respondWithStream).
 export default defineEventHandler(async (event) => {
     setResponseHeader(event, 'Content-Type', 'application/json');
 
@@ -53,17 +55,36 @@ export default defineEventHandler(async (event) => {
         const body = await parseRequestBody(event);
         const data = parseScoreData(body.data);
         const length = parseSegmentLength(body.length);
-        const { stdout, durationMs } = runCliTool({
-            bin: CHORALE_SEGMENT_BIN,
-            toolName: 'chorale-segment',
-            args: ['-', '--length', String(length), '--stats', CORPUS_DIR, '--no-analysis'],
-            input: data,
-            exitCodeErrors: EXIT_CODE_ERRORS,
-            overflowHint: 'Segment with a longer "length"',
-            timeout: SEGMENT_TIMEOUT,
-        });
-        const { inputFormat, layout, kern, segments } = parseToolJsonOutput(stdout, 'chorale-segment');
-        return { inputFormat, layout, kern, segments, length, durationMs };
+        const segment = ({ onEvent, signal } = {}) => {
+            const args = [
+                '-',
+                '--length', String(length),
+                '--stats', CORPUS_DIR,
+                '--no-analysis',
+            ];
+            if (onEvent) args.push('--progress');
+
+            return runCliTool({
+                bin: CHORALE_SEGMENT_BIN,
+                toolName: 'chorale-segment',
+                args,
+                input: data,
+                exitCodeErrors: EXIT_CODE_ERRORS,
+                overflowHint: 'Segment with a longer "length"',
+                timeout: SEGMENT_TIMEOUT,
+                onEvent,
+                signal,
+            });
+        };
+        const answer = ({ stdout, durationMs }) => {
+            const { inputFormat, layout, kern, segments } = parseToolJsonOutput(stdout, 'chorale-segment');
+            return { inputFormat, layout, kern, segments, length, durationMs };
+        };
+
+        if (acceptsStream(event)) {
+            return respondWithStream(event, async (send, signal) => answer(await segment({ onEvent: send, signal })));
+        }
+        return answer(await segment());
     } catch (e) {
         return toErrorResponse(event, e);
     }

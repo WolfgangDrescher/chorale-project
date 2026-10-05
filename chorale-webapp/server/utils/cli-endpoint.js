@@ -1,10 +1,10 @@
-import { execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 
-const EXEC_FILE_SYNC_TIMEOUT = 10_000;
+const DEFAULT_TIMEOUT = 10_000;
 
-// Node caps a child's stdout at 1 MB by default, which a broad query over the full corpus
-// blows past -- matching every note is ~16 MB of JSON.
-const EXEC_FILE_SYNC_MAX_BUFFER = 5 * 1024 * 1024;
+// A broad query over the full corpus blows past any small cap -- matching every note is
+// ~16 MB of JSON -- so what a tool may print is limited here.
+const MAX_STDOUT_BYTES = 5 * 1024 * 1024;
 
 // The shape of every error below: an HTTP status, and a `name` spelled out rather than read
 // off the constructor, which a production build is free to rename.
@@ -113,38 +113,103 @@ export async function parseRequestBody(event) {
     }
 }
 
-// Runs a binary and returns its stdout plus durationMs. `input` goes to stdin, which is how an
-// uploaded score travels: never onto the filesystem, never into argv. `exitCodeErrors` maps an
-// exit code to a factory taking the tool's "Error: ..." line; codes outside it become 500s.
-export function runCliTool({ bin, toolName, args = [], input, exitCodeErrors = {}, overflowHint,
-    timeout = EXEC_FILE_SYNC_TIMEOUT }) {
-    const startedAt = performance.now();
+// A line of the tool's stderr that is one of its --progress events: a JSON object with an
+// "event" key. Everything else it says there (its "Error: ..." line, a library's grumbling)
+// is not one.
+function parseProgressEvent(line) {
+    if (!line.startsWith('{')) return null;
     try {
-        const stdout = execFileSync(bin, args, {
-            encoding: 'utf8',
-            timeout,
-            maxBuffer: EXEC_FILE_SYNC_MAX_BUFFER,
-            input,
-        });
-        return { stdout, durationMs: Math.round(performance.now() - startedAt) };
-    } catch (e) {
-        if (e.code === 'ENOBUFS') {
-            throw new ResponseTooLargeError(
-                `The ${toolName} tool returned more than ${EXEC_FILE_SYNC_MAX_BUFFER / 1024 / 1024} MB of results`,
-                overflowHint,
-            );
-        }
-        if (e.signal === 'SIGTERM' && e.status === null) {
-            throw new ToolTimeoutError(`The ${toolName} tool timed out after ${timeout / 1000} seconds`);
-        }
-        if (typeof e.status !== 'number') {
-            throw new ServiceUnavailableError(`The ${toolName} tool could not be started`);
-        }
-        const message = parseCliErrorMessage(e.stderr?.toString());
-        const toError = exitCodeErrors[e.status];
-        if (toError) throw toError(message);
-        throw new ToolFailedError(`The ${toolName} tool exited with code ${e.status}`, message);
+        const event = JSON.parse(line);
+        return typeof event?.event === 'string' ? event : null;
+    } catch {
+        return null;
     }
+}
+
+// Runs a binary and resolves with its stdout plus durationMs. `input` goes to stdin, which is
+// how an uploaded score travels: never onto the filesystem, never into argv. `exitCodeErrors`
+// maps an exit code to a factory taking the tool's "Error: ..." line; other codes become
+// ToolFailedError. `onEvent` gets each progress event the tool writes while it runs, and
+// `signal` stops the tool early (a client that went away). The tool runs asynchronously, so a
+// long run does not hold up the server.
+export function runCliTool({ bin, toolName, args = [], input, exitCodeErrors = {}, overflowHint,
+    timeout = DEFAULT_TIMEOUT, onEvent, signal }) {
+    const startedAt = performance.now();
+    return new Promise((resolve, reject) => {
+        const child = spawn(bin, args);
+        let stdout = '';
+        let stdoutBytes = 0;
+        let partialLine = '';
+        const stderrLines = [];
+        let tooLarge = false;
+        let timedOut = false;
+        let settled = false;
+
+        const settle = (finish, value) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            finish(value);
+        };
+        const timer = setTimeout(() => {
+            timedOut = true;
+            child.kill();
+        }, timeout);
+        signal?.addEventListener('abort', () => child.kill(), { once: true });
+
+        child.stdout.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => {
+            stdoutBytes += Buffer.byteLength(chunk);
+            if (stdoutBytes > MAX_STDOUT_BYTES) {
+                tooLarge = true;
+                child.kill();
+                return;
+            }
+            stdout += chunk;
+        });
+
+        const handleStderrLine = (line) => {
+            const progressEvent = parseProgressEvent(line);
+            if (progressEvent) onEvent?.(progressEvent);
+            else if (line.trim()) stderrLines.push(line);
+        };
+        child.stderr.setEncoding('utf8');
+        child.stderr.on('data', (chunk) => {
+            partialLine += chunk;
+            let newline;
+            while ((newline = partialLine.indexOf('\n')) !== -1) {
+                handleStderrLine(partialLine.slice(0, newline));
+                partialLine = partialLine.slice(newline + 1);
+            }
+        });
+
+        // The tool may exit without reading all of its input; that is its exit code's to say.
+        child.stdin.on('error', () => {});
+        child.stdin.end(input);
+
+        child.on('error', () => {
+            settle(reject, new ServiceUnavailableError(`The ${toolName} tool could not be started`));
+        });
+        child.on('close', (code) => {
+            if (partialLine) handleStderrLine(partialLine);
+            if (tooLarge) {
+                settle(reject, new ResponseTooLargeError(
+                    `The ${toolName} tool returned more than ${MAX_STDOUT_BYTES / 1024 / 1024} MB of results`,
+                    overflowHint,
+                ));
+            } else if (timedOut) {
+                settle(reject, new ToolTimeoutError(`The ${toolName} tool timed out after ${timeout / 1000} seconds`));
+            } else if (code === 0) {
+                settle(resolve, { stdout, durationMs: Number((performance.now() - startedAt).toFixed(3)) });
+            } else {
+                const message = parseCliErrorMessage(stderrLines.join('\n'));
+                const toError = exitCodeErrors[code];
+                settle(reject, toError
+                    ? toError(message)
+                    : new ToolFailedError(`The ${toolName} tool exited with code ${code}`, message));
+            }
+        });
+    });
 }
 
 // The tool exited successfully; its stdout has to be the JSON it promised.
@@ -158,11 +223,50 @@ export function parseToolJsonOutput(stdout, toolName) {
 
 // The single answer shape every endpoint fails with. `errors` is always an array, so the
 // frontend can list it blind; a plain Error arrives here as a 500 with none.
-export function toErrorResponse(event, e) {
-    setResponseStatus(event, e.statusCode ?? 500);
+function errorBody(e) {
     return {
         name: e.name,
         message: e.message,
         errors: e.errors ? (Array.isArray(e.errors) ? e.errors : [e.errors]) : [],
     };
+}
+
+export function toErrorResponse(event, e) {
+    setResponseStatus(event, e.statusCode ?? 500);
+    return errorBody(e);
+}
+
+// Whether the caller accepts the answer as a stream (see respondWithStream).
+export function acceptsStream(event) {
+    return (getHeader(event, 'accept') ?? '').includes('application/x-ndjson');
+}
+
+// Answers as a stream of newline-delimited JSON (application/x-ndjson): whatever `work` sends
+// while it runs (the tool's progress events), then one last line, either
+// { event: 'result', ...what work returned } or { event: 'error', statusCode, ...the usual
+// error body }. The status is 200 by then, so a failure travels as that last line. A client
+// that disconnects aborts `work`'s signal, which stops the tool.
+export function respondWithStream(event, work) {
+    setResponseHeader(event, 'Content-Type', 'application/x-ndjson');
+    setResponseHeader(event, 'Cache-Control', 'no-cache');
+    setResponseHeader(event, 'X-Accel-Buffering', 'no'); // keeps nginx from holding the stream back
+
+    const abort = new AbortController();
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+        async start(controller) {
+            const send = (line) => {
+                if (!abort.signal.aborted) controller.enqueue(encoder.encode(`${JSON.stringify(line)}\n`));
+            };
+            try {
+                send({ event: 'result', ...(await work(send, abort.signal)) });
+            } catch (e) {
+                send({ event: 'error', statusCode: e.statusCode ?? 500, ...errorBody(e) });
+            }
+            if (!abort.signal.aborted) controller.close();
+        },
+        cancel() {
+            abort.abort();
+        },
+    });
 }
