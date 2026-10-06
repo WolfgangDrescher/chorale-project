@@ -23,12 +23,16 @@ const model = defineModel({ type: [Number, String, Boolean], default: undefined 
                         :aria-label="$t('optionHelp', { option: $t(option.label) })"
                     />
                     <template #content>
-                        <p class="max-w-xs p-3 text-sm">{{ $t(option.description) }}</p>
+                        <div class="max-w-xs p-3 text-sm">
+                            <p>{{ $t(option.description) }}</p>
+                            <p v-if="option.disabled" class="mt-2 text-dimmed">{{ $t('optionDisabled') }}</p>
+                        </div>
                     </template>
                 </UPopover>
             </span>
         </template>
         <USelect v-if="option.type === 'select'" v-model="model" :items="option.items" class="w-full" />
+        <USwitch v-else-if="option.disabled" :model-value="true" disabled />
         <USwitch v-else v-model="model" />
     </UFormField>
 </template>

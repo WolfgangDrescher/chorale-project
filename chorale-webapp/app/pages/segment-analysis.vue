@@ -16,7 +16,9 @@ const SEGMENT_LENGTHS = [2, 3, 4, 6, 8];
 
 // The options sent along with the score, rendered as one form field each. To add one: add an
 // entry here (type 'select' with `items`, or 'switch'), its two translations, and handle its
-// key in server/api/chorale-segment.js.
+// key in server/api/chorale-segment.js. A `disabled` option is one the segment queries always use
+// (see defaultSegmentMatcherOptions): it is listed as a disabled switch so the help can explain
+// it, and it isn't sent along.
 const CHECK_OPTIONS = [
     {
         key: 'length',
@@ -47,6 +49,27 @@ const CHECK_OPTIONS = [
         label: 'skipUnclassifiedBeats',
         description: 'skipUnclassifiedBeatsDescription',
     },
+    {
+        key: 'hintReduceCompound',
+        type: 'switch',
+        disabled: true,
+        label: 'hintReduceCompound',
+        description: 'hintReduceCompoundDescription',
+    },
+    {
+        key: 'durationAllowSplitNotes',
+        type: 'switch',
+        disabled: true,
+        label: 'durationAllowSplitNotes',
+        description: 'durationAllowSplitNotesDescription',
+    },
+    {
+        key: 'durationAllowMergedNotes',
+        type: 'switch',
+        disabled: true,
+        label: 'durationAllowMergedNotes',
+        description: 'durationAllowMergedNotesDescription',
+    },
 ];
 
 // The selects stay under the dropzone, the switches go beside it on large screens.
@@ -70,7 +93,9 @@ const MUSICXML_EXTENSIONS = ['.musicxml', '.xml'];
 
 function useSegmentAnalysis() {
     const file = ref(null);
-    const options = reactive(Object.fromEntries(CHECK_OPTIONS.map((option) => [option.key, option.default])));
+    const options = reactive(
+        Object.fromEntries(CHECK_OPTIONS.filter((option) => !option.disabled).map((option) => [option.key, option.default])),
+    );
     const pending = ref(false);
     const progress = ref(null);
     const error = ref(null);

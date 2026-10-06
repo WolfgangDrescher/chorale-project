@@ -21,6 +21,7 @@ uploadScoreFormats: .krn, .musicxml oder .xml
 removeFile: Entfernen
 cancel: Abbrechen
 optionHelp: "Hilfe zu {option}"
+optionDisabled: Diese Einstellung kann nicht verändert werden.
 useDemoScore: Demo ({id})
 fileTooLarge: "Die Datei ist zu gross. Erlaubt: maximal {size}"
 fileUnsupported: "Dateiformat nicht unterstützt. Erlaubt: .krn, .kern, .musicxml, .xml"
@@ -34,6 +35,12 @@ allowIntervalComplementation: Komplementärintervalle zulassen
 allowIntervalComplementationDescription: "Ein Intervall gilt auch als sein Komplementärintervall, das den Rest der Oktave in Gegenrichtung füllt: Ein Aufstieg um eine Terz findet auch einen Abstieg um eine Sexte, denn beide führen zum selben Ton. Im Query findet +3 dann auch -6."
 skipUnclassifiedBeats: Unbetonte Notenwerte ignorieren
 skipUnclassifiedBeatsDescription: "Töne auf metrisch nicht eingeordneten Zeiten (Verzierungen wie Durchgänge und Wechselnoten) zählen in Melodie und Bass nicht als eigene Noten. Ihre Dauer fällt an die Hauptnote, und das Intervall wird von Hauptnote zu Hauptnote gemessen. So findet eine Stelle auch Choräle, die dieselbe Melodie mit oder ohne Verzierung setzen."
+hintReduceCompound: Zusammengesetzte Intervalle reduzieren
+hintReduceCompoundDescription: "Der Abstand zwischen Sopran und Bass wird auf eine Oktave zurückgeführt: Eine Dezime zählt als Terz, eine Duodezime als Quinte. So spielt es keine Rolle, ob der Satz eng oder weit gesetzt ist."
+durationAllowSplitNotes: Notenwerte teilen
+durationAllowSplitNotesDescription: "Eine Note wird auch gefunden, wenn sie als mehrere gleiche Töne hintereinander notiert ist, deren Dauern zusammen die Notenlänge ergeben: Eine Halbe findet auch zwei Viertel auf demselben Ton."
+durationAllowMergedNotes: Notenwerte zusammenführen
+durationAllowMergedNotesDescription: "Mehrere gleiche Noten hintereinander werden auch als eine einzelne längere Note gefunden, wenn die Dauern zusammenpassen: Zwei Viertel finden auch eine Halbe."
 segmentsFound: "{segments} Segment {duration} | {segments} Segmente {duration}"
 segmentStats: "keine Treffer im Korpus | {matches} Treffer in einem Choral | {matches} Treffer in {count} Chorälen"
 segmentsWithoutMatches: "{count} Segment ohne Treffer | {count} Segmente ohne Treffer"
