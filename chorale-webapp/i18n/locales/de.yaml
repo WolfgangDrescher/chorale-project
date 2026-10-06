@@ -30,6 +30,8 @@ segmentLength: Segmentlänge
 segmentLengthDescription: Länge eines Segments in Viertelnoten.
 ignoreIntervalQuality: Intervallqualität ignorieren
 ignoreIntervalQualityDescription: "Intervalle werden nur nach Richtung und Intervallzahl (Sekunde, Terz, Quinte usw.) verglichen. So wird eine Stelle gefunden, egal ob sie gerade in Dur oder Moll steht. Das gilt für die Melodie, den Bass und den Abstand zwischen beiden. Im Query wird aus +M2 dann +2. Ausgeschaltet bleibt die Qualität Teil des Vergleichs."
+allowIntervalComplementation: Komplementärintervalle zulassen
+allowIntervalComplementationDescription: "Ein Intervall gilt auch als sein Komplementärintervall, das den Rest der Oktave in Gegenrichtung füllt: Ein Aufstieg um eine Terz findet auch einen Abstieg um eine Sexte, denn beide führen zum selben Ton. Im Query findet +3 dann auch -6."
 skipUnclassifiedBeats: Unbetonte Notenwerte ignorieren
 skipUnclassifiedBeatsDescription: "Töne auf metrisch nicht eingeordneten Zeiten (Verzierungen wie Durchgänge und Wechselnoten) zählen in Melodie und Bass nicht als eigene Noten. Ihre Dauer fällt an die Hauptnote, und das Intervall wird von Hauptnote zu Hauptnote gemessen. So findet eine Stelle auch Choräle, die dieselbe Melodie mit oder ohne Verzierung setzen."
 segmentsFound: "{segments} Segment {duration} | {segments} Segmente {duration}"

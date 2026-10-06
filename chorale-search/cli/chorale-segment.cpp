@@ -53,6 +53,9 @@ void printUsage(const char* argv0) {
         "                          leave the interval qualities out of the queries (\"+M2\"\n"
         "                          becomes \"+2\") so a passage is found in major and minor\n"
         "                          (default: true)\n"
+        "    --mint-allow-interval-complementation true|false\n"
+        "                          let a query's interval also match its inversion (\"+3\" also\n"
+        "                          finds \"-6\") (default: true)\n"
         "    --metweight-skip-unclassified true|false\n"
         "                          fold the ornaments (notes on unclassified metric positions)\n"
         "                          away in the queries instead of counting them (default: true)\n"
@@ -199,6 +202,12 @@ int main(int argc, char** argv) {
             else if (arg == "--mint-ignore-quality") {
                 queryOptions.ignoreIntervalQuality =
                     parseBoolean("--mint-ignore-quality", next("--mint-ignore-quality"));
+            }
+            else if (arg == "--mint-allow-interval-complementation") {
+                const bool allowed = parseBoolean("--mint-allow-interval-complementation",
+                                                   next("--mint-allow-interval-complementation"));
+                queryOptions.matcherOptions.mintAllowIntervalComplementation =
+                    allowed ? std::vector<std::string>{"*"} : std::vector<std::string>{};
             }
             else if (arg == "--metweight-skip-unclassified") {
                 queryOptions.matcherOptions.metweightSkipUnclassified =

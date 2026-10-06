@@ -39,6 +39,19 @@ TEST_CASE(every_segment_finds_its_own_source_with_exact_intervals_and_kept_ornam
     for (const std::string& id : kFixtures) CHECK_EQ(segmentsMissingTheirSource(id, exact), std::size_t{0});
 }
 
+TEST_CASE(interval_complementation_is_allowed_unless_switched_off) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    SegmentQueryOptions off;
+    off.matcherOptions.mintAllowIntervalComplementation.clear();
+
+    const std::vector<Segment> byDefault = segmentScore(chorale);
+    const std::vector<Segment> without = segmentScore(chorale, {}, off);
+    REQUIRE(!byDefault.empty());
+    REQUIRE(!without.empty());
+    CHECK(!byDefault.front().query.mintAllowIntervalComplementation.empty());
+    CHECK(without.front().query.mintAllowIntervalComplementation.empty());
+}
+
 TEST_CASE(interval_qualities_are_left_out_of_the_patterns_unless_asked_for) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     SegmentQueryOptions exact;

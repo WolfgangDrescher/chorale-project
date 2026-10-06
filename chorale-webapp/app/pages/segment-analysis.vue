@@ -34,6 +34,13 @@ const CHECK_OPTIONS = [
         description: 'ignoreIntervalQualityDescription',
     },
     {
+        key: 'allowIntervalComplementation',
+        type: 'switch',
+        default: true,
+        label: 'allowIntervalComplementation',
+        description: 'allowIntervalComplementationDescription',
+    },
+    {
         key: 'skipUnclassifiedBeats',
         type: 'switch',
         default: true,
