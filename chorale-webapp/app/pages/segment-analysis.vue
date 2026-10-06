@@ -453,17 +453,16 @@ function onSubmit() {
                                     <UButton icon="lucide:chevron-right" color="neutral" variant="subtle" size="xs" :aria-label="$t('nextSegment')" :disabled="position >= segments.length" @click="goToSegment(position + 1)" />
                                 </div>
                                 <span class="font-semibold">{{ activeSegment.id }}</span>
-                                <i18n-t
-                                    v-if="activeStats"
-                                    keypath="segmentStats"
-                                    :plural="activeStats.choraleCount"
-                                    tag="span"
-                                    class="text-sm"
-                                    :class="activeStats.matches === 0 ? 'text-error' : 'text-dimmed'"
-                                    scope="global"
-                                >
-                                    <template #matches>{{ activeStats.matches }}</template>
-                                </i18n-t>
+                                <UBadge v-if="activeStats" :color="activeStats.matches === 0 ? 'error' : 'neutral'" variant="subtle">
+                                    <i18n-t
+                                        keypath="segmentStats"
+                                        :plural="activeStats.choraleCount"
+                                        tag="span"
+                                        scope="global"
+                                    >
+                                        <template #matches>{{ activeStats.matches }}</template>
+                                    </i18n-t>
+                                </UBadge>
                             </div>
 
                             <UFieldGroup class="order-last sm:order-none w-full sm:w-auto">
