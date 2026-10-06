@@ -215,15 +215,46 @@ const fileError = computed(() => {
 
 const activeStats = computed(() => activeSegment.value?.stats ?? null);
 
-// The segments whose query found nothing anywhere in the corpus -- the passages this page
-// exists to point at.
-const unmatchedSegments = computed(() => segments.value.filter((segment) => segment.stats?.matches === 0));
+// A segment found this often in the corpus or less (but at least once) counts as rare.
+const RARE_MATCH_THRESHOLD = 2;
 
-// The unmatched segments as line ranges for the score, overlapping windows merged into one
-// stretch each: 0-4, 1-5 and 2-6 all missing is one problem passage, not three markers deep.
-const unmatchedRanges = computed(() => {
+// How a segment's match count marks it in the score, rarest first. Later tiers are drawn over
+// earlier ones where they overlap.
+const MATCH_TIERS = [
+    {
+        key: 'unmatched',
+        color: highlightColorsByName.red,
+        badgeColor: 'error',
+        badge: 'segmentsWithoutMatches',
+        legend: 'legendUnmatched',
+        includes: (matches) => matches === 0,
+    },
+    {
+        key: 'rare',
+        color: highlightColorsByName.amber,
+        badgeColor: 'warning',
+        badge: 'segmentsWithFewMatches',
+        legend: 'legendRare',
+        includes: (matches) => matches > 0 && matches <= RARE_MATCH_THRESHOLD,
+    },
+];
+
+function tierOf(segment) {
+    const matches = segment.stats?.matches;
+    if (matches === undefined) return null;
+    return MATCH_TIERS.find((tier) => tier.includes(matches)) ?? null;
+}
+
+// The segments of each tier -- the passages this page exists to point at.
+const segmentsByTier = computed(() =>
+    Object.fromEntries(MATCH_TIERS.map((tier) => [tier.key, segments.value.filter((segment) => tierOf(segment) === tier)])),
+);
+
+// A tier's segments as line ranges for the score, overlapping windows merged into one stretch
+// each: 0-4, 1-5 and 2-6 all missing is one problem passage, not three markers deep.
+function mergeIntoRanges(tierSegments) {
     const ranges = [];
-    for (const segment of unmatchedSegments.value) {
+    for (const segment of tierSegments) {
         const last = ranges[ranges.length - 1];
         if (last && segment.startLine <= last.endLine) {
             last.endLine = Math.max(last.endLine, segment.endLine);
@@ -232,18 +263,17 @@ const unmatchedRanges = computed(() => {
         }
     }
     return ranges;
-});
+}
 
-// The score shows two things at once: every unmatched passage in red, and the segment being
-// looked at in the default highlight. The windows overlap by design (0-4, 1-5, 2-6, ...), so
-// beyond that the score stays unmarked -- every segment at once would bury it.
+// The score shows the marked passages of every tier at once (red: not in the corpus at all,
+// amber: rare) and the segment being looked at in the default highlight. The windows overlap by
+// design (0-4, 1-5, 2-6, ...), so beyond that the score stays unmarked -- every segment at once
+// would bury it.
 const activeSections = computed(() => {
     const groups = [];
-    if (unmatchedRanges.value.length) {
-        groups.push({
-            items: unmatchedRanges.value.map((range) => ({ ...range })),
-            color: highlightColorsByName.red,
-        });
+    for (const tier of [...MATCH_TIERS].reverse()) {
+        const ranges = mergeIntoRanges(segmentsByTier.value[tier.key]);
+        if (ranges.length) groups.push({ items: ranges, color: tier.color });
     }
     if (activeSegment.value) {
         groups.push({
@@ -259,6 +289,12 @@ const activeSections = computed(() => {
     }
     return groups;
 });
+
+// What the legend under the score explains: the tiers plus the segment on show.
+const legendItems = [
+    ...MATCH_TIERS.map((tier) => ({ key: tier.key, color: tier.color, label: tier.legend })),
+    { key: 'active', color: defaultHighlightColors[0], label: 'legendActive' },
+];
 
 // The passages behind a segment's counts, fetched only when asked for and kept per segment,
 // so paging back to a segment doesn't search the corpus again.
@@ -467,8 +503,8 @@ function onSubmit() {
                                 <span class="text-dimmed tabular-nums">({{ $t('searchDuration', { duration: formatDuration(result.durationMs) }) }})</span>
                             </template>
                         </i18n-t>
-                        <UBadge v-if="unmatchedSegments.length" color="error" variant="subtle">
-                            {{ $t('segmentsWithoutMatches', unmatchedSegments.length) }}
+                        <UBadge v-for="tier in MATCH_TIERS" v-show="segmentsByTier[tier.key].length" :key="tier.key" :color="tier.badgeColor" variant="subtle">
+                            {{ $t(tier.badge, segmentsByTier[tier.key].length) }}
                         </UBadge>
                         <UBadge v-if="result.inputFormat === 'musicxml'" color="neutral" variant="subtle">{{ $t('convertedFromMusicxml') }}</UBadge>
                         <UBadge v-if="result.layout === 'grand-staff'" color="neutral" variant="subtle">{{ $t('splitIntoVoices') }}</UBadge>
@@ -490,6 +526,12 @@ function onSubmit() {
                             :scroll-to-line="activeSegment?.startLine"
                             @note-click="onNoteClick"
                         />
+                        <ul class="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-xs text-muted">
+                            <li v-for="item in legendItems" :key="item.key" class="flex items-center gap-1.5">
+                                <span class="inline-block size-3 rounded-sm" :style="{ backgroundColor: item.color }" />
+                                {{ $t(item.label, { count: RARE_MATCH_THRESHOLD }) }}
+                            </li>
+                        </ul>
                     </UCard>
 
                     <UCard v-if="activeSegment" class="w-full max-w-2xl mx-auto" :ui="{ body: 'p-3 sm:p-3' }">
@@ -501,7 +543,7 @@ function onSubmit() {
                                     <UButton icon="lucide:chevron-right" color="neutral" variant="subtle" size="xs" :aria-label="$t('nextSegment')" :disabled="position >= segments.length" @click="goToSegment(position + 1)" />
                                 </div>
                                 <span class="font-semibold">{{ activeSegment.id }}</span>
-                                <UBadge v-if="activeStats" :color="activeStats.matches === 0 ? 'error' : 'neutral'" variant="subtle">
+                                <UBadge v-if="activeStats" :color="tierOf(activeSegment)?.badgeColor ?? 'neutral'" variant="subtle">
                                     <i18n-t
                                         keypath="segmentStats"
                                         :plural="activeStats.choraleCount"

@@ -44,6 +44,10 @@ durationAllowMergedNotesDescription: "Mehrere gleiche Noten hintereinander werde
 segmentsFound: "{segments} Segment {duration} | {segments} Segmente {duration}"
 segmentStats: "keine Treffer im Korpus | {matches} Treffer in einem Choral | {matches} Treffer in {count} Chorälen"
 segmentsWithoutMatches: "{count} Segment ohne Treffer | {count} Segmente ohne Treffer"
+segmentsWithFewMatches: "{count} seltenes Segment | {count} seltene Segmente"
+legendUnmatched: Nicht im Korpus gefunden
+legendRare: Selten im Korpus (höchstens {count} Treffer)
+legendActive: Ausgewähltes Segment
 topChorales: Choräle mit den meisten Treffern
 matchCount: "ein Treffer | {count} Treffer"
 copy: Kopieren
