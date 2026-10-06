@@ -218,6 +218,10 @@ const activeStats = computed(() => activeSegment.value?.stats ?? null);
 // A segment found this often in the corpus or less (but at least once) counts as rare.
 const RARE_MATCH_THRESHOLD = 2;
 
+// The frame of the segment on show lies over the tier markers, so it is the primary color with
+// little transparency: at 40% it would wash out against them.
+const ACTIVE_FRAME_COLOR = 'color-mix(in oklab, var(--ui-primary) 80%, transparent)';
+
 // How a segment's match count marks it in the score, rarest first. Later tiers are drawn over
 // earlier ones where they overlap.
 const MATCH_TIERS = [
@@ -266,7 +270,7 @@ function mergeIntoRanges(tierSegments) {
 }
 
 // The score shows the marked passages of every tier at once (red: not in the corpus at all,
-// amber: rare) and the segment being looked at in the default highlight. The windows overlap by
+// amber: rare) and the segment being looked at as a frame in the primary color. The windows overlap by
 // design (0-4, 1-5, 2-6, ...), so beyond that the score stays unmarked -- every segment at once
 // would bury it.
 const activeSections = computed(() => {
@@ -284,7 +288,8 @@ const activeSections = computed(() => {
                     label: activeSegment.value.id,
                 },
             ],
-            color: defaultHighlightColors[0],
+            color: ACTIVE_FRAME_COLOR,
+            outline: true,
         });
     }
     return groups;
@@ -293,7 +298,7 @@ const activeSections = computed(() => {
 // What the legend under the score explains: the tiers plus the segment on show.
 const legendItems = [
     ...MATCH_TIERS.map((tier) => ({ key: tier.key, color: tier.color, label: tier.legend })),
-    { key: 'active', color: defaultHighlightColors[0], label: 'legendActive' },
+    { key: 'active', color: ACTIVE_FRAME_COLOR, label: 'legendActive', outline: true },
 ];
 
 // The passages behind a segment's counts, fetched only when asked for and kept per segment,
@@ -528,7 +533,11 @@ function onSubmit() {
                         />
                         <ul class="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-xs text-muted">
                             <li v-for="item in legendItems" :key="item.key" class="flex items-center gap-1.5">
-                                <span class="inline-block size-3 rounded-sm" :style="{ backgroundColor: item.color }" />
+                                <span
+                                    class="inline-block size-3 rounded-sm"
+                                    :class="item.outline && 'border-[3px] border-solid'"
+                                    :style="item.outline ? { borderColor: item.color } : { backgroundColor: item.color }"
+                                />
                                 {{ $t(item.label, { count: RARE_MATCH_THRESHOLD }) }}
                             </li>
                         </ul>

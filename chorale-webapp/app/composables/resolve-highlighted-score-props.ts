@@ -13,6 +13,8 @@ interface Section {
 interface SectionGroup {
     items: Section[];
     color?: string;
+    // Drawn as a frame around the notes instead of a filled area.
+    outline?: boolean;
 }
 
 interface Line {

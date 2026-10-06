@@ -36,7 +36,7 @@ function getAccidRect(elem) {
     return rect?.width > 0 ? rect : null;
 }
 
-function createMarker(startElem, endElem, systemElem, containerElem, color, voiceStaffIndex = null) {
+function createMarker(startElem, endElem, systemElem, containerElem, color, voiceStaffIndex = null, outline = false) {
     const startAccidRect = getAccidRect(startElem);
     endElem = getBBoxElem(endElem) || endElem;
 
@@ -51,7 +51,9 @@ function createMarker(startElem, endElem, systemElem, containerElem, color, voic
     const firstStaffRect = voiceStaffRect ?? getBBoxElem(staffs[0])?.getBoundingClientRect();
     const lastStaffRect = voiceStaffRect ?? getBBoxElem(staffs[staffs.length - 1])?.getBoundingClientRect();
 
-    const heightExtender = 15;
+    // An outline sits a little further out than a fill, so its 5px border starts at the fill's edge
+    // of another marker underneath instead of leaving a white gap to it.
+    const heightExtender = outline ? 20 : 15;
     const height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y  + heightExtender;
 
     const xPosStart = startRect
@@ -59,22 +61,27 @@ function createMarker(startElem, endElem, systemElem, containerElem, color, voic
         : (systemFirstMeasureStaffRect ? systemFirstMeasureStaffRect.x: systemRect.x);
     const xPosEnd = endRect ? endRect.right : getBBoxElem([...systemElem.querySelectorAll('.measure:not(.bounding-box)')].at(-1).querySelector('.staff:not(.bounding-box)'))?.getBoundingClientRect().right;
 
-    const widthExtender = 15;
+    const widthExtender = outline ? 20 : 15;
     const width = xPosEnd - xPosStart + widthExtender;
     const xOffset = 2;
 
     return h('div', {
         class: [
             'absolute',
-            !startElem && 'bg-zig-zag-left',
-            !endElem && 'bg-zig-zag-right',
+            !outline && !startElem && 'bg-zig-zag-left',
+            !outline && !endElem && 'bg-zig-zag-right',
             startElem && !endElem && 'rounded-tl rounded-bl',
             !startElem && endElem && 'rounded-tr rounded-br',
             startElem && endElem && 'rounded',
+            // A system the section carries on from or into has no edge on that side.
+            outline && 'border-[5px] border-solid',
+            outline && !startElem && 'border-l-0',
+            outline && !endElem && 'border-r-0',
         ],
         style: {
-            backgroundColor: color,
-            '--zig-zag-color': color,
+            ...(outline
+                ? { borderColor: color }
+                : { backgroundColor: color, '--zig-zag-color': color }),
             width: `${width}px`,
             height: `${height}px`,
             left: `${xPosStart - (widthExtender / 2) - containerRect.x + xOffset}px`,
@@ -102,6 +109,8 @@ export default {
             default: null,
         },
         color: String,
+        // Draws the section as a frame around the notes instead of filling it.
+        outline: Boolean,
         container: HTMLElement,
         label: {
             type: Object,
@@ -161,7 +170,7 @@ export default {
             const endSystem = endElem.closest('g.system');
 
             if (startSystem === endSystem) {
-                markers.push(createMarker(startElem, endElem, startSystem, containerElem, props.color, voiceStaffIndex));
+                markers.push(createMarker(startElem, endElem, startSystem, containerElem, props.color, voiceStaffIndex, props.outline));
             } else {
                 const systemParentChildren = startSystem.parentElement.children;
                 const startIndex = [...systemParentChildren].indexOf(startSystem);
@@ -176,6 +185,7 @@ export default {
                         containerElem,
                         props.color,
                         voiceStaffIndex,
+                        props.outline,
                     ));
                 }
             }
