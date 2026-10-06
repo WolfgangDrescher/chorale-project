@@ -465,7 +465,7 @@ function onSubmit() {
 
                 <div class="flex gap-2">
                     <UButton type="submit" :loading="pending" :disabled="!file || !!fileError">{{ $t('submit') }}</UButton>
-                    <UButton v-if="isDev" color="neutral" variant="subtle" icon="lucide:flask-conical" :disabled="pending" @click="analyzeDemoScore">
+                    <UButton v-if="isDev && !file" color="neutral" variant="subtle" icon="lucide:flask-conical" :disabled="pending" @click="analyzeDemoScore">
                         {{ $t('useDemoScore', { id: DEMO_CHORALE_ID }) }}
                     </UButton>
                 </div>
