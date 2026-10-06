@@ -12,6 +12,7 @@ const props = defineProps<{
     notes?: NotesProp,
     lines?: LinesProp,
     sections?: SectionsProp,
+    connections?: ConnectionsProp,
     filters?: Array<string>,
     horizontal?: Boolean,
     scrollToFirstSection?: Boolean,
@@ -183,6 +184,9 @@ onMounted(async () => {
                 </template>
                 <template v-for="(sectionGroup, groupIndex) in resolvedSections" :key="groupIndex">
                     <HighlightedSection v-for="section in sectionGroup.items" :key="`${section.startLine}-${section.endLine}-${section.voice}-${section.label?.value}-${sectionGroup.color}-${sectionGroup.outline}`" :start-line="section.startLine" :end-line="section.endLine" :label="section.label" :voice="section.voice" :color="sectionGroup.color" :outline="sectionGroup.outline" :container="scoreContainer" />
+                </template>
+                <template v-for="(connectionGroup, groupIndex) in connections" :key="`connection-${groupIndex}`">
+                    <HighlightedConnection v-for="(connection, index) in connectionGroup.items" :key="`${index}-${connection.from.line}F${connection.from.voice}-${connection.to.line}F${connection.to.voice}-${connectionGroup.color}`" :from="connection.from" :to="connection.to" :color="connectionGroup.color" :width="connectionGroup.width" :container="scoreContainer" />
                 </template>
                 <template v-for="(lineGroup, groupIndex) in resolvedLines" :key="groupIndex">
                     <HighlightedSection v-for="line in lineGroup.items" :key="`${line.lineNumber}-${line.label?.value}-${lineGroup.color}`" :start-line="line.lineNumber" :end-line="line.lineNumber" :label="line.label" :color="lineGroup.color" :container="scoreContainer" />

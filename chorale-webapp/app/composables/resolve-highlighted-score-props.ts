@@ -37,6 +37,14 @@ interface Label {
     position?: 'top' | 'bottom';
 }
 
+// A line from one note to another, each given as the line and voice of its attack.
+interface ConnectionGroup {
+    items: { from: { line: number, voice: number }, to: { line: number, voice: number } }[];
+    color?: string;
+    width?: number;
+}
+
+export type ConnectionsProp = ConnectionGroup[];
 export type NotesProp = NoteGroup[] | string[];
 export type LinesProp = LineGroup[] | number[];
 export type SectionsProp = SectionGroup[] | Section[];
