@@ -8,6 +8,12 @@ const localePath = useLocalePath();
 // The score, shared with the other analyses of the page.
 const file = defineModel('file', { default: null });
 
+// Whether this analysis is the one on show: the tabs stay mounted, so the arrow keys must be left
+// to the other one while it is not.
+const props = defineProps({
+    active: { type: Boolean, default: true },
+});
+
 // Whole quarter notes, which is all --length takes. Anything shorter than 2 makes the query a
 // single note, anything past 8 rarely survives a phrase ending (no segment reaches across a
 // fermata), so the ends of this list are already where the tool stops being interesting.
@@ -370,10 +376,10 @@ function onNoteClick({ line }) {
 // Arrow keys page through the segments, unless a modal is open or the cursor is in a field.
 defineShortcuts({
     arrowleft: () => {
-        if (!matchesVisible.value && !jsonOpen.value) goToSegment(position.value - 1);
+        if (props.active && !matchesVisible.value && !jsonOpen.value) goToSegment(position.value - 1);
     },
     arrowright: () => {
-        if (!matchesVisible.value && !jsonOpen.value) goToSegment(position.value + 1);
+        if (props.active && !matchesVisible.value && !jsonOpen.value) goToSegment(position.value + 1);
     },
 });
 

@@ -30,10 +30,10 @@ const file = ref(null);
 
         <UTabs v-model="tab" :items="TABS" :unmount-on-hide="false" class="w-full">
             <template #segments>
-                <SegmentAnalysis v-model:file="file" class="mt-4" />
+                <SegmentAnalysis v-model:file="file" :active="tab === 'segments'" class="mt-4" />
             </template>
             <template #check>
-                <CheckAnalysis v-model:file="file" class="mt-4" />
+                <CheckAnalysis v-model:file="file" :active="tab === 'check'" class="mt-4" />
             </template>
         </UTabs>
     </UContainer>

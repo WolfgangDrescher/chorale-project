@@ -6,6 +6,12 @@
 // The score, shared with the other analyses of the page.
 const file = defineModel('file', { default: null });
 
+// Whether this analysis is the one on show: the tabs stay mounted, so the keys must be left to the
+// other one while it is not.
+const props = defineProps({
+    active: { type: Boolean, default: true },
+});
+
 const { fileError } = useScoreFile(file);
 
 // The checks that find something, as the keys this page translates. Each finding names the one it
@@ -129,6 +135,12 @@ const scrollToLine = computed(() => (activeFinding.value?.startLine));
 function goToFinding(n) {
     position.value = Math.min(Math.max(n, 1), findings.value.length);
 }
+
+// The left and right arrow keys page through the findings.
+defineShortcuts({
+    arrowleft: () => props.active && goToFinding(position.value - 1),
+    arrowright: () => props.active && goToFinding(position.value + 1),
+});
 
 // A clicked note selects the first finding that has it among its notes.
 function onNoteClick({ line, voice }) {
