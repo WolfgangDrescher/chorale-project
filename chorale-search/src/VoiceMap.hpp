@@ -1,9 +1,13 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
 namespace choralesearch {
+
+// A chorale has four voices, numbered 1 (bass) to 4 (soprano).
+inline constexpr std::size_t kVoiceCount = 4;
 
 // Human-readable label for a voice, e.g. "Bass".
 // Out-of-range (not 1-4) returns "?".

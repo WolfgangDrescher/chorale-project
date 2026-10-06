@@ -34,6 +34,7 @@ add_library(chorale_core STATIC
     src/QueryValidation.cpp
     src/ScoreImport.cpp
     src/Segmentation.cpp
+    src/Check.cpp
     src/SpineAnalysis.cpp
 )
 target_include_directories(chorale_core PUBLIC
@@ -49,6 +50,9 @@ target_link_libraries(chorale-search PRIVATE chorale_core)
 add_executable(chorale-segment cli/chorale-segment.cpp)
 target_link_libraries(chorale-segment PRIVATE chorale_core)
 
+add_executable(chorale-check cli/chorale-check.cpp)
+target_link_libraries(chorale-check PRIVATE chorale_core)
+
 add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/SpineAnalysis.cpp)
 target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -57,7 +61,7 @@ target_include_directories(chorale-generate PRIVATE
 target_compile_options(chorale-generate PRIVATE -Wall -Wextra)
 target_link_libraries(chorale-generate PRIVATE humlib)
 
-install(TARGETS chorale-search chorale-segment RUNTIME DESTINATION bin)
+install(TARGETS chorale-search chorale-segment chorale-check RUNTIME DESTINATION bin)
 
 option(BUILD_TESTS "Build the minitest test binaries in tests/" ON)
 
@@ -90,6 +94,11 @@ if(BUILD_TESTS)
     target_include_directories(test_segmentation PRIVATE tests)
     target_link_libraries(test_segmentation PRIVATE chorale_core)
     add_test(NAME segmentation COMMAND test_segmentation)
+
+    add_executable(test_check tests/test_check.cpp)
+    target_include_directories(test_check PRIVATE tests)
+    target_link_libraries(test_check PRIVATE chorale_core)
+    add_test(NAME check COMMAND test_check)
 
     add_executable(test_attributematcher tests/test_attributematcher.cpp)
     target_include_directories(test_attributematcher PRIVATE tests)

@@ -17,6 +17,10 @@
 #     and cuts it into segments, each with the query that searches the
 #     corpus for it
 #
+# make run-check ARGS="score.krn"
+#     the same for chorale-check, which prepares a score the same
+#     way and checks it for errors in the setting (parallel fifths and octaves, for now)
+#
 # make test
 #     build and run the tests/ suite (see tests/test_framework.hpp). Runs
 #     each test binary directly instead of through ctest, so you get its
@@ -42,7 +46,7 @@ SHELL     := /bin/bash
 BUILD_DIR := build
 JOBS      ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: all deps debug clean clean-deps distclean run-cli run-segment test run-tests
+.PHONY: all deps debug clean clean-deps distclean run-cli run-segment run-check test run-tests
 .DEFAULT_GOAL := all
 
 deps:
@@ -69,6 +73,9 @@ run-cli: all
 
 run-segment: all
 	./$(BUILD_DIR)/chorale-segment $(ARGS)
+
+run-check: all
+	./$(BUILD_DIR)/chorale-check $(ARGS)
 
 test: all
 	$(MAKE) run-tests
