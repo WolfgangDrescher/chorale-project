@@ -33,6 +33,13 @@ const CHECK_OPTIONS = [
         label: 'ignoreIntervalQuality',
         description: 'ignoreIntervalQualityDescription',
     },
+    {
+        key: 'skipUnclassifiedBeats',
+        type: 'switch',
+        default: true,
+        label: 'skipUnclassifiedBeats',
+        description: 'skipUnclassifiedBeatsDescription',
+    },
 ];
 
 // The selects stay under the dropzone, the switches go beside it on large screens.

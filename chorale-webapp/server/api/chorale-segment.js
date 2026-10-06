@@ -29,13 +29,13 @@ function parseSegmentLength(value) {
     return length;
 }
 
-// Absent means the default: intervals are compared without their quality.
-function parseIgnoreIntervalQuality(value) {
+// A boolean option of the page. Absent means on, the default of every one of them.
+function parseBoolean(name, value) {
     if (value === undefined || value === null) return true;
     if (typeof value !== 'boolean') {
         throw new ValidationError(
             'The request contains one or more validation errors',
-            `"ignoreIntervalQuality" must be a boolean, got ${JSON.stringify(value)}`,
+            `"${name}" must be a boolean, got ${JSON.stringify(value)}`,
         );
     }
     return value;
@@ -57,7 +57,7 @@ function parseScoreData(value) {
     return value;
 }
 
-// Takes { data, length?, ignoreIntervalQuality? } and returns the prepared kern and the segments with their corpus stats.
+// Takes { data, length?, ignoreIntervalQuality?, skipUnclassifiedBeats? } and returns the prepared kern and the segments with their corpus stats.
 // Answers with the JSON result, or as a stream of progress events ending in the result for a
 // caller that accepts one (see respondWithStream).
 export default defineEventHandler(async (event) => {
@@ -67,7 +67,8 @@ export default defineEventHandler(async (event) => {
         const body = await parseRequestBody(event);
         const data = parseScoreData(body.data);
         const length = parseSegmentLength(body.length);
-        const ignoreIntervalQuality = parseIgnoreIntervalQuality(body.ignoreIntervalQuality);
+        const ignoreIntervalQuality = parseBoolean('ignoreIntervalQuality', body.ignoreIntervalQuality);
+        const skipUnclassifiedBeats = parseBoolean('skipUnclassifiedBeats', body.skipUnclassifiedBeats);
         const segment = ({ onEvent, signal } = {}) => {
             const args = [
                 '-',
@@ -76,6 +77,7 @@ export default defineEventHandler(async (event) => {
                 '--no-analysis',
             ];
             args.push('--mint-ignore-quality', String(ignoreIntervalQuality));
+            args.push('--metweight-skip-unclassified', String(skipUnclassifiedBeats));
             if (onEvent) args.push('--progress');
 
             return runCliTool({

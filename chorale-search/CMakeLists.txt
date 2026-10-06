@@ -86,6 +86,11 @@ if(BUILD_TESTS)
     target_link_libraries(test_corpussearch PRIVATE chorale_core)
     add_test(NAME corpussearch COMMAND test_corpussearch)
 
+    add_executable(test_segmentation tests/test_segmentation.cpp)
+    target_include_directories(test_segmentation PRIVATE tests)
+    target_link_libraries(test_segmentation PRIVATE chorale_core)
+    add_test(NAME segmentation COMMAND test_segmentation)
+
     add_executable(test_attributematcher tests/test_attributematcher.cpp)
     target_include_directories(test_attributematcher PRIVATE tests)
     target_link_libraries(test_attributematcher PRIVATE chorale_core)

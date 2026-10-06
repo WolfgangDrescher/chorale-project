@@ -25,7 +25,6 @@ public:
 
     std::vector<AttributeMatch> findAll(const HumdrumChorale& chorale, std::size_t voice) const;
 
-private:
     // One onset of the driving spine as the pattern walk sees it. Without
     // MatcherOptions::metweightSkipUnclassified that is just the spine's own token and its own
     // sounding duration. With it, ornamental onsets are gone from the walk entirely and survive
@@ -43,6 +42,7 @@ private:
     // first onset -- there is no note in front of it whose duration it could belong to.
     std::vector<Onset> buildOnsets(const HumdrumChorale& chorale, std::size_t voice) const;
 
+private:
     // Judges a single pattern key (possibly "!"-negated) against a single onset, with the
     // negation already applied to the returned value. nullopt means the key couldn't be
     // judged at all because the spine or token it needs isn't there -- that fails the

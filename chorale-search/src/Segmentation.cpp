@@ -1,5 +1,6 @@
 #include "Segmentation.hpp"
 
+#include "AttributeMatcher.hpp"
 #include "HumdrumUtils.hpp"
 
 #include <algorithm>
@@ -10,6 +11,8 @@
 namespace choralesearch {
 
 namespace {
+
+using Onset = AttributeMatcher::Onset;
 
 const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
@@ -35,14 +38,27 @@ std::string withoutQuality(const std::string& interval) {
 }
 
 // Every note (or rest) a voice attacks between two positions, in order -- exactly what
-// AttributeMatcher walks when it runs the query later. The continuation of a tie isn't an attack
-// of its own: it belongs to the note that started earlier, whose duration already covers it
-// (getTiedDuration). A note the window opened in the middle of was attacked before it and is
+// AttributeMatcher walks when it runs the query later. With `metweightSkipUnclassified` the
+// ornaments are taken out the way the matcher does it for that option (buildOnsets), so the
+// pattern is made of exactly what the search will see. The continuation of a tie isn't an
+// attack of its own: it belongs to the note that started earlier, whose duration already covers
+// it (getTiedDuration). A note the window opened in the middle of was attacked before it and is
 // therefore not one of them either: the pattern describes what happens inside the window, not
 // what was already sounding when it opened.
-std::vector<hum::HTp> onsetsBetween(const HumdrumChorale& chorale, const std::string& feature, std::size_t voice,
-                                     hum::HumNum from, hum::HumNum until) {
-    std::vector<hum::HTp> onsets;
+std::vector<Onset> onsetsBetween(const HumdrumChorale& chorale, const std::string& feature, std::size_t voice,
+                                  hum::HumNum from, hum::HumNum until, bool metweightSkipUnclassified = false) {
+    std::vector<Onset> onsets;
+    if (metweightSkipUnclassified) {
+        MatcherOptions skipOptions;
+        skipOptions.metweightSkipUnclassified = true;
+        for (const Onset& onset : AttributeMatcher(feature, {}, skipOptions).buildOnsets(chorale, voice)) {
+            hum::HumNum position = onset.token->getDurationFromStart();
+            if (position < from) continue;
+            if (position >= until) break;
+            onsets.push_back(onset);
+        }
+        return onsets;
+    }
     hum::HTp start = chorale.spine(feature, voice);
     if (!start) return onsets;
     for (hum::HTp t = start->getNextToken(); t; t = t->getNextToken()) {
@@ -50,7 +66,7 @@ std::vector<hum::HTp> onsetsBetween(const HumdrumChorale& chorale, const std::st
         hum::HumNum position = t->getDurationFromStart();
         if (position < from) continue;
         if (position >= until) break;
-        onsets.push_back(t);
+        onsets.push_back(Onset{t, soundingDuration(t), std::nullopt});
     }
     return onsets;
 }
@@ -92,13 +108,13 @@ std::vector<hum::HumNum> phraseEndings(const HumdrumChorale& chorale) {
 // spine has nothing at that line is left out rather than written as a wildcard: a rest, for
 // instance, has no interval to the soprano, and demanding one there would keep the segment from
 // matching even its own source.
-std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std::vector<hum::HTp>& onsets,
+std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std::vector<Onset>& onsets,
                                         std::size_t voice, hum::HumNum windowEnd,
                                         const SegmentQueryOptions& options, bool crossReferenceHintPairs) {
     std::vector<AttributeMap> pattern;
 
     for (std::size_t i = 0; i < onsets.size(); ++i) {
-        hum::HTp token = onsets[i];
+        hum::HTp token = onsets[i].token;
         int lineNumber = token->getLineNumber();
         AttributeMap position;
 
@@ -108,7 +124,9 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
         // pattern's first position (see docs/options#mintstartatprevioustoken) without saying
         // anything about how the music got there.
         bool isMintLeadIn = options.feature == kMintFeature && i == 0;
-        std::string value = std::string(*token);
+        // Where ornaments were folded away the interval into this note is the one measured
+        // across them, which is not what the spine's own token says.
+        std::string value = onsets[i].mint ? *onsets[i].mint : std::string(*token);
         if (options.ignoreIntervalQuality && options.feature == kMintFeature) value = withoutQuality(value);
         position[options.feature] = {isMintLeadIn ? kWildcard : value};
 
@@ -116,9 +134,9 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
         // it cuts in two. Only the part inside belongs to the segment, and a pattern can't ask
         // for part of a note, so the duration is left open there instead of pinning down a
         // length the segment doesn't actually cover.
-        bool soundsPastTheEnd = token->getDurationFromStart() + soundingDuration(token) > windowEnd;
+        bool soundsPastTheEnd = token->getDurationFromStart() + onsets[i].duration > windowEnd;
         if (options.includeDuration && !soundsPastTheEnd) {
-            position[kDurationKey] = {hum::Convert::durationToRecip(soundingDuration(token))};
+            position[kDurationKey] = {hum::Convert::durationToRecip(onsets[i].duration)};
         }
         if (options.includeFermata) {
             if (hum::HTp kernToken = findTokenAtLine(chorale.spine(kKernFeature, voice), lineNumber)) {
@@ -141,7 +159,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
     return pattern;
 }
 
-Query buildQuery(const HumdrumChorale& chorale, const std::vector<hum::HTp>& onsets, hum::HumNum windowStart,
+Query buildQuery(const HumdrumChorale& chorale, const std::vector<Onset>& onsets, hum::HumNum windowStart,
                   hum::HumNum windowEnd, const SegmentQueryOptions& options, const std::string& id) {
     Query query;
     query.id = id;
@@ -154,7 +172,7 @@ Query buildQuery(const HumdrumChorale& chorale, const std::vector<hum::HTp>& ons
     // onset already fixes all the others.
     query.pattern = buildPattern(chorale, onsets, options.voice, windowEnd, options, false);
 
-    const hum::HumNum patternStart = onsets.front()->getDurationFromStart();
+    const hum::HumNum patternStart = onsets.front().token->getDurationFromStart();
     for (std::size_t voice : options.simultaneousVoices) {
         if (voice == options.voice) continue; // it's already the query's own pattern
 
@@ -163,9 +181,10 @@ Query buildQuery(const HumdrumChorale& chorale, const std::vector<hum::HTp>& ons
         // -- the window opened while it was holding a note -- would leave the two patterns
         // looking for different starting points and the query finding nothing, its own source
         // included, so it is left to its hint pair instead.
-        const std::vector<hum::HTp> groupOnsets =
-            onsetsBetween(chorale, options.feature, voice, windowStart, windowEnd);
-        if (groupOnsets.empty() || groupOnsets.front()->getDurationFromStart() != patternStart) continue;
+        const std::vector<Onset> groupOnsets =
+            onsetsBetween(chorale, options.feature, voice, windowStart, windowEnd,
+                          options.matcherOptions.metweightSkipUnclassified);
+        if (groupOnsets.empty() || groupOnsets.front().token->getDurationFromStart() != patternStart) continue;
 
         SimultaneousGroup group;
         group.feature = options.feature;
@@ -213,21 +232,26 @@ std::vector<Segment> segmentScore(const HumdrumChorale& chorale, const Segmentat
         const hum::HumNum stop = start + options.length;
         if (crossesPhraseEnding(start, stop)) continue;
 
-        const std::vector<hum::HTp> onsets =
-            onsetsBetween(chorale, queryOptions.feature, queryOptions.voice, start, stop);
+        const std::vector<Onset> onsets =
+            onsetsBetween(chorale, queryOptions.feature, queryOptions.voice, start, stop,
+                          queryOptions.matcherOptions.metweightSkipUnclassified);
         if (onsets.empty()) continue; // the voice holds one note across it -- nothing to ask about
 
         // What the segment covers is what the query as a whole asks about, so a voice that comes
         // in before the query's own or moves after it stretches the segment to itself -- even
         // where that voice lost its group (see buildQuery), since the window did hold its notes.
-        hum::HTp earliest = onsets.front();
-        hum::HTp latest = onsets.back();
+        hum::HTp earliest = onsets.front().token;
+        hum::HTp latest = onsets.back().token;
         for (std::size_t voice : queryOptions.simultaneousVoices) {
             if (voice == queryOptions.voice) continue;
-            const std::vector<hum::HTp> other = onsetsBetween(chorale, queryOptions.feature, voice, start, stop);
+            const std::vector<Onset> other = onsetsBetween(chorale, queryOptions.feature, voice, start, stop);
             if (other.empty()) continue;
-            if (other.front()->getDurationFromStart() < earliest->getDurationFromStart()) earliest = other.front();
-            if (other.back()->getDurationFromStart() > latest->getDurationFromStart()) latest = other.back();
+            if (other.front().token->getDurationFromStart() < earliest->getDurationFromStart()) {
+                earliest = other.front().token;
+            }
+            if (other.back().token->getDurationFromStart() > latest->getDurationFromStart()) {
+                latest = other.back().token;
+            }
         }
 
         Segment segment;

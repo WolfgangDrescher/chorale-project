@@ -17,12 +17,13 @@ struct SegmentationOptions {
 
 // The matcher tolerances a segment query asks for by default: everything that widens a match
 // without ever losing the segment's own source. Compound intervals fold to their simple ones,
-// complementary intervals count for every number, and a note may be found written as its own
-// split or merger.
+// complementary intervals count for every number, ornaments are left out, and a note may be found
+// written as its own split or merger.
 inline MatcherOptions defaultSegmentMatcherOptions() {
     MatcherOptions options;
     options.hintReduceCompound = true;
     options.mintAllowIntervalComplementation = {"*"};
+    options.metweightSkipUnclassified = true;
     options.durationAllowSplitNotes = true;
     options.durationAllowMergedNotes = true;
     return options;
@@ -59,10 +60,10 @@ struct SegmentQueryOptions {
     std::vector<std::string> hintPairs = {"hint-14"};
 
     // Handed to the query verbatim (see Query.hpp): none of them change what the pattern asks
-    // for, only how strictly a passage has to answer it. metweightSkipUnclassified needs a
-    // second half here first -- it takes the ornaments out of what a search walks, so a pattern
-    // still spelling out its own would match nothing, its source included, until it is built
-    // from the same folded onsets (AttributeMatcher's buildOnsets).
+    // for, only how strictly a passage has to answer it. metweightSkipUnclassified also decides
+    // how the pattern is built: ornaments (notes on a metrically unclassified position) are left
+    // out of every voice's pattern, taken from the same folded onsets the search will walk, so a
+    // voice with passing notes is found by the same voice without them and the other way round.
     MatcherOptions matcherOptions = defaultSegmentMatcherOptions();
 };
 

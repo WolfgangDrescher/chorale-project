@@ -53,6 +53,9 @@ void printUsage(const char* argv0) {
         "                          leave the interval qualities out of the queries (\"+M2\"\n"
         "                          becomes \"+2\") so a passage is found in major and minor\n"
         "                          (default: true)\n"
+        "    --metweight-skip-unclassified true|false\n"
+        "                          fold the ornaments (notes on unclassified metric positions)\n"
+        "                          away in the queries instead of counting them (default: true)\n"
         "    --no-kern             leave the converted four-voice **kern text out of the\n"
         "                          output -- for command-line use, where the score is\n"
         "                          already at hand and only the segments matter\n"
@@ -196,6 +199,10 @@ int main(int argc, char** argv) {
             else if (arg == "--mint-ignore-quality") {
                 queryOptions.ignoreIntervalQuality =
                     parseBoolean("--mint-ignore-quality", next("--mint-ignore-quality"));
+            }
+            else if (arg == "--metweight-skip-unclassified") {
+                queryOptions.matcherOptions.metweightSkipUnclassified =
+                    parseBoolean("--metweight-skip-unclassified", next("--metweight-skip-unclassified"));
             }
             else if (arg == "--no-kern") { includeKern = false; }
             else if (arg == "--stats") { statsCorpusDir = next("--stats"); }
