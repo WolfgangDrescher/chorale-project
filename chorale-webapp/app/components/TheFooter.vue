@@ -12,8 +12,8 @@ const columns = [
                 to: localePath('index'),
             },
             {
-                label: t('segmentAnalysis'),
-                to: localePath('segment-analysis'),
+                label: t('choraleAnalysis'),
+                to: localePath('chorale-analysis'),
             },
             {
                 label: t('search'),

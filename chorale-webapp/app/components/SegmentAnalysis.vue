@@ -5,9 +5,8 @@ const { t } = useI18n();
 
 const localePath = useLocalePath();
 
-useHead({
-    title: t('segmentAnalysis'),
-});
+// The score, shared with the other analyses of the page.
+const file = defineModel('file', { default: null });
 
 // Whole quarter notes, which is all --length takes. Anything shorter than 2 makes the query a
 // single note, anything past 8 rarely survives a phrase ending (no segment reaches across a
@@ -96,18 +95,7 @@ const DEMO_CHORALE_ID = 'chor029';
 // The demo score is a development aid, not part of the page.
 const isDev = import.meta.dev;
 
-// Mirrors the endpoint's cap on "data", so an oversized file is refused before it travels.
-const MAX_FILE_SIZE = 2 * 1024 * 1024;
-
-// Extensions only: Nuxt UI turns MIME types in `accept` into a filter for dropped files, and a
-// dropped .krn file has none, so every drop would be refused.
-const UPLOAD_ACCEPT = '.krn,.kern,.musicxml,.xml';
-
-const KERN_EXTENSIONS = ['.krn', '.kern'];
-const MUSICXML_EXTENSIONS = ['.musicxml', '.xml'];
-
 function useSegmentAnalysis() {
-    const file = ref(null);
     const options = reactive(
         Object.fromEntries(CHECK_OPTIONS.filter((option) => !option.disabled).map((option) => [option.key, option.default])),
     );
@@ -170,7 +158,6 @@ function useSegmentAnalysis() {
     }
 
     return {
-        file,
         options,
         pending,
         progress,
@@ -187,7 +174,6 @@ function useSegmentAnalysis() {
 }
 
 const {
-    file,
     options,
     pending,
     progress,
@@ -201,25 +187,7 @@ const {
     analyzeDemoScore,
 } = useSegmentAnalysis();
 
-// What the extension says the file is. It gates submitting: a file no extension vouches for
-// would only come back as the tool's parse error.
-const fileFormat = computed(() => {
-    const name = file.value?.name ?? '';
-    const dot = name.lastIndexOf('.');
-    const extension = dot === -1 ? '' : name.slice(dot).toLowerCase();
-    if (KERN_EXTENSIONS.includes(extension)) return 'kern';
-    if (MUSICXML_EXTENSIONS.includes(extension)) return 'musicxml';
-    return null;
-});
-
-const fileSize = computed(() => (file.value ? formatBytes(file.value.size) : ''));
-
-const fileError = computed(() => {
-    if (!file.value) return null;
-    if (file.value.size > MAX_FILE_SIZE) return t('fileTooLarge', { size: formatBytes(MAX_FILE_SIZE) });
-    if (!fileFormat.value) return t('fileUnsupported');
-    return null;
-});
+const { fileError } = useScoreFile(file);
 
 const activeStats = computed(() => activeSegment.value?.stats ?? null);
 
@@ -415,40 +383,11 @@ function onSubmit() {
 </script>
 
 <template>
-    <UContainer>
-        <Heading>{{ $t('segmentAnalysis') }}</Heading>
-
+    <div>
         <UCard class="mb-4">
             <UForm class="space-y-4" @submit="onSubmit">
                 <div class="grid gap-6 lg:grid-cols-[1fr_auto_2fr] lg:items-start">
-                    <div>
-                        <p class="text-sm mb-2">{{ $t('uploadScoreDescription') }}</p>
-                        <div class="relative">
-                            <UFileUpload
-                                v-model="file"
-                                :accept="UPLOAD_ACCEPT"
-                                :icon="file ? 'lucide:file-music' : undefined"
-                                :label="file ? file.name : $t('uploadScoreLabel')"
-                                :description="file ? fileSize : $t('uploadScoreFormats')"
-                                :preview="false"
-                                size="sm"
-                                :ui="{ base: 'min-h-24' }"
-                                class="w-full"
-                            />
-                            <UButton
-                                v-if="file"
-                                icon="lucide:x"
-                                color="neutral"
-                                variant="ghost"
-                                size="xs"
-                                class="absolute top-2 right-2"
-                                :aria-label="$t('removeFile')"
-                                :title="$t('removeFile')"
-                                @click="file = null"
-                            />
-                        </div>
-                        <UAlert v-if="fileError" color="warning" variant="subtle" icon="lucide:triangle-alert" :title="fileError" class="mt-2" />
-
+                    <ScoreFileField v-model="file">
                         <SegmentOptionField
                             v-for="option in SELECT_OPTIONS"
                             :key="option.key"
@@ -456,7 +395,7 @@ function onSubmit() {
                             :option="option"
                             class="mt-4"
                         />
-                    </div>
+                    </ScoreFileField>
 
                     <USeparator class="lg:hidden" />
                     <USeparator orientation="vertical" class="hidden lg:flex lg:self-stretch" />
@@ -665,5 +604,5 @@ function onSubmit() {
                 />
             </template>
         </UModal>
-    </UContainer>
+    </div>
 </template>

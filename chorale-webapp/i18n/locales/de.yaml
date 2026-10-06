@@ -14,7 +14,8 @@ readDocs: Dokumentation lesen
 applyDemoQuery: Beispiel Query verwenden
 query: Query
 searchError: Die Suche ist fehlgeschlagen.
-segmentAnalysis: Segmentanalyse
+choraleAnalysis: Choralanalyse
+segmentAnalysis: Segmente
 uploadScoreDescription: Vierstimmiger Satz als Humdrum-Kern oder MusicXML
 uploadScoreLabel: Datei hierher ziehen oder klicken
 uploadScoreFormats: .krn, .musicxml oder .xml

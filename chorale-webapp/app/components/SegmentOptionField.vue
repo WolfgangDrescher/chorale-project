@@ -1,6 +1,6 @@
 <script setup>
 // One option of the segment analysis as a form field: a select or a switch, with its help in a
-// popover next to the label (see CHECK_OPTIONS in pages/segment-analysis.vue for what `option` holds).
+// popover next to the label (see CHECK_OPTIONS in components/SegmentAnalysis.vue for what `option` holds).
 const props = defineProps({
     option: { type: Object, required: true },
 });
