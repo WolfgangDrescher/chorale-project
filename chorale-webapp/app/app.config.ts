@@ -4,13 +4,14 @@ export default defineAppConfig({
             primary: 'sky',
         },
         // A switch that can't be changed is no call to action, so it doesn't wear the primary
-        // color when it is on.
+        // color when it is on. It is a darker gray than the track of a switch that is off, so the
+        // two can still be told apart.
         switch: {
             compoundVariants: [
                 {
                     disabled: true,
                     class: {
-                        base: 'data-[state=checked]:bg-accented',
+                        base: 'data-[state=checked]:bg-inverted/50',
                     },
                 },
             ],
