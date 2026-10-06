@@ -15,6 +15,8 @@ interface SectionGroup {
     color?: string;
     // Drawn as a frame around the notes instead of a filled area.
     outline?: boolean;
+    // Drawn around exactly the notes of the section instead of whole staves.
+    fitBoundingBox?: boolean;
 }
 
 interface Line {

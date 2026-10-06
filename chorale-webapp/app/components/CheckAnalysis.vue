@@ -116,12 +116,11 @@ const notes = computed(() => [
     },
 ]);
 
-// The finding on show as a frame on the staff of each of its voices, from its first note to its
-// last one.
+// The finding on show as a frame around exactly its notes, one for each of its voices.
 const sections = computed(() => {
     if (!activeFinding.value) return [];
     const { startLine, endLine } = activeFinding.value;
-    return [{ items: voicesOf(activeFinding.value).map((voice) => ({ voice, startLine, endLine })), color: ACTIVE_FRAME_COLOR, outline: true }];
+    return [{ items: voicesOf(activeFinding.value).map((voice) => ({ voice, startLine, endLine })), color: ACTIVE_FRAME_COLOR, outline: true, fitBoundingBox: true }];
 });
 
 // The line to keep in view for the finding on show.

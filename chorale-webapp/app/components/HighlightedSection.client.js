@@ -90,6 +90,40 @@ function createMarker(startElem, endElem, systemElem, containerElem, color, voic
     });
 }
 
+// A frame around exactly the given notes of one system, from the outermost edge of any of them to
+// the outermost on each of the four sides, instead of around whole staves. A note is all of its
+// parts: notehead, stem, flag, dots and accidental, which the bounding box of the note alone
+// doesn't always cover.
+function createFittedMarker(noteElems, containerElem, color) {
+    const containerRect = containerElem.getBoundingClientRect();
+    const rects = noteElems
+        .flatMap((elem) => [
+            getBBoxElem(elem)?.getBoundingClientRect(),
+            elem.getBoundingClientRect(),
+            ...[...elem.querySelectorAll('.notehead, .stem, .flag, .dots, .accid')].map((part) => part.getBoundingClientRect()),
+        ])
+        .filter((rect) => rect && (rect.width > 0 || rect.height > 0));
+    if (!rects.length) return null;
+
+    const left = Math.min(...rects.map((rect) => rect.left));
+    const top = Math.min(...rects.map((rect) => rect.top));
+    const right = Math.max(...rects.map((rect) => rect.right));
+    const bottom = Math.max(...rects.map((rect) => rect.bottom));
+
+    // The frame lies a little outside the notes, so its border doesn't touch them.
+    const padding = 8;
+    return h('div', {
+        class: 'absolute rounded border-[5px] border-solid',
+        style: {
+            borderColor: color,
+            width: `${right - left + padding * 2}px`,
+            height: `${bottom - top + padding * 2}px`,
+            left: `${left - padding - containerRect.x}px`,
+            top: `${top - padding - containerRect.y}px`,
+        },
+    });
+}
+
 function selectBBoxElem(elem, selectors) {
     const selectedElem = elem?.querySelector(selectors);
     return getBBoxElem(selectedElem);
@@ -111,6 +145,9 @@ export default {
         color: String,
         // Draws the section as a frame around the notes instead of filling it.
         outline: Boolean,
+        // Fits the frame to the notes of the section (those of `voice`, or of every voice) instead of
+        // spanning the staves they are on: one frame per system, around exactly those notes.
+        fitBoundingBox: Boolean,
         container: HTMLElement,
         label: {
             type: Object,
@@ -124,6 +161,21 @@ export default {
         let startElem = null;
         let endElem = null;
         const containerElem = props.container;
+
+        if (props.fitBoundingBox && containerElem) {
+            const noteElemsBySystem = new Map();
+            for (let line = props.startLine; line <= props.endLine; line++) {
+                const suffix = props.voice != null ? `L${line}F${props.voice}` : `L${line}F`;
+                for (const noteElem of containerElem.querySelectorAll(`g[id^="note-${suffix}"]`)) {
+                    const system = noteElem.closest('g.system');
+                    noteElemsBySystem.set(system, [...(noteElemsBySystem.get(system) ?? []), noteElem]);
+                }
+            }
+            const fittedMarkers = [...noteElemsBySystem.values()]
+                .map((noteElems) => createFittedMarker(noteElems, containerElem, props.color))
+                .filter(Boolean);
+            return () => h('div', {}, fittedMarkers);
+        }
         const noteSelector = (line, voice) => {
             const suffix = voice != null ? `L${line}F${voice}` : `L${line}F`;
             return `g[id^="note-${suffix}"], g[id^="rest-${suffix}"], g[id^="mrest-${suffix}"]`;
