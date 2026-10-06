@@ -335,21 +335,30 @@ function onSubmit() {
                 <div class="grid gap-6 lg:grid-cols-[1fr_auto_2fr] lg:items-start">
                     <div>
                         <p class="text-sm mb-2">{{ $t('uploadScoreDescription') }}</p>
-                        <UFileUpload
-                            v-model="file"
-                            :accept="UPLOAD_ACCEPT"
-                            :icon="file ? 'lucide:file-music' : undefined"
-                            :label="file ? file.name : $t('uploadScoreLabel')"
-                            :description="file ? fileSize : $t('uploadScoreFormats')"
-                            :preview="false"
-                            size="sm"
-                            :ui="{ base: file ? 'min-h-14' : 'min-h-24', wrapper: file ? 'flex-row flex-wrap gap-x-3 gap-y-1' : '' }"
-                            class="w-full"
-                        >
-                            <template v-if="file" #actions="{ removeFile }">
-                                <UButton :label="$t('removeFile')" color="neutral" variant="soft" size="xs" @click.stop="removeFile()" />
-                            </template>
-                        </UFileUpload>
+                        <div class="relative">
+                            <UFileUpload
+                                v-model="file"
+                                :accept="UPLOAD_ACCEPT"
+                                :icon="file ? 'lucide:file-music' : undefined"
+                                :label="file ? file.name : $t('uploadScoreLabel')"
+                                :description="file ? fileSize : $t('uploadScoreFormats')"
+                                :preview="false"
+                                size="sm"
+                                :ui="{ base: 'min-h-24' }"
+                                class="w-full"
+                            />
+                            <UButton
+                                v-if="file"
+                                icon="lucide:x"
+                                color="neutral"
+                                variant="ghost"
+                                size="xs"
+                                class="absolute top-2 right-2"
+                                :aria-label="$t('removeFile')"
+                                :title="$t('removeFile')"
+                                @click="file = null"
+                            />
+                        </div>
                         <UAlert v-if="fileError" color="warning" variant="subtle" icon="lucide:triangle-alert" :title="fileError" class="mt-2" />
 
                         <SegmentOptionField
