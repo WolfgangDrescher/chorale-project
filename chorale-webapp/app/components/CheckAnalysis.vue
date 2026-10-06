@@ -29,6 +29,18 @@ const SEVERITY_BADGE_COLORS = { error: 'error', warning: 'warning' };
 
 const DIRECTION_LABELS = { up: 'directionUp', down: 'directionDown', above: 'directionAbove', below: 'directionBelow' };
 
+// The voice ranges the notes can be measured against, the first being the one to begin with. Each is
+// a tab of the choice under the upload, and its range is explained in the popover next to it.
+const VOICE_RANGE_SETS = [
+    { key: 'strauss-berlioz', label: 'voiceRangesStraussBerlioz', description: 'voiceRangesStraussBerliozDescription' },
+    { key: 'bach', label: 'voiceRangesBach', description: 'voiceRangesBachDescription' },
+];
+
+const voiceRanges = ref(VOICE_RANGE_SETS[0].key);
+
+const { t } = useI18n();
+const voiceRangeTabs = VOICE_RANGE_SETS.map((set) => ({ value: set.key, label: t(set.label) }));
+
 const VOICE_NAMES = { 1: 'voiceBass', 2: 'voiceTenor', 3: 'voiceAlto', 4: 'voiceSoprano' };
 
 // The lines of the parallels in the score, and the markers of the notes out of their range.
@@ -75,7 +87,7 @@ async function analyze() {
     try {
         const data = await file.value.text();
         const response = await fetchWithProgress('/api/chorale-check', {
-            body: { data },
+            body: { data, voiceRanges: voiceRanges.value },
             signal: abortController.signal,
             onProgress: (event) => {
                 progress.value = { ...progress.value, ...event };
@@ -156,7 +168,35 @@ function onNoteClick({ line, voice }) {
         <UCard class="mb-4">
             <UForm class="space-y-4" @submit="analyze">
                 <div class="grid gap-6 lg:grid-cols-[1fr_auto_2fr] lg:items-start">
-                    <ScoreFileField v-model="file" />
+                    <ScoreFileField v-model="file">
+                        <UFormField class="mt-4">
+                            <template #label>
+                                <span class="inline-flex items-center gap-1">
+                                    {{ $t('voiceRanges') }}
+                                    <UPopover :content="{ side: 'top' }" arrow>
+                                        <UButton
+                                            color="neutral"
+                                            variant="link"
+                                            size="xs"
+                                            icon="lucide:info"
+                                            class="p-0"
+                                            :aria-label="$t('optionHelp', { option: $t('voiceRanges') })"
+                                        />
+                                        <template #content>
+                                            <div class="max-w-xs p-3 text-sm space-y-2">
+                                                <p>{{ $t('voiceRangesDescription') }}</p>
+                                                <p v-for="set in VOICE_RANGE_SETS" :key="set.key">
+                                                    <span class="font-semibold">{{ $t(set.label) }}:</span>
+                                                    {{ $t(set.description) }}
+                                                </p>
+                                            </div>
+                                        </template>
+                                    </UPopover>
+                                </span>
+                            </template>
+                            <UTabs v-model="voiceRanges" :items="voiceRangeTabs" :content="false" size="sm" class="w-full" />
+                        </UFormField>
+                    </ScoreFileField>
 
                     <USeparator class="lg:hidden" />
                     <USeparator orientation="vertical" class="hidden lg:flex lg:self-stretch" />

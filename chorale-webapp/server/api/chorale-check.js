@@ -23,7 +23,23 @@ function parseScoreData(value) {
     return value;
 }
 
-// Takes { data } and returns the prepared four-voice kern and what the checks found in it. Answers with the JSON result, or as a stream of progress events ending in the result for
+// The voice ranges the notes can be measured against (see VoiceRanges.hpp), the first being the
+// one to begin with.
+const VOICE_RANGES = ['strauss-berlioz', 'bach'];
+
+function parseVoiceRanges(value) {
+    if (value === undefined || value === null || value === '') return VOICE_RANGES[0];
+    if (!VOICE_RANGES.includes(value)) {
+        throw new ValidationError(
+            'The request contains one or more validation errors',
+            `"voiceRanges" must be one of ${VOICE_RANGES.join(', ')}, got ${JSON.stringify(value)}`,
+        );
+    }
+    return value;
+}
+
+// Takes { data, voiceRanges? } and returns the prepared four-voice kern and what the checks found
+// in it. Answers with the JSON result, or as a stream of progress events ending in the result for
 // a caller that accepts one (see respondWithStream).
 export default defineEventHandler(async (event) => {
     setResponseHeader(event, 'Content-Type', 'application/json');
@@ -31,8 +47,9 @@ export default defineEventHandler(async (event) => {
     try {
         const body = await parseRequestBody(event);
         const data = parseScoreData(body.data);
+        const voiceRanges = parseVoiceRanges(body.voiceRanges);
         const check = ({ onEvent, signal } = {}) => {
-            const args = ['-'];
+            const args = ['-', '--voice-ranges', voiceRanges];
             if (onEvent) args.push('--progress');
 
             return runCliTool({

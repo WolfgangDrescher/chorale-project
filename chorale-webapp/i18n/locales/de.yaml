@@ -74,7 +74,13 @@ checkListTitle: Das wird geprüft
 checkParallelMotion: Quint- und Oktavparallelen
 checkParallelMotionDescription: "Zwei Stimmen bewegen sich in dieselbe Richtung und bilden zweimal hintereinander eine reine Quinte oder Oktave. Das wird zwischen allen Stimmenpaaren geprüft, aufwärts und abwärts. Zusammengesetzte Intervalle zählen mit, eine Duodezime also als Quinte, ein Einklang als Oktave. Liegende Töne, Gegenbewegung und verminderte Quinten sind keine Parallelen. Beide Stimmen müssen ihre Noten gleichzeitig anschlagen."
 checkVoiceRange: Stimmumfang
-checkVoiceRangeDescription: "Jede Stimme wird auf ihren üblichen Umfang geprüft. Noten außerhalb davon werden als Hinweis markiert, denn der Umfang ist eine Gewohnheit der Stimmen und keine strenge Regel."
+voiceRanges: Stimmumfang nach
+voiceRangesDescription: Die Umfänge, an denen die Töne jeder Stimme gemessen werden.
+voiceRangesStraussBerlioz: Strauss/Berlioz
+voiceRangesStraussBerliozDescription: "Bass F bis es', Tenor c bis b', Alt f bis es'' und Sopran c' bis b'', wie in der Instrumentationslehre von Berlioz und Strauss."
+voiceRangesBach: Bach
+voiceRangesBachDescription: "Bass C bis e', Tenor c bis a', Alt e bis d'' und Sopran a bis a'', gemessen an den 370 Chorälen von Bach."
+checkVoiceRangeDescription: "Jede Stimme wird auf ihren üblichen Umfang geprüft. Noten außerhalb davon werden als Hinweis markiert, denn der Umfang ist eine Gewohnheit der Stimmen und keine strenge Regel. Gemessen wird nach Strauss/Berlioz oder Bach."
 checkEmptyDescription: Laden Sie eine Partitur hoch. Sie wird auf Satzfehler geprüft, die direkt in der Partitur markiert werden.
 checkError: Die Prüfung auf Satzfehler ist fehlgeschlagen.
 noCheckFindings: Keine Befunde.
