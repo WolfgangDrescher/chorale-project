@@ -232,6 +232,14 @@ watch(result, () => {
 const activeMatches = computed(() => matchesBySegmentId[activeSegment.value?.id] ?? []);
 const activeMatchTotal = computed(() => activeMatches.value.reduce((sum, [, items]) => sum + items.length, 0));
 
+// Every chorale on show is a rendered score, so the modal lists them a page at a time.
+const MATCHES_PER_PAGE = 10;
+const matchesPage = ref(1); // 1-based, UPagination's page
+const pagedMatches = computed(() => {
+    const start = (matchesPage.value - 1) * MATCHES_PER_PAGE;
+    return activeMatches.value.slice(start, start + MATCHES_PER_PAGE);
+});
+
 async function showMatches() {
     const segment = activeSegment.value;
     if (!segment) return;
@@ -249,6 +257,7 @@ async function showMatches() {
             matchesPending.value = false;
         }
     }
+    matchesPage.value = 1;
     matchesVisible.value = true;
 }
 
@@ -477,7 +486,7 @@ function onSubmit() {
             </template>
             <template #body>
                 <div v-if="activeSegment" class="flex flex-col gap-4">
-                    <UCard v-for="[choraleId, items] in activeMatches" :key="`${activeSegment.id}-${choraleId}`">
+                    <UCard v-for="[choraleId, items] in pagedMatches" :key="`${activeSegment.id}-${choraleId}`">
                         <template #header>
                             <div class="flex items-center justify-between gap-4">
                                 <span>{{ choraleId }}</span>
@@ -495,6 +504,14 @@ function onSubmit() {
                             :scroll-to-first-section="true"
                         />
                     </UCard>
+                    <UPagination
+                        v-if="activeMatches.length > MATCHES_PER_PAGE"
+                        v-model:page="matchesPage"
+                        :total="activeMatches.length"
+                        :items-per-page="MATCHES_PER_PAGE"
+                        size="xs"
+                        class="self-center"
+                    />
                 </div>
             </template>
         </UModal>
