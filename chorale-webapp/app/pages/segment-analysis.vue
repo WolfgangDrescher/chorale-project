@@ -57,7 +57,15 @@ function useSegmentAnalysis() {
     const segments = computed(() => result.value?.segments ?? []);
     const activeSegment = computed(() => segments.value[position.value - 1] ?? null);
 
+    // Set while a run is on the way; aborting it stops the request and with it the tool.
+    let abortController = null;
+
+    function cancel() {
+        abortController?.abort();
+    }
+
     async function analyze(data) {
+        abortController = new AbortController();
         pending.value = true;
         progress.value = null;
         error.value = null;
@@ -69,13 +77,16 @@ function useSegmentAnalysis() {
             // in the same run.
             result.value = await fetchWithProgress('/api/chorale-segment', {
                 body: { data, ...options },
+                signal: abortController.signal,
                 onProgress: (event) => {
                     progress.value = { ...progress.value, ...event };
                 },
             });
         } catch (e) {
-            error.value = e;
+            // A cancelled run is what the person asked for, not a failure to report.
+            if (e.name !== 'AbortError') error.value = e;
         } finally {
+            abortController = null;
             pending.value = false;
         }
     }
@@ -104,6 +115,7 @@ function useSegmentAnalysis() {
         segments,
         activeSegment,
         analyze,
+        cancel,
         analyzeUploadedFile,
         analyzeDemoScore,
     };
@@ -119,6 +131,7 @@ const {
     position,
     segments,
     activeSegment,
+    cancel,
     analyzeUploadedFile,
     analyzeDemoScore,
 } = useSegmentAnalysis();
@@ -338,7 +351,9 @@ function onSubmit() {
             </UAlert>
         </template>
         <template v-else>
-            <SearchProgress v-if="pending" :progress="progress" class="mt-8" />
+            <SearchProgress v-if="pending" :progress="progress" class="mt-8">
+                <UButton color="neutral" variant="soft" size="xs" icon="lucide:x" @click="cancel">{{ $t('cancel') }}</UButton>
+            </SearchProgress>
             <UEmpty
                 v-else-if="!result || segments.length === 0"
                 :title="result ? $t('noSegments') : undefined"

@@ -1,12 +1,14 @@
 // POSTs `body` to an endpoint that streams its progress (see respondWithStream on the server)
 // and resolves with the final result. Every event before it goes to `onProgress`. A failure,
 // as the response's status or as an error event in the stream, is thrown like ofetch throws:
-// `statusCode`, and `data` with { name, message, errors }.
-export async function fetchWithProgress(url, { body, onProgress }) {
+// `statusCode`, and `data` with { name, message, errors }. Aborting `signal` ends the request
+// (and, on the server, the tool) and rejects with an AbortError.
+export async function fetchWithProgress(url, { body, onProgress, signal }) {
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/x-ndjson' },
         body: typeof body === 'string' ? body : JSON.stringify(body),
+        signal,
     });
     if (!response.ok) {
         const data = await response.json().catch(() => ({}));

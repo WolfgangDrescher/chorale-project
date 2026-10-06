@@ -52,5 +52,8 @@ const matchesText = computed(() => t('progressMatchesSoFar', props.progress?.mat
             <span>{{ choralesText }}</span>
             <span>{{ matchesText }}</span>
         </div>
+        <div v-if="$slots.default" class="flex justify-center">
+            <slot />
+        </div>
     </div>
 </template>
