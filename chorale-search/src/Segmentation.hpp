@@ -59,6 +59,16 @@ struct SegmentQueryOptions {
     // back to matching the outer voices' contours at any distance.
     std::vector<std::string> hintPairs = {"hint-14"};
 
+    // The inner voices, taken into account as the harmony they form with the bass: every
+    // position of each simultaneous group also states the fb chord sounding there -- the
+    // intervals above the bass, in no particular voice, folded into one octave and without
+    // doubled ones (see docs/features/fb). Which inner voice sings which figure, and so their
+    // order, doesn't matter. Their own melodies and rhythms aren't asked about, only the chords
+    // they make with the outer voices. The chord is compared exactly, since a chord with one more
+    // figure has a voice the segment doesn't have. Follows ignoreIntervalQuality, and has nothing
+    // to hang on where a window lost its group (see buildQuery).
+    bool innerVoices = false;
+
     // Handed to the query verbatim (see Query.hpp): none of them change what the pattern asks
     // for, only how strictly a passage has to answer it. metweightSkipUnclassified also decides
     // how the pattern is built: ornaments (notes on a metrically unclassified position) are left

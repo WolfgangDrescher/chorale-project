@@ -14,7 +14,7 @@ const localePath = useLocalePath();
 // itself in the docs somewhere else and says where as `docs`.
 const docsBadge = computed(() => {
     const { docs, query } = props.option;
-    if (docs) return { label: docs.label, to: localePath({ path: docs.path, hash: `#${docs.hash}` }) };
+    if (docs) return { label: docs.label, to: localePath({ path: docs.path, hash: docs.hash ? `#${docs.hash}` : undefined }) };
     if (query) return { label: query, to: localePath({ path: '/docs/options', hash: `#${query.toLowerCase()}` }) };
     return null;
 });

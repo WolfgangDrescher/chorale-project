@@ -30,11 +30,13 @@ nextSegment: Nächstes Segment
 segmentLength: Segmentlänge
 segmentLengthDescription: Länge eines Segments in Viertelnoten.
 ignoreIntervalQuality: Intervallqualität ignorieren
-ignoreIntervalQualityDescription: "Intervalle werden nur nach Richtung und Intervallzahl (Sekunde, Terz, Quinte usw.) verglichen. So wird eine Stelle gefunden, egal ob sie gerade in Dur oder Moll steht. Das gilt für die Melodie, den Bass und den Abstand zwischen beiden. Im Query wird aus +M2 dann +2. Ausgeschaltet bleibt die Qualität Teil des Vergleichs."
+ignoreIntervalQualityDescription: "Intervalle werden nur nach Richtung und Intervallzahl (Sekunde, Terz, Quinte usw.) verglichen. So wird eine Stelle gefunden, egal ob sie gerade in Dur oder Moll steht. Das gilt für die Melodie, den Bass, den Abstand zwischen beiden und, wenn die Mittelstimmen berücksichtigt werden, auch für deren Akkord. Im Query wird aus +M2 dann +2. Ausgeschaltet bleibt die Qualität Teil des Vergleichs."
 allowIntervalComplementation: Komplementärintervalle zulassen
 allowIntervalComplementationDescription: "Ein Intervall gilt auch als sein Komplementärintervall, das den Rest der Oktave in Gegenrichtung füllt: Ein Aufstieg um eine Terz findet auch einen Abstieg um eine Sexte, denn beide führen zum selben Ton. Im Query findet +3 dann auch -6."
 skipUnclassifiedBeats: Unbetonte Notenwerte ignorieren
 skipUnclassifiedBeatsDescription: "Töne auf metrisch nicht eingeordneten Zeiten (Verzierungen wie Durchgänge und Wechselnoten) zählen in Melodie und Bass nicht als eigene Noten. Ihre Dauer fällt an die Hauptnote, und das Intervall wird von Hauptnote zu Hauptnote gemessen. So findet eine Stelle auch Choräle, die dieselbe Melodie mit oder ohne Verzierung setzen."
+innerVoices: Mittelstimmen berücksichtigen
+innerVoicesDescription: "Zusätzlich zu Melodie und Bass muss auch der Akkord übereinstimmen, den die Mittelstimmen mit dem Bass bilden: Bei jedem Basston werden die Intervalle über dem Bass verglichen. Welche Mittelstimme welches Intervall singt, spielt keine Rolle, Tenor und Alto können also vertauscht sein. Der Akkord muss genau diese Intervalle enthalten und keine weiteren. Verdopplungen und Oktaven zählen nicht. Die Melodie und der Rhythmus der Mittelstimmen werden nicht verglichen."
 hintReduceCompound: Zusammengesetzte Intervalle reduzieren
 hintReduceCompoundDescription: "Der Abstand zwischen Sopran und Bass wird auf eine Oktave zurückgeführt: Eine Dezime zählt als Terz, eine Duodezime als Quinte. So spielt es keine Rolle, ob der Satz eng oder weit gesetzt ist."
 durationAllowSplitNotes: Notenwerte teilen

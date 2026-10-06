@@ -39,6 +39,75 @@ TEST_CASE(every_segment_finds_its_own_source_with_exact_intervals_and_kept_ornam
     for (const std::string& id : kFixtures) CHECK_EQ(segmentsMissingTheirSource(id, exact), std::size_t{0});
 }
 
+TEST_CASE(every_segment_finds_its_own_source_with_the_inner_voices) {
+    SegmentQueryOptions inner;
+    inner.innerVoices = true;
+    SegmentQueryOptions innerWithQualities = inner;
+    innerWithQualities.ignoreIntervalQuality = false;
+    for (const std::string& id : kFixtures) {
+        CHECK_EQ(segmentsMissingTheirSource(id, inner), std::size_t{0});
+        CHECK_EQ(segmentsMissingTheirSource(id, innerWithQualities), std::size_t{0});
+    }
+}
+
+TEST_CASE(the_inner_voices_are_asked_about_as_an_exact_fb_chord_in_the_groups_only_when_asked_for) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    SegmentQueryOptions inner;
+    inner.innerVoices = true;
+    SegmentQueryOptions innerWithQualities = inner;
+    innerWithQualities.ignoreIntervalQuality = false;
+
+    auto fbValues = [](const std::vector<Segment>& segments) {
+        std::vector<std::string> values;
+        for (const Segment& segment : segments) {
+            // The query's own pattern stays the plain melody.
+            for (const auto& position : segment.query.pattern) CHECK(position.find("fb") == position.end());
+            for (const auto& group : segment.query.simultaneousWith) {
+                for (const auto& position : group.pattern) {
+                    auto it = position.find("fb");
+                    if (it != position.end() && !it->second.empty()) values.push_back(it->second.front());
+                }
+            }
+        }
+        return values;
+    };
+    auto anyQuality = [](const std::vector<std::string>& values) {
+        for (const std::string& value : values) {
+            if (value.find_first_of("MmPAd") != std::string::npos) return true;
+        }
+        return false;
+    };
+
+    const std::vector<Segment> byDefault = segmentScore(chorale);
+    REQUIRE(!byDefault.empty());
+    CHECK(fbValues(byDefault).empty());
+    for (const Segment& segment : byDefault) CHECK(!segment.query.fbCompareExactChord);
+
+    const std::vector<Segment> withInnerVoices = segmentScore(chorale, {}, inner);
+    REQUIRE(!withInnerVoices.empty());
+    const std::vector<std::string> plain = fbValues(withInnerVoices);
+    CHECK(!plain.empty());
+    CHECK(!anyQuality(plain));
+    for (const Segment& segment : withInnerVoices) CHECK(segment.query.fbCompareExactChord);
+
+    const std::vector<std::string> exact = fbValues(segmentScore(chorale, {}, innerWithQualities));
+    CHECK(anyQuality(exact));
+}
+
+TEST_CASE(the_inner_voices_only_narrow_what_a_segment_finds) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    SegmentQueryOptions inner;
+    inner.innerVoices = true;
+
+    const std::vector<Segment> without = segmentScore(chorale);
+    const std::vector<Segment> with = segmentScore(chorale, {}, inner);
+    REQUIRE(with.size() == without.size());
+    for (std::size_t i = 0; i < with.size(); ++i) {
+        CHECK(search.runOne(chorale, with[i].query).size() <= search.runOne(chorale, without[i].query).size());
+    }
+}
+
 TEST_CASE(interval_complementation_is_allowed_unless_switched_off) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     SegmentQueryOptions off;

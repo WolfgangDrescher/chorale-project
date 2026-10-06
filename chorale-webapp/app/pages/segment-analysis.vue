@@ -54,6 +54,14 @@ const CHECK_OPTIONS = [
         description: 'skipUnclassifiedBeatsDescription',
     },
     {
+        key: 'innerVoices',
+        type: 'switch',
+        default: false,
+        label: 'innerVoices',
+        docs: { label: 'fb', path: '/docs/features/fb' },
+        description: 'innerVoicesDescription',
+    },
+    {
         key: 'hintReduceCompound',
         type: 'switch',
         disabled: true,

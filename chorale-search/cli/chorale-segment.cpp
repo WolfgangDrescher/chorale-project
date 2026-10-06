@@ -59,6 +59,10 @@ void printUsage(const char* argv0) {
         "    --metweight-skip-unclassified true|false\n"
         "                          fold the ornaments (notes on unclassified metric positions)\n"
         "                          away in the queries instead of counting them (default: true)\n"
+        "    --inner-voices true|false\n"
+        "                          also ask for the harmony the inner voices make with the\n"
+        "                          bass: the chord at every bass note, compared exactly and\n"
+        "                          in no particular order of the voices (default: false)\n"
         "    --no-kern             leave the converted four-voice **kern text out of the\n"
         "                          output -- for command-line use, where the score is\n"
         "                          already at hand and only the segments matter\n"
@@ -212,6 +216,9 @@ int main(int argc, char** argv) {
             else if (arg == "--metweight-skip-unclassified") {
                 queryOptions.matcherOptions.metweightSkipUnclassified =
                     parseBoolean("--metweight-skip-unclassified", next("--metweight-skip-unclassified"));
+            }
+            else if (arg == "--inner-voices") {
+                queryOptions.innerVoices = parseBoolean("--inner-voices", next("--inner-voices"));
             }
             else if (arg == "--no-kern") { includeKern = false; }
             else if (arg == "--stats") { statsCorpusDir = next("--stats"); }

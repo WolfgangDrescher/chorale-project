@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -16,6 +17,7 @@ using Onset = AttributeMatcher::Onset;
 
 const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
+const std::string kFbFeature = "fb";
 const std::string kDurationKey = "duration";
 const std::string kFermataKey = "fermata";
 const std::string kWildcard = "*";
@@ -35,6 +37,18 @@ std::string withoutQuality(const std::string& interval) {
     }
     if (number.empty() || number == "1") return interval;
     return sign + number;
+}
+
+// An fb chord ("m6 M3") with every one of its intervals reduced the way withoutQuality does it
+// ("6 3"): the pattern value then matches the chord whatever the qualities are.
+std::string chordWithoutQuality(const std::string& chord) {
+    std::istringstream figures(chord);
+    std::string reduced;
+    for (std::string figure; figures >> figure;) {
+        if (!reduced.empty()) reduced += ' ';
+        reduced += withoutQuality(figure);
+    }
+    return reduced;
 }
 
 // Every note (or rest) a voice attacks between two positions, in order -- exactly what
@@ -153,6 +167,14 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
                     position[pair] = {interval};
                 }
             }
+            if (options.innerVoices) {
+                // Like a hint spine, fb is one per score, found under the first voice.
+                if (hum::HTp fbToken = findTokenAtLine(chorale.spine(kFbFeature, 1), lineNumber)) {
+                    std::string chord = std::string(*fbToken);
+                    if (options.ignoreIntervalQuality) chord = chordWithoutQuality(chord);
+                    position[kFbFeature] = {chord};
+                }
+            }
         }
         pattern.push_back(std::move(position));
     }
@@ -199,7 +221,8 @@ Query buildQuery(const HumdrumChorale& chorale, const std::vector<Onset>& onsets
     // same stretch of music.
     query.mintStartAtPreviousToken = options.matcherOptions.mintStartAtPreviousToken;
     query.mintAllowIntervalComplementation = options.matcherOptions.mintAllowIntervalComplementation;
-    query.fbCompareExactChord = options.matcherOptions.fbCompareExactChord;
+    // Only a query that states an fb chord asks for it to be compared exactly (see innerVoices).
+    query.fbCompareExactChord = options.innerVoices || options.matcherOptions.fbCompareExactChord;
     query.kernIgnoreOctave = options.matcherOptions.kernIgnoreOctave;
     query.hintReduceCompound = options.matcherOptions.hintReduceCompound;
     query.durationAllowSplitNotes = options.matcherOptions.durationAllowSplitNotes;
