@@ -8,12 +8,9 @@
 #include <utility>
 #include <vector>
 
-#if defined(__unix__) || defined(__APPLE__)
-#include <unistd.h>
-#endif
-
 #include <nlohmann/json.hpp>
 
+#include "CliInput.hpp"
 #include "CorpusSearch.hpp"
 #include "SplitScoreIntoVoices.hpp"
 #include "HumdrumChorale.hpp"
@@ -98,28 +95,6 @@ bool parseBoolean(const std::string& flag, const std::string& value) {
     if (lowered == "true" || lowered == "yes" || lowered == "y" || lowered == "1") return true;
     if (lowered == "false" || lowered == "no" || lowered == "n" || lowered == "0") return false;
     throw std::invalid_argument(flag + " takes true/false, yes/no, y/n or 1/0, got '" + value + "'");
-}
-
-// Whether stdin is a terminal rather than a pipe -- reading it would sit and wait for a human
-// to type a score.
-bool stdinIsInteractive() {
-#if defined(__unix__) || defined(__APPLE__)
-    return isatty(fileno(stdin)) != 0;
-#else
-    return false;
-#endif
-}
-
-std::string readInput(const std::string& inputPath) {
-    std::ostringstream content;
-    if (inputPath == "-") {
-        content << std::cin.rdbuf();
-    } else {
-        std::ifstream file(inputPath, std::ios::binary);
-        if (!file.is_open()) throw std::invalid_argument("no such file: " + inputPath);
-        content << file.rdbuf();
-    }
-    return content.str();
 }
 
 // The full stats per segment id, gathered in one corpus pass over all the segments' queries:
@@ -269,37 +244,11 @@ int main(int argc, char** argv) {
     }
 
     try {
-        // What arrived, and what it takes to make it the corpus's own shape (four **kern
-        // spines, bass to soprano): MusicXML converts first, a two-staff grand staff score is
-        // pulled apart into voices, a four-voice score passes through as it is.
-        const std::string inputFormat = choralesearch::looksLikeMusicXml(input) ? "musicxml" : "kern";
-        if (progress && inputFormat == "musicxml") choralesearch::reportPhase("convert-musicxml");
-        const std::string kernText = inputFormat == "musicxml" ? choralesearch::musicXmlToKern(input) : input;
-
-        hum::HumdrumFile infile;
-        if (!infile.readString(kernText)) {
-            throw std::invalid_argument("could not parse the score as Humdrum **kern");
-        }
-
-        const std::size_t voices = choralesearch::kernTracks(infile).size();
-        std::string layout;
-        std::string kern;
-        if (voices == 4) {
-            layout = "satb";
-            kern = kernText;
-        } else if (voices == 2) {
-            layout = "grand-staff";
-            if (progress) choralesearch::reportPhase("split-score-into-voices");
-            kern = choralesearch::splitScoreIntoVoices(infile);
-        } else {
-            throw std::invalid_argument("expected a score with 4 voices or a two-staff grand staff score, got " +
-                                         std::to_string(voices) + " **kern spine(s)");
-        }
-
-        // The corpus's own header shape, whatever the input carried: canonical voice
-        // interpretations instead of part/staff/instrument bookkeeping. Segmentation runs on
-        // this same text, so the segments' line numbers mean lines of the output.
-        kern = choralesearch::normalizeChoraleHeader(kern);
+        // The four **kern spines, bass to soprano, whatever arrived (see prepareScore).
+        const choralesearch::PreparedScore score = choralesearch::prepareScore(input, progress);
+        const std::string& kern = score.kern;
+        const std::string& layout = score.layout;
+        const std::string& inputFormat = score.inputFormat;
 
         // Building the chorale derives its analysis spines (**deg, **mint, **metweight, ...),
         // which is where most of the time before the search goes, so it is a phase of its own.

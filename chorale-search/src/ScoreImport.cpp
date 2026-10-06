@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+#include "HumdrumUtils.hpp"
+#include "ProgressReport.hpp"
+#include "SplitScoreIntoVoices.hpp"
 #include "humlib.h"
 
 namespace choralesearch {
@@ -62,6 +65,37 @@ std::string normalizeChoraleHeader(const std::string& kern) {
     std::ostringstream out;
     out << infile;
     return out.str();
+}
+
+PreparedScore prepareScore(const std::string& input, bool reportProgress) {
+    PreparedScore score;
+    score.inputFormat = looksLikeMusicXml(input) ? "musicxml" : "kern";
+    if (reportProgress && score.inputFormat == "musicxml") reportPhase("convert-musicxml");
+    const std::string kernText = score.inputFormat == "musicxml" ? musicXmlToKern(input) : input;
+
+    hum::HumdrumFile infile;
+    if (!infile.readString(kernText)) {
+        throw std::invalid_argument("could not parse the score as Humdrum **kern");
+    }
+
+    const std::size_t voices = kernTracks(infile).size();
+    if (voices == 4) {
+        score.layout = "satb";
+        score.kern = kernText;
+    } else if (voices == 2) {
+        score.layout = "grand-staff";
+        if (reportProgress) reportPhase("split-score-into-voices");
+        score.kern = splitScoreIntoVoices(infile);
+    } else {
+        throw std::invalid_argument("expected a score with 4 voices or a two-staff grand staff score, got " +
+                                     std::to_string(voices) + " **kern spine(s)");
+    }
+
+    // The corpus's own header shape, whatever the input carried: canonical voice interpretations
+    // instead of part/staff/instrument bookkeeping. Whatever runs on the score runs on this same
+    // text, so the line numbers it reports mean lines of the kern returned here.
+    score.kern = normalizeChoraleHeader(score.kern);
+    return score;
 }
 
 } // namespace choralesearch

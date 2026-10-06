@@ -4,6 +4,21 @@
 
 namespace choralesearch {
 
+// A score as every tool of the pipeline works on it: four **kern spines, bass to soprano, in the
+// corpus's own header shape.
+struct PreparedScore {
+    std::string kern;
+    std::string inputFormat; // "kern" or "musicxml": what arrived
+    std::string layout;      // "satb" (four voices passed through) or "grand-staff" (split into four)
+};
+
+// A **kern or MusicXML score as four **kern spines in the corpus's header shape: MusicXML is
+// converted, a two-staff score split into four voices. With `reportProgress` the stages are
+// reported as phase events on stderr (see ProgressReport.hpp).
+//
+// Throws std::invalid_argument when the score can't be used.
+PreparedScore prepareScore(const std::string& input, bool reportProgress = false);
+
 // Whether an uploaded score's text is MusicXML rather than **kern -- decided by the content
 // (an XML document starts with '<'), never by a file name, which an upload doesn't have.
 bool looksLikeMusicXml(const std::string& input);
