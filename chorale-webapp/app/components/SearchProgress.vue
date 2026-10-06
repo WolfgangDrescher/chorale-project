@@ -19,15 +19,18 @@ const PHASE_TITLES: Record<string, string> = {
     'segment-score': 'progressSegmentScore',
     'run-checks': 'progressRunChecks',
     'search-corpus': 'progressSearchCorpus',
+    'collect-bass-lines': 'progressCollectBassLines',
 };
 
 // chorale-search reports no phases, so its first search progress is what tells the search began.
 const corpusSearchStarted = computed(() => props.progress?.choralesSearched !== undefined);
 
+// The phase on show wins, which also lets a second corpus pass (the bassLines) name
+// itself; without one, a started search is the plain corpus search.
 const title = computed(() => {
-    if (corpusSearchStarted.value) return t(PHASE_TITLES['search-corpus']);
     const key = PHASE_TITLES[props.progress?.phase ?? ''];
-    return key ? t(key) : '';
+    if (key) return t(key);
+    return corpusSearchStarted.value ? t(PHASE_TITLES['search-corpus']) : '';
 });
 
 const choralesText = computed(() => t('progressChoralesSearched', {

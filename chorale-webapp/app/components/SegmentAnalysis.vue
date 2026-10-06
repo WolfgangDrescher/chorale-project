@@ -35,6 +35,14 @@ const CHECK_OPTIONS = [
         description: 'segmentLengthDescription',
     },
     {
+        key: 'bassLines',
+        type: 'switch',
+        left: true,
+        default: false,
+        label: 'bassLines',
+        description: 'bassLinesDescription',
+    },
+    {
         key: 'ignoreIntervalQuality',
         type: 'switch',
         default: true,
@@ -92,9 +100,10 @@ const CHECK_OPTIONS = [
     },
 ];
 
-// The selects stay under the dropzone, the switches go beside it on large screens.
-const SELECT_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'select');
-const SWITCH_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'switch');
+// The selects stay under the dropzone, and so does a switch that belongs to them (`left`); the
+// other switches go beside it on large screens.
+const SELECT_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'select' || option.left);
+const SWITCH_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'switch' && !option.left);
 
 const DEMO_CHORALE_ID = 'chor029';
 
@@ -334,6 +343,45 @@ async function showMatches() {
     matchesVisible.value = true;
 }
 
+// Every occurrence of a bass line, as the [choraleId, occurrences] pairs the matches modal
+// lists, for the bass line whose count was clicked.
+const shownBassLine = ref(null);
+const bassLineMatchesVisible = ref(false);
+const bassLineMatchesPage = ref(1);
+
+const bassLineMatches = computed(() => {
+    const byChorale = new Map();
+    for (const occurrence of shownBassLine.value?.occurrences ?? []) {
+        if (!byChorale.has(occurrence.choraleId)) byChorale.set(occurrence.choraleId, []);
+        byChorale.get(occurrence.choraleId).push(occurrence);
+    }
+    return [...byChorale.entries()];
+});
+const pagedBassLineMatches = computed(() => {
+    const start = (bassLineMatchesPage.value - 1) * MATCHES_PER_PAGE;
+    return bassLineMatches.value.slice(start, start + MATCHES_PER_PAGE);
+});
+
+function showBassLineMatches(bassLine) {
+    shownBassLine.value = bassLine;
+    bassLineMatchesPage.value = 1;
+    bassLineMatchesVisible.value = true;
+}
+
+// The bass lines of a segment (see chorale-segment --bass-lines), each shown as
+// the passage of a chorale that has it: cut out by its lines, and moved to where the segment's own
+// melody starts, so that every bass line reads against the same notes.
+const activeCantusFirmus = computed(() => activeStats.value?.cantusFirmus ?? null);
+
+// The voices a bass line is about, the bass and the soprano (the c.f.); the inner ones are left out.
+const BASS_AND_SOPRANO = '1,4';
+
+function bassLineFilters(example) {
+    const filters = [`myank --lines ${example.startLine}-${example.endLine}`, `extract -f ${BASS_AND_SOPRANO}`];
+    if (example.transpose) filters.push(`transpose -t ${example.transpose}`);
+    return filters;
+}
+
 function sectionsForMatchItems(items) {
     return [
         {
@@ -376,10 +424,10 @@ function onNoteClick({ line }) {
 // Arrow keys page through the segments, unless a modal is open or the cursor is in a field.
 defineShortcuts({
     arrowleft: () => {
-        if (props.active && !matchesVisible.value && !jsonOpen.value) goToSegment(position.value - 1);
+        if (props.active && !matchesVisible.value && !bassLineMatchesVisible.value && !jsonOpen.value) goToSegment(position.value - 1);
     },
     arrowright: () => {
-        if (props.active && !matchesVisible.value && !jsonOpen.value) goToSegment(position.value + 1);
+        if (props.active && !matchesVisible.value && !bassLineMatchesVisible.value && !jsonOpen.value) goToSegment(position.value + 1);
     },
 });
 
@@ -494,7 +542,7 @@ function onSubmit() {
                         </ul>
                     </UCard>
 
-                    <UCard v-if="activeSegment" class="w-full max-w-2xl mx-auto" :ui="{ body: 'p-3 sm:p-3' }">
+                    <UCard v-if="activeSegment" class="w-full max-w-5xl mx-auto" :ui="{ body: 'p-3 sm:p-3' }">
                         <div class="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                             <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                                 <div class="flex items-center gap-1">
@@ -517,15 +565,17 @@ function onSubmit() {
 
                             <UFieldGroup class="order-last sm:order-none w-full sm:w-auto">
                                 <UButton
-                                    :label="$t('showMatches')"
                                     :loading="matchesPending"
                                     icon="lucide:search"
                                     color="neutral"
                                     variant="subtle"
                                     size="xs"
-                                    class="flex-1 sm:flex-none justify-center"
+                                    class="flex-1 min-w-0 sm:flex-none justify-center"
                                     @click="showMatches"
-                                />
+                                >
+                                    <span class="truncate sm:hidden">{{ $t('showMatchesShort') }}</span>
+                                    <span class="hidden sm:inline">{{ $t('showMatches') }}</span>
+                                </UButton>
                                 <UButton icon="lucide:braces" color="neutral" variant="subtle" size="xs" :aria-label="$t('query')" :title="$t('query')" @click="showJson($t('query'), activeSegment.query)">
                                     <span class="hidden sm:inline">{{ $t('query') }}</span>
                                 </UButton>
@@ -535,13 +585,63 @@ function onSubmit() {
                             </UFieldGroup>
 
                             <div v-if="activeStats?.topChorales?.length" class="sm:col-span-2">
-                                <p class="text-sm text-dimmed mb-2">{{ $t('topChorales') }}</p>
+                                <Subheading :level="3" font-size="base" font-weight="bold">{{ $t('topChorales') }}</Subheading>
                                 <div class="flex flex-wrap gap-2">
                                     <UFieldGroup v-for="entry in activeStats.topChorales" :key="entry.choraleId">
                                         <UBadge color="neutral" variant="subtle" :label="entry.choraleId" />
                                         <UBadge color="neutral" variant="outline" :label="$t('matchCount', entry.matches)" class="tabular-nums" />
                                     </UFieldGroup>
                                 </div>
+                            </div>
+
+                            <div v-if="activeCantusFirmus" class="sm:col-span-2">
+                                <Subheading :level="3" font-size="base" font-weight="bold">{{ $t('bassLinesHeading') }}</Subheading>
+                                <p v-if="!activeCantusFirmus.topBassLines.length" class="text-sm">{{ $t('noBassLines') }}</p>
+                                <template v-else>
+                                <p class="text-sm mb-2">{{ $t('cantusFirmusMatches', activeCantusFirmus.matches) }}</p>
+                                <!-- The padding is where the arrows sit: the carousel puts them outside its own box. -->
+                                <div class="px-9">
+                                <UCarousel
+                                    v-slot="{ item: bassLine }"
+                                    :key="activeSegment.id"
+                                    :items="activeCantusFirmus.topBassLines"
+                                    :ui="{
+                                        item: 'basis-56',
+                                        prev: '-start-9 sm:-start-9',
+                                        next: '-end-9 sm:-end-9',
+                                    }"
+                                    :prev="{ size: 'xs' }"
+                                    :next="{ size: 'xs' }"
+                                    :drag-free="false"
+                                    align="start"
+                                    contain-scroll="trimSnaps"
+                                    arrows
+                                    class="w-full"
+                                >
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <UButton
+                                                color="neutral"
+                                                variant="outline"
+                                                size="xs"
+                                                class="tabular-nums"
+                                                :label="$t('segmentStats', { matches: bassLine.matches, count: bassLine.choraleCount }, bassLine.choraleCount)"
+                                                @click="showBassLineMatches(bassLine)"
+                                            />
+                                        </div>
+                                        <HighlightedScore
+                                            :horizontal="true"
+                                            :piece-id="bassLine.example.choraleId"
+                                            :filters="bassLineFilters(bassLine.example)"
+                                            :verovio-options="{
+                                                scale: 35,
+                                                pageMarginLeft: 42,
+                                            }"
+                                        />
+                                    </div>
+                                </UCarousel>
+                                </div>
+                                </template>
                             </div>
                         </div>
                     </UCard>
@@ -582,6 +682,46 @@ function onSubmit() {
                         v-if="activeMatches.length > MATCHES_PER_PAGE"
                         v-model:page="matchesPage"
                         :total="activeMatches.length"
+                        :items-per-page="MATCHES_PER_PAGE"
+                        size="xs"
+                        class="self-center"
+                    />
+                </div>
+            </template>
+        </UModal>
+
+        <UModal v-model:open="bassLineMatchesVisible" :ui="{ content: 'sm:max-w-5xl' }">
+            <template #title>
+                <span class="inline-flex flex-wrap items-center gap-2">
+                    <span>{{ $t('bassLineMatches') }}</span>
+                    <UBadge color="neutral" variant="subtle" :label="activeSegment?.id" />
+                    <span v-if="shownBassLine" class="text-sm font-normal text-dimmed">{{ $t('segmentStats', { matches: shownBassLine.matches }, bassLineMatches.length) }}</span>
+                </span>
+            </template>
+            <template #body>
+                <div class="flex flex-col gap-4">
+                    <UCard v-for="[choraleId, items] in pagedBassLineMatches" :key="`${activeSegment.id}-${choraleId}`">
+                        <template #header>
+                            <div class="flex items-center justify-between gap-4">
+                                <span>{{ choraleId }}</span>
+                                <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
+                            </div>
+                        </template>
+                        <HighlightedScore
+                            :horizontal="true"
+                            :piece-id="choraleId"
+                            :verovio-options="{
+                                scale: 35,
+                                pageMarginLeft: 42,
+                            }"
+                            :sections="sectionsForMatchItems(items)"
+                            :scroll-to-first-section="true"
+                        />
+                    </UCard>
+                    <UPagination
+                        v-if="bassLineMatches.length > MATCHES_PER_PAGE"
+                        v-model:page="bassLineMatchesPage"
+                        :total="bassLineMatches.length"
                         :items-per-page="MATCHES_PER_PAGE"
                         size="xs"
                         class="self-center"

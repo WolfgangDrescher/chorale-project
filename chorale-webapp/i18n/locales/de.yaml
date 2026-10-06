@@ -52,12 +52,19 @@ segmentsWithFewMatches: "{count} seltenes Segment | {count} seltene Segmente"
 legendUnmatched: Nicht im Korpus gefunden
 legendRare: Selten im Korpus (höchstens {count} Treffer)
 legendActive: Ausgewähltes Segment
-topChorales: Choräle mit den meisten Treffern
+topChorales: Wo die Stelle am häufigsten vorkommt
+bassLinesHeading: Bässe zum c.f. dieses Segments bei Bach
+bassLines: Häufige Bässe zum c.f. der Segmente anzeigen
+bassLinesDescription: "Zeigt zu jedem Segment die fünf häufigsten Bässe, mit denen Bach den c.f. des Segments setzt, als Partiturausschnitt, transponiert auf den Startton des Segments. Die Töne des c.f. müssen metrisch gleich liegen: schwer auf schwer oder halbschwer, im 4/4-Takt auch um einen halben Takt verschoben. Die Einstellungen zu Intervallqualität und unbetonten Notenwerten gelten auch hier."
+bassLineMatches: Choräle mit diesem Bass
+cantusFirmusMatches: "Der Cantus firmus dieses Segments kommt nicht im Korpus vor | Der Cantus firmus dieses Segments kommt einmal im Korpus vor | Der Cantus firmus dieses Segments kommt {count}-mal im Korpus vor"
+noBassLines: Auch die Melodie allein kommt im Korpus nicht vor, daher gibt es keinen Bass dazu.
 matchCount: "ein Treffer | {count} Treffer"
 copy: Kopieren
 copied: Kopiert
 stats: Stats
 showMatches: Treffer im Korpus anzeigen
+showMatchesShort: Treffer anzeigen
 matchesInCorpus: Treffer im Korpus
 noSegments: Keine Segmente gefunden.
 noSegmentsDescription: Laden Sie eine Partitur hoch oder verwenden Sie die Demo-Partitur. Der Satz wird in überlappende Fenster zerlegt; zu jedem entsteht ein Query, der sofort gegen den Korpus gezählt wird.
@@ -68,6 +75,7 @@ progressAnalyzeScore: Partitur wird analysiert
 progressSegmentScore: Partitur wird segmentiert
 progressRunChecks: Satz wird geprüft
 progressSearchCorpus: Korpus wird durchsucht
+progressCollectBassLines: Häufige Bässe werden ermittelt
 progressChoralesSearched: "{searched} von {total} Chorälen"
 progressMatchesSoFar: "kein Treffer bisher | ein Treffer bisher | {count} Treffer bisher"
 checkListTitle: Das wird geprüft

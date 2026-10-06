@@ -58,7 +58,7 @@ function parseScoreData(value) {
     return value;
 }
 
-// Takes { data, length?, ignoreIntervalQuality?, allowIntervalComplementation?, skipUnclassifiedBeats?, innerVoices? } and returns the prepared kern and the segments with their corpus stats.
+// Takes { data, length?, ignoreIntervalQuality?, allowIntervalComplementation?, skipUnclassifiedBeats?, innerVoices?, bassLines? } and returns the prepared kern and the segments with their corpus stats.
 // Answers with the JSON result, or as a stream of progress events ending in the result for a
 // caller that accepts one (see respondWithStream).
 export default defineEventHandler(async (event) => {
@@ -72,6 +72,7 @@ export default defineEventHandler(async (event) => {
         const allowIntervalComplementation = parseBoolean('allowIntervalComplementation', body.allowIntervalComplementation);
         const skipUnclassifiedBeats = parseBoolean('skipUnclassifiedBeats', body.skipUnclassifiedBeats);
         const innerVoices = parseBoolean('innerVoices', body.innerVoices, false);
+        const bassLines = parseBoolean('bassLines', body.bassLines, false);
         const segment = ({ onEvent, signal } = {}) => {
             const args = [
                 '-',
@@ -83,6 +84,7 @@ export default defineEventHandler(async (event) => {
             args.push('--mint-allow-interval-complementation', String(allowIntervalComplementation));
             args.push('--metweight-skip-unclassified', String(skipUnclassifiedBeats));
             args.push('--inner-voices', String(innerVoices));
+            args.push('--bass-lines', String(bassLines));
             if (onEvent) args.push('--progress');
 
             return runCliTool({
