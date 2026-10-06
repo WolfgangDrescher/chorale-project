@@ -16,7 +16,8 @@ const SEGMENT_LENGTHS = [2, 3, 4, 6, 8];
 
 // The options sent along with the score, rendered as one form field each. To add one: add an
 // entry here (type 'select' with `items`, or 'switch'), its two translations, and handle its
-// key in server/api/chorale-segment.js. A `disabled` option is one the segment queries always use
+// key in server/api/chorale-segment.js. An option with a place in the docs gets a badge linking
+// there (see SegmentOptionField). A `disabled` option is one the segment queries always use
 // (see defaultSegmentMatcherOptions): it is listed as a disabled switch so the help can explain
 // it, and it isn't sent along.
 const CHECK_OPTIONS = [
@@ -33,6 +34,7 @@ const CHECK_OPTIONS = [
         type: 'switch',
         default: true,
         label: 'ignoreIntervalQuality',
+        docs: { label: '+M2 → +2', path: '/docs/features/mint', hash: 'quality--and-sign-optional-matching' },
         description: 'ignoreIntervalQualityDescription',
     },
     {
@@ -40,6 +42,7 @@ const CHECK_OPTIONS = [
         type: 'switch',
         default: true,
         label: 'allowIntervalComplementation',
+        query: 'mintAllowIntervalComplementation',
         description: 'allowIntervalComplementationDescription',
     },
     {
@@ -47,6 +50,7 @@ const CHECK_OPTIONS = [
         type: 'switch',
         default: true,
         label: 'skipUnclassifiedBeats',
+        query: 'metweightSkipUnclassified',
         description: 'skipUnclassifiedBeatsDescription',
     },
     {
@@ -54,6 +58,7 @@ const CHECK_OPTIONS = [
         type: 'switch',
         disabled: true,
         label: 'hintReduceCompound',
+        query: 'hintReduceCompound',
         description: 'hintReduceCompoundDescription',
     },
     {
@@ -61,6 +66,7 @@ const CHECK_OPTIONS = [
         type: 'switch',
         disabled: true,
         label: 'durationAllowSplitNotes',
+        query: 'durationAllowSplitNotes',
         description: 'durationAllowSplitNotesDescription',
     },
     {
@@ -68,6 +74,7 @@ const CHECK_OPTIONS = [
         type: 'switch',
         disabled: true,
         label: 'durationAllowMergedNotes',
+        query: 'durationAllowMergedNotes',
         description: 'durationAllowMergedNotesDescription',
     },
 ];

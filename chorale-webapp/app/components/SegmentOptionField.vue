@@ -1,11 +1,23 @@
 <script setup>
 // One option of the segment analysis as a form field: a select or a switch, with its help in a
 // popover next to the label (see CHECK_OPTIONS in pages/segment-analysis.vue for what `option` holds).
-defineProps({
+const props = defineProps({
     option: { type: Object, required: true },
 });
 
 const model = defineModel({ type: [Number, String, Boolean], default: undefined });
+
+const localePath = useLocalePath();
+
+// The badge at the top of the help, linking to the docs: an option that is a query option too
+// names it as `query` (the docs' headings are the option names, lowercased), any other explains
+// itself in the docs somewhere else and says where as `docs`.
+const docsBadge = computed(() => {
+    const { docs, query } = props.option;
+    if (docs) return { label: docs.label, to: localePath({ path: docs.path, hash: `#${docs.hash}` }) };
+    if (query) return { label: query, to: localePath({ path: '/docs/options', hash: `#${query.toLowerCase()}` }) };
+    return null;
+});
 </script>
 
 <template>
@@ -24,6 +36,9 @@ const model = defineModel({ type: [Number, String, Boolean], default: undefined 
                     />
                     <template #content>
                         <div class="max-w-xs p-3 text-sm">
+                            <ULink v-if="docsBadge" :to="docsBadge.to" raw class="inline-block mb-2">
+                                <UBadge color="neutral" variant="subtle" icon="lucide:book-open" :label="docsBadge.label" class="font-mono" />
+                            </ULink>
                             <p>{{ $t(option.description) }}</p>
                             <p v-if="option.disabled" class="mt-2 text-dimmed">{{ $t('optionDisabled') }}</p>
                         </div>
