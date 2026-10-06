@@ -20,6 +20,7 @@ uploadScoreLabel: Datei hierher ziehen oder klicken
 uploadScoreFormats: .krn, .musicxml oder .xml
 removeFile: Entfernen
 cancel: Abbrechen
+optionHelp: "Hilfe zu {option}"
 useDemoScore: Demo ({id})
 fileTooLarge: "Die Datei ist zu gross. Erlaubt: maximal {size}"
 fileUnsupported: "Dateiformat nicht unterstützt. Erlaubt: .krn, .kern, .musicxml, .xml"

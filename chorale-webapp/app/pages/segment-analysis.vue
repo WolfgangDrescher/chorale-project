@@ -35,6 +35,10 @@ const CHECK_OPTIONS = [
     },
 ];
 
+// The selects stay under the dropzone, the switches go beside it on large screens.
+const SELECT_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'select');
+const SWITCH_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'switch');
+
 const DEMO_CHORALE_ID = 'chor029';
 
 // The demo score is a development aid, not part of the page.
@@ -321,31 +325,46 @@ function onSubmit() {
 
         <UCard class="mb-4">
             <UForm class="space-y-4" @submit="onSubmit">
-                <div class="max-w-md">
-                    <p class="text-sm text-dimmed mb-2">{{ $t('uploadScoreDescription') }}</p>
-                    <UFileUpload
-                        v-model="file"
-                        :accept="UPLOAD_ACCEPT"
-                        :icon="file ? 'lucide:file-music' : undefined"
-                        :label="file ? file.name : $t('uploadScoreLabel')"
-                        :description="file ? fileSize : $t('uploadScoreFormats')"
-                        :preview="false"
-                        size="sm"
-                        :ui="{ base: file ? 'min-h-14' : 'min-h-24', wrapper: file ? 'flex-row flex-wrap gap-x-3 gap-y-1' : '' }"
-                        class="w-full"
-                    >
-                        <template v-if="file" #actions="{ removeFile }">
-                            <UButton :label="$t('removeFile')" color="neutral" variant="soft" size="xs" @click.stop="removeFile()" />
-                        </template>
-                    </UFileUpload>
-                    <UAlert v-if="fileError" color="warning" variant="subtle" icon="lucide:triangle-alert" :title="fileError" class="mt-2" />
-                </div>
+                <div class="grid gap-6 lg:grid-cols-[1fr_auto_2fr] lg:items-start">
+                    <div>
+                        <p class="text-sm mb-2">{{ $t('uploadScoreDescription') }}</p>
+                        <UFileUpload
+                            v-model="file"
+                            :accept="UPLOAD_ACCEPT"
+                            :icon="file ? 'lucide:file-music' : undefined"
+                            :label="file ? file.name : $t('uploadScoreLabel')"
+                            :description="file ? fileSize : $t('uploadScoreFormats')"
+                            :preview="false"
+                            size="sm"
+                            :ui="{ base: file ? 'min-h-14' : 'min-h-24', wrapper: file ? 'flex-row flex-wrap gap-x-3 gap-y-1' : '' }"
+                            class="w-full"
+                        >
+                            <template v-if="file" #actions="{ removeFile }">
+                                <UButton :label="$t('removeFile')" color="neutral" variant="soft" size="xs" @click.stop="removeFile()" />
+                            </template>
+                        </UFileUpload>
+                        <UAlert v-if="fileError" color="warning" variant="subtle" icon="lucide:triangle-alert" :title="fileError" class="mt-2" />
 
-                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <UFormField v-for="option in CHECK_OPTIONS" :key="option.key" :label="$t(option.label)" :description="$t(option.description)">
-                        <USelect v-if="option.type === 'select'" v-model="options[option.key]" :items="option.items" class="w-full" />
-                        <USwitch v-else-if="option.type === 'switch'" v-model="options[option.key]" />
-                    </UFormField>
+                        <SegmentOptionField
+                            v-for="option in SELECT_OPTIONS"
+                            :key="option.key"
+                            v-model="options[option.key]"
+                            :option="option"
+                            class="mt-4"
+                        />
+                    </div>
+
+                    <USeparator class="lg:hidden" />
+                    <USeparator orientation="vertical" class="hidden lg:flex lg:self-stretch" />
+
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+                        <SegmentOptionField
+                            v-for="option in SWITCH_OPTIONS"
+                            :key="option.key"
+                            v-model="options[option.key]"
+                            :option="option"
+                        />
+                    </div>
                 </div>
 
                 <div class="flex gap-2">
@@ -440,7 +459,6 @@ function onSubmit() {
                                 </i18n-t>
                             </div>
 
-                            <!-- Below the badges on small screens, next to the segment on larger ones. -->
                             <UFieldGroup class="order-last sm:order-none w-full sm:w-auto">
                                 <UButton
                                     :label="$t('showMatches')"
