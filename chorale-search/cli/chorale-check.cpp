@@ -25,7 +25,7 @@ void printUsage(const char* argv0) {
         "Usage: " << argv0 << " INPUT [OPTIONS]\n"
         "\n"
         "Checks a chorale score for parallel fifths and octaves between any two of the four voices,\n"
-        "upwards and downwards.\n"
+        "upwards and downwards, and for notes outside the range of their voice.\n"
         "\n"
         "Arguments:\n"
         "    INPUT                 the score: a Humdrum **kern or MusicXML file, or '-' for\n"
@@ -33,6 +33,10 @@ void printUsage(const char* argv0) {
         "                          into four.\n"
         "\n"
         "Options:\n"
+        "    --voice-ranges strauss-berlioz|bach\n"
+        "                          the voice ranges the notes are measured against: the ones of\n"
+        "                          Berlioz and Strauss, or the ones Bach's chorales use\n"
+        "                          (default: strauss-berlioz)\n"
         "    --no-kern             leave the converted four-voice **kern text out of the\n"
         "                          output -- for command-line use, where the score is\n"
         "                          already at hand and only the findings matter\n"
@@ -62,18 +66,34 @@ int main(int argc, char** argv) {
     std::string inputPath;
     bool includeKern = true;
     bool progress = false;
+    choralesearch::VoiceRangeSet voiceRanges = choralesearch::VoiceRangeSet::StraussBerlioz;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "--no-kern") { includeKern = false; }
-        else if (arg == "--progress") { progress = true; }
-        else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
-        else if (!arg.empty() && arg[0] == '-' && arg != "-") {
-            std::cerr << "Unknown option: " << arg << "\n";
-            printUsage(argv[0]);
+        auto next = [&](const char* flag) -> std::string {
+            if (i + 1 >= argc) throw std::invalid_argument(std::string(flag) + " needs a value");
+            return argv[++i];
+        };
+        try {
+            if (arg == "--voice-ranges") {
+                const std::string value = next("--voice-ranges");
+                if (value == "strauss-berlioz") voiceRanges = choralesearch::VoiceRangeSet::StraussBerlioz;
+                else if (value == "bach") voiceRanges = choralesearch::VoiceRangeSet::Bach;
+                else throw std::invalid_argument("--voice-ranges takes strauss-berlioz or bach, got '" + value + "'");
+            }
+            else if (arg == "--no-kern") { includeKern = false; }
+            else if (arg == "--progress") { progress = true; }
+            else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
+            else if (!arg.empty() && arg[0] == '-' && arg != "-") {
+                std::cerr << "Unknown option: " << arg << "\n";
+                printUsage(argv[0]);
+                return kExitInvalidArgumentError;
+            }
+            else { inputPath = arg; }
+        } catch (const std::exception& e) {
+            std::cerr << "Error: " << e.what() << "\n";
             return kExitInvalidArgumentError;
         }
-        else { inputPath = arg; }
     }
 
     if (inputPath.empty()) {
@@ -111,7 +131,7 @@ int main(int argc, char** argv) {
         HumdrumChorale chorale(contents, inputPath == "-" ? "stdin" : inputPath);
 
         if (progress) choralesearch::reportPhase("run-checks");
-        const std::vector<Finding> findings = choralesearch::runChecks(chorale);
+        const std::vector<Finding> findings = choralesearch::runChecks(chorale, voiceRanges);
 
         nlohmann::json j;
         if (inputPath != "-") j["source"] = inputPath;

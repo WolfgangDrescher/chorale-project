@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "CorpusSearch.hpp"
+#include "HumdrumUtils.hpp"
 #include "Result.hpp"
 #include "VoiceMap.hpp"
 
@@ -119,8 +120,44 @@ std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale) {
     return findings;
 }
 
-std::vector<Finding> runChecks(const HumdrumChorale& chorale) {
-    return findParallelMotion(chorale);
+std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale, VoiceRangeSet ranges) {
+    const VoiceRanges& limits = voiceRanges(ranges);
+    std::vector<Finding> findings;
+    for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
+        const hum::HTp start = chorale.spine("kern", voice);
+        if (!start) continue;
+        const VoiceRange& range = limits[voice - 1];
+
+        for (hum::HTp token = start->getNextToken(); token; token = token->getNextToken()) {
+            if (!token->getOwner()->isData() || token->isNull() || token->isSecondaryTiedNote()) continue;
+
+            // A rest has no pitch, which humlib reports as a number below the lowest note.
+            const int midi = hum::Convert::kernToMidiNoteNumber(std::string(*token));
+            if (midi <= 0 || (midi >= range.lower && midi <= range.upper)) continue;
+
+            Finding finding;
+            finding.check = "voiceRange";
+            finding.severity = "warning";
+            finding.direction = midi > range.upper ? "above" : "below";
+            finding.lowerVoice = voice;
+            finding.upperVoice = voice;
+            finding.startLine = token->getLineNumber();
+            finding.endLine = finding.startLine;
+            finding.startPosition = humNumToString(token->getDurationFromStart());
+            finding.endPosition = finding.startPosition;
+            findings.push_back(std::move(finding));
+        }
+    }
+    return findings;
+}
+
+std::vector<Finding> runChecks(const HumdrumChorale& chorale, VoiceRangeSet ranges) {
+    std::vector<Finding> findings = findParallelMotion(chorale);
+    for (Finding& finding : findVoiceRangeViolations(chorale, ranges)) findings.push_back(std::move(finding));
+    std::stable_sort(findings.begin(), findings.end(), [](const Finding& a, const Finding& b) {
+        return a.startLine < b.startLine;
+    });
+    return findings;
 }
 
 } // namespace choralesearch

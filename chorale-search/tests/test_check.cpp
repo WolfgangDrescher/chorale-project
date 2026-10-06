@@ -10,6 +10,7 @@
 using choralesearch::HumdrumChorale;
 using choralesearch::Finding;
 using choralesearch::findParallelMotion;
+using choralesearch::findVoiceRangeViolations;
 using choralesearch::runChecks;
 
 namespace {
@@ -84,6 +85,55 @@ TEST_CASE(oblique_and_contrary_motion_and_a_diminished_fifth_are_no_parallels) {
         "4c\t4g\t4e\t4cc", // and out of it again
     });
     CHECK_EQ(findParallelMotion(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(notes_outside_the_range_of_their_voice_are_found_with_the_side_they_lie_on) {
+    const HumdrumChorale chorale = score({
+        "4g\t4BB\t4e\t4cc", // the bass on g' and the tenor on B, both out of their range
+        "4C\t4g\t4e\t4cc",
+    });
+    const std::vector<Finding> findings = findVoiceRangeViolations(chorale);
+    REQUIRE(findings.size() == 2);
+
+    CHECK_EQ(findings[0].check, std::string("voiceRange"));
+    CHECK_EQ(findings[0].severity, std::string("warning"));
+    CHECK_EQ(findings[0].direction, std::string("above"));
+    CHECK_EQ(findings[0].lowerVoice, std::size_t{1});
+    CHECK_EQ(findings[0].upperVoice, std::size_t{1});
+    CHECK_EQ(findings[0].startLine, kFirstRow);
+    CHECK_EQ(findings[0].endLine, kFirstRow);
+
+    CHECK_EQ(findings[1].direction, std::string("below"));
+    CHECK_EQ(findings[1].lowerVoice, std::size_t{2});
+}
+
+TEST_CASE(notes_at_the_edges_of_the_range_and_rests_are_no_findings) {
+    const HumdrumChorale chorale = score({
+        "4FF\t4C\t4F\t4c",     // the lowest note of every voice: F, c, f and c'
+        "4e-\t4b-\t4ee-\t4bb-", // the highest note of every voice: es', b', es'' and b''
+        "4r\t4r\t4r\t4r",
+    });
+    CHECK_EQ(findVoiceRangeViolations(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(the_ranges_decide_which_notes_are_out_of_range) {
+    // A tenor on b flat': inside the range of Berlioz and Strauss, above the one of Bach.
+    const HumdrumChorale chorale = score({
+        "4C\t4b-\t4g\t4c",
+        "4C\t4g\t4g\t4c",
+    });
+    CHECK_EQ(findVoiceRangeViolations(chorale, choralesearch::VoiceRangeSet::StraussBerlioz).size(), std::size_t{0});
+
+    const auto bach = findVoiceRangeViolations(chorale, choralesearch::VoiceRangeSet::Bach);
+    REQUIRE(bach.size() == 1);
+    CHECK_EQ(bach[0].lowerVoice, std::size_t{2});
+    CHECK_EQ(bach[0].direction, std::string("above"));
+}
+
+TEST_CASE(every_set_of_ranges_has_a_lower_limit_below_its_upper_one_for_each_voice) {
+    for (const auto set : {choralesearch::VoiceRangeSet::StraussBerlioz, choralesearch::VoiceRangeSet::Bach}) {
+        for (const auto& range : choralesearch::voiceRanges(set)) CHECK(range.lower < range.upper);
+    }
 }
 
 TEST_CASE(run_checks_gathers_the_findings_of_every_check_in_the_order_of_the_score) {

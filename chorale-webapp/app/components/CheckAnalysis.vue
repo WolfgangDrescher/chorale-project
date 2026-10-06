@@ -10,21 +10,25 @@ const { fileError } = useScoreFile(file);
 
 // The checks that find something, as the keys this page translates. Each finding names the one it
 // comes from.
-const CHECK_TYPES = ['parallelFifths', 'parallelOctaves'];
+const CHECK_TYPES = ['parallelFifths', 'parallelOctaves', 'voiceRange'];
 
 // What the checker looks for, listed next to the upload. A new check is an entry here and its two
 // translations.
-const CHECKS = [{ key: 'checkParallelMotion', label: 'checkParallelMotion', description: 'checkParallelMotionDescription' }];
+const CHECKS = [
+    { key: 'checkParallelMotion', label: 'checkParallelMotion', description: 'checkParallelMotionDescription' },
+    { key: 'checkVoiceRange', label: 'checkVoiceRange', description: 'checkVoiceRangeDescription' },
+];
 
 const SEVERITY_BADGE_COLORS = { error: 'error', warning: 'warning' };
 
-const DIRECTION_LABELS = { up: 'directionUp', down: 'directionDown' };
+const DIRECTION_LABELS = { up: 'directionUp', down: 'directionDown', above: 'directionAbove', below: 'directionBelow' };
 
 const VOICE_NAMES = { 1: 'voiceBass', 2: 'voiceTenor', 3: 'voiceAlto', 4: 'voiceSoprano' };
 
-// The lines of the parallels in the score.
+// The lines of the parallels in the score, and the markers of the notes out of their range.
 const ERROR_COLOR = 'rgb(239 68 68)';
 const ERROR_LINE_WIDTH = 3;
+const WARNING_COLOR = highlightColorsByName.amber;
 
 // The frame of the error on show, in the primary color like the segment on show of the segment
 // analysis.
@@ -103,6 +107,13 @@ const spansNotes = (entry) => entry.startLine !== entry.endLine;
 
 const connections = computed(() => [
     { items: findings.value.filter(spansNotes).flatMap(linesOf), color: ERROR_COLOR, width: ERROR_LINE_WIDTH },
+]);
+
+const notes = computed(() => [
+    {
+        items: findings.value.filter((entry) => !spansNotes(entry)).map((entry) => `L${entry.startLine}F${entry.voices[0]}`),
+        color: WARNING_COLOR,
+    },
 ]);
 
 // The finding on show as a frame on the staff of each of its voices, from its first note to its
@@ -195,6 +206,7 @@ function onNoteClick({ line, voice }) {
                             pageMarginTop: 60,
                         }"
                         :connections="connections"
+                        :notes="notes"
                         :sections="sections"
                         :scroll-to-line="scrollToLine"
                         @note-click="onNoteClick"
