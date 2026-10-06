@@ -43,6 +43,11 @@ struct SegmentQueryOptions {
 
     std::string feature = "mint"; // the driving feature of the query and of every group
 
+    // Intervals (mint and the hint pairs) are written without their quality, so a minor
+    // passage is found in major pieces and the other way round, and a raised leading tone
+    // doesn't hide a melody. A unison keeps its quality.
+    bool ignoreIntervalQuality = true;
+
     bool includeDuration = true;
     bool includeFermata = true;
 

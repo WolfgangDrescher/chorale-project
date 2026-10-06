@@ -3,6 +3,7 @@
 #include "HumdrumUtils.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <stdexcept>
 #include <string>
 
@@ -15,6 +16,23 @@ const std::string kMintFeature = "mint";
 const std::string kDurationKey = "duration";
 const std::string kFermataKey = "fermata";
 const std::string kWildcard = "*";
+
+// An interval token ("+M2", "-m3", "m10") reduced to direction and number ("+2", "-3", "10"). A
+// pattern value without a quality matches every quality (see AttributeMatcher), so a minor piece
+// finds the same melody in major and the other way round. A unison keeps its quality: "P1" is
+// the repeated note, "+A1" a chromatic step. Anything that isn't a plain interval (mint's
+// bracketed first note, a null token) is returned as it is.
+std::string withoutQuality(const std::string& interval) {
+    std::string sign;
+    std::string number;
+    for (char c : interval) {
+        if (c == '+' || c == '-') sign += c;
+        else if (c >= '0' && c <= '9') number += c;
+        else if (!std::isalpha(static_cast<unsigned char>(c))) return interval;
+    }
+    if (number.empty() || number == "1") return interval;
+    return sign + number;
+}
 
 // Every note (or rest) a voice attacks between two positions, in order -- exactly what
 // AttributeMatcher walks when it runs the query later. The continuation of a tie isn't an attack
@@ -90,7 +108,9 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
         // pattern's first position (see docs/options#mintstartatprevioustoken) without saying
         // anything about how the music got there.
         bool isMintLeadIn = options.feature == kMintFeature && i == 0;
-        position[options.feature] = {isMintLeadIn ? kWildcard : std::string(*token)};
+        std::string value = std::string(*token);
+        if (options.ignoreIntervalQuality && options.feature == kMintFeature) value = withoutQuality(value);
+        position[options.feature] = {isMintLeadIn ? kWildcard : value};
 
         // The last note of a segment routinely goes on sounding past the window -- a half note
         // it cuts in two. Only the part inside belongs to the segment, and a pattern can't ask
@@ -110,7 +130,9 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
                 // A hint spine belongs to the pair, not to a voice: there is one per score, and
                 // it's always found under the first voice (see docs/features/hint).
                 if (hum::HTp hintToken = findTokenAtLine(chorale.spine(pair, 1), lineNumber)) {
-                    position[pair] = {std::string(*hintToken)};
+                    std::string interval = std::string(*hintToken);
+                    if (options.ignoreIntervalQuality) interval = withoutQuality(interval);
+                    position[pair] = {interval};
                 }
             }
         }
