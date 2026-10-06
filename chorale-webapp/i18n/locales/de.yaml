@@ -55,8 +55,6 @@ copied: Kopiert
 stats: Stats
 showMatches: Treffer im Korpus anzeigen
 matchesInCorpus: Treffer im Korpus
-convertedFromMusicxml: aus MusicXML konvertiert
-splitIntoVoices: Stimmen getrennt
 noSegments: Keine Segmente gefunden.
 noSegmentsDescription: Laden Sie eine Partitur hoch oder verwenden Sie die Demo-Partitur. Der Satz wird in überlappende Fenster zerlegt; zu jedem entsteht ein Query, der sofort gegen den Korpus gezählt wird.
 segmentAnalysisError: Die Segmentanalyse ist fehlgeschlagen.

@@ -106,7 +106,7 @@ function useSegmentAnalysis() {
     const pending = ref(false);
     const progress = ref(null);
     const error = ref(null);
-    const result = ref(null); // { inputFormat, layout, kern, segments, durationMs }
+    const result = ref(null); // { kern, segments, durationMs }
 
     // 1-based, so it doubles as UPagination's page with one segment per page.
     const position = ref(1);
@@ -511,8 +511,6 @@ function onSubmit() {
                         <UBadge v-for="tier in MATCH_TIERS" v-show="segmentsByTier[tier.key].length" :key="tier.key" :color="tier.badgeColor" variant="subtle">
                             {{ $t(tier.badge, segmentsByTier[tier.key].length) }}
                         </UBadge>
-                        <UBadge v-if="result.inputFormat === 'musicxml'" color="neutral" variant="subtle">{{ $t('convertedFromMusicxml') }}</UBadge>
-                        <UBadge v-if="result.layout === 'grand-staff'" color="neutral" variant="subtle">{{ $t('splitIntoVoices') }}</UBadge>
                     </div>
                     <UPagination v-model:page="position" :total="segments.length" :items-per-page="1" size="xs" />
                 </div>

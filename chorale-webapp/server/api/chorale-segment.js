@@ -95,8 +95,8 @@ export default defineEventHandler(async (event) => {
             });
         };
         const answer = ({ stdout, durationMs }) => {
-            const { inputFormat, layout, kern, segments } = parseToolJsonOutput(stdout, 'chorale-segment');
-            return { inputFormat, layout, kern, segments, length, durationMs };
+            const { kern, segments } = parseToolJsonOutput(stdout, 'chorale-segment');
+            return { kern, segments, length, durationMs };
         };
 
         if (acceptsStream(event)) {
