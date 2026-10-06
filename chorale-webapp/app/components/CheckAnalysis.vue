@@ -1,0 +1,225 @@
+<script setup>
+// The findings of the checks on a score. The server prepares the score (a MusicXML file converted,
+// a two-staff one split into four voices) and runs the checks of chorale-check on it (see
+// Check.hpp). Here they are only shown.
+
+// The score, shared with the other analyses of the page.
+const file = defineModel('file', { default: null });
+
+const { fileError } = useScoreFile(file);
+
+// The checks that find something, as the keys this page translates. Each finding names the one it
+// comes from.
+const CHECK_TYPES = ['parallelFifths', 'parallelOctaves'];
+
+// What the checker looks for, listed next to the upload. A new check is an entry here and its two
+// translations.
+const CHECKS = [{ key: 'checkParallelMotion', label: 'checkParallelMotion', description: 'checkParallelMotionDescription' }];
+
+const SEVERITY_BADGE_COLORS = { error: 'error', warning: 'warning' };
+
+const DIRECTION_LABELS = { up: 'directionUp', down: 'directionDown' };
+
+const VOICE_NAMES = { 1: 'voiceBass', 2: 'voiceTenor', 3: 'voiceAlto', 4: 'voiceSoprano' };
+
+// The lines of the parallels in the score.
+const ERROR_COLOR = 'rgb(239 68 68)';
+const ERROR_LINE_WIDTH = 3;
+
+// The frame of the error on show, in the primary color like the segment on show of the segment
+// analysis.
+const ACTIVE_FRAME_COLOR = 'color-mix(in oklab, var(--ui-primary) 80%, transparent)';
+
+const pending = ref(false);
+const progress = ref(null);
+const error = ref(null);
+const result = ref(null); // { kern, findings, durationMs }
+
+// 1-based, so it doubles as UPagination's page with one error per page.
+const position = ref(1);
+
+const findings = computed(() => result.value?.findings ?? []);
+const activeFinding = computed(() => findings.value[position.value - 1] ?? null);
+
+const countsByType = computed(() =>
+    CHECK_TYPES.map((type) => {
+        const ofType = findings.value.filter((entry) => entry.check === type);
+        return { type, count: ofType.length, color: SEVERITY_BADGE_COLORS[ofType[0]?.severity] };
+    }).filter((entry) => entry.count > 0),
+);
+
+let abortController = null;
+
+function cancel() {
+    abortController?.abort();
+}
+
+async function analyze() {
+    if (!file.value) return;
+    abortController = new AbortController();
+    pending.value = true;
+    progress.value = null;
+    error.value = null;
+    result.value = null;
+    position.value = 1;
+    try {
+        const data = await file.value.text();
+        const response = await fetchWithProgress('/api/chorale-check', {
+            body: { data },
+            signal: abortController.signal,
+            onProgress: (event) => {
+                progress.value = { ...progress.value, ...event };
+            },
+        });
+        result.value = {
+            kern: response.kern,
+            findings: response.findings,
+            durationMs: response.durationMs,
+        };
+    } catch (e) {
+        // A cancelled run is what the person asked for, not a failure to report.
+        if (e.name !== 'AbortError') error.value = e;
+    } finally {
+        abortController = null;
+        pending.value = false;
+    }
+}
+
+// What a finding marks in the score: one voice for a note, two for a parallel.
+const voicesOf = (entry) => [...new Set(entry.voices)];
+
+// The two lines of a parallel, one for each voice, running horizontally from its first note to its
+// second one.
+function linesOf(entry) {
+    return voicesOf(entry).map((voice) => ({
+        from: { line: entry.startLine, voice },
+        to: { line: entry.endLine, voice },
+    }));
+}
+
+// Findings that run from one note to another are drawn as lines, those about a single note as a
+// marker on it.
+const spansNotes = (entry) => entry.startLine !== entry.endLine;
+
+const connections = computed(() => [
+    { items: findings.value.filter(spansNotes).flatMap(linesOf), color: ERROR_COLOR, width: ERROR_LINE_WIDTH },
+]);
+
+// The finding on show as a frame on the staff of each of its voices, from its first note to its
+// last one.
+const sections = computed(() => {
+    if (!activeFinding.value) return [];
+    const { startLine, endLine } = activeFinding.value;
+    return [{ items: voicesOf(activeFinding.value).map((voice) => ({ voice, startLine, endLine })), color: ACTIVE_FRAME_COLOR, outline: true }];
+});
+
+// The line to keep in view for the finding on show.
+const scrollToLine = computed(() => (activeFinding.value?.startLine));
+
+function goToFinding(n) {
+    position.value = Math.min(Math.max(n, 1), findings.value.length);
+}
+
+// A clicked note selects the first finding that has it among its notes.
+function onNoteClick({ line, voice }) {
+    const index = findings.value.findIndex(
+        (entry) => entry.voices.includes(voice) && (entry.startLine === line || entry.endLine === line),
+    );
+    if (index !== -1) goToFinding(index + 1);
+}
+</script>
+
+<template>
+    <div>
+        <UCard class="mb-4">
+            <UForm class="space-y-4" @submit="analyze">
+                <div class="grid gap-6 lg:grid-cols-[1fr_auto_2fr] lg:items-start">
+                    <ScoreFileField v-model="file" />
+
+                    <USeparator class="lg:hidden" />
+                    <USeparator orientation="vertical" class="hidden lg:flex lg:self-stretch" />
+
+                    <div>
+                        <p class="text-sm mb-2">{{ $t('checkListTitle') }}</p>
+                        <ul class="space-y-3">
+                            <li v-for="check in CHECKS" :key="check.key">
+                                <p class="font-semibold text-sm">{{ $t(check.label) }}</p>
+                                <p class="text-sm text-muted">{{ $t(check.description) }}</p>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <UButton type="submit" :loading="pending" :disabled="!file || !!fileError">{{ $t('submit') }}</UButton>
+            </UForm>
+        </UCard>
+
+        <UAlert v-if="error" color="error" variant="subtle" :title="error.data?.message ?? $t('checkError')">
+            <template v-if="error.data?.errors?.length" #description>
+                <ul>
+                    <li v-for="(msg, i) in error.data.errors" :key="i">{{ msg }}</li>
+                </ul>
+            </template>
+        </UAlert>
+        <SearchProgress v-else-if="pending" :progress="progress" class="mt-8">
+            <UButton color="neutral" variant="soft" size="xs" icon="lucide:x" @click="cancel">{{ $t('cancel') }}</UButton>
+        </SearchProgress>
+        <UEmpty
+            v-else-if="!result"
+            :description="$t('checkEmptyDescription')"
+            icon="lucide:file-check"
+            class="md:w-1/2 lg:w-1/3 mx-auto"
+        />
+        <template v-else>
+            <div class="flex items-center justify-between gap-4 my-4">
+                <div class="flex flex-wrap items-center gap-2 text-sm">
+                    <span v-if="!findings.length">{{ $t('noCheckFindings') }}</span>
+                    <template v-else>
+                        <span>{{ $t('checkFindingsFound', findings.length) }}</span>
+                        <UBadge v-for="entry in countsByType" :key="entry.type" :color="entry.color" variant="subtle">
+                            {{ $t(`${entry.type}Count`, entry.count) }}
+                        </UBadge>
+                    </template>
+                </div>
+                <UPagination v-if="findings.length" v-model:page="position" :total="findings.length" :items-per-page="1" size="xs" />
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <UCard>
+                    <HighlightedScore
+                        :score-data="result.kern"
+                        :horizontal="true"
+                        :verovio-options="{
+                            scale: 35,
+                            pageMarginLeft: 42,
+                            pageMarginTop: 60,
+                        }"
+                        :connections="connections"
+                        :sections="sections"
+                        :scroll-to-line="scrollToLine"
+                        @note-click="onNoteClick"
+                    />
+                </UCard>
+
+                <UCard v-if="findings.length" class="w-full max-w-2xl mx-auto" :ui="{ body: 'p-3 sm:p-3' }">
+                    <ul class="divide-y divide-default">
+                        <li v-for="(entry, index) in findings" :key="index">
+                            <button
+                                type="button"
+                                class="flex w-full items-center gap-3 px-2 py-1.5 text-left text-sm rounded hover:bg-elevated"
+                                :class="index === position - 1 && 'bg-elevated font-semibold'"
+                                @click="goToFinding(index + 1)"
+                            >
+                                <span class="tabular-nums text-dimmed w-8">{{ index + 1 }}</span>
+                                <UBadge :color="SEVERITY_BADGE_COLORS[entry.severity]" variant="subtle">{{ $t(entry.check) }}</UBadge>
+                                <span>{{ $t(DIRECTION_LABELS[entry.direction]) }}</span>
+                                <span class="text-muted">{{ voicesOf(entry).map((voice) => $t(VOICE_NAMES[voice])).join(' / ') }}</span>
+                                <span class="ml-auto text-dimmed tabular-nums">{{ $t('lineNumber', { line: entry.startLine }) }}</span>
+                            </button>
+                        </li>
+                    </ul>
+                </UCard>
+            </div>
+        </template>
+    </div>
+</template>

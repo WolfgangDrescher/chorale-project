@@ -17,6 +17,7 @@ const PHASE_TITLES: Record<string, string> = {
     'split-score-into-voices': 'progressSplitScoreIntoVoices',
     'analyze-score': 'progressAnalyzeScore',
     'segment-score': 'progressSegmentScore',
+    'run-checks': 'progressRunChecks',
     'search-corpus': 'progressSearchCorpus',
 };
 

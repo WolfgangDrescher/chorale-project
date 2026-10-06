@@ -16,6 +16,7 @@ query: Query
 searchError: Die Suche ist fehlgeschlagen.
 choraleAnalysis: Choralanalyse
 segmentAnalysis: Segmente
+checkAnalysis: Satzkontrolle
 uploadScoreDescription: Vierstimmiger Satz als Humdrum-Kern oder MusicXML
 uploadScoreLabel: Datei hierher ziehen oder klicken
 uploadScoreFormats: .krn, .musicxml oder .xml
@@ -65,6 +66,25 @@ progressConvertMusicxml: MusicXML wird konvertiert
 progressSplitScoreIntoVoices: Stimmen werden getrennt
 progressAnalyzeScore: Partitur wird analysiert
 progressSegmentScore: Partitur wird segmentiert
+progressRunChecks: Satz wird geprüft
 progressSearchCorpus: Korpus wird durchsucht
 progressChoralesSearched: "{searched} von {total} Chorälen"
 progressMatchesSoFar: "kein Treffer bisher | ein Treffer bisher | {count} Treffer bisher"
+checkListTitle: Das wird geprüft
+checkParallelMotion: Quint- und Oktavparallelen
+checkParallelMotionDescription: "Zwei Stimmen bewegen sich in dieselbe Richtung und bilden zweimal hintereinander eine reine Quinte oder Oktave. Das wird zwischen allen Stimmenpaaren geprüft, aufwärts und abwärts. Zusammengesetzte Intervalle zählen mit, eine Duodezime also als Quinte, ein Einklang als Oktave. Liegende Töne, Gegenbewegung und verminderte Quinten sind keine Parallelen. Beide Stimmen müssen ihre Noten gleichzeitig anschlagen."
+checkEmptyDescription: Laden Sie eine Partitur hoch. Sie wird auf Satzfehler geprüft, die direkt in der Partitur markiert werden.
+checkError: Die Prüfung auf Satzfehler ist fehlgeschlagen.
+noCheckFindings: Keine Befunde.
+checkFindingsFound: "ein Befund | {count} Befunde"
+parallelFifths: Quintparallele
+parallelOctaves: Oktavparallele
+parallelFifthsCount: "eine Quintparallele | {count} Quintparallelen"
+parallelOctavesCount: "eine Oktavparallele | {count} Oktavparallelen"
+directionUp: aufwärts
+directionDown: abwärts
+voiceBass: Bass
+voiceTenor: Tenor
+voiceAlto: Alt
+voiceSoprano: Sopran
+lineNumber: "Zeile {line}"

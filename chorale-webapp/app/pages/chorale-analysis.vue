@@ -12,6 +12,7 @@ useHead({
 // analysis that has already run.
 const TABS = [
     { value: 'segments', label: t('segmentAnalysis'), icon: 'lucide:scissors', slot: 'segments' },
+    { value: 'check', label: t('checkAnalysis'), icon: 'lucide:spell-check', slot: 'check' },
 ];
 
 const tab = computed({
@@ -30,6 +31,9 @@ const file = ref(null);
         <UTabs v-model="tab" :items="TABS" :unmount-on-hide="false" class="w-full">
             <template #segments>
                 <SegmentAnalysis v-model:file="file" class="mt-4" />
+            </template>
+            <template #check>
+                <CheckAnalysis v-model:file="file" class="mt-4" />
             </template>
         </UTabs>
     </UContainer>
