@@ -18,6 +18,13 @@ struct AttributeMatch {
     hum::HumNum endPosition;     // same, for the last matched position without the duration of that slice
 };
 
+// The **mint token for the step from the note `from` to the note `to` ("+M2", "-m3", "P1"), the
+// highest note standing for a chord. Empty where either has no pitch, a rest for one.
+std::string mintIntervalToken(hum::HTp from, hum::HTp to);
+
+// A hint interval ("M10") folded back within an octave ("M3"); a unison and an octave stay distinct.
+std::string reduceHintInterval(const std::string& value);
+
 class AttributeMatcher {
 public:
     AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,

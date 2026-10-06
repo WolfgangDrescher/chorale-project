@@ -522,4 +522,28 @@ TEST_CASE(simultaneous_with_group_can_override_mint_allow_interval_complementati
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0});
 }
 
+TEST_CASE(for_each_match_visits_the_same_matches_run_collects_with_their_chorale) {
+    auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    CorpusSearch search(fixturesDir);
+    Query q;
+    q.id = "fermatas";
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+
+    std::size_t visited = 0;
+    bool choraleMatchesResult = true;
+    bool queryIdSet = true;
+    search.forEachMatch({q}, [&](const HumdrumChorale& chorale, const Result& result) {
+        ++visited;
+        if (chorale.id() != result.choraleId) choraleMatchesResult = false;
+        if (result.queryId != std::string("fermatas")) queryIdSet = false;
+    });
+
+    CHECK_EQ(visited, search.run(std::vector<Query>{q}).size());
+    CHECK(visited > 0u);
+    CHECK(choraleMatchesResult);
+    CHECK(queryIdSet);
+}
+
 TEST_MAIN()

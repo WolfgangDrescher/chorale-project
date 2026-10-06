@@ -18,26 +18,10 @@ using Onset = AttributeMatcher::Onset;
 const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
 const std::string kFbFeature = "fb";
+const std::string kMetweightFeature = "metweight";
 const std::string kDurationKey = "duration";
 const std::string kFermataKey = "fermata";
 const std::string kWildcard = "*";
-
-// An interval token ("+M2", "-m3", "m10") reduced to direction and number ("+2", "-3", "10"). A
-// pattern value without a quality matches every quality (see AttributeMatcher), so a minor piece
-// finds the same melody in major and the other way round. A unison keeps its quality: "P1" is
-// the repeated note, "+A1" a chromatic step. Anything that isn't a plain interval (mint's
-// bracketed first note, a null token) is returned as it is.
-std::string withoutQuality(const std::string& interval) {
-    std::string sign;
-    std::string number;
-    for (char c : interval) {
-        if (c == '+' || c == '-') sign += c;
-        else if (c >= '0' && c <= '9') number += c;
-        else if (!std::isalpha(static_cast<unsigned char>(c))) return interval;
-    }
-    if (number.empty() || number == "1") return interval;
-    return sign + number;
-}
 
 // An fb chord ("m6 M3") with every one of its intervals reduced the way withoutQuality does it
 // ("6 3"): the pattern value then matches the chord whatever the qualities are.
@@ -83,6 +67,12 @@ std::vector<Onset> onsetsBetween(const HumdrumChorale& chorale, const std::strin
         onsets.push_back(Onset{t, soundingDuration(t), std::nullopt});
     }
     return onsets;
+}
+
+// The weight classes a note of this class may be found on (see SegmentQueryOptions::metricPositions).
+std::vector<std::string> equivalentMetricWeights(const std::string& weight) {
+    if (weight == "s" || weight == "hs") return {"s", "hs"};
+    return {weight};
 }
 
 std::size_t voiceCount(const HumdrumChorale& chorale) {
@@ -155,6 +145,11 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
         if (options.includeFermata) {
             if (hum::HTp kernToken = findTokenAtLine(chorale.spine(kKernFeature, voice), lineNumber)) {
                 position[kFermataKey] = {kernToken->hasFermata() ? "true" : "false"};
+            }
+        }
+        if (options.metricPositions) {
+            if (hum::HTp metweightToken = findTokenAtLine(chorale.spine(kMetweightFeature, voice), lineNumber)) {
+                position[kMetweightFeature] = equivalentMetricWeights(std::string(*metweightToken));
             }
         }
         if (crossReferenceHintPairs) {
@@ -232,6 +227,23 @@ Query buildQuery(const HumdrumChorale& chorale, const std::vector<Onset>& onsets
 }
 
 } // namespace
+
+// An interval token ("+M2", "-m3", "m10") reduced to direction and number ("+2", "-3", "10"). A
+// pattern value without a quality matches every quality (see AttributeMatcher), so a minor piece
+// finds the same melody in major and the other way round. A unison keeps its quality: "P1" is
+// the repeated note, "+A1" a chromatic step. Anything that isn't a plain interval (mint's
+// bracketed first note, a null token) is returned as it is.
+std::string withoutQuality(const std::string& interval) {
+    std::string sign;
+    std::string number;
+    for (char c : interval) {
+        if (c == '+' || c == '-') sign += c;
+        else if (c >= '0' && c <= '9') number += c;
+        else if (!std::isalpha(static_cast<unsigned char>(c))) return interval;
+    }
+    if (number.empty() || number == "1") return interval;
+    return sign + number;
+}
 
 std::vector<Segment> segmentScore(const HumdrumChorale& chorale, const SegmentationOptions& options,
                                    const SegmentQueryOptions& queryOptions) {

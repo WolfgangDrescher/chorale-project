@@ -284,6 +284,8 @@ bool fbInList(const std::vector<std::string>& allowed, const std::string& actual
                         [&](const std::string& v) { return fbValueMatches(v, actual, exactChord); });
 }
 
+} // namespace
+
 // Folds a hint interval's number back within an octave (10 -> 3, 15 -> 8, ...), leaving its
 // quality letter untouched; a unison and an octave stay distinct from each other. Mirrors
 // Tool_fb's own FiguredBassNumber::getNumberWithinOctave(), which isn't reusable standalone
@@ -301,6 +303,8 @@ std::string reduceHintInterval(const std::string& value) {
     else reduced = figure % 7;
     return quality + std::to_string(reduced);
 }
+
+namespace {
 
 // A hint-<pair>/hint-<voice> token is always a single interval, never a chord, so this
 // compares directly via fbIntervalMatches rather than fb's chord-aware fbValueMatches
@@ -426,6 +430,8 @@ hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart) {
     return nullptr;
 }
 
+} // namespace
+
 // The **mint token Tool_mint would have written for the step from `from` to `to`, had the notes
 // in between not been there. Tool_mint::getIntervalToken() spells an interval as quality plus
 // diatonic size out of its own getIntervalQuality() table, and that table is
@@ -456,8 +462,6 @@ std::string mintIntervalToken(hum::HTp from, hum::HTp to) {
     }
     return (interval > 0 ? "+" : interval < 0 ? "-" : "") + token;
 }
-
-} // namespace
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern, MatcherOptions options)
     : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)), m_options(std::move(options)) {}

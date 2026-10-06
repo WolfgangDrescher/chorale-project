@@ -26,6 +26,10 @@ struct SearchProgress {
 
 using ProgressCallback = std::function<void(const SearchProgress&)>;
 
+// One match together with the chorale it was found in, for a caller that needs to look at the
+// score around the match and not only at where it is.
+using MatchVisitor = std::function<void(const HumdrumChorale&, const Result&)>;
+
 class CorpusSearch {
 public:
     // `applyAnalysis` false skips deriving the analysis spines while loading each chorale,
@@ -45,6 +49,12 @@ public:
     // there are. Every Result's queryId is set to that query's own id (or its index in
     // `queries`, stringified, if it didn't set one) -- see Query::id.
     Results run(const std::vector<Query>& queries) const;
+
+    // The same search as run(queries), except that no results are collected: every match is
+    // handed to `visit` along with its chorale, which is loaded once per file and gone again
+    // after it. The Result's queryId is set the way run(queries) sets it. A query's `limit` is
+    // not applied, since there is nothing collected to cap.
+    void forEachMatch(const std::vector<Query>& queries, const MatchVisitor& visit) const;
 
     // Runs `query` against a single already-loaded chorale.
     Results runOne(const HumdrumChorale& chorale, const Query& query) const;

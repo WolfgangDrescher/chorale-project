@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <optional>
+#include <set>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -10,6 +12,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "AttributeMatcher.hpp"
 #include "CliInput.hpp"
 #include "CorpusSearch.hpp"
 #include "SplitScoreIntoVoices.hpp"
@@ -21,6 +24,7 @@
 #include "ScoreImport.hpp"
 #include "Segmentation.hpp"
 
+using choralesearch::AttributeMatcher;
 using choralesearch::CorpusSearch;
 using choralesearch::HumdrumChorale;
 using choralesearch::Query;
@@ -66,6 +70,10 @@ void printUsage(const char* argv0) {
         "    --stats CORPUS_DIR    search the corpus for every segment's query and add a\n"
         "                          \"stats\" property to each segment: matches, choraleCount\n"
         "                          and topChorales\n"
+        "    --bass-lines true|false\n"
+        "                          with --stats, also find how often each segment's soprano line\n"
+        "                          occurs in the corpus (on the same metric positions) and the five\n"
+        "                          most frequent bass lines under those matches (default: false)\n"
         "    --no-analysis         with --stats: read the analysis spines straight from the\n"
         "                          corpus instead of deriving them per run -- for a corpus\n"
         "                          built by chorale-generate --analysis\n"
@@ -148,6 +156,202 @@ std::map<std::string, nlohmann::json> statsForSegments(const std::vector<Segment
     return stats;
 }
 
+// The bass lines Bach sets under the cantus firmus (c.f.) of each segment: the soprano line of the
+// segment is searched in the corpus, and under every match the bass is read.
+
+constexpr std::size_t kBassVoice = 1;   // voices are numbered from the bass up
+constexpr std::size_t kBassLineLimit = 5; // how many bass lines a segment gets
+
+// The first note the voice attacks on or after `line`.
+hum::HTp firstNoteFromLine(hum::HTp voiceStart, int line) {
+    if (!voiceStart) return nullptr;
+    for (hum::HTp token = voiceStart->getNextToken(); token; token = token->getNextToken()) {
+        if (!token->getOwner()->isData() || token->isNull() || token->isSecondaryTiedNote()) continue;
+        if (token->getLineNumber() >= line) return token;
+    }
+    return nullptr;
+}
+
+// The interval, as the transpose filter takes it ("-M2", "P4"), that moves the note `from` onto
+// the note `to`. Empty where they are the same note, or where the interval has no name.
+std::string transpositionInterval(hum::HTp from, hum::HTp to) {
+    std::string interval = choralesearch::mintIntervalToken(from, to);
+    if (interval.empty() || interval == "P1" || interval.find('X') != std::string::npos) return "";
+    if (interval.front() == '+') interval.erase(0, 1);
+    return interval;
+}
+
+// What the bass does under one match of a c.f.
+struct BassLine {
+    std::string startInterval;          // to the c.f., where the match starts
+    std::vector<std::string> intervals; // between its own notes from there on
+    std::size_t startLine = 0;          // of the bass note under the match, which may sound from before it
+
+    // The same for the same bass line.
+    std::string id() const {
+        std::string id = startInterval + " |";
+        for (const std::string& interval : intervals) id += " " + interval;
+        return id;
+    }
+};
+
+// The bass line under `match`, or nothing where the bass has no note in it. The interval into the
+// first bass note belongs to what came before the match and is left out.
+std::optional<BassLine> readBassLine(const HumdrumChorale& chorale, const std::vector<AttributeMatcher::Onset>& bass,
+                                     const Result& match, const SegmentQueryOptions& options) {
+    auto lineOf = [](const AttributeMatcher::Onset& note) { return static_cast<std::size_t>(note.token->getLineNumber()); };
+
+    // The bass note sounding where the match starts is the last one attacked on or before it.
+    std::size_t first = 0;
+    while (first + 1 < bass.size() && lineOf(bass[first + 1]) <= match.startLineNumber) ++first;
+    if (first >= bass.size() || lineOf(bass[first]) > match.endLineNumber) return std::nullopt;
+
+    BassLine bassLine;
+    bassLine.startLine = std::min(match.startLineNumber, lineOf(bass[first]));
+
+    for (std::size_t i = first + 1; i < bass.size() && lineOf(bass[i]) <= match.endLineNumber; ++i) {
+        // Where ornaments were folded away, the interval is the one measured across them.
+        std::string interval = bass[i].mint ? *bass[i].mint : std::string(*bass[i].token);
+        if (options.ignoreIntervalQuality) interval = choralesearch::withoutQuality(interval);
+        bassLine.intervals.push_back(std::move(interval));
+    }
+
+    // The same bass line under another c.f. note is another setting, so the interval between the
+    // two where the match starts belongs to it.
+    const std::string intervalSpine = "hint-" + std::to_string(kBassVoice) + std::to_string(match.voice);
+    const int startLine = static_cast<int>(match.startLineNumber);
+    if (hum::HTp token = choralesearch::findTokenAtLine(chorale.spine(intervalSpine, 1), startLine)) {
+        bassLine.startInterval = std::string(*token);
+        if (options.matcherOptions.hintReduceCompound) {
+            bassLine.startInterval = choralesearch::reduceHintInterval(bassLine.startInterval);
+        }
+        if (options.ignoreIntervalQuality) bassLine.startInterval = choralesearch::withoutQuality(bassLine.startInterval);
+    }
+    return bassLine;
+}
+
+// A bass line and where in the corpus it is.
+struct BassLineFinding {
+    nlohmann::json occurrences = nlohmann::json::array(); // {choraleId, startLine, endLine} of each
+    std::set<std::string> chorales;
+    nlohmann::json example; // the first occurrence, and how to show it
+};
+
+// What the corpus has for the c.f. of one segment.
+struct CantusFirmusFindings {
+    std::size_t matches = 0;
+    std::map<std::string, BassLineFinding> bassLines; // by BassLine::id()
+
+    // The most frequent bass lines first, as the JSON the segment's stats carry.
+    nlohmann::json topBassLines() const {
+        std::vector<const BassLineFinding*> ranked;
+        for (const auto& entry : bassLines) ranked.push_back(&entry.second);
+        std::stable_sort(ranked.begin(), ranked.end(), [](const auto* a, const auto* b) {
+            if (a->occurrences.size() != b->occurrences.size()) return a->occurrences.size() > b->occurrences.size();
+            return a->chorales.size() > b->chorales.size();
+        });
+
+        nlohmann::json json = nlohmann::json::array();
+        for (std::size_t i = 0; i < ranked.size() && i < kBassLineLimit; ++i) {
+            json.push_back({{"matches", ranked[i]->occurrences.size()},
+                            {"choraleCount", ranked[i]->chorales.size()},
+                            {"example", ranked[i]->example},
+                            {"occurrences", ranked[i]->occurrences}});
+        }
+        return json;
+    }
+};
+
+// Collects the bass lines under the matches the corpus search finds, per segment.
+class BassLineCollector {
+public:
+    // `segmentStartNotes`: the first note of each segment's c.f., by segment id.
+    BassLineCollector(const SegmentQueryOptions& options, std::map<std::string, hum::HTp> segmentStartNotes)
+        : m_options(options), m_segmentStartNotes(std::move(segmentStartNotes)) {
+        m_bassOptions.metweightSkipUnclassified = options.matcherOptions.metweightSkipUnclassified;
+    }
+
+    // To be called for every match of a segment's c.f.
+    void add(const HumdrumChorale& chorale, const Result& match) {
+        const std::string segmentId = match.queryId.value_or("");
+        CantusFirmusFindings& findings = m_findings[segmentId];
+        ++findings.matches;
+
+        if (m_bassChoraleId != chorale.id()) { // the corpus is searched chorale by chorale
+            m_bassChoraleId = chorale.id();
+            m_bass = AttributeMatcher("mint", {}, m_bassOptions).buildOnsets(chorale, kBassVoice);
+        }
+        const std::optional<BassLine> bassLine = readBassLine(chorale, m_bass, match, m_options);
+        if (!bassLine) return;
+
+        const nlohmann::json occurrence = {{"choraleId", match.choraleId},
+                                           {"startLine", bassLine->startLine},
+                                           {"endLine", match.endLineNumber}};
+        BassLineFinding& finding = findings.bassLines[bassLine->id()];
+        if (finding.occurrences.empty()) {
+            finding.example = occurrence;
+            finding.example["transpose"] =
+                transpositionInterval(matchStartNote(chorale, match), m_segmentStartNotes[segmentId]);
+        }
+        finding.occurrences.push_back(occurrence);
+        finding.chorales.insert(match.choraleId);
+    }
+
+    const CantusFirmusFindings& findings(const std::string& segmentId) { return m_findings[segmentId]; }
+
+private:
+    static hum::HTp matchStartNote(const HumdrumChorale& chorale, const Result& match) {
+        return choralesearch::findTokenAtLine(chorale.spine("kern", match.voice), static_cast<int>(match.startLineNumber));
+    }
+
+    SegmentQueryOptions m_options;
+    std::map<std::string, hum::HTp> m_segmentStartNotes;
+    std::map<std::string, CantusFirmusFindings> m_findings; // by segment id
+
+    // The bass of the chorale being searched, read once for all of its matches.
+    choralesearch::MatcherOptions m_bassOptions;
+    std::string m_bassChoraleId;
+    std::vector<AttributeMatcher::Onset> m_bass;
+};
+
+// Adds "cantusFirmus" to the stats of every segment: how often the corpus has its c.f. (on the
+// same metric positions, without the other voices), and the most frequent bass lines under those.
+// One search of the corpus for all segments.
+void addCantusFirmusFindings(const HumdrumChorale& score, const std::vector<Segment>& segments,
+                             std::map<std::string, nlohmann::json>& stats,
+                             const SegmentationOptions& segmentationOptions, const SegmentQueryOptions& queryOptions,
+                             const std::string& corpusDir, bool applyAnalysis, bool reportProgress) {
+    // The segments again as their c.f. alone: the windows are the same, so the ids are too.
+    SegmentQueryOptions cantusFirmusOptions = queryOptions;
+    cantusFirmusOptions.simultaneousVoices.clear();
+    cantusFirmusOptions.metricPositions = true;
+    std::vector<Query> queries;
+    for (const Segment& segment : choralesearch::segmentScore(score, segmentationOptions, cantusFirmusOptions)) {
+        queries.push_back(segment.query);
+    }
+
+    std::map<std::string, hum::HTp> segmentStartNotes;
+    for (const Segment& segment : segments) {
+        segmentStartNotes[segment.query.id.value_or("")] =
+            firstNoteFromLine(score.spine("kern", queryOptions.voice), segment.startLineNumber);
+    }
+
+    BassLineCollector collector(queryOptions, std::move(segmentStartNotes));
+    if (reportProgress) choralesearch::reportPhase("collect-bass-lines");
+    CorpusSearch search(corpusDir, applyAnalysis);
+    if (reportProgress) search.setProgressCallback(choralesearch::progressToStderr());
+    search.forEachMatch(queries, [&](const HumdrumChorale& chorale, const Result& match) { collector.add(chorale, match); });
+
+    for (const Segment& segment : segments) {
+        const std::string id = segment.query.id.value_or("");
+        const CantusFirmusFindings& findings = collector.findings(id);
+        stats[id]["cantusFirmus"] = {
+            {"matches", findings.matches},
+            {"topBassLines", findings.topBassLines()},
+        };
+    }
+}
+
 nlohmann::json segmentToJson(const Segment& segment) {
     nlohmann::json entry;
     entry["id"] = segment.query.id.value_or("");
@@ -167,6 +371,7 @@ int main(int argc, char** argv) {
     std::string statsCorpusDir;
     bool applyAnalysis = true;
     bool progress = false;
+    bool bassLines = false;
     SegmentationOptions segmentationOptions;
     SegmentQueryOptions queryOptions;
 
@@ -195,6 +400,9 @@ int main(int argc, char** argv) {
             else if (arg == "--inner-voices") {
                 queryOptions.innerVoices = parseBoolean("--inner-voices", next("--inner-voices"));
             }
+            else if (arg == "--bass-lines") {
+                bassLines = parseBoolean("--bass-lines", next("--bass-lines"));
+            }
             else if (arg == "--no-kern") { includeKern = false; }
             else if (arg == "--stats") { statsCorpusDir = next("--stats"); }
             else if (arg == "--no-analysis") { applyAnalysis = false; }
@@ -213,6 +421,12 @@ int main(int argc, char** argv) {
     }
 
     if (inputPath.empty()) {
+        printUsage(argv[0]);
+        return kExitInvalidArgumentError;
+    }
+
+    if (bassLines && statsCorpusDir.empty()) {
+        std::cerr << "Error: --bass-lines requires --stats\n\n";
         printUsage(argv[0]);
         return kExitInvalidArgumentError;
     }
@@ -269,6 +483,10 @@ int main(int argc, char** argv) {
         if (!statsCorpusDir.empty()) {
             if (progress) choralesearch::reportPhase("search-corpus");
             stats = statsForSegments(segments, statsCorpusDir, applyAnalysis, progress);
+            if (bassLines) {
+                addCantusFirmusFindings(chorale, segments, stats, segmentationOptions, queryOptions, statsCorpusDir,
+                                        applyAnalysis, progress);
+            }
         }
 
         j["segments"] = nlohmann::json::array();

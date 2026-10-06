@@ -206,4 +206,23 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
     return allResults;
 }
 
+void CorpusSearch::forEachMatch(const std::vector<Query>& queries, const MatchVisitor& visit) const {
+    const auto files = findChoraleFiles();
+    std::size_t matchesSoFar = 0;
+    for (std::size_t fileIndex = 0; fileIndex < files.size(); ++fileIndex) {
+        HumdrumChorale chorale(files[fileIndex].string(), m_applyAnalysis);
+        for (std::size_t i = 0; i < queries.size(); ++i) {
+            const Query& query = queries[i];
+            if (!chorale.hasFeature(query.feature)) continue;
+
+            for (Result& result : runOne(chorale, query)) {
+                result.queryId = query.id.value_or(std::to_string(i));
+                ++matchesSoFar;
+                visit(chorale, result);
+            }
+        }
+        reportProgress(fileIndex + 1, files.size(), chorale.id(), matchesSoFar);
+    }
+}
+
 } // namespace choralesearch

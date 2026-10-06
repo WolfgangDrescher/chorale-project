@@ -15,6 +15,11 @@ struct SegmentationOptions {
     hum::HumNum step = 1;   // how far the window rolls between two segments, in quarter notes
 };
 
+// An interval token ("+M2", "-m3", "m10") reduced to direction and number ("+2", "-3", "10"), the
+// way a segment query writes its intervals when the quality is ignored. A unison keeps its
+// quality, and anything that isn't a plain interval is returned as it is.
+std::string withoutQuality(const std::string& interval);
+
 // The matcher tolerances a segment query asks for by default: everything that widens a match
 // without ever losing the segment's own source. Compound intervals fold to their simple ones,
 // complementary intervals count for every number, ornaments are left out, and a note may be found
@@ -51,6 +56,12 @@ struct SegmentQueryOptions {
 
     bool includeDuration = true;
     bool includeFermata = true;
+
+    // Every position also states the metric weight its note falls on: a strong note is found on a
+    // strong or half-strong beat and the other way round, so beat 1 of a 4/4 measure also finds
+    // beat 3 (a passage shifted by half a measure), a weak note stays on a weak beat (2 and 4
+    // change places), and an unclassified one stays unclassified.
+    bool metricPositions = false;
 
     // hint spines stated at every position of each simultaneous group's pattern -- not the
     // query's own, which stays the plain cantus firmus so it can be lifted out and used alone.
