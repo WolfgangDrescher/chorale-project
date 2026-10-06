@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -48,6 +49,10 @@ void printUsage(const char* argv0) {
         "\n"
         "Options:\n"
         "    --length N            segment length in quarter notes (default: 4)\n"
+        "    --mint-ignore-quality true|false\n"
+        "                          leave the interval qualities out of the queries (\"+M2\"\n"
+        "                          becomes \"+2\") so a passage is found in major and minor\n"
+        "                          (default: true)\n"
         "    --no-kern             leave the converted four-voice **kern text out of the\n"
         "                          output -- for command-line use, where the score is\n"
         "                          already at hand and only the segments matter\n"
@@ -73,6 +78,16 @@ hum::HumNum parseLength(const std::string& value) {
         throw std::invalid_argument("--length takes a single positive whole number of quarter notes, got '" + value +
                                      "'");
     }
+}
+
+// true/false, yes/no, y/n or 1/0, in any case.
+bool parseBoolean(const std::string& flag, const std::string& value) {
+    std::string lowered = value;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    if (lowered == "true" || lowered == "yes" || lowered == "y" || lowered == "1") return true;
+    if (lowered == "false" || lowered == "no" || lowered == "n" || lowered == "0") return false;
+    throw std::invalid_argument(flag + " takes true/false, yes/no, y/n or 1/0, got '" + value + "'");
 }
 
 // Whether stdin is a terminal rather than a pipe -- reading it would sit and wait for a human
@@ -168,6 +183,7 @@ int main(int argc, char** argv) {
     bool applyAnalysis = true;
     bool progress = false;
     SegmentationOptions segmentationOptions;
+    SegmentQueryOptions queryOptions;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -177,6 +193,10 @@ int main(int argc, char** argv) {
         };
         try {
             if (arg == "--length") { segmentationOptions.length = parseLength(next("--length")); }
+            else if (arg == "--mint-ignore-quality") {
+                queryOptions.ignoreIntervalQuality =
+                    parseBoolean("--mint-ignore-quality", next("--mint-ignore-quality"));
+            }
             else if (arg == "--no-kern") { includeKern = false; }
             else if (arg == "--stats") { statsCorpusDir = next("--stats"); }
             else if (arg == "--no-analysis") { applyAnalysis = false; }
@@ -266,7 +286,7 @@ int main(int argc, char** argv) {
 
         if (progress) choralesearch::reportPhase("segment-score");
         const std::vector<Segment> segments = choralesearch::segmentScore(chorale, segmentationOptions,
-                                                                           SegmentQueryOptions{});
+                                                                           queryOptions);
 
         nlohmann::json j;
         if (inputPath != "-") j["source"] = inputPath;

@@ -26,6 +26,13 @@ const CHECK_OPTIONS = [
         label: 'segmentLength',
         description: 'segmentLengthDescription',
     },
+    {
+        key: 'ignoreIntervalQuality',
+        type: 'switch',
+        default: true,
+        label: 'ignoreIntervalQuality',
+        description: 'ignoreIntervalQualityDescription',
+    },
 ];
 
 const DEMO_CHORALE_ID = 'chor029';

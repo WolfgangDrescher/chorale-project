@@ -27,6 +27,8 @@ previousSegment: Vorheriges Segment
 nextSegment: Nächstes Segment
 segmentLength: Segmentlänge
 segmentLengthDescription: Länge eines Segments in Viertelnoten.
+ignoreIntervalQuality: Intervallqualität ignorieren
+ignoreIntervalQualityDescription: "Intervalle werden nur nach Richtung und Intervallzahl (Sekunde, Terz, Quinte usw.) verglichen. So wird eine Stelle gefunden, egal ob sie gerade in Dur oder Moll steht. Das gilt für die Melodie, den Bass und den Abstand zwischen beiden. Im Query wird aus +M2 dann +2. Ausgeschaltet bleibt die Qualität Teil des Vergleichs."
 segmentsFound: "{segments} Segment {duration} | {segments} Segmente {duration}"
 segmentStats: "keine Treffer im Korpus | {matches} Treffer in einem Choral | {matches} Treffer in {count} Chorälen"
 segmentsWithoutMatches: "{count} Segment ohne Treffer | {count} Segmente ohne Treffer"
