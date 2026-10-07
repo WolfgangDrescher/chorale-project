@@ -302,8 +302,13 @@ const matchesBySegmentId = reactive({});
 const matchesPending = ref(false);
 const matchesVisible = ref(false);
 
+// One chorale of the matches, opened from the list of where the passage turns up most.
+const shownChoraleId = ref(null);
+const choraleMatchesVisible = ref(false);
+
 watch(activeSegment, () => {
     matchesVisible.value = false;
+    choraleMatchesVisible.value = false;
 });
 
 // A new run reuses the segment ids ("segment-1", ...) for entirely different passages -- a
@@ -311,6 +316,7 @@ watch(activeSegment, () => {
 watch(result, () => {
     for (const key of Object.keys(matchesBySegmentId)) delete matchesBySegmentId[key];
     matchesVisible.value = false;
+    choraleMatchesVisible.value = false;
 });
 
 // The fetched matches of the segment on show, as [choraleId, matches] pairs, and how many
@@ -326,25 +332,39 @@ const pagedMatches = computed(() => {
     return activeMatches.value.slice(start, start + MATCHES_PER_PAGE);
 });
 
+async function loadMatches(segment) {
+    if (matchesBySegmentId[segment.id]) return;
+    matchesPending.value = true;
+    try {
+        const response = await $fetch('/api/chorale-search', {
+            method: 'POST',
+            body: segment.query,
+        });
+        matchesBySegmentId[segment.id] = Object.entries(response.results);
+    } catch (e) {
+        matchesBySegmentId[segment.id] = [];
+    } finally {
+        matchesPending.value = false;
+    }
+}
+
 async function showMatches() {
     const segment = activeSegment.value;
     if (!segment) return;
-    if (!matchesBySegmentId[segment.id]) {
-        matchesPending.value = true;
-        try {
-            const response = await $fetch('/api/chorale-search', {
-                method: 'POST',
-                body: segment.query,
-            });
-            matchesBySegmentId[segment.id] = Object.entries(response.results);
-        } catch (e) {
-            matchesBySegmentId[segment.id] = [];
-        } finally {
-            matchesPending.value = false;
-        }
-    }
+    await loadMatches(segment);
     matchesPage.value = 1;
     matchesVisible.value = true;
+}
+
+// The matches in the chorale that was clicked.
+const shownChoraleMatches = computed(() => activeMatches.value.find(([choraleId]) => choraleId === shownChoraleId.value)?.[1] ?? []);
+
+async function showChoraleMatches(choraleId) {
+    const segment = activeSegment.value;
+    if (!segment) return;
+    await loadMatches(segment);
+    shownChoraleId.value = choraleId;
+    choraleMatchesVisible.value = true;
 }
 
 // Every occurrence of a bass line, as the [choraleId, occurrences] pairs the matches modal
@@ -428,10 +448,10 @@ function onNoteClick({ line }) {
 // Arrow keys page through the segments, unless a modal is open or the cursor is in a field.
 defineShortcuts({
     arrowleft: () => {
-        if (props.active && !matchesVisible.value && !bassLineMatchesVisible.value && !jsonOpen.value) goToSegment(position.value - 1);
+        if (props.active && !matchesVisible.value && !choraleMatchesVisible.value && !bassLineMatchesVisible.value && !jsonOpen.value) goToSegment(position.value - 1);
     },
     arrowright: () => {
-        if (props.active && !matchesVisible.value && !bassLineMatchesVisible.value && !jsonOpen.value) goToSegment(position.value + 1);
+        if (props.active && !matchesVisible.value && !choraleMatchesVisible.value && !bassLineMatchesVisible.value && !jsonOpen.value) goToSegment(position.value + 1);
     },
 });
 
@@ -603,8 +623,8 @@ function onSubmit() {
                                 <Subheading :level="3" font-size="base" font-weight="bold">{{ $t('topChorales') }}</Subheading>
                                 <div class="flex flex-wrap gap-2">
                                     <UFieldGroup v-for="entry in activeStats.topChorales" :key="entry.choraleId">
-                                        <UBadge color="neutral" variant="subtle" :label="entry.choraleId" />
-                                        <UBadge color="neutral" variant="outline" :label="$t('matchCount', entry.matches)" class="tabular-nums" />
+                                        <UButton color="neutral" variant="subtle" size="sm" :label="entry.choraleId" :disabled="matchesPending" @click="showChoraleMatches(entry.choraleId)" />
+                                        <UButton color="neutral" variant="outline" size="sm" :label="$t('matchCount', entry.matches)" class="tabular-nums" :disabled="matchesPending" @click="showChoraleMatches(entry.choraleId)" />
                                     </UFieldGroup>
                                 </div>
                             </div>
@@ -702,6 +722,30 @@ function onSubmit() {
                         class="self-center"
                     />
                 </div>
+            </template>
+        </UModal>
+
+        <UModal v-model:open="choraleMatchesVisible" :ui="{ content: 'sm:max-w-5xl' }">
+            <template #title>
+                <span class="inline-flex flex-wrap items-center gap-2">
+                    <span>{{ $t('matchesInCorpus') }}</span>
+                    <UBadge color="neutral" variant="subtle" :label="activeSegment?.id" />
+                    <UBadge color="neutral" variant="subtle" :label="shownChoraleId" />
+                    <span class="text-sm font-normal text-dimmed">{{ $t('matchCount', shownChoraleMatches.length) }}</span>
+                </span>
+            </template>
+            <template #body>
+                <HighlightedScore
+                    v-if="shownChoraleId"
+                    :horizontal="true"
+                    :piece-id="shownChoraleId"
+                    :verovio-options="{
+                        scale: 35,
+                        pageMarginLeft: 42,
+                    }"
+                    :sections="sectionsForMatchItems(shownChoraleMatches)"
+                    :scroll-to-first-section="true"
+                />
             </template>
         </UModal>
 
