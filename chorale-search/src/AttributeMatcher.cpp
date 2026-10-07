@@ -16,6 +16,7 @@ namespace {
 
 const std::string kDurationKey = "duration";
 const std::string kFermataKey = "fermata";
+const std::string kPhraseKey = "phrase";
 const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
 const std::string kFbFeature = "fb";
@@ -340,6 +341,15 @@ bool metweightInList(const std::vector<std::string>& allowed, const std::string&
                         [&](const std::string& v) { return metweightValueMatches(v, actual); });
 }
 
+// Whether a "phrase" pattern value ("start"/"end") fits a note that does or doesn't open a phrase
+// and does or doesn't end one. A middle note has neither role: it's asked for as "!phrase".
+bool phraseInList(const std::vector<std::string>& allowed, bool starts, bool ends) {
+    for (const std::string& value : allowed) {
+        if ((value == "start" && starts) || (value == "end" && ends)) return true;
+    }
+    return false;
+}
+
 hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineNumber, const std::string& feature) {
     hum::HTp start = chorale.spine(feature, voice);
     if (!start) return nullptr;
@@ -553,6 +563,10 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         auto pairFeature = resolveHintRelativeKey(key, voice);
         hum::HTp valTok = pairFeature ? lookupToken(chorale, 1, lineNumber, *pairFeature) : nullptr;
         matched = valTok && hintInList(allowed, std::string(*valTok), m_options.hintReduceCompound);
+    } else if (key == kPhraseKey) {
+        hum::HTp noteTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
+        if (!noteTok) return std::nullopt;
+        matched = phraseInList(allowed, startsPhrase(noteTok), noteTok->hasFermata());
     } else {
         std::string actual;
         hum::HTp kernTok = nullptr;
@@ -612,8 +626,9 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
         for (const auto& [rawKey, allowed] : position) {
             const std::string key = stripNegationPrefix(rawKey);
             // duration is what the run as a whole is being summed towards, and fermata belongs
-            // to the note's release -- both are judged once the run closes, below.
-            if (key == kDurationKey || key == kFermataKey) continue;
+            // to the note's release -- both are judged once the run closes, below, and so is the
+            // phrase, which opens with the run's first onset and ends with its last.
+            if (key == kDurationKey || key == kFermataKey || key == kPhraseKey) continue;
             // The driving feature describes the logical note itself, which continuesLogicalNote
             // has already vouched for; on a continuation onset it says something else entirely
             // (a **mint unison, a re-attack's own rhythm) and isn't re-checked. Every other
@@ -632,6 +647,12 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
                 if (key == kFermataKey) {
                     auto matched = matchKey(chorale, voice, onset, rawKey, allowed);
                     if (!matched || !*matched) return std::nullopt;
+                } else if (key == kPhraseKey) {
+                    hum::HTp first = lookupToken(chorale, voice, onsets[onsetIndex].token->getLineNumber(), kKernFeature);
+                    hum::HTp last = lookupToken(chorale, voice, onset.token->getLineNumber(), kKernFeature);
+                    if (!first || !last) return std::nullopt;
+                    bool matched = isWildcard(allowed) || phraseInList(allowed, startsPhrase(first), last->hasFermata());
+                    if (matched == isNegatedKey(rawKey)) return std::nullopt;
                 } else if (key == kDurationKey && isNegatedKey(rawKey)) {
                     // A negated duration is judged against the summed duration too, so
                     // "!duration" keeps excluding exactly what "duration" would have matched.
@@ -658,6 +679,13 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
         matched = true;
     } else if (key == kMintFeature) {
         matched = mintReAttackInList(allowed, m_options.mintAllowIntervalComplementation);
+    } else if (key == kPhraseKey) {
+        // A re-attack inside a note can't open a phrase, and closes one only with the note.
+        hum::HTp noteTok = m_drivingFeature == kKernFeature
+                               ? tok
+                               : lookupToken(chorale, voice, tok->getLineNumber(), kKernFeature);
+        if (!noteTok) return std::nullopt;
+        matched = phraseInList(allowed, false, noteTok->hasFermata());
     } else {
         hum::HTp kernTok = m_drivingFeature == kKernFeature
                                 ? tok
@@ -687,7 +715,7 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
         // answer, and each is judged against what the re-attack *would* have been instead --
         // see matchReAttackKey. Which feature drives the walk has nothing to do with it:
         // asking for the same repetition has to mean the same thing either way.
-        if (isContinuation && (key == kMintFeature || key == kKernFeature)) {
+        if (isContinuation && (key == kMintFeature || key == kKernFeature || key == kPhraseKey)) {
             auto matched = matchReAttackKey(chorale, voice, onset, rawKey, allowed);
             if (!matched || !*matched) return std::nullopt;
             continue;

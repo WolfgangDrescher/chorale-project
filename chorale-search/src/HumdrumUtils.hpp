@@ -18,6 +18,19 @@ inline hum::HumNum soundingDuration(hum::HTp tok) {
     return tok->isKern() ? tok->getTiedDuration() : tok->getDuration();
 }
 
+// Whether the note opens a phrase: it is the first sounding note of the voice or the first one after a
+// fermata. A rest never does, and is looked through unless it carries the fermata itself. A null token
+// is no note, and neither is the continuation of a tie.
+inline bool startsPhrase(hum::HTp note) {
+    if (note->isRest()) return false;
+    for (hum::HTp previous = note->getPreviousToken(); previous; previous = previous->getPreviousToken()) {
+        if (!previous->getOwner()->isData() || previous->isNull() || previous->isSecondaryTiedNote()) continue;
+        if (previous->hasFermata()) return true;
+        if (!previous->isRest()) return false;
+    }
+    return true;
+}
+
 // A musical position (quarter notes from the start of the piece) as text, e.g. "35+1/2" for a
 // position halfway through the 36th quarter. Positions are fractions, so they're carried around
 // as strings rather than lossily flattened into a double.

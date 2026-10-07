@@ -90,6 +90,13 @@ TEST_CASE(is_known_pattern_key_accepts_duration_and_fermata) {
     CHECK(isKnownPatternKey("fermata"));
 }
 
+TEST_CASE(is_known_pattern_key_accepts_phrase_but_it_cannot_drive_a_search) {
+    CHECK(isKnownPatternKey("phrase"));
+    CHECK(isKnownPatternKey("!phrase"));
+    CHECK(!isKnownDrivingFeature("phrase"));
+    CHECK(!isKnownPatternKey("phraseStart"));
+}
+
 TEST_CASE(is_known_pattern_key_accepts_hint_voice_relative_forms) {
     CHECK(isKnownPatternKey("hint-1"));
     CHECK(isKnownPatternKey("hint-2"));
@@ -158,6 +165,15 @@ TEST_CASE(is_valid_pattern_value_for_deg_accepts_the_documented_grammar) {
     for (const std::string& v : {"1", "7", "4+", "6-", "4++", "7--", "r"}) {
         CHECK(isValidPatternValue("deg", v));
     }
+}
+
+TEST_CASE(is_valid_pattern_value_for_phrase_accepts_only_start_or_end) {
+    CHECK(isValidPatternValue("phrase", "start"));
+    CHECK(isValidPatternValue("phrase", "end"));
+    CHECK(isValidPatternValue("!phrase", "start"));
+    CHECK(!isValidPatternValue("phrase", "middle"));
+    CHECK(!isValidPatternValue("phrase", "true"));
+    CHECK(!isValidPatternValue("phrase", ""));
 }
 
 TEST_CASE(is_valid_pattern_value_for_deg_rejects_out_of_range_or_garbage) {

@@ -1,6 +1,8 @@
 #include "test_framework.hpp"
 
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "AttributeMatcher.hpp"
 #include "HumdrumChorale.hpp"
@@ -1534,3 +1536,187 @@ TEST_CASE(matcher_metweight_skip_lets_a_split_run_close_over_an_ornament) {
 }
 
 TEST_MAIN()
+
+
+// "phrase" pattern key against the fixtures. Every voice of a fixture ends its phrases on a fermata and
+// the piece closes on one, so a phrase starts at the first note and after every fermata but the last,
+// and ends on every fermata.
+TEST_CASE(matcher_phrase_start_is_the_first_note_and_the_note_after_each_fermata) {
+    AttributeMatcher starts("kern", {AttributeMap{{"phrase", {"start"}}}});
+    AttributeMatcher fermata("kern", {AttributeMap{{"fermata", {"true"}}}});
+    for (const char* id : {"chor001", "chor005", "chor006", "chor008", "chor009", "chor029", "chor039", "chor103"}) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(id));
+        for (std::size_t voice = 1; voice <= 4; ++voice) {
+            // One start for the first phrase and one for each fermata that has a note after it.
+            CHECK_EQ(starts.findAll(chorale, voice).size(), fermata.findAll(chorale, voice).size());
+        }
+    }
+}
+
+TEST_CASE(matcher_phrase_end_is_every_note_with_a_fermata) {
+    AttributeMatcher ends("kern", {AttributeMap{{"phrase", {"end"}}}});
+    AttributeMatcher fermata("kern", {AttributeMap{{"fermata", {"true"}}}});
+    for (const char* id : {"chor001", "chor005", "chor006", "chor008", "chor009", "chor029", "chor039", "chor103"}) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(id));
+        for (std::size_t voice = 1; voice <= 4; ++voice) {
+            auto fermataMatches = fermata.findAll(chorale, voice);
+            REQUIRE(!fermataMatches.empty());
+            CHECK_EQ(ends.findAll(chorale, voice).size(), fermataMatches.size());
+        }
+    }
+}
+
+TEST_CASE(matcher_phrase_start_middle_and_end_cover_every_note_once) {
+    AttributeMatcher starts("kern", {AttributeMap{{"phrase", {"start"}}}});
+    AttributeMatcher ends("kern", {AttributeMap{{"phrase", {"end"}}}});
+    AttributeMatcher middle("kern", {AttributeMap{{"!phrase", {"start", "end"}}}});
+    AttributeMatcher all("kern", {AttributeMap{{"kern", {"*"}}}});
+    for (const char* id : {"chor001", "chor005", "chor006", "chor008", "chor009", "chor029", "chor039", "chor103"}) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(id));
+        for (std::size_t voice = 1; voice <= 4; ++voice) {
+            // No note is a start and an end at once in these chorales.
+            CHECK_EQ(starts.findAll(chorale, voice).size() + ends.findAll(chorale, voice).size() +
+                          middle.findAll(chorale, voice).size(),
+                      all.findAll(chorale, voice).size());
+        }
+    }
+}
+
+TEST_CASE(matcher_phrase_values_are_an_or_list_and_a_negation_covers_the_rest) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 1).size();
+    };
+    std::size_t total = count({{"kern", {"*"}}});
+    std::size_t starts = count({{"phrase", {"start"}}});
+    std::size_t ends = count({{"phrase", {"end"}}});
+    CHECK_EQ(count({{"phrase", {"start", "end"}}}), starts + ends);
+    CHECK_EQ(count({{"!phrase", {"start"}}}), total - starts);
+    CHECK_EQ(count({{"!phrase", {"end"}}}), total - ends);
+    CHECK_EQ(count({{"phrase", {"*"}}}), total);
+}
+
+TEST_CASE(matcher_phrase_combines_with_other_keys_of_the_same_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 1).size();
+    };
+    CHECK_EQ(count({{"phrase", {"end"}}, {"fermata", {"true"}}}), count({{"fermata", {"true"}}}));
+    CHECK_EQ(count({{"phrase", {"end"}}, {"duration", {"2"}}}), count({{"fermata", {"true"}}, {"duration", {"2"}}}));
+    CHECK_EQ(count({{"phrase", {"start"}}, {"fermata", {"false"}}}), count({{"phrase", {"start"}}}));
+    CHECK_EQ(count({{"phrase", {"start"}}, {"fermata", {"true"}}}), std::size_t{0});
+}
+
+TEST_CASE(matcher_phrase_works_across_the_positions_of_a_pattern) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const std::vector<AttributeMap>& pattern) {
+        return AttributeMatcher("kern", pattern).findAll(chorale, 1).size();
+    };
+    AttributeMap start{{"phrase", {"start"}}};
+    AttributeMap end{{"phrase", {"end"}}};
+    AttributeMap middle{{"!phrase", {"start", "end"}}};
+    // The last fermata has no note after it that could start a phrase.
+    CHECK_EQ(count({end, start}), count({end}) - 1);
+    // The first note of a phrase is followed by a note in the middle of it.
+    CHECK_EQ(count({start, middle}), count({start}));
+    // A phrase can't end twice in a row.
+    CHECK_EQ(count({end, end}), std::size_t{0});
+}
+
+TEST_CASE(matcher_phrase_a_rest_after_a_fermata_does_not_start_the_phrase_but_the_note_after_it_does) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    // Every voice of chor006 rests for a quarter after its second fermata, and the phrase starts with
+    // the first sounding note after the rest, so the rest itself is in the middle.
+    AttributeMatcher rests("kern", {AttributeMap{{"kern", {"r"}}}});
+    AttributeMatcher restStarts("kern", {AttributeMap{{"kern", {"r"}}, {"phrase", {"start"}}}});
+    AttributeMatcher restMiddles("kern", {AttributeMap{{"kern", {"r"}}, {"!phrase", {"start", "end"}}}});
+    AttributeMatcher starts("kern", {AttributeMap{{"phrase", {"start"}}}});
+    AttributeMatcher fermata("kern", {AttributeMap{{"fermata", {"true"}}}});
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        REQUIRE(!rests.findAll(chorale, voice).empty());
+        CHECK_EQ(restStarts.findAll(chorale, voice).size(), std::size_t{0});
+        CHECK_EQ(restMiddles.findAll(chorale, voice).size(), rests.findAll(chorale, voice).size());
+        // The rest doesn't take a phrase away: there is still one start per fermata.
+        CHECK_EQ(starts.findAll(chorale, voice).size(), fermata.findAll(chorale, voice).size());
+    }
+}
+
+// Split notes (durationAllowSplitNotes): a note written as repeated shorter notes is one logical
+// note, which starts a phrase where its first part does and ends one where its last part does.
+// The alto of chor001 opens with a quarter d that is repeated as a second quarter d.
+TEST_CASE(matcher_phrase_split_run_starts_a_phrase_where_its_first_part_does) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    MatcherOptions split;
+    split.durationAllowSplitNotes = true;
+    AttributeMap position{{"kern", {"d"}}, {"duration", {"2"}}, {"phrase", {"start"}}};
+
+    auto plain = AttributeMatcher("kern", {position}).findAll(chorale, 3);
+    auto withSplits = AttributeMatcher("kern", {position}, split).findAll(chorale, 3);
+    // The two quarter d's that open the piece are a start together, which no half note d is.
+    CHECK_EQ(withSplits.size(), plain.size() + 1);
+}
+
+TEST_CASE(matcher_phrase_split_run_does_not_start_a_phrase_with_its_second_part) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // Without the option the repeated quarter d's are two notes, and only the first is a start.
+    auto quarters = AttributeMatcher("kern", {AttributeMap{{"kern", {"d"}}, {"duration", {"4"}}}}).findAll(chorale, 3);
+    auto quarterStarts = AttributeMatcher("kern", {AttributeMap{{"kern", {"d"}}, {"duration", {"4"}},
+                                                                {"phrase", {"start"}}}}).findAll(chorale, 3);
+    CHECK_EQ(quarterStarts.size(), std::size_t{1});
+    CHECK(quarters.size() > quarterStarts.size());
+}
+
+TEST_CASE(matcher_phrase_split_run_end_is_the_fermata_of_its_last_part) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    MatcherOptions split;
+    split.durationAllowSplitNotes = true;
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto ends = AttributeMatcher("kern", {AttributeMap{{"duration", {"2"}}, {"phrase", {"end"}}}}, split)
+                        .findAll(chorale, voice);
+        auto fermatas = AttributeMatcher("kern", {AttributeMap{{"duration", {"2"}}, {"fermata", {"true"}}}}, split)
+                            .findAll(chorale, voice);
+        CHECK_EQ(ends.size(), fermatas.size());
+    }
+}
+
+TEST_CASE(matcher_phrase_split_run_negation_judges_the_whole_run) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    MatcherOptions split;
+    split.durationAllowSplitNotes = true;
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}, split).findAll(chorale, 3).size();
+    };
+    // Every run is either one or the other.
+    for (const char* role : {"start", "end"}) {
+        CHECK_EQ(count({{"kern", {"d"}}, {"duration", {"2"}}, {"phrase", {role}}}) +
+                      count({{"kern", {"d"}}, {"duration", {"2"}}, {"!phrase", {role}}}),
+                  count({{"kern", {"d"}}, {"duration", {"2"}}}));
+    }
+}
+
+// Merged notes (durationAllowMergedNotes): two quarter positions share one longer written note, the
+// half note a before the fermata g in the soprano of chor009 (quarters 13 to 15).
+TEST_CASE(matcher_phrase_merged_second_position_is_never_a_start) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    MatcherOptions merge;
+    merge.durationAllowMergedNotes = true;
+    AttributeMap first{{"kern", {"a"}}, {"duration", {"4"}}};
+    auto count = [&](const AttributeMap& second) {
+        return AttributeMatcher("kern", {first, second}, merge).findAll(chorale, 4).size();
+    };
+    REQUIRE(count(first) > 0);
+    CHECK_EQ(count({{"kern", {"a"}}, {"duration", {"4"}}, {"phrase", {"start"}}}), std::size_t{0});
+    CHECK_EQ(count({{"kern", {"a"}}, {"duration", {"4"}}, {"!phrase", {"start"}}}), count(first));
+}
+
+TEST_CASE(matcher_phrase_merged_second_position_ends_a_phrase_with_the_written_note) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    MatcherOptions merge;
+    merge.durationAllowMergedNotes = true;
+    AttributeMap first{{"kern", {"a"}}, {"duration", {"4"}}};
+    auto count = [&](const AttributeMap& second) {
+        return AttributeMatcher("kern", {first, second}, merge).findAll(chorale, 4).size();
+    };
+    CHECK_EQ(count({{"kern", {"a"}}, {"duration", {"4"}}, {"phrase", {"end"}}}),
+              count({{"kern", {"a"}}, {"duration", {"4"}}, {"fermata", {"true"}}}));
+}

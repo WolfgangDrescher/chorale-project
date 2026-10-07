@@ -132,7 +132,7 @@ bool isKnownDrivingFeature(const std::string& feature) {
 
 bool isKnownPatternKey(const std::string& rawKey) {
     std::string key = stripNegationPrefix(rawKey);
-    return isKnownDrivingFeature(key) || key == "duration" || key == "fermata" ||
+    return isKnownDrivingFeature(key) || key == "duration" || key == "fermata" || key == "phrase" ||
            isHintRelativeKey(key) || isHintWildcardKey(key);
 }
 
@@ -148,6 +148,7 @@ bool isValidPatternValue(const std::string& rawKey, const std::string& value) {
     if (key == "kern") return true; // any string is legitimate -- see kern.md's literal fallback
     if (key == "deg") return isValidDegValue(value);
     if (key == "fermata") return isValidFermataValue(value);
+    if (key == "phrase") return value == "start" || value == "end";
     if (key == "metweight") return isValidMetweightValue(value);
     if (key == "mint") return isValidMintValue(value);
     if (key == "fb") return isValidFbValue(value);

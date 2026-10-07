@@ -23,7 +23,7 @@ const searchRequestFieldSchemas = {
             minProperties: 1,
             additionalProperties: false,
             patternProperties: {
-                '^!?(kern|deg|mint|fb|metweight|duration|fermata|hint-(?:[1-4*][1-4*]|[1-4]))$': {
+                '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]))$': {
                     description: 'An OR-list of acceptable values for this feature at this position (or a single value). Prefix the key with "!" to negate the whole position.',
                     oneOf: [
                         { type: 'string' },
@@ -33,7 +33,7 @@ const searchRequestFieldSchemas = {
                 },
             },
             propertyNames: {
-                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|hint-(?:[1-4*][1-4*]|[1-4]))$',
+                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]))$',
                 description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
             },
         },
