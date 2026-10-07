@@ -107,6 +107,10 @@ const SWITCH_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'switch'
 
 const DEMO_CHORALE_ID = 'chor029';
 
+// The chorale the demo button analyzes, picked from the corpus' chorales.
+const demoChoraleId = ref(DEMO_CHORALE_ID);
+const { data: demoChoraleIds } = useLazyFetch('/api/chorales', { default: () => [] });
+
 // The demo score is a development aid, not part of the page.
 const isDev = import.meta.dev;
 
@@ -166,7 +170,7 @@ function useSegmentAnalysis() {
 
     async function analyzeDemoScore() {
         file.value = null;
-        const data = await $fetch(`/kern/bach-370-chorales/${DEMO_CHORALE_ID}.krn`, {
+        const data = await $fetch(`/kern/bach-370-chorales/${demoChoraleId.value}.krn`, {
             parseResponse: (txt) => txt,
         });
         analyze(data);
@@ -466,9 +470,20 @@ function onSubmit() {
 
                 <div class="flex gap-2">
                     <UButton type="submit" :loading="pending" :disabled="!file || !!fileError">{{ $t('submit') }}</UButton>
-                    <UButton v-if="isDev && !file" color="neutral" variant="subtle" icon="lucide:flask-conical" :disabled="pending" @click="analyzeDemoScore">
-                        {{ $t('useDemoScore', { id: DEMO_CHORALE_ID }) }}
-                    </UButton>
+                    <UFieldGroup v-if="isDev && !file">
+                        <USelectMenu
+                            v-model="demoChoraleId"
+                            :items="demoChoraleIds"
+                            :search-input="{ placeholder: $t('searchChorale') }"
+                            :disabled="pending"
+                            color="neutral"
+                            variant="subtle"
+                            class="w-28!"
+                        />
+                        <UButton color="neutral" variant="subtle" icon="lucide:flask-conical" :disabled="pending" @click="analyzeDemoScore">
+                            {{ $t('useDemoScore') }}
+                        </UButton>
+                    </UFieldGroup>
                 </div>
             </UForm>
         </UCard>

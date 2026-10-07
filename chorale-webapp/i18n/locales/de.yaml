@@ -24,7 +24,8 @@ removeFile: Entfernen
 cancel: Abbrechen
 optionHelp: "Hilfe zu {option}"
 optionDisabled: Diese Einstellung kann nicht verändert werden.
-useDemoScore: Demo ({id})
+useDemoScore: Demo
+searchChorale: Choral suchen
 fileTooLarge: "Die Datei ist zu gross. Erlaubt: maximal {size}"
 fileUnsupported: "Dateiformat nicht unterstützt. Erlaubt: .krn, .kern, .musicxml, .xml"
 previousSegment: Vorheriges Segment
