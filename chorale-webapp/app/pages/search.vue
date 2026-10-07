@@ -27,7 +27,26 @@ function useChoraleSearch() {
     ]
 }`);
 
-    const choraleEntries = computed(() => Object.entries(results.value));
+    // The order of the chorales: by their id (ascending is the natural one) or by how many matches
+    // each has (most first). Chorales with as many matches stay in the order of their ids.
+    const sortBy = ref('id');
+    const sortDescending = ref(false);
+
+    watch(sortBy, (value) => {
+        sortDescending.value = value === 'matches';
+        page.value = 1;
+    });
+    watch(sortDescending, () => {
+        page.value = 1;
+    });
+
+    const choraleEntries = computed(() => {
+        const entries = Object.entries(results.value);
+        const direction = sortDescending.value ? -1 : 1;
+        const byId = ([a], [b]) => a.localeCompare(b, undefined, { numeric: true });
+        const byMatches = ([, a], [, b]) => a.length - b.length;
+        return entries.sort((a, b) => direction * (sortBy.value === 'matches' ? byMatches(a, b) || byId(a, b) : byId(a, b)));
+    });
 
     const totalMatches = computed(() => choraleEntries.value.reduce((sum, [, items]) => sum + items.length, 0));
 
@@ -68,6 +87,8 @@ function useChoraleSearch() {
         totalMatches,
         pagedChoraleEntries,
         page,
+        sortBy,
+        sortDescending,
         error,
         pending,
         progress,
@@ -85,6 +106,8 @@ const {
     totalMatches,
     pagedChoraleEntries,
     page,
+    sortBy,
+    sortDescending,
     pending,
     progress,
     durationMs,
@@ -212,7 +235,29 @@ function applyDemoQuery() {
                             <span v-if="durationMs !== null" class="text-dimmed tabular-nums">({{ $t('searchDuration', { duration: formatDuration(durationMs) }) }})</span>
                         </template>
                     </i18n-t>
-                    <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" size="xs" />
+                    <div class="flex items-center gap-2">
+                        <UFieldGroup>
+                            <USelect
+                                v-model="sortBy"
+                                :items="[
+                                    { label: $t('sortById'), value: 'id' },
+                                    { label: $t('sortByMatches'), value: 'matches' },
+                                ]"
+                                size="xs"
+                                class="w-28"
+                                :aria-label="$t('sortBy')"
+                            />
+                            <UButton
+                                color="neutral"
+                                variant="outline"
+                                size="xs"
+                                :icon="sortDescending ? 'lucide:arrow-down-wide-narrow' : 'lucide:arrow-up-narrow-wide'"
+                                :aria-label="sortDescending ? $t('sortDescending') : $t('sortAscending')"
+                                @click="sortDescending = !sortDescending"
+                            />
+                        </UFieldGroup>
+                        <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" size="xs" />
+                    </div>
                 </div>
                 <div class="flex flex-col gap-4">
                     <UCard v-for="([choraleId, items]) in pagedChoraleEntries" :key="choraleId">

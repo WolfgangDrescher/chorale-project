@@ -10,6 +10,11 @@ noResultsDescription: Lesen Sie in der Dokumentation nach, wie ein Query aufgeba
 exampleQueries: Beispiel-Queries
 matchesFound: "{matches} Treffer in einem Choral {duration} | {matches} Treffer in {count} Chorälen {duration}"
 searchDuration: "in {duration}"
+sortBy: Sortieren nach
+sortById: Choral-ID
+sortByMatches: Anzahl Treffer
+sortAscending: Aufsteigend sortiert
+sortDescending: Absteigend sortiert
 readDocs: Dokumentation lesen
 applyDemoQuery: Beispiel Query verwenden
 query: Query
