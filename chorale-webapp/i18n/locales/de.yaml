@@ -32,6 +32,8 @@ previousSegment: Vorheriges Segment
 nextSegment: Nächstes Segment
 segmentLength: Segmentlänge
 segmentLengthDescription: Länge eines Segments in Viertelnoten.
+phrasePositions: Phrasenposition beachten
+phrasePositionsDescription: "Eine Phrase endet an einer Fermate, die nächste beginnt mit der ersten klingenden Note danach. Eine Stelle am Phrasenanfang findet dann nur Phrasenanfänge, eine am Ende nur Phrasenenden und eine in der Mitte nur Mittelstücke. Ausgeschaltet wird die Phrasengrenze ignoriert."
 ignoreIntervalQuality: Intervallqualität ignorieren
 ignoreIntervalQualityDescription: "Intervalle werden nur nach Richtung und Intervallzahl (Sekunde, Terz, Quinte usw.) verglichen. So wird eine Stelle gefunden, egal ob sie gerade in Dur oder Moll steht. Das gilt für die Melodie, den Bass, den Abstand zwischen beiden und, wenn die Mittelstimmen berücksichtigt werden, auch für deren Akkord. Im Query wird aus +M2 dann +2. Ausgeschaltet bleibt die Qualität Teil des Vergleichs."
 allowIntervalComplementation: Komplementärintervalle zulassen

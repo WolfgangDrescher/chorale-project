@@ -55,7 +55,11 @@ struct SegmentQueryOptions {
     bool ignoreIntervalQuality = true;
 
     bool includeDuration = true;
-    bool includeFermata = true;
+    // Every position also states whether its note opens a phrase (the voice's first sounding note, or
+    // the first one after a fermata) or ends one (it carries a fermata), as the pattern key "phrase".
+    // A segment at the end of a phrase then only finds phrase ends, one at the start only phrase
+    // starts, and one in between neither.
+    bool includePhrase = true;
 
     // Every position also states the metric weight its note falls on: a strong note is found on a
     // strong or half-strong beat and the other way round, so beat 1 of a 4/4 measure also finds

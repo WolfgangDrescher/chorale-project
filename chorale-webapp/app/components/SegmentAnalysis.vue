@@ -43,6 +43,14 @@ const CHECK_OPTIONS = [
         description: 'bassLinesDescription',
     },
     {
+        key: 'phrasePositions',
+        type: 'switch',
+        default: true,
+        label: 'phrasePositions',
+        docs: { label: 'phrase', path: '/docs/features' },
+        description: 'phrasePositionsDescription',
+    },
+    {
         key: 'ignoreIntervalQuality',
         type: 'switch',
         default: true,

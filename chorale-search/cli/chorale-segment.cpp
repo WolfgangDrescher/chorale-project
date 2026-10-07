@@ -64,6 +64,9 @@ void printUsage(const char* argv0) {
         "                          also ask for the harmony the inner voices make with the\n"
         "                          bass: the chord at every bass note, compared exactly and\n"
         "                          in no particular order of the voices (default: false)\n"
+        "    --phrase-positions true|false\n"
+        "                          find a segment only at the same position in a phrase: its\n"
+        "                          start, end or middle (default: true)\n"
         "    --no-kern             leave the converted four-voice **kern text out of the\n"
         "                          output -- for command-line use, where the score is\n"
         "                          already at hand and only the segments matter\n"
@@ -399,6 +402,9 @@ int main(int argc, char** argv) {
             }
             else if (arg == "--inner-voices") {
                 queryOptions.innerVoices = parseBoolean("--inner-voices", next("--inner-voices"));
+            }
+            else if (arg == "--phrase-positions") {
+                queryOptions.includePhrase = parseBoolean("--phrase-positions", next("--phrase-positions"));
             }
             else if (arg == "--bass-lines") {
                 bassLines = parseBoolean("--bass-lines", next("--bass-lines"));

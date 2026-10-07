@@ -20,7 +20,7 @@ const std::string kMintFeature = "mint";
 const std::string kFbFeature = "fb";
 const std::string kMetweightFeature = "metweight";
 const std::string kDurationKey = "duration";
-const std::string kFermataKey = "fermata";
+const std::string kPhraseKey = "phrase";
 const std::string kWildcard = "*";
 
 // An fb chord ("m6 M3") with every one of its intervals reduced the way withoutQuality does it
@@ -142,9 +142,14 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
         if (options.includeDuration && !soundsPastTheEnd) {
             position[kDurationKey] = {hum::Convert::durationToRecip(onsets[i].duration)};
         }
-        if (options.includeFermata) {
+        if (options.includePhrase) {
             if (hum::HTp kernToken = findTokenAtLine(chorale.spine(kKernFeature, voice), lineNumber)) {
-                position[kFermataKey] = {kernToken->hasFermata() ? "true" : "false"};
+                std::vector<std::string> roles;
+                if (startsPhrase(kernToken)) roles.push_back("start");
+                if (kernToken->hasFermata()) roles.push_back("end");
+                // A note in the middle of a phrase is neither, which is how a pattern asks for it.
+                if (roles.empty()) position["!" + kPhraseKey] = {"start", "end"};
+                else position[kPhraseKey] = roles;
             }
         }
         if (options.metricPositions) {

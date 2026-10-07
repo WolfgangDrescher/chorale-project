@@ -169,3 +169,27 @@ TEST_CASE(ornaments_are_skipped_in_every_voice_only_when_asked_for) {
 }
 
 TEST_MAIN()
+
+
+TEST_CASE(segments_still_find_their_own_source_without_phrase_positions) {
+    SegmentQueryOptions options;
+    options.includePhrase = false;
+    for (const std::string& id : kFixtures) CHECK_EQ(segmentsMissingTheirSource(id, options), std::size_t{0});
+}
+
+TEST_CASE(phrase_positions_only_narrow_what_a_segment_finds) {
+    SegmentQueryOptions pinned;
+    SegmentQueryOptions open;
+    open.includePhrase = false;
+    for (const std::string& id : kFixtures) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(id));
+        CorpusSearch search(chorale.path());
+        auto pinnedSegments = segmentScore(chorale, {}, pinned);
+        auto openSegments = segmentScore(chorale, {}, open);
+        REQUIRE(pinnedSegments.size() == openSegments.size());
+        for (std::size_t i = 0; i < pinnedSegments.size(); ++i) {
+            CHECK(search.runOne(chorale, pinnedSegments[i].query).size() <=
+                  search.runOne(chorale, openSegments[i].query).size());
+        }
+    }
+}
