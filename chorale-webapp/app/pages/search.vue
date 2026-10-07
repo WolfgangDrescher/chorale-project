@@ -215,7 +215,13 @@ function applyDemoQuery() {
                     <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" size="xs" />
                 </div>
                 <div class="flex flex-col gap-4">
-                    <UCard v-for="([choraleId, items]) in pagedChoraleEntries" :key="choraleId" :title="choraleId">
+                    <UCard v-for="([choraleId, items]) in pagedChoraleEntries" :key="choraleId">
+                        <template #header>
+                            <div class="flex items-center justify-between gap-4">
+                                <span>{{ choraleId }}</span>
+                                <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
+                            </div>
+                        </template>
                         <HighlightedScore
                             :horizontal="true"
                             :piece-id="choraleId"
