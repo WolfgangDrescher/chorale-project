@@ -88,8 +88,9 @@ progressChoralesSearched: "{searched} von {total} Chorälen"
 progressMatchesSoFar: "kein Treffer bisher | ein Treffer bisher | {count} Treffer bisher"
 checkListTitle: Das wird geprüft
 checkParallelMotion: Quint- und Oktavparallelen
-checkParallelMotionDescription: "Zwei Stimmen bewegen sich in dieselbe Richtung und bilden zweimal hintereinander eine reine Quinte oder Oktave. Das wird zwischen allen Stimmenpaaren geprüft, aufwärts und abwärts. Zusammengesetzte Intervalle zählen mit, eine Duodezime also als Quinte, ein Einklang als Oktave. Liegende Töne, Gegenbewegung und verminderte Quinten sind keine Parallelen. Beide Stimmen müssen ihre Noten gleichzeitig anschlagen."
+checkParallelMotionDescription: "Zwei Stimmen bewegen sich in dieselbe Richtung und bilden zweimal hintereinander eine reine Quinte oder Oktave. Das wird zwischen allen Stimmenpaaren geprüft, aufwärts und abwärts. Zusammengesetzte Intervalle zählen mit, eine Duodezime also als Quinte, ein Einklang als Oktave. Liegende Töne, Gegenbewegung und verminderte Quinten sind keine Parallelen."
 checkHiddenMotion: Verdeckte Quinten und Oktaven
+hiddenMotionAllowSteps: Schrittweise Bewegung im Sopran erlauben
 checkHiddenMotionDescription: "Bass und Sopran bewegen sich in dieselbe Richtung und erreichen dabei eine reine Quinte oder Oktave. Ob der Sopran sie im Schritt erreichen darf, kann mit dem Schalter festgelegt werden."
 checkVoiceCrossing: Stimmkreuzung
 checkVoiceCrossingDescription: "Tenor, Alt oder Sopran haben einen tieferen Ton als der Bass. Gemeldet wird nur die Stelle, an der die Kreuzung beginnt. Ein gleicher Ton wie im Bass zählt nicht."
@@ -98,13 +99,11 @@ checkLargeLeapsDescription: "Erlaubt sind Sprünge bis zur Quinte, die kleine Se
 checkBassPhraseEnd: "Kadenzbass"
 checkBassPhraseEndDescription: "Der Bass sollte den Ton unter einer Fermate mit einem Quint- oder Quartschritt erreichen, aufwärts oder abwärts, also als Bassklausel oder als plagale Kadenz. Jede andere Bewegung wird gemeldet, auch bei einem Halbschluss."
 checkVoiceRange: Stimmumfang
-voiceRanges: Stimmumfang nach
-voiceRangesDescription: Die Umfänge, an denen die Töne jeder Stimme gemessen werden.
 voiceRangesStraussBerlioz: Strauss/Berlioz
 voiceRangesStraussBerliozDescription: "Bass F bis es', Tenor c bis b', Alt f bis es'' und Sopran c' bis b'', wie in der Instrumentationslehre von Berlioz und Strauss."
 voiceRangesBach: Bach
 voiceRangesBachDescription: "Bass C bis e', Tenor c bis a', Alt e bis d'' und Sopran a bis a'', gemessen an den 370 Chorälen von Bach."
-checkVoiceRangeDescription: "Jede Stimme wird auf ihren üblichen Umfang geprüft. Noten außerhalb davon werden als Hinweis markiert, denn der Umfang ist eine Gewohnheit der Stimmen und keine strenge Regel. Gemessen wird nach Strauss/Berlioz oder Bach."
+checkVoiceRangeDescription: "Jede Stimme wird auf ihren üblichen Umfang geprüft. Gemessen wird nach Strauss/Berlioz oder Bach."
 checkEmptyDescription: Laden Sie eine Partitur hoch. Sie wird auf Satzfehler geprüft, die direkt in der Partitur markiert werden.
 checkError: Die Prüfung auf Satzfehler ist fehlgeschlagen.
 noCheckFindings: Keine Befunde.
@@ -113,7 +112,7 @@ parallelFifths: Quintparallele
 parallelOctaves: Oktavparallele
 parallelFifthsCount: "eine Quintparallele | {count} Quintparallelen"
 voiceRange: Stimmumfang
-voiceRangeCount: "eine Note außerhalb des Stimmumfangs | {count} Noten außerhalb des Stimmumfangs"
+voiceRangeCount: "eine Ambitusüberschreitung | {count} Ambitusüberschreitungen"
 parallelOctavesCount: "eine Oktavparallele | {count} Oktavparallelen"
 hiddenFifths: Verdeckte Quinte
 hiddenFifthsCount: "eine verdeckte Quinte | {count} verdeckte Quinten"

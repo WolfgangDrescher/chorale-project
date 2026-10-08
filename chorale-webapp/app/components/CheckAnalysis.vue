@@ -42,6 +42,9 @@ const VOICE_RANGE_SETS = [
 
 const voiceRanges = ref(VOICE_RANGE_SETS[0].key);
 
+// Whether a hidden fifth or octave is excused when the soprano reaches it by a step.
+const hiddenMotionAllowSteps = ref(true);
+
 const { t } = useI18n();
 const voiceRangeTabs = VOICE_RANGE_SETS.map((set) => ({ value: set.key, label: t(set.label) }));
 
@@ -92,7 +95,7 @@ async function analyze() {
     try {
         const data = await file.value.text();
         const response = await fetchWithProgress('/api/chorale-check', {
-            body: { data, voiceRanges: voiceRanges.value },
+            body: { data, voiceRanges: voiceRanges.value, hiddenMotionAllowSteps: hiddenMotionAllowSteps.value },
             signal: abortController.signal,
             onProgress: (event) => {
                 progress.value = { ...progress.value, ...event };
@@ -197,47 +200,37 @@ function onNoteClick({ line, voice }) {
         <UCard class="mb-4">
             <UForm class="space-y-4" @submit="analyze">
                 <div class="grid gap-6 lg:grid-cols-[1fr_auto_2fr] lg:items-start">
-                    <ScoreFileField v-model="file">
-                        <UFormField class="mt-4">
-                            <template #label>
-                                <span class="inline-flex items-center gap-1">
-                                    {{ $t('voiceRanges') }}
-                                    <UPopover :content="{ side: 'top' }" arrow>
-                                        <UButton
-                                            color="neutral"
-                                            variant="link"
-                                            size="xs"
-                                            icon="lucide:info"
-                                            class="p-0"
-                                            :aria-label="$t('optionHelp', { option: $t('voiceRanges') })"
-                                        />
-                                        <template #content>
-                                            <div class="max-w-xs p-3 text-sm space-y-2">
-                                                <p>{{ $t('voiceRangesDescription') }}</p>
-                                                <p v-for="set in VOICE_RANGE_SETS" :key="set.key">
-                                                    <span class="font-semibold">{{ $t(set.label) }}:</span>
-                                                    {{ $t(set.description) }}
-                                                </p>
-                                            </div>
-                                        </template>
-                                    </UPopover>
-                                </span>
-                            </template>
-                            <UTabs v-model="voiceRanges" :items="voiceRangeTabs" :content="false" size="sm" class="w-full" />
-                        </UFormField>
-                    </ScoreFileField>
+                    <ScoreFileField v-model="file" />
 
                     <USeparator class="lg:hidden" />
                     <USeparator orientation="vertical" class="hidden lg:flex lg:self-stretch" />
 
-                    <div>
+                    <div class="min-w-0">
                         <p class="text-sm mb-2">{{ $t('checkListTitle') }}</p>
-                        <ul class="space-y-3">
-                            <li v-for="check in CHECKS" :key="check.key">
-                                <p class="font-semibold text-sm">{{ $t(check.label) }}</p>
-                                <p class="text-sm text-muted">{{ $t(check.description) }}</p>
-                            </li>
-                        </ul>
+                        <div class="px-12">
+                            <UCarousel
+                                v-slot="{ item }"
+                                :items="CHECKS"
+                                arrows
+                                align="start"
+                                :ui="{ item: 'basis-full sm:basis-1/2', prev: '-start-12', next: '-end-12' }"
+                                @keydown.stop
+                            >
+                                <p class="font-semibold text-sm">{{ $t(item.label) }}</p>
+                                <p class="text-sm">{{ $t(item.description) }}</p>
+                                <USwitch
+                                    v-if="item.key === 'checkHiddenMotion'"
+                                    v-model="hiddenMotionAllowSteps"
+                                    :label="$t('hiddenMotionAllowSteps')"
+                                    size="sm"
+                                    class="mt-3"
+                                />
+                                <div v-else-if="item.key === 'checkVoiceRange'" class="mt-3">
+                                    <UTabs v-model="voiceRanges" :items="voiceRangeTabs" :content="false" size="xs" />
+                                    <p class="text-sm mt-2">{{ $t(VOICE_RANGE_SETS.find((set) => set.key === voiceRanges).description) }}</p>
+                                </div>
+                            </UCarousel>
+                        </div>
                     </div>
                 </div>
 
