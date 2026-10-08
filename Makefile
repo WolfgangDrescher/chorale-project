@@ -1,7 +1,7 @@
 # make
 # make all
-#     the whole project: ./kern, ./corpus, and the test suite. The
-#     chorale-search build the three of them need runs exactly once, because
+#     the whole project: ./corpus, ./kern, the webapp content, and the test
+#     suite. The chorale-search build they need runs exactly once, because
 #     they share it as the `build` prerequisite below rather than each
 #     invoking $(MAKE) -C chorale-search for themselves
 #
@@ -28,10 +28,18 @@
 #     search take under a second instead of ~36s. Also never committed.
 #     Takes chorale ids the same way `make kern` does.
 #
+# make webapp
+#     generate chorale-webapp/content/chorales from ./kern with
+#     chorale-webapp/scripts/extract-chorales.mjs: one YAML file per chorale
+#     with the metadata for the chorale pages. Installs the webapp's npm
+#     dependencies first if chorale-webapp/node_modules is missing or older
+#     than its package-lock.json. Never committed
+#
 # make clean
-#     remove the generated ./kern and ./corpus directories -- only what this
-#     Makefile itself produces. The chorale-search build survives, so the
-#     next `make kern` does not recompile it; use clean-build for that
+#     remove the generated ./kern, ./corpus and chorale-webapp/content/chorales
+#     directories -- only what this Makefile itself produces. The
+#     chorale-search build survives, so the next `make kern` does not
+#     recompile it; use clean-build for that
 #
 # make clean-build
 #     forwards to `make -C chorale-search clean` (removes its build/)
@@ -42,7 +50,7 @@
 #
 # make distclean
 #     clean plus everything chorale-search generates, i.e. back to a freshly
-#     cloned tree. Leaves chorale-webapp/ alone -- it has no make targets here
+#     cloned tree. Leaves chorale-webapp/ alone apart from what clean removes
 #
 # make fixtures
 #     wipe chorale-search/tests/fixtures/ and regenerate it (with
@@ -56,7 +64,7 @@
 # Single source of truth for "this is a target, not a chorale id". The catch-all
 # rule at the bottom means anything missing from this list would silently be
 # passed to chorale-generate as a chorale id instead.
-TARGETS := all build kern corpus clean clean-build clean-deps distclean fixtures test
+TARGETS := all build kern corpus webapp clean clean-build clean-deps distclean fixtures test
 
 .PHONY: $(TARGETS)
 .DEFAULT_GOAL := all
@@ -69,7 +77,7 @@ GENERATE := ./chorale-search/build/chorale-generate
 MODULATIONS := annotations/bach-modulations.json
 SOURCE_KERN := bach-370-chorales/kern
 
-all: build kern corpus test
+all: build corpus kern webapp test
 
 build:
 	$(MAKE) -C chorale-search
@@ -85,8 +93,15 @@ corpus: build
 		--analysis \
 		$(CHORALES)
 
+chorale-webapp/node_modules: chorale-webapp/package-lock.json
+	npm ci --prefix chorale-webapp
+	touch chorale-webapp/node_modules
+
+webapp: kern chorale-webapp/node_modules
+	node chorale-webapp/scripts/extract-chorales.mjs
+
 clean:
-	rm -rf kern corpus
+	rm -rf kern corpus chorale-webapp/content/chorales
 
 clean-build:
 	$(MAKE) -C chorale-search clean
