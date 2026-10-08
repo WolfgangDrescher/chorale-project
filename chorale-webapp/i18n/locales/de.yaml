@@ -93,6 +93,8 @@ checkHiddenMotion: Verdeckte Quinten und Oktaven
 checkHiddenMotionDescription: "Bass und Sopran bewegen sich in dieselbe Richtung und erreichen dabei eine reine Quinte oder Oktave. Ob der Sopran sie im Schritt erreichen darf, kann mit dem Schalter festgelegt werden."
 checkVoiceCrossing: Stimmkreuzung
 checkVoiceCrossingDescription: "Tenor, Alt oder Sopran haben einen tieferen Ton als der Bass. Gemeldet wird nur die Stelle, an der die Kreuzung beginnt. Ein gleicher Ton wie im Bass zählt nicht."
+checkLargeLeaps: Große Sprünge
+checkLargeLeapsDescription: "Erlaubt sind Sprünge bis zur Quinte, die kleine Sexte nur aufwärts und die Oktave. Alles andere wird gemeldet, auch die große Sexte."
 checkVoiceRange: Stimmumfang
 voiceRanges: Stimmumfang nach
 voiceRangesDescription: Die Umfänge, an denen die Töne jeder Stimme gemessen werden.
@@ -117,6 +119,8 @@ hiddenOctaves: Verdeckte Oktave
 hiddenOctavesCount: "eine verdeckte Oktave | {count} verdeckte Oktaven"
 voiceCrossing: Stimmkreuzung
 voiceCrossingCount: "eine Stimmkreuzung | {count} Stimmkreuzungen"
+largeLeap: Großer Sprung
+largeLeapCount: "ein großer Sprung | {count} große Sprünge"
 directionUp: aufwärts
 directionDown: abwärts
 directionAbove: zu hoch

@@ -1,6 +1,7 @@
 #include "Check.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <tuple>
 #include <utility>
 
@@ -185,18 +186,29 @@ hum::HTp soundingNote(hum::HTp token) {
     return token->isNull() ? token->resolveNull() : token;
 }
 
-// At one line: the token of any voice on it.
+// One octave in base 40.
+constexpr int kBase40Octave = 40;
+
+// From one note to another.
 Finding makeFinding(const char* check, const char* severity, const char* direction, std::size_t lowerVoice,
-                    std::size_t upperVoice, hum::HTp at) {
+                    std::size_t upperVoice, hum::HTp first, hum::HTp last) {
     Finding finding;
     finding.check = check;
     finding.severity = severity;
     finding.direction = direction;
     finding.lowerVoice = lowerVoice;
     finding.upperVoice = upperVoice;
-    finding.startLine = finding.endLine = at->getLineNumber();
-    finding.startPosition = finding.endPosition = humNumToString(at->getDurationFromStart());
+    finding.startLine = first->getLineNumber();
+    finding.endLine = last->getLineNumber();
+    finding.startPosition = humNumToString(first->getDurationFromStart());
+    finding.endPosition = humNumToString(last->getDurationFromStart());
     return finding;
+}
+
+// At one line: the token of any voice on it.
+Finding makeFinding(const char* check, const char* severity, const char* direction, std::size_t lowerVoice,
+                    std::size_t upperVoice, hum::HTp at) {
+    return makeFinding(check, severity, direction, lowerVoice, upperVoice, at, at);
 }
 
 } // namespace
@@ -226,6 +238,38 @@ std::vector<Finding> findVoiceCrossings(const HumdrumChorale& chorale) {
                 findings.push_back(makeFinding("voiceCrossing", "warning", "", kBass, voice, lines[kBass][line]));
             }
             crossedBefore[voice] = crossed;
+        }
+    }
+    return findings;
+}
+
+std::vector<Finding> findLargeLeaps(const HumdrumChorale& chorale) {
+    // Base 40: a perfect fifth is 23 and a minor sixth 28.
+    constexpr int kPerfectFifth = 23;
+    constexpr int kMinorSixth = 28;
+    std::vector<Finding> findings;
+    for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
+        const hum::HTp start = chorale.spine("kern", voice);
+        if (!start) continue;
+
+        // Every note and rest the voice attacks (not the continuation of a tie), with the one before it.
+        hum::HTp previous = nullptr;
+        for (hum::HTp to = start->getNextToken(); to; to = to->getNextToken()) {
+            if (!to->getOwner()->isData() || to->isNull() || to->isSecondaryTiedNote()) continue;
+            const hum::HTp from = previous;
+            previous = to;
+            if (!from) continue;
+            const int fromPitch = hum::Convert::kernToBase40(from);
+            const int toPitch = hum::Convert::kernToBase40(to);
+            // A rest in between ends the line, and so does a fermata: the next note opens a phrase.
+            if (fromPitch <= 0 || toPitch <= 0 || from->hasFermata()) continue;
+
+            // Allowed are the leaps up to a fifth, the octave and the minor sixth upwards; any other one
+            // is too large, a major sixth too.
+            const int move = toPitch - fromPitch;
+            const int size = std::abs(move);
+            if (size <= kPerfectFifth || size == kBase40Octave || (size == kMinorSixth && move > 0)) continue;
+            findings.push_back(makeFinding("largeLeap", "warning", move > 0 ? "up" : "down", voice, voice, from, to));
         }
     }
     return findings;
@@ -266,6 +310,7 @@ std::vector<Finding> runChecks(const HumdrumChorale& chorale, VoiceRangeSet rang
     std::vector<Finding> findings = findParallelMotion(chorale);
     for (Finding& finding : findHiddenMotion(chorale, allowStepwiseHiddenMotion)) findings.push_back(std::move(finding));
     for (Finding& finding : findVoiceCrossings(chorale)) findings.push_back(std::move(finding));
+    for (Finding& finding : findLargeLeaps(chorale)) findings.push_back(std::move(finding));
     for (Finding& finding : findVoiceRangeViolations(chorale, ranges)) findings.push_back(std::move(finding));
     std::stable_sort(findings.begin(), findings.end(), [](const Finding& a, const Finding& b) {
         return a.startLine < b.startLine;

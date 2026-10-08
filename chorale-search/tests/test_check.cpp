@@ -10,6 +10,7 @@
 using choralesearch::HumdrumChorale;
 using choralesearch::Finding;
 using choralesearch::findHiddenMotion;
+using choralesearch::findLargeLeaps;
 using choralesearch::findParallelMotion;
 using choralesearch::findVoiceCrossings;
 using choralesearch::findVoiceRangeViolations;
@@ -231,6 +232,66 @@ TEST_CASE(a_unison_with_the_bass_and_a_rest_are_no_voice_crossing) {
         "4G\t4d\t4b\t4dd",
     });
     CHECK_EQ(findVoiceCrossings(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(a_leap_larger_than_a_fifth_is_found_in_every_voice_and_both_directions) {
+    const HumdrumChorale chorale = score({
+        "4C\t4a\t4e\t4c",
+        "4B\t4G\t4e\t4c",  // the bass leaps a seventh up and the tenor more than an octave down
+        "4B\t4G\t4e\t4c",
+    });
+    const std::vector<Finding> findings = findLargeLeaps(chorale);
+    REQUIRE(findings.size() == 2);
+
+    CHECK_EQ(findings[0].check, std::string("largeLeap"));
+    CHECK_EQ(findings[0].severity, std::string("warning"));
+    CHECK_EQ(findings[0].lowerVoice, std::size_t{1});
+    CHECK_EQ(findings[0].upperVoice, std::size_t{1});
+    CHECK_EQ(findings[0].direction, std::string("up"));
+    CHECK_EQ(findings[0].startLine, kFirstRow);
+    CHECK_EQ(findings[0].endLine, kFirstRow + 1);
+
+    CHECK_EQ(findings[1].lowerVoice, std::size_t{2});
+    CHECK_EQ(findings[1].upperVoice, std::size_t{2});
+    CHECK_EQ(findings[1].direction, std::string("down"));
+}
+
+TEST_CASE(a_fifth_an_octave_a_step_and_a_repeated_note_are_no_large_leaps) {
+    const HumdrumChorale chorale = score({
+        "4C\t4g\t4e\t4c",
+        "4F\t4g\t4e\t4g",   // a fourth up in the bass, a fifth up in the soprano
+        "4f\t4g\t4e\t4a",   // an octave up in the bass
+        "4f\t4a\t4f\t4b-",  // steps and a held note
+        "4f\t4a\t4f\t4b-",
+    });
+    CHECK_EQ(findLargeLeaps(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(a_minor_sixth_is_allowed_only_upwards_and_a_major_sixth_never) {
+    const HumdrumChorale chorale = score({
+        "4C\t4g\t4e\t4c",
+        "4A-\t4g\t4e\t4c",  // the bass a minor sixth up: allowed
+        "4C\t4g\t4e\t4c",   // and down again: not allowed
+        "4A\t4g\t4e\t4c",   // a major sixth up: not allowed
+        "4C\t4g\t4e\t4c",   // and down again
+    });
+    const std::vector<Finding> findings = findLargeLeaps(chorale);
+    REQUIRE(findings.size() == 3);
+    CHECK_EQ(findings[0].direction, std::string("down"));
+    CHECK_EQ(findings[0].startLine, kFirstRow + 1);
+    CHECK_EQ(findings[1].direction, std::string("up"));
+    CHECK_EQ(findings[1].startLine, kFirstRow + 2);
+    CHECK_EQ(findings[2].direction, std::string("down"));
+    CHECK_EQ(findings[2].startLine, kFirstRow + 3);
+}
+
+TEST_CASE(a_leap_across_a_rest_or_a_fermata_is_no_large_leap) {
+    const HumdrumChorale chorale = score({
+        "4C\t4g\t4e\t4c;",  // the soprano closes a phrase on a fermata
+        "4C\t4r\t4e\t4b",   // the next one opens with a seventh up, and the tenor rests
+        "4C\t4DD\t4e\t4b",  // and comes in a long way below
+    });
+    CHECK_EQ(findLargeLeaps(chorale).size(), std::size_t{0});
 }
 
 TEST_CASE(notes_outside_the_range_of_their_voice_are_found_with_the_side_they_lie_on) {

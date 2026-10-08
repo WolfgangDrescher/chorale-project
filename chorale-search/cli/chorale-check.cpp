@@ -25,7 +25,7 @@ void printUsage(const char* argv0) {
         "Usage: " << argv0 << " INPUT [OPTIONS]\n"
         "\n"
         "Checks a chorale score for parallel and hidden fifths and octaves, for voices below the\n"
-        "bass, and for notes outside the range of their voice.\n"
+        "bass, for large melodic leaps, and for notes outside the range of their voice.\n"
         "\n"
         "Arguments:\n"
         "    INPUT                 the score: a Humdrum **kern or MusicXML file, or '-' for\n"
