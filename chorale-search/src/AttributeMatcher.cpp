@@ -227,14 +227,25 @@ bool mintComplementationAllowedFor(const std::vector<std::string>& allowedNumber
     return isWildcard(allowedNumbers) || inList(allowedNumbers, number);
 }
 
+// A **mint pattern or token with its interval number folded within an octave, sign and quality
+// left as they are ("+P12" -> "+P5"). Anything without a number is returned as it is.
+std::string reduceMintValue(const std::string& value) {
+    auto parsed = parseMintValue(value);
+    if (!parsed) return value;
+    const auto& [sign, quality, number] = *parsed;
+    if (number.empty()) return value;
+    return sign + reduceHintInterval(quality + number);
+}
+
 bool mintInList(const std::vector<std::string>& allowed, const std::string& actual,
-                 const std::vector<std::string>& allowComplementationFor) {
+                 const std::vector<std::string>& allowComplementationFor, bool reduceCompound) {
+    const std::string seen = reduceCompound ? reduceMintValue(actual) : actual;
     return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        if (mintValueMatches(v, actual)) return true;
+        if (mintValueMatches(reduceCompound ? reduceMintValue(v) : v, seen)) return true;
         if (allowComplementationFor.empty()) return false; // complementation off (the default)
         if (!mintComplementationAllowedFor(allowComplementationFor, v)) return false;
         auto complement = complementMintValue(v);
-        return complement && mintValueMatches(*complement, actual);
+        return complement && mintValueMatches(*complement, seen);
     });
 }
 
@@ -590,7 +601,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
             actual = std::string(*valTok);
             kernTok = valTok;
         }
-        if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation);
+        if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation, m_options.hintReduceCompound);
         else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
         else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
         else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave, onset.duration);

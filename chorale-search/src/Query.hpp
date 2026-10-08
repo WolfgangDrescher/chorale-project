@@ -95,8 +95,8 @@ struct Query {
     // When set, register is ignored -- "G" matches every octave of that pitch class.
     bool kernIgnoreOctave = false;
 
-    // Affects any "hint-<pair>"/"hint-<voice>" key comparison: by default a pattern value's
-    // interval size must match exactly, so "3" only matches a genuine third, not a compound
+    // Affects any "hint-<pair>"/"hint-<voice>" and "mint" key comparison: by default a pattern
+    // value's interval size must match exactly, so "3" only matches a genuine third, not a compound
     // third (a tenth, seventeenth, ...). When set, both the actual interval and the pattern
     // value are reduced to their simple (within-octave) equivalent before comparing -- a
     // unison and an octave stay distinct from each other.

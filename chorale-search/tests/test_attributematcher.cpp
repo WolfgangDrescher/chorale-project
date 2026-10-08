@@ -1,6 +1,7 @@
 #include "test_framework.hpp"
 
 #include <algorithm>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -961,6 +962,28 @@ TEST_CASE(matcher_hint_reduce_compound_folds_both_pattern_and_actual_to_within_a
     REQUIRE(!m10Matches.empty());
     REQUIRE(!m17Matches.empty());
     CHECK_EQ(reducedMatches.size(), m10Matches.size() + m17Matches.size());
+}
+
+TEST_CASE(matcher_hint_reduce_compound_folds_a_compound_mint_interval_to_within_an_octave) {
+    // The bass leaps a twelfth up, from C to the g above.
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "2C\t2g\t2e\t2cc\n"
+        "2g\t2g\t2e\t2cc\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "mint-compound-test");
+    MatcherOptions reduceOptions;
+    reduceOptions.hintReduceCompound = true;
+    AttributeMatcher twelfth("mint", {AttributeMap{{"mint", {"+P12"}}}});
+    AttributeMatcher fifth("mint", {AttributeMap{{"mint", {"+P5"}}}});
+    AttributeMatcher fifthReduced("mint", {AttributeMap{{"mint", {"+P5"}}}}, reduceOptions);
+
+    CHECK_EQ(twelfth.findAll(chorale, 1).size(), std::size_t{1});
+    CHECK(fifth.findAll(chorale, 1).empty());
+    CHECK_EQ(fifthReduced.findAll(chorale, 1).size(), std::size_t{1});
 }
 
 TEST_CASE(matcher_negated_key_partitions_hint_comparator_matches) {
