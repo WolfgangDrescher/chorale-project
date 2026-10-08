@@ -11,6 +11,7 @@ using choralesearch::HumdrumChorale;
 using choralesearch::Finding;
 using choralesearch::findHiddenMotion;
 using choralesearch::findParallelMotion;
+using choralesearch::findVoiceCrossings;
 using choralesearch::findVoiceRangeViolations;
 using choralesearch::runChecks;
 
@@ -182,6 +183,54 @@ TEST_CASE(hidden_motion_needs_both_voices_to_attack_the_same_notes) {
         "4D\t4g\t4f\t4a",
     });
     CHECK_EQ(findHiddenMotion(offset).size(), std::size_t{0});
+}
+
+TEST_CASE(a_voice_below_the_bass_is_a_voice_crossing_at_the_note_it_begins_with) {
+    const HumdrumChorale chorale = score({
+        "4G\t4d\t4b\t4dd",
+        "4G\t4BB\t4b\t4dd", // the tenor goes below the bass
+        "4G\t4BB\t4b\t4dd", // and stays there
+        "4G\t4d\t4b\t4dd",
+        "4G\t4d\t4b\t4dd",
+    });
+    const std::vector<Finding> findings = findVoiceCrossings(chorale);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].check, std::string("voiceCrossing"));
+    CHECK_EQ(findings[0].severity, std::string("warning"));
+    CHECK_EQ(findings[0].lowerVoice, std::size_t{1});
+    CHECK_EQ(findings[0].upperVoice, std::size_t{2});
+    CHECK_EQ(findings[0].startLine, kFirstRow + 1);
+    CHECK_EQ(findings[0].endLine, kFirstRow + 1);
+}
+
+TEST_CASE(a_voice_crossing_is_also_found_when_the_bass_goes_above_a_held_note) {
+    const HumdrumChorale chorale = score({
+        "4C\t2g\t2b\t2dd",
+        "4a\t.\t.\t.",     // the bass leaps above the tenor, which holds its note
+        "4C\t4g\t4e\t4cc",
+    });
+    const std::vector<Finding> findings = findVoiceCrossings(chorale);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].upperVoice, std::size_t{2});
+    CHECK_EQ(findings[0].startLine, kFirstRow + 1);
+}
+
+TEST_CASE(a_voice_crossing_is_found_again_after_the_voice_was_back_above_the_bass) {
+    const HumdrumChorale chorale = score({
+        "4G\t4BB\t4b\t4dd",
+        "4G\t4d\t4b\t4dd",
+        "4G\t4BB\t4b\t4dd",
+    });
+    CHECK_EQ(findVoiceCrossings(chorale).size(), std::size_t{2});
+}
+
+TEST_CASE(a_unison_with_the_bass_and_a_rest_are_no_voice_crossing) {
+    const HumdrumChorale chorale = score({
+        "4G\t4G\t4b\t4dd", // the same note
+        "4G\t4r\t4b\t4dd", // a rest
+        "4G\t4d\t4b\t4dd",
+    });
+    CHECK_EQ(findVoiceCrossings(chorale).size(), std::size_t{0});
 }
 
 TEST_CASE(notes_outside_the_range_of_their_voice_are_found_with_the_side_they_lie_on) {

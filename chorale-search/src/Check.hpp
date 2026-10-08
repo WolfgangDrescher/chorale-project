@@ -12,8 +12,8 @@ namespace choralesearch {
 
 // What a check found in a score.
 struct Finding {
-    // Which check found it: "parallelFifths", "parallelOctaves", "hiddenFifths", "hiddenOctaves" or
-    // "voiceRange".
+    // Which check found it: "parallelFifths", "parallelOctaves", "hiddenFifths", "hiddenOctaves",
+    // "voiceCrossing" or "voiceRange".
     std::string check;
 
     // "error" for a rule that is broken, "warning" for what only deserves a second look.
@@ -24,7 +24,8 @@ struct Finding {
     std::string direction;
 
     // The voices involved, 1 is the bass and 4 the soprano. A finding about a single voice names
-    // it twice, a parallel has lowerVoice < upperVoice.
+    // it twice, a parallel has lowerVoice < upperVoice, and so has a voice crossing: the bass and the
+    // voice that goes below it.
     std::size_t lowerVoice = 0;
     std::size_t upperVoice = 0;
 
@@ -46,6 +47,11 @@ std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale);
 // into a perfect fifth or octave, the soprano by a leap (a step too, if `allowStepwiseSoprano` is off).
 // A fifth or octave that follows the same one is a parallel, reported by findParallelMotion.
 std::vector<Finding> findHiddenMotion(const HumdrumChorale& chorale, bool allowStepwiseSoprano = true);
+
+// The voices that go below the bass, as warnings, reported where the crossing begins (a voice that
+// stays below is one finding). lowerVoice is the bass, upperVoice the voice below it, and there is no
+// direction. A note level with the bass is no crossing.
+std::vector<Finding> findVoiceCrossings(const HumdrumChorale& chorale);
 
 // The notes outside the range of their voice (see VoiceRanges.hpp), as warnings: a range is a
 // custom of the voices, not a rule.

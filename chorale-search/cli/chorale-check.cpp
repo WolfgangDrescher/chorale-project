@@ -24,8 +24,8 @@ void printUsage(const char* argv0) {
     std::cerr <<
         "Usage: " << argv0 << " INPUT [OPTIONS]\n"
         "\n"
-        "Checks a chorale score for parallel and hidden fifths and octaves, and for notes outside\n"
-        "the range of their voice.\n"
+        "Checks a chorale score for parallel and hidden fifths and octaves, for voices below the\n"
+        "bass, and for notes outside the range of their voice.\n"
         "\n"
         "Arguments:\n"
         "    INPUT                 the score: a Humdrum **kern or MusicXML file, or '-' for\n"

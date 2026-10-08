@@ -91,6 +91,8 @@ checkParallelMotion: Quint- und Oktavparallelen
 checkParallelMotionDescription: "Zwei Stimmen bewegen sich in dieselbe Richtung und bilden zweimal hintereinander eine reine Quinte oder Oktave. Das wird zwischen allen Stimmenpaaren geprüft, aufwärts und abwärts. Zusammengesetzte Intervalle zählen mit, eine Duodezime also als Quinte, ein Einklang als Oktave. Liegende Töne, Gegenbewegung und verminderte Quinten sind keine Parallelen. Beide Stimmen müssen ihre Noten gleichzeitig anschlagen."
 checkHiddenMotion: Verdeckte Quinten und Oktaven
 checkHiddenMotionDescription: "Bass und Sopran bewegen sich in dieselbe Richtung und erreichen dabei eine reine Quinte oder Oktave. Ob der Sopran sie im Schritt erreichen darf, kann mit dem Schalter festgelegt werden."
+checkVoiceCrossing: Stimmkreuzung
+checkVoiceCrossingDescription: "Tenor, Alt oder Sopran haben einen tieferen Ton als der Bass. Gemeldet wird nur die Stelle, an der die Kreuzung beginnt. Ein gleicher Ton wie im Bass zählt nicht."
 checkVoiceRange: Stimmumfang
 voiceRanges: Stimmumfang nach
 voiceRangesDescription: Die Umfänge, an denen die Töne jeder Stimme gemessen werden.
@@ -113,6 +115,8 @@ hiddenFifths: Verdeckte Quinte
 hiddenFifthsCount: "eine verdeckte Quinte | {count} verdeckte Quinten"
 hiddenOctaves: Verdeckte Oktave
 hiddenOctavesCount: "eine verdeckte Oktave | {count} verdeckte Oktaven"
+voiceCrossing: Stimmkreuzung
+voiceCrossingCount: "eine Stimmkreuzung | {count} Stimmkreuzungen"
 directionUp: aufwärts
 directionDown: abwärts
 directionAbove: zu hoch

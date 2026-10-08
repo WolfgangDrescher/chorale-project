@@ -165,6 +165,40 @@ std::vector<Finding> runFindingQueries(const HumdrumChorale& chorale, const std:
     return findings;
 }
 
+// The tokens of the four voices on every line of the score, [voice][line]; a voice that holds a note has
+// a null token there. Empty if a voice is missing.
+std::vector<std::vector<hum::HTp>> lineTokensOf(const HumdrumChorale& chorale) {
+    std::vector<std::vector<hum::HTp>> lines(kVoiceCount + 1);
+    for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
+        const hum::HTp start = chorale.spine("kern", voice);
+        if (!start) return {};
+        for (hum::HTp token = start->getNextToken(); token; token = token->getNextToken()) {
+            if (token->getOwner()->isData()) lines[voice].push_back(token);
+        }
+        if (lines[voice].size() != lines[1].size()) return {};
+    }
+    return lines;
+}
+
+// The note a token stands for: itself, or for a null token the note held from before.
+hum::HTp soundingNote(hum::HTp token) {
+    return token->isNull() ? token->resolveNull() : token;
+}
+
+// At one line: the token of any voice on it.
+Finding makeFinding(const char* check, const char* severity, const char* direction, std::size_t lowerVoice,
+                    std::size_t upperVoice, hum::HTp at) {
+    Finding finding;
+    finding.check = check;
+    finding.severity = severity;
+    finding.direction = direction;
+    finding.lowerVoice = lowerVoice;
+    finding.upperVoice = upperVoice;
+    finding.startLine = finding.endLine = at->getLineNumber();
+    finding.startPosition = finding.endPosition = humNumToString(at->getDurationFromStart());
+    return finding;
+}
+
 } // namespace
 
 std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale) {
@@ -173,6 +207,28 @@ std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale) {
 
 std::vector<Finding> findHiddenMotion(const HumdrumChorale& chorale, bool allowStepwiseSoprano) {
     return runFindingQueries(chorale, buildHiddenMotionQueries(allowStepwiseSoprano));
+}
+
+std::vector<Finding> findVoiceCrossings(const HumdrumChorale& chorale) {
+    constexpr std::size_t kBass = 1;
+    const std::vector<std::vector<hum::HTp>> lines = lineTokensOf(chorale);
+
+    std::vector<Finding> findings;
+    if (lines.empty()) return findings;
+    std::vector<bool> crossedBefore(kVoiceCount + 1, false);
+    for (std::size_t line = 0; line < lines[kBass].size(); ++line) {
+        const int bassPitch = hum::Convert::kernToBase40(soundingNote(lines[kBass][line]));
+        for (std::size_t voice = kBass + 1; voice <= kVoiceCount; ++voice) {
+            const int upperPitch = hum::Convert::kernToBase40(soundingNote(lines[voice][line]));
+            const bool crossed = bassPitch > 0 && upperPitch > 0 && upperPitch < bassPitch;
+            // Only where it begins: a voice that stays below the bass is one finding, not one for each note.
+            if (crossed && !crossedBefore[voice]) {
+                findings.push_back(makeFinding("voiceCrossing", "warning", "", kBass, voice, lines[kBass][line]));
+            }
+            crossedBefore[voice] = crossed;
+        }
+    }
+    return findings;
 }
 
 std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale, VoiceRangeSet ranges) {
@@ -209,6 +265,7 @@ std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale, Voi
 std::vector<Finding> runChecks(const HumdrumChorale& chorale, VoiceRangeSet ranges, bool allowStepwiseHiddenMotion) {
     std::vector<Finding> findings = findParallelMotion(chorale);
     for (Finding& finding : findHiddenMotion(chorale, allowStepwiseHiddenMotion)) findings.push_back(std::move(finding));
+    for (Finding& finding : findVoiceCrossings(chorale)) findings.push_back(std::move(finding));
     for (Finding& finding : findVoiceRangeViolations(chorale, ranges)) findings.push_back(std::move(finding));
     std::stable_sort(findings.begin(), findings.end(), [](const Finding& a, const Finding& b) {
         return a.startLine < b.startLine;

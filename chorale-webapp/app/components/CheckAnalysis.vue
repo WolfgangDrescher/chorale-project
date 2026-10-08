@@ -16,13 +16,14 @@ const { fileError } = useScoreFile(file);
 
 // The checks that find something, as the keys this page translates. Each finding names the one it
 // comes from.
-const CHECK_TYPES = ['parallelFifths', 'parallelOctaves', 'hiddenFifths', 'hiddenOctaves', 'voiceRange'];
+const CHECK_TYPES = ['parallelFifths', 'parallelOctaves', 'hiddenFifths', 'hiddenOctaves', 'voiceCrossing', 'voiceRange'];
 
 // What the checker looks for, listed next to the upload. A new check is an entry here and its two
 // translations.
 const CHECKS = [
     { key: 'checkParallelMotion', label: 'checkParallelMotion', description: 'checkParallelMotionDescription' },
     { key: 'checkHiddenMotion', label: 'checkHiddenMotion', description: 'checkHiddenMotionDescription' },
+    { key: 'checkVoiceCrossing', label: 'checkVoiceCrossing', description: 'checkVoiceCrossingDescription' },
     { key: 'checkVoiceRange', label: 'checkVoiceRange', description: 'checkVoiceRangeDescription' },
 ];
 
@@ -109,7 +110,7 @@ async function analyze() {
     }
 }
 
-// What a finding marks in the score: one voice for a note, two for a parallel.
+// What a finding marks in the score: one voice for a note, two for a parallel or a crossing.
 const voicesOf = (entry) => [...new Set(entry.voices)];
 
 // The two lines of a parallel, one for each voice, running horizontally from its first note to its
@@ -136,7 +137,9 @@ const connections = computed(() => [
 
 const notes = computed(() => [
     {
-        items: findings.value.filter((entry) => !spansNotes(entry)).map((entry) => `L${entry.startLine}F${entry.voices[0]}`),
+        items: findings.value
+            .filter((entry) => !spansNotes(entry))
+            .flatMap((entry) => voicesOf(entry).map((voice) => `L${entry.startLine}F${voice}`)),
         color: WARNING_COLOR,
     },
 ]);
@@ -282,7 +285,7 @@ function onNoteClick({ line, voice }) {
                             >
                                 <span class="tabular-nums text-dimmed w-8">{{ index + 1 }}</span>
                                 <UBadge :color="SEVERITY_BADGE_COLORS[entry.severity]" variant="subtle">{{ $t(entry.check) }}</UBadge>
-                                <span>{{ $t(DIRECTION_LABELS[entry.direction]) }}</span>
+                                <span v-if="entry.direction">{{ $t(DIRECTION_LABELS[entry.direction]) }}</span>
                                 <span class="text-muted">{{ voicesOf(entry).map((voice) => $t(VOICE_NAMES[voice])).join(' / ') }}</span>
                                 <span class="ml-auto text-dimmed tabular-nums">{{ $t('lineNumber', { line: entry.startLine }) }}</span>
                             </button>
