@@ -136,6 +136,33 @@ std::vector<FindingQuery> buildHiddenMotionQueries(bool allowStepwiseSoprano) {
     return queries;
 }
 
+// The bass note under a fermata that is no cadence step from the note before it, one query for each way
+// to get there: up, down, or on the same note. mint measures from the last sounding note, so a rest in
+// between is looked through, and mintStartAtPreviousToken starts the finding on the onset before.
+std::vector<FindingQuery> buildBassPhraseEndQueries() {
+    constexpr std::size_t kBass = 1;
+    // The perfect fourths and fifths, up and down. Compounds count (hintReduceCompound): a twelfth is a fifth.
+    const std::vector<std::string> cadenceSteps = {"+P4", "+P5", "-P4", "-P5"};
+
+    std::vector<FindingQuery> queries;
+    for (const auto& [direction, move] : std::vector<std::pair<const char*, std::string>>{{"up", "+"}, {"down", "-"}, {"", "P1"}}) {
+        AttributeMap position;
+        position["mint"] = {move};
+        position["fermata"] = {"true"};
+        position["!mint"] = cadenceSteps;
+
+        Query query;
+        query.id = queryId("bassPhraseEnd", direction, kBass, kBass);
+        query.feature = "mint";
+        query.voices = std::to_string(kBass);
+        query.pattern = {position};
+        query.mintStartAtPreviousToken = true;
+        query.hintReduceCompound = true;
+        queries.push_back({std::move(query), "bassPhraseEnd", "warning", direction, kBass, kBass});
+    }
+    return queries;
+}
+
 // The findings of the queries in the chorale, in the order of the score and, at the same place, by voices
 // and kind, so the result doesn't depend on the order the queries run in.
 std::vector<Finding> runFindingQueries(const HumdrumChorale& chorale, const std::vector<FindingQuery>& queries) {
@@ -275,6 +302,10 @@ std::vector<Finding> findLargeLeaps(const HumdrumChorale& chorale) {
     return findings;
 }
 
+std::vector<Finding> findBassPhraseEndings(const HumdrumChorale& chorale) {
+    return runFindingQueries(chorale, buildBassPhraseEndQueries());
+}
+
 std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale, VoiceRangeSet ranges) {
     const VoiceRanges& limits = voiceRanges(ranges);
     std::vector<Finding> findings;
@@ -311,6 +342,7 @@ std::vector<Finding> runChecks(const HumdrumChorale& chorale, VoiceRangeSet rang
     for (Finding& finding : findHiddenMotion(chorale, allowStepwiseHiddenMotion)) findings.push_back(std::move(finding));
     for (Finding& finding : findVoiceCrossings(chorale)) findings.push_back(std::move(finding));
     for (Finding& finding : findLargeLeaps(chorale)) findings.push_back(std::move(finding));
+    for (Finding& finding : findBassPhraseEndings(chorale)) findings.push_back(std::move(finding));
     for (Finding& finding : findVoiceRangeViolations(chorale, ranges)) findings.push_back(std::move(finding));
     std::stable_sort(findings.begin(), findings.end(), [](const Finding& a, const Finding& b) {
         return a.startLine < b.startLine;

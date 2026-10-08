@@ -10,6 +10,7 @@
 using choralesearch::HumdrumChorale;
 using choralesearch::Finding;
 using choralesearch::findHiddenMotion;
+using choralesearch::findBassPhraseEndings;
 using choralesearch::findLargeLeaps;
 using choralesearch::findParallelMotion;
 using choralesearch::findVoiceCrossings;
@@ -292,6 +293,60 @@ TEST_CASE(a_leap_across_a_rest_or_a_fermata_is_no_large_leap) {
         "4C\t4DD\t4e\t4b",  // and comes in a long way below
     });
     CHECK_EQ(findLargeLeaps(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(a_phrase_end_is_a_finding_when_the_bass_does_not_come_by_a_fourth_or_a_fifth) {
+    const HumdrumChorale chorale = score({
+        "4D\t4g\t4e\t4cc",
+        "4C;\t4g;\t4e;\t4cc;", // down a step into the fermata
+    });
+    const std::vector<Finding> findings = findBassPhraseEndings(chorale);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].check, std::string("bassPhraseEnd"));
+    CHECK_EQ(findings[0].severity, std::string("warning"));
+    CHECK_EQ(findings[0].lowerVoice, std::size_t{1});
+    CHECK_EQ(findings[0].upperVoice, std::size_t{1});
+    CHECK_EQ(findings[0].direction, std::string("down"));
+    CHECK_EQ(findings[0].startLine, kFirstRow);
+    CHECK_EQ(findings[0].endLine, kFirstRow + 1);
+}
+
+TEST_CASE(a_fourth_or_a_fifth_up_or_down_into_a_phrase_end_is_no_finding) {
+    const HumdrumChorale chorale = score({
+        "4G\t4g\t4e\t4cc",
+        "4C;\t4g;\t4e;\t4cc;", // a fifth down
+        "4C\t4g\t4e\t4cc",
+        "4G;\t4g;\t4e;\t4cc;", // a fifth up
+        "4D\t4g\t4e\t4cc",
+        "4G;\t4g;\t4e;\t4cc;", // a fourth up
+    });
+    CHECK_EQ(findBassPhraseEndings(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(a_compound_fifth_and_a_repeated_note_into_a_phrase_end_are_judged_by_their_size) {
+    const HumdrumChorale compound = score({
+        "4FF\t4g\t4e\t4cc",
+        "4c;\t4g;\t4e;\t4cc;", // a twelfth up
+    });
+    CHECK_EQ(findBassPhraseEndings(compound).size(), std::size_t{0});
+
+    const HumdrumChorale repeated = score({
+        "4C\t4g\t4e\t4cc",
+        "4C;\t4g;\t4e;\t4cc;",
+    });
+    const std::vector<Finding> findings = findBassPhraseEndings(repeated);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].direction, std::string(""));
+}
+
+TEST_CASE(a_note_without_a_fermata_and_a_rest_before_the_phrase_end_are_handled) {
+    const HumdrumChorale chorale = score({
+        "4C\t4g\t4e\t4cc",
+        "4D\t4g\t4e\t4cc",   // no fermata: not a phrase end
+        "4r\t4g\t4e\t4cc",
+        "4G;\t4g;\t4e;\t4cc;", // the rest is looked through: D to G is a fourth
+    });
+    CHECK_EQ(findBassPhraseEndings(chorale).size(), std::size_t{0});
 }
 
 TEST_CASE(notes_outside_the_range_of_their_voice_are_found_with_the_side_they_lie_on) {

@@ -16,7 +16,7 @@ const { fileError } = useScoreFile(file);
 
 // The checks that find something, as the keys this page translates. Each finding names the one it
 // comes from.
-const CHECK_TYPES = ['parallelFifths', 'parallelOctaves', 'hiddenFifths', 'hiddenOctaves', 'voiceCrossing', 'largeLeap', 'voiceRange'];
+const CHECK_TYPES = ['parallelFifths', 'parallelOctaves', 'hiddenFifths', 'hiddenOctaves', 'voiceCrossing', 'largeLeap', 'bassPhraseEnd', 'voiceRange'];
 
 // What the checker looks for, listed next to the upload. A new check is an entry here and its two
 // translations.
@@ -25,6 +25,7 @@ const CHECKS = [
     { key: 'checkHiddenMotion', label: 'checkHiddenMotion', description: 'checkHiddenMotionDescription' },
     { key: 'checkVoiceCrossing', label: 'checkVoiceCrossing', description: 'checkVoiceCrossingDescription' },
     { key: 'checkLargeLeaps', label: 'checkLargeLeaps', description: 'checkLargeLeapsDescription' },
+    { key: 'checkBassPhraseEnd', label: 'checkBassPhraseEnd', description: 'checkBassPhraseEndDescription' },
     { key: 'checkVoiceRange', label: 'checkVoiceRange', description: 'checkVoiceRangeDescription' },
 ];
 
@@ -111,6 +112,10 @@ async function analyze() {
     }
 }
 
+// The checks shown as a section over the notes of the voice they are about: the bass note under the
+// fermata and the note before it.
+const SECTION_CHECKS = ['bassPhraseEnd'];
+
 // What a finding marks in the score: one voice for a note, two for a parallel or a crossing.
 const voicesOf = (entry) => [...new Set(entry.voices)];
 
@@ -131,7 +136,9 @@ const connections = computed(() => [
     { severity: 'error', color: ERROR_COLOR },
     { severity: 'warning', color: WARNING_COLOR },
 ].map(({ severity, color }) => ({
-    items: findings.value.filter((entry) => spansNotes(entry) && entry.severity === severity).flatMap(linesOf),
+    items: findings.value
+            .filter((entry) => spansNotes(entry) && !SECTION_CHECKS.includes(entry.check) && entry.severity === severity)
+            .flatMap(linesOf),
     color,
     width: LINE_WIDTH,
 })));
@@ -145,11 +152,22 @@ const notes = computed(() => [
     },
 ]);
 
-// The finding on show as a frame around exactly its notes, one for each of its voices.
+// A section over the bass at every missing cadence bass, and a frame around the notes of each voice of
+// the finding on show.
 const sections = computed(() => {
-    if (!activeFinding.value) return [];
-    const { startLine, endLine } = activeFinding.value;
-    return [{ items: voicesOf(activeFinding.value).map((voice) => ({ voice, startLine, endLine })), color: ACTIVE_FRAME_COLOR, outline: true, fitBoundingBox: true }];
+    const groups = [
+        {
+            items: findings.value
+                .filter((entry) => SECTION_CHECKS.includes(entry.check))
+                .map((entry) => ({ voice: entry.voices[0], startLine: entry.startLine, endLine: entry.endLine })),
+            color: WARNING_COLOR,
+        },
+    ];
+    if (activeFinding.value) {
+        const { startLine, endLine } = activeFinding.value;
+        groups.push({ items: voicesOf(activeFinding.value).map((voice) => ({ voice, startLine, endLine })), color: ACTIVE_FRAME_COLOR, outline: true, fitBoundingBox: true });
+    }
+    return groups;
 });
 
 // The line to keep in view for the finding on show.

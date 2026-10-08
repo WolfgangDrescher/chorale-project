@@ -95,6 +95,8 @@ checkVoiceCrossing: Stimmkreuzung
 checkVoiceCrossingDescription: "Tenor, Alt oder Sopran haben einen tieferen Ton als der Bass. Gemeldet wird nur die Stelle, an der die Kreuzung beginnt. Ein gleicher Ton wie im Bass zählt nicht."
 checkLargeLeaps: Große Sprünge
 checkLargeLeapsDescription: "Erlaubt sind Sprünge bis zur Quinte, die kleine Sexte nur aufwärts und die Oktave. Alles andere wird gemeldet, auch die große Sexte."
+checkBassPhraseEnd: "Kadenzbass"
+checkBassPhraseEndDescription: "Der Bass sollte den Ton unter einer Fermate mit einem Quint- oder Quartschritt erreichen, aufwärts oder abwärts, also als Bassklausel oder als plagale Kadenz. Jede andere Bewegung wird gemeldet, auch bei einem Halbschluss."
 checkVoiceRange: Stimmumfang
 voiceRanges: Stimmumfang nach
 voiceRangesDescription: Die Umfänge, an denen die Töne jeder Stimme gemessen werden.
@@ -121,6 +123,8 @@ voiceCrossing: Stimmkreuzung
 voiceCrossingCount: "eine Stimmkreuzung | {count} Stimmkreuzungen"
 largeLeap: Großer Sprung
 largeLeapCount: "ein großer Sprung | {count} große Sprünge"
+bassPhraseEnd: Kadenzbass
+bassPhraseEndCount: "ein fehlender Kadenzbass | {count} fehlende Kadenzbässe"
 directionUp: aufwärts
 directionDown: abwärts
 directionAbove: zu hoch

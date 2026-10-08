@@ -13,7 +13,7 @@ namespace choralesearch {
 // What a check found in a score.
 struct Finding {
     // Which check found it: "parallelFifths", "parallelOctaves", "hiddenFifths", "hiddenOctaves",
-    // "voiceCrossing", "largeLeap" or "voiceRange".
+    // "voiceCrossing", "largeLeap", "bassPhraseEnd" or "voiceRange".
     std::string check;
 
     // "error" for a rule that is broken, "warning" for what only deserves a second look.
@@ -57,6 +57,11 @@ std::vector<Finding> findVoiceCrossings(const HumdrumChorale& chorale);
 // octave and the minor sixth upwards. A move across a rest, or from a note under a
 // fermata to the next, is no leap. The finding names the voice, the two notes and the direction.
 std::vector<Finding> findLargeLeaps(const HumdrumChorale& chorale);
+
+// Phrase ends without a cadence bass, as warnings: the bass note under a fermata is not reached from
+// the note before it (rests looked through) by a fifth or a fourth, up or down, as in a bassizans
+// or a plagal cadence. The direction is the way the bass goes ("" for a repeated note).
+std::vector<Finding> findBassPhraseEndings(const HumdrumChorale& chorale);
 
 // The notes outside the range of their voice (see VoiceRanges.hpp), as warnings: a range is a
 // custom of the voices, not a rule.
