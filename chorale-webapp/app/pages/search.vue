@@ -156,7 +156,6 @@ function applyDemoQuery() {
         { "deg": "2", "duration": "4" },
         { "deg": ["1", "3"], "duration": "*", "fermata": true }
     ],
-    "mintStartAtPreviousToken": true,
     "fbCompareExactChord": false,
     "limit": 100
 }`;
