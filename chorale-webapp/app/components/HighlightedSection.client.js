@@ -74,7 +74,7 @@ function createMarker(startElem, endElem, systemElem, containerElem, color, voic
             !startElem && endElem && 'rounded-tr rounded-br',
             startElem && endElem && 'rounded',
             // A system the section carries on from or into has no edge on that side.
-            outline && 'border-[5px] border-solid',
+            outline && 'z-30 border-[5px] border-solid',
             outline && !startElem && 'border-l-0',
             outline && !endElem && 'border-r-0',
         ],
@@ -113,7 +113,7 @@ function createFittedMarker(noteElems, containerElem, color) {
     // The frame lies a little outside the notes, so its border doesn't touch them.
     const padding = 8;
     return h('div', {
-        class: 'absolute rounded border-[5px] border-solid',
+        class: 'absolute z-30 rounded border-[5px] border-solid',
         style: {
             borderColor: color,
             width: `${right - left + padding * 2}px`,
@@ -164,12 +164,18 @@ export default {
 
         if (props.fitBoundingBox && containerElem) {
             const noteElemsBySystem = new Map();
+            const add = (noteElem) => {
+                const system = noteElem.closest('g.system');
+                noteElemsBySystem.set(system, [...(noteElemsBySystem.get(system) ?? []), noteElem]);
+            };
             for (let line = props.startLine; line <= props.endLine; line++) {
                 const suffix = props.voice != null ? `L${line}F${props.voice}` : `L${line}F`;
-                for (const noteElem of containerElem.querySelectorAll(`g[id^="note-${suffix}"]`)) {
-                    const system = noteElem.closest('g.system');
-                    noteElemsBySystem.set(system, [...(noteElemsBySystem.get(system) ?? []), noteElem]);
-                }
+                containerElem.querySelectorAll(`g[id^="note-${suffix}"]`).forEach(add);
+            }
+            // A voice that attacks nothing there is framed by the note it holds.
+            if (!noteElemsBySystem.size && props.voice != null) {
+                const held = soundingNoteElem(containerElem, props.startLine, props.voice);
+                if (held) add(held);
             }
             const fittedMarkers = [...noteElemsBySystem.values()]
                 .map((noteElems) => createFittedMarker(noteElems, containerElem, props.color))

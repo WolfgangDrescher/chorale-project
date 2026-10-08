@@ -41,17 +41,14 @@ export default defineComponent({
         container: HTMLElement,
     },
     setup(props) {
-        const noteHead = (position) => {
-            const id = `L${position.line}F${position.voice}`;
-            const note = props.container.querySelector(`g#note-${id}`);
-            return note?.querySelector('.notehead') ?? note;
-        };
-
-        const noteOf = (position) => props.container.querySelector(`g#note-L${position.line}F${position.voice}`);
+        // The note a voice sounds there: for a connection to a note held from before the line, the one it
+        // attacked earlier.
+        const noteOf = (position) => soundingNoteElem(props.container, position.line, position.voice);
+        const noteHead = (noteElem) => noteElem?.querySelector('.notehead') ?? noteElem;
         const noteElems = [noteOf(props.from), noteOf(props.to)];
 
-        const fromElem = noteHead(props.from);
-        const toElem = noteHead(props.to);
+        const fromElem = noteHead(noteElems[0]);
+        const toElem = noteHead(noteElems[1]);
         if (!fromElem || !toElem) return () => h('div');
 
         const containerRect = props.container.getBoundingClientRect();

@@ -56,6 +56,7 @@ const ERROR_COLOR = 'rgb(239 68 68)';
 const LINE_WIDTH = 3;
 const WARNING_COLOR = highlightColorsByName.amber;
 
+
 // The frame of the error on show, in the primary color like the segment on show of the segment
 // analysis.
 const ACTIVE_FRAME_COLOR = 'color-mix(in oklab, var(--ui-primary) 80%, transparent)';
@@ -130,6 +131,9 @@ async function analyzeDemoScore() {
     run(await $fetch(`/kern/bach-370-chorales/${demoChoraleId.value}.krn`, { parseResponse: (text) => text }));
 }
 
+// The checks about a voice below the bass at one moment, shown as a line between the two notes.
+const CROSSING_CHECKS = ['voiceCrossing'];
+
 // The checks shown as a section over the notes of the voice they are about: the bass note under the
 // fermata and the note before it.
 const SECTION_CHECKS = ['bassPhraseEnd'];
@@ -150,21 +154,36 @@ function linesOf(entry) {
 // marker on it.
 const spansNotes = (entry) => entry.startLine !== entry.endLine;
 
+// The two notes of a crossing, joined by a line: the bass note and the one of the voice below it, each
+// the one sounding there, whether attacked at that line or held from before.
+const crossings = computed(() => findings.value.filter((entry) => CROSSING_CHECKS.includes(entry.check)));
+
 const connections = computed(() => [
-    { severity: 'error', color: ERROR_COLOR },
-    { severity: 'warning', color: WARNING_COLOR },
-].map(({ severity, color }) => ({
-    items: findings.value
+    ...[
+        { severity: 'error', color: ERROR_COLOR },
+        { severity: 'warning', color: WARNING_COLOR },
+    ].map(({ severity, color }) => ({
+        items: findings.value
             .filter((entry) => spansNotes(entry) && !SECTION_CHECKS.includes(entry.check) && entry.severity === severity)
             .flatMap(linesOf),
-    color,
-    width: LINE_WIDTH,
-})));
+        color,
+        width: LINE_WIDTH,
+    })),
+    {
+        items: crossings.value.map((entry) => ({
+            from: { line: entry.startLine, voice: entry.voices[0] },
+            to: { line: entry.startLine, voice: entry.voices[1] },
+        })),
+        color: WARNING_COLOR,
+        width: LINE_WIDTH,
+    },
+]);
 
+// Single notes are marked; a crossing is shown as a line instead.
 const notes = computed(() => [
     {
         items: findings.value
-            .filter((entry) => !spansNotes(entry))
+            .filter((entry) => !spansNotes(entry) && !CROSSING_CHECKS.includes(entry.check))
             .flatMap((entry) => voicesOf(entry).map((voice) => `L${entry.startLine}F${voice}`)),
         color: WARNING_COLOR,
     },
@@ -204,7 +223,7 @@ defineShortcuts({
 // A clicked note selects the first finding that has it among its notes.
 function onNoteClick({ line, voice }) {
     const index = findings.value.findIndex(
-        (entry) => entry.voices.includes(voice) && (entry.startLine === line || entry.endLine === line),
+        (entry) => voicesOf(entry).includes(voice) && (entry.startLine === line || entry.endLine === line),
     );
     if (index !== -1) goToFinding(index + 1);
 }
