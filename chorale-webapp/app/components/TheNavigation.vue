@@ -8,6 +8,10 @@ const items = [
         to: localePath({name: 'index'}),
     },
     {
+        label: t('chorales'),
+        to: localePath({name: 'chorale'}),
+    },
+    {
         label: t('choraleAnalysis'),
         to: localePath({name: 'chorale-analysis'}),
     },

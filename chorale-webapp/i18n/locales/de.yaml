@@ -138,3 +138,17 @@ scaleDegree: Skalenstufen anzeigen
 hideMiddleVoices: Mittelstimmen ausblenden
 extractCantusFirmus: Cantus firmus isolieren
 hideNonCantusFirmusVoices: Alle Stimmen ausser Cantus firmus ausblenden
+chorales: Choräle
+id: ID
+title: Titel
+meter: Taktart
+bwv: BWV
+previous: Vorheriges
+next: Nächstes
+github: GitHub
+vhv: VHV
+filterChorales: Choräle filtern
+noChoralesFound: Keine Choräle gefunden.
+noChoralesFoundDescription: Die Choräle werden aus dem Korpus extrahiert. Führen Sie dazu im Projektverzeichnis `make webapp` aus.
+choraleCount: "ein Choral | {count} Choräle"
+key: Tonart
