@@ -3,15 +3,14 @@ import { defineStore, acceptHMRUpdate } from 'pinia';
 function createDefaultScoreOptions() {
     return {
         showMeter: false,
-        bassstufen: false,
-        hideFiguredbass: false,
-        showFiguredbassAbove: false,
-        showCadences: false,
-        showSequences: false,
-        showModulations: false,
-        showModulationsDegLabel: false,
-        hideInstrumentNames: false,
-        showIntervallsatz: false,
+        satb2gs: false,
+        intervallsatz: false,
+        extendedFiguredbass: false,
+        bassScaleDegree: false,
+        scaleDegree: false,
+        hideMiddleVoices: false,
+        extractCantusFirmus: false,
+        hideNonCantusFirmusVoices: false,
         verovioScale: 40,
         showHorizontalViewMode: false,
     };
@@ -20,42 +19,47 @@ function createDefaultScoreOptions() {
 export const useScoreOptions = defineStore('score_options', {
     state: () => createDefaultScoreOptions(),
     getters: {
-        humdrumFilterMap: () => ({
-            showMeter: 'meter -f',
-            bassstufen: 'deg -k1 --box -t',
-            hideFiguredbass: 'extract -I "**fb" | extract -I "**fba"',
-            showFiguredbassAbove: 'shed -e "s/fb/fba/gX"',
-            hideInstrumentNames: 'shed -e "s/^I.*//gI"',
-            showIntervallsatz: 'extract -I "**fb" | fb -catm --above | fb -b2 -k3 -catm --above',
+        // The Humdrum filters the score can be shown through, by the name of the option that
+        // toggles them. A filter with a higher priority is applied first, so voices are
+        // extracted before the remaining spines are analyzed.
+        humdrumFilterDefinitions: () => ({
+            showMeter: { command: 'meter -f' },
+            satb2gs: { command: 'satb2gs', priority: 1 },
+            intervallsatz: { command: 'fb -icatm', priority: -1 },
+            extendedFiguredbass: { command: 'fb -acon3' },
+            bassScaleDegree: { command: 'deg --circle -k 1' },
+            scaleDegree: { command: 'deg --circle' },
+            hideMiddleVoices: { command: 'extract -f 1,$', priority: 2 },
+            extractCantusFirmus: { command: 'extract -f $', priority: 2 },
+            hideNonCantusFirmusVoices: {
+                command: 'shed -s 1-3 -e "s/.*/$0yy/D s/.*//L s/^[^I].*//I"',
+                priority: 2,
+            },
         }),
+        humdrumFilterMap() {
+            return Object.fromEntries(
+                Object.entries(this.humdrumFilterDefinitions).map(([key, { command }]) => [key, command]),
+            );
+        },
         humdrumFilters(state) {
-            const map = this.humdrumFilterMap;
-            return Object.entries(map)
+            return Object.entries(this.humdrumFilterDefinitions)
                 .filter(([key]) => state[key])
-                .map(([, value]) => value);
+                .sort(([, a], [, b]) => (b.priority ?? 0) - (a.priority ?? 0))
+                .map(([, { command }]) => command);
         },
         verovioOptions: (state) => ({
             scale: state.verovioScale,
         }),
         countHumdrumFilters(state) {
-            const map = this.humdrumFilterMap;
-            return Object.keys(map).filter((key) => state[key]).length;
-        },
-        countHighlights(state) {
-            return [
-                state.showCadences,
-                state.showModulations,
-                state.showModulationsDegLabel,
-                state.showSequences,
-            ].filter(Boolean).length;
+            return Object.keys(this.humdrumFilterDefinitions).filter((key) => state[key]).length;
         },
         countOthers(state) {
             return [
                 state.showHorizontalViewMode,
-            ].filter(Boolean).length; 
+            ].filter(Boolean).length;
         },
         countTotal() {
-            return this.countHumdrumFilters + this.countHighlights + this.countOthers;
+            return this.countHumdrumFilters + this.countOthers;
         },
     },
 
@@ -74,8 +78,7 @@ export const useScoreOptions = defineStore('score_options', {
         },
         resetHumdrumFilters() {
             const defaults = createDefaultScoreOptions();
-            const map = this.humdrumFilterMap;
-            for (const key of Object.keys(map)) {
+            for (const key of Object.keys(this.humdrumFilterDefinitions)) {
                 this[key] = defaults[key];
             }
         },
@@ -83,13 +86,6 @@ export const useScoreOptions = defineStore('score_options', {
             const defaults = createDefaultScoreOptions();
             this.verovioScale = defaults.verovioScale;
             this.showHorizontalViewMode = defaults.showHorizontalViewMode;
-        },
-        resetHighlights() {
-            const defaults = createDefaultScoreOptions();
-            this.showCadences = defaults.showCadences;
-            this.showSequences = defaults.showSequences;
-            this.showModulations = defaults.showModulations;
-            this.showModulationsDegLabel = defaults.showModulationsDegLabel;
         },
     },
 });

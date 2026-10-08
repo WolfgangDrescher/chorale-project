@@ -116,3 +116,25 @@ voiceTenor: Tenor
 voiceAlto: Alt
 voiceSoprano: Sopran
 lineNumber: "Zeile {line}"
+scoreCommandPalette: Partitur-Befehlspalette
+searchCommandsAndScoreOptions: Befehl oder Option suchen
+humdrumFilters: Humdrum Filter
+verovioOptions: Verovio Optionen
+zoomIn: Partitur vergrössern
+zoomOut: Partitur verkleinern
+resetZoom: Partitur Anzeige zurücksetzen
+showHorizontalViewMode: Partitur horizontal anzeigen
+reset: Zurücksetzen
+resetAllVerovioOptions: Alle Verovio Optionen zurücksetzen
+resetAllHumdrumFilters: Alle Humdrum Filter zurücksetzen
+resetAll: Alles zurücksetzen
+showOnlyActiveFilters: Nur aktive Filter anzeigen
+showMeter: Schläge anzeigen
+satb2gs: Klaviersatz anzeigen
+intervallsatz: Intervallsatz anzeigen
+extendedFiguredbass: Bezifferung anzeigen
+bassScaleDegree: Bassstufen anzeigen
+scaleDegree: Skalenstufen anzeigen
+hideMiddleVoices: Mittelstimmen ausblenden
+extractCantusFirmus: Cantus firmus isolieren
+hideNonCantusFirmusVoices: Alle Stimmen ausser Cantus firmus ausblenden
