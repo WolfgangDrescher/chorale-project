@@ -210,6 +210,10 @@ const sections = computed(() => {
 // The line to keep in view for the finding on show.
 const scrollToLine = computed(() => (activeFinding.value?.startLine));
 
+// From this many findings on, the list is in two columns, so the score stays in view next to it.
+const MANY_FINDINGS = 8;
+const twoColumns = computed(() => findings.value.length > MANY_FINDINGS);
+
 function goToFinding(n) {
     position.value = Math.min(Math.max(n, 1), findings.value.length);
 }
@@ -336,9 +340,13 @@ function onNoteClick({ line, voice }) {
                     />
                 </UCard>
 
-                <UCard v-if="findings.length" class="w-full max-w-2xl mx-auto" :ui="{ body: 'p-3 sm:p-3' }">
-                    <ul class="divide-y divide-default">
-                        <li v-for="(entry, index) in findings" :key="index">
+                <UCard v-if="findings.length" class="w-full mx-auto" :class="twoColumns ? 'max-w-5xl' : 'max-w-2xl'" :ui="{ body: 'p-3 sm:p-3' }">
+                    <ul
+                        class="grid"
+                        :class="twoColumns && 'md:grid-flow-col md:gap-x-6'"
+                        :style="twoColumns && { gridTemplateRows: `repeat(${Math.ceil(findings.length / 2)}, auto)` }"
+                    >
+                        <li v-for="(entry, index) in findings" :key="index" class="border-b border-default last:border-b-0">
                             <button
                                 type="button"
                                 class="flex w-full items-center gap-3 px-2 py-1.5 text-left text-sm rounded hover:bg-elevated"
