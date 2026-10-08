@@ -84,8 +84,7 @@ function cancel() {
     abortController?.abort();
 }
 
-async function analyze() {
-    if (!file.value) return;
+async function run(data) {
     abortController = new AbortController();
     pending.value = true;
     progress.value = null;
@@ -93,7 +92,6 @@ async function analyze() {
     result.value = null;
     position.value = 1;
     try {
-        const data = await file.value.text();
         const response = await fetchWithProgress('/api/chorale-check', {
             body: { data, voiceRanges: voiceRanges.value, hiddenMotionAllowSteps: hiddenMotionAllowSteps.value },
             signal: abortController.signal,
@@ -113,6 +111,23 @@ async function analyze() {
         abortController = null;
         pending.value = false;
     }
+}
+
+async function analyze() {
+    if (!file.value) return;
+    run(await file.value.text());
+}
+
+// The chorale the demo button checks, picked from the corpus' chorales. The demo is a development
+// aid, not part of the page.
+const isDev = import.meta.dev;
+const DEMO_CHORALE_ID = 'chor029';
+const demoChoraleId = ref(DEMO_CHORALE_ID);
+const { data: demoChoraleIds } = useLazyFetch('/api/chorales', { default: () => [] });
+
+async function analyzeDemoScore() {
+    file.value = null;
+    run(await $fetch(`/kern/bach-370-chorales/${demoChoraleId.value}.krn`, { parseResponse: (text) => text }));
 }
 
 // The checks shown as a section over the notes of the voice they are about: the bass note under the
@@ -234,7 +249,23 @@ function onNoteClick({ line, voice }) {
                     </div>
                 </div>
 
-                <UButton type="submit" :loading="pending" :disabled="!file || !!fileError">{{ $t('submit') }}</UButton>
+                <div class="flex gap-2">
+                    <UButton type="submit" :loading="pending" :disabled="!file || !!fileError">{{ $t('submit') }}</UButton>
+                    <UFieldGroup v-if="isDev && !file">
+                        <USelectMenu
+                            v-model="demoChoraleId"
+                            :items="demoChoraleIds"
+                            :search-input="{ placeholder: $t('searchChorale') }"
+                            :disabled="pending"
+                            color="neutral"
+                            variant="subtle"
+                            class="w-28!"
+                        />
+                        <UButton color="neutral" variant="subtle" icon="lucide:flask-conical" :disabled="pending" @click="analyzeDemoScore">
+                            {{ $t('useDemoScore') }}
+                        </UButton>
+                    </UFieldGroup>
+                </div>
             </UForm>
         </UCard>
 
