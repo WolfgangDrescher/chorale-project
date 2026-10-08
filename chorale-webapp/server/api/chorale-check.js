@@ -27,6 +27,18 @@ function parseScoreData(value) {
 // one to begin with.
 const VOICE_RANGES = ['strauss-berlioz', 'bach'];
 
+// Whether a hidden fifth or octave is excused when the soprano reaches it by a step.
+function parseHiddenMotionAllowSteps(value) {
+    if (value === undefined || value === null) return true;
+    if (typeof value !== 'boolean') {
+        throw new ValidationError(
+            'The request contains one or more validation errors',
+            `"hiddenMotionAllowSteps" must be true or false, got ${JSON.stringify(value)}`,
+        );
+    }
+    return value;
+}
+
 function parseVoiceRanges(value) {
     if (value === undefined || value === null || value === '') return VOICE_RANGES[0];
     if (!VOICE_RANGES.includes(value)) {
@@ -38,7 +50,7 @@ function parseVoiceRanges(value) {
     return value;
 }
 
-// Takes { data, voiceRanges? } and returns the prepared four-voice kern and what the checks found
+// Takes { data, voiceRanges?, hiddenMotionAllowSteps? } and returns the prepared four-voice kern and what the checks found
 // in it. Answers with the JSON result, or as a stream of progress events ending in the result for
 // a caller that accepts one (see respondWithStream).
 export default defineEventHandler(async (event) => {
@@ -48,8 +60,9 @@ export default defineEventHandler(async (event) => {
         const body = await parseRequestBody(event);
         const data = parseScoreData(body.data);
         const voiceRanges = parseVoiceRanges(body.voiceRanges);
+        const hiddenMotionAllowSteps = parseHiddenMotionAllowSteps(body.hiddenMotionAllowSteps);
         const check = ({ onEvent, signal } = {}) => {
-            const args = ['-', '--voice-ranges', voiceRanges];
+            const args = ['-', '--voice-ranges', voiceRanges, '--hidden-motion-allow-steps', String(hiddenMotionAllowSteps)];
             if (onEvent) args.push('--progress');
 
             return runCliTool({

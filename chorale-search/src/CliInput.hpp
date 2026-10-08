@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -32,4 +34,14 @@ inline std::string readInput(const std::string& inputPath) {
         content << file.rdbuf();
     }
     return content.str();
+}
+
+// true/false, yes/no, y/n or 1/0, in any case.
+inline bool parseBoolean(const std::string& flag, const std::string& value) {
+    std::string lowered = value;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    if (lowered == "true" || lowered == "yes" || lowered == "y" || lowered == "1") return true;
+    if (lowered == "false" || lowered == "no" || lowered == "n" || lowered == "0") return false;
+    throw std::invalid_argument(flag + " takes true/false, yes/no, y/n or 1/0, got '" + value + "'");
 }

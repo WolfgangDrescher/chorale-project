@@ -24,8 +24,8 @@ void printUsage(const char* argv0) {
     std::cerr <<
         "Usage: " << argv0 << " INPUT [OPTIONS]\n"
         "\n"
-        "Checks a chorale score for parallel fifths and octaves between any two of the four voices,\n"
-        "upwards and downwards, and for notes outside the range of their voice.\n"
+        "Checks a chorale score for parallel and hidden fifths and octaves, and for notes outside\n"
+        "the range of their voice.\n"
         "\n"
         "Arguments:\n"
         "    INPUT                 the score: a Humdrum **kern or MusicXML file, or '-' for\n"
@@ -37,6 +37,9 @@ void printUsage(const char* argv0) {
         "                          the voice ranges the notes are measured against: the ones of\n"
         "                          Berlioz and Strauss, or the ones Bach's chorales use\n"
         "                          (default: strauss-berlioz)\n"
+        "    --hidden-motion-allow-steps true|false\n"
+        "                          whether a hidden fifth or octave is excused when the soprano\n"
+        "                          reaches it by a step; false finds those too (default: true)\n"
         "    --no-kern             leave the converted four-voice **kern text out of the\n"
         "                          output -- for command-line use, where the score is\n"
         "                          already at hand and only the findings matter\n"
@@ -66,6 +69,7 @@ int main(int argc, char** argv) {
     std::string inputPath;
     bool includeKern = true;
     bool progress = false;
+    bool allowStepwiseHiddenMotion = true;
     choralesearch::VoiceRangeSet voiceRanges = choralesearch::VoiceRangeSet::StraussBerlioz;
 
     for (int i = 1; i < argc; ++i) {
@@ -80,6 +84,10 @@ int main(int argc, char** argv) {
                 if (value == "strauss-berlioz") voiceRanges = choralesearch::VoiceRangeSet::StraussBerlioz;
                 else if (value == "bach") voiceRanges = choralesearch::VoiceRangeSet::Bach;
                 else throw std::invalid_argument("--voice-ranges takes strauss-berlioz or bach, got '" + value + "'");
+            }
+            else if (arg == "--hidden-motion-allow-steps") {
+                allowStepwiseHiddenMotion =
+                    parseBoolean("--hidden-motion-allow-steps", next("--hidden-motion-allow-steps"));
             }
             else if (arg == "--no-kern") { includeKern = false; }
             else if (arg == "--progress") { progress = true; }
@@ -131,7 +139,7 @@ int main(int argc, char** argv) {
         HumdrumChorale chorale(contents, inputPath == "-" ? "stdin" : inputPath);
 
         if (progress) choralesearch::reportPhase("run-checks");
-        const std::vector<Finding> findings = choralesearch::runChecks(chorale, voiceRanges);
+        const std::vector<Finding> findings = choralesearch::runChecks(chorale, voiceRanges, allowStepwiseHiddenMotion);
 
         nlohmann::json j;
         if (inputPath != "-") j["source"] = inputPath;

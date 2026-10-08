@@ -13,29 +13,38 @@ namespace choralesearch {
 
 namespace {
 
-// A kind of parallel: the type reported, and the perfect intervals it is made of. Compound ones
-// are folded by the query's hintReduceCompound, so "P5" also stands for the twelfth. A unison
-// counts as an octave -- the two voices sing the same note.
-struct ParallelKind {
-    const char* type;
+// A kind of perfect interval: the types reported for it as a parallel and as a hidden one, and the
+// intervals it is made of. Compound ones are folded by the query's hintReduceCompound, so "P5" also
+// stands for the twelfth. A unison counts as an octave -- the two voices sing the same note.
+struct PerfectInterval {
+    const char* parallelType;
+    const char* hiddenType;
     std::vector<std::string> intervals;
 };
 
-const std::vector<ParallelKind>& parallelKinds() {
-    static const std::vector<ParallelKind> kinds = {
-        {"parallelFifths", {"P5"}},
-        {"parallelOctaves", {"P8", "P1"}},
+const std::vector<PerfectInterval>& perfectIntervals() {
+    static const std::vector<PerfectInterval> kinds = {
+        {"parallelFifths", "hiddenFifths", {"P5"}},
+        {"parallelOctaves", "hiddenOctaves", {"P8", "P1"}},
     };
     return kinds;
 }
 
-struct ParallelQuery {
+// A query for one kind of finding, and what a match of it says.
+struct FindingQuery {
     Query query;
     const char* type;
+    const char* severity;
     const char* direction;
     std::size_t lowerVoice;
     std::size_t upperVoice;
 };
+
+// The two directions of a move, with the sign mint writes them with.
+const std::vector<std::pair<const char*, std::string>>& directions() {
+    static const std::vector<std::pair<const char*, std::string>> all = {{"up", "+"}, {"down", "-"}};
+    return all;
+}
 
 std::string queryId(const char* type, const char* direction, std::size_t lower, std::size_t upper) {
     return std::string(type) + ":" + direction + ":" + std::to_string(lower) + "-" + std::to_string(upper);
@@ -56,10 +65,10 @@ std::vector<AttributeMap> movePattern(const std::string& sign, const AttributeMa
 // "<check>:<direction>:<lower voice>-<upper voice>". The upper voice is walked by its melodic
 // intervals and has to form the interval to the lower one; the lower voice is a simultaneousWith
 // group, so it attacks the same notes and moves the same way.
-std::vector<ParallelQuery> buildParallelQueries() {
-    std::vector<ParallelQuery> queries;
-    for (const ParallelKind& kind : parallelKinds()) {
-        for (const auto& [direction, sign] : std::vector<std::pair<const char*, std::string>>{{"up", "+"}, {"down", "-"}}) {
+std::vector<FindingQuery> buildParallelQueries() {
+    std::vector<FindingQuery> queries;
+    for (const PerfectInterval& kind : perfectIntervals()) {
+        for (const auto& [direction, sign] : directions()) {
             for (std::size_t lower = 1; lower <= kVoiceCount; ++lower) {
                 for (std::size_t upper = lower + 1; upper <= kVoiceCount; ++upper) {
                     // The interval to the lower voice, from the walked upper voice's point of view.
@@ -68,7 +77,7 @@ std::vector<ParallelQuery> buildParallelQueries() {
                     interval[intervalKey] = kind.intervals;
 
                     Query query;
-                    query.id = queryId(kind.type, direction, lower, upper);
+                    query.id = queryId(kind.parallelType, direction, lower, upper);
                     query.feature = "mint";
                     query.voices = std::to_string(upper);
                     query.pattern = movePattern(sign, interval, interval);
@@ -81,7 +90,7 @@ std::vector<ParallelQuery> buildParallelQueries() {
                     lowerVoice.pattern = movePattern(sign, {}, {});
                     query.simultaneousWith.push_back(std::move(lowerVoice));
 
-                    queries.push_back({std::move(query), kind.type, direction, lower, upper});
+                    queries.push_back({std::move(query), kind.parallelType, "error", direction, lower, upper});
                 }
             }
         }
@@ -89,17 +98,55 @@ std::vector<ParallelQuery> buildParallelQueries() {
     return queries;
 }
 
-} // namespace
+// A hidden fifth or octave: the soprano moves into a perfect interval to the bass that it was not
+// already in, the bass moving the same way, as in the parallels. The soprano has to leap, unless
+// `allowStepwiseSoprano` is off. Neither of the two notes before may be a rest.
+std::vector<FindingQuery> buildHiddenMotionQueries(bool allowStepwiseSoprano) {
+    constexpr std::size_t kBass = 1;
+    constexpr std::size_t kSoprano = kVoiceCount;
+    std::vector<FindingQuery> queries;
+    for (const PerfectInterval& kind : perfectIntervals()) {
+        for (const auto& [direction, sign] : directions()) {
+            const AttributeMap noRest = {{"!kern", {"r"}}};
 
-std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale) {
+            AttributeMap before = noRest;
+            before["!hint-1"] = kind.intervals;
+            AttributeMap into;
+            into["hint-1"] = kind.intervals;
+            if (allowStepwiseSoprano) into["!mint"] = {sign + "2", sign + "1"};
+
+            Query query;
+            query.id = queryId(kind.hiddenType, direction, kBass, kSoprano);
+            query.feature = "mint";
+            query.voices = std::to_string(kSoprano);
+            query.pattern = movePattern(sign, before, into);
+            query.hintReduceCompound = true;
+            query.simultaneousAlignment = "start-end";
+
+            SimultaneousGroup bass;
+            bass.feature = "mint";
+            bass.voices = std::to_string(kBass);
+            bass.pattern = movePattern(sign, noRest, {});
+            query.simultaneousWith.push_back(std::move(bass));
+
+            queries.push_back({std::move(query), kind.hiddenType, "warning", direction, kBass, kSoprano});
+        }
+    }
+    return queries;
+}
+
+// The findings of the queries in the chorale, in the order of the score and, at the same place, by voices
+// and kind, so the result doesn't depend on the order the queries run in.
+std::vector<Finding> runFindingQueries(const HumdrumChorale& chorale, const std::vector<FindingQuery>& queries) {
     // Only needed for runOne, which searches the chorale it is given and nothing on disk.
     const CorpusSearch search(chorale.path());
 
     std::vector<Finding> findings;
-    for (const ParallelQuery& entry : buildParallelQueries()) {
+    for (const FindingQuery& entry : queries) {
         for (const Result& match : search.runOne(chorale, entry.query)) {
             Finding finding;
             finding.check = entry.type;
+            finding.severity = entry.severity;
             finding.direction = entry.direction;
             finding.lowerVoice = entry.lowerVoice;
             finding.upperVoice = entry.upperVoice;
@@ -111,13 +158,21 @@ std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale) {
         }
     }
 
-    // In the order of the score, the same place by voices and kind, so the result doesn't
-    // depend on the order the queries run in.
     std::stable_sort(findings.begin(), findings.end(), [](const Finding& a, const Finding& b) {
         return std::tie(a.startLine, a.lowerVoice, a.upperVoice, a.check, a.direction) <
                std::tie(b.startLine, b.lowerVoice, b.upperVoice, b.check, b.direction);
     });
     return findings;
+}
+
+} // namespace
+
+std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale) {
+    return runFindingQueries(chorale, buildParallelQueries());
+}
+
+std::vector<Finding> findHiddenMotion(const HumdrumChorale& chorale, bool allowStepwiseSoprano) {
+    return runFindingQueries(chorale, buildHiddenMotionQueries(allowStepwiseSoprano));
 }
 
 std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale, VoiceRangeSet ranges) {
@@ -151,8 +206,9 @@ std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale, Voi
     return findings;
 }
 
-std::vector<Finding> runChecks(const HumdrumChorale& chorale, VoiceRangeSet ranges) {
+std::vector<Finding> runChecks(const HumdrumChorale& chorale, VoiceRangeSet ranges, bool allowStepwiseHiddenMotion) {
     std::vector<Finding> findings = findParallelMotion(chorale);
+    for (Finding& finding : findHiddenMotion(chorale, allowStepwiseHiddenMotion)) findings.push_back(std::move(finding));
     for (Finding& finding : findVoiceRangeViolations(chorale, ranges)) findings.push_back(std::move(finding));
     std::stable_sort(findings.begin(), findings.end(), [](const Finding& a, const Finding& b) {
         return a.startLine < b.startLine;

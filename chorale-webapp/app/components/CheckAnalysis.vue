@@ -16,12 +16,13 @@ const { fileError } = useScoreFile(file);
 
 // The checks that find something, as the keys this page translates. Each finding names the one it
 // comes from.
-const CHECK_TYPES = ['parallelFifths', 'parallelOctaves', 'voiceRange'];
+const CHECK_TYPES = ['parallelFifths', 'parallelOctaves', 'hiddenFifths', 'hiddenOctaves', 'voiceRange'];
 
 // What the checker looks for, listed next to the upload. A new check is an entry here and its two
 // translations.
 const CHECKS = [
     { key: 'checkParallelMotion', label: 'checkParallelMotion', description: 'checkParallelMotionDescription' },
+    { key: 'checkHiddenMotion', label: 'checkHiddenMotion', description: 'checkHiddenMotionDescription' },
     { key: 'checkVoiceRange', label: 'checkVoiceRange', description: 'checkVoiceRangeDescription' },
 ];
 
@@ -43,9 +44,10 @@ const voiceRangeTabs = VOICE_RANGE_SETS.map((set) => ({ value: set.key, label: t
 
 const VOICE_NAMES = { 1: 'voiceBass', 2: 'voiceTenor', 3: 'voiceAlto', 4: 'voiceSoprano' };
 
-// The lines of the parallels in the score, and the markers of the notes out of their range.
+// The lines of the findings that run from one note to another in the score, and the markers of the
+// notes out of their range.
 const ERROR_COLOR = 'rgb(239 68 68)';
-const ERROR_LINE_WIDTH = 3;
+const LINE_WIDTH = 3;
 const WARNING_COLOR = highlightColorsByName.amber;
 
 // The frame of the error on show, in the primary color like the segment on show of the segment
@@ -124,8 +126,13 @@ function linesOf(entry) {
 const spansNotes = (entry) => entry.startLine !== entry.endLine;
 
 const connections = computed(() => [
-    { items: findings.value.filter(spansNotes).flatMap(linesOf), color: ERROR_COLOR, width: ERROR_LINE_WIDTH },
-]);
+    { severity: 'error', color: ERROR_COLOR },
+    { severity: 'warning', color: WARNING_COLOR },
+].map(({ severity, color }) => ({
+    items: findings.value.filter((entry) => spansNotes(entry) && entry.severity === severity).flatMap(linesOf),
+    color,
+    width: LINE_WIDTH,
+})));
 
 const notes = computed(() => [
     {

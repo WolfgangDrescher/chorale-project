@@ -9,6 +9,7 @@
 
 using choralesearch::HumdrumChorale;
 using choralesearch::Finding;
+using choralesearch::findHiddenMotion;
 using choralesearch::findParallelMotion;
 using choralesearch::findVoiceRangeViolations;
 using choralesearch::runChecks;
@@ -85,6 +86,102 @@ TEST_CASE(oblique_and_contrary_motion_and_a_diminished_fifth_are_no_parallels) {
         "4c\t4g\t4e\t4cc", // and out of it again
     });
     CHECK_EQ(findParallelMotion(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(a_hidden_fifth_is_found_when_the_soprano_leaps_into_it_in_the_same_direction_as_the_bass) {
+    const HumdrumChorale chorale = score({
+        "4C\t4g\t4e\t4c",  // an octave
+        "4D\t4g\t4f\t4a",  // the bass a step up, the soprano a sixth up into a twelfth
+        "4D\t4g\t4f\t4a",
+        "4D\t4g\t4f\t4a",
+    });
+    const std::vector<Finding> findings = findHiddenMotion(chorale);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].check, std::string("hiddenFifths"));
+    CHECK_EQ(findings[0].severity, std::string("warning"));
+    CHECK_EQ(findings[0].direction, std::string("up"));
+    CHECK_EQ(findings[0].lowerVoice, std::size_t{1});
+    CHECK_EQ(findings[0].upperVoice, std::size_t{4});
+    CHECK_EQ(findings[0].startLine, kFirstRow);
+    CHECK_EQ(findings[0].endLine, kFirstRow + 1);
+}
+
+TEST_CASE(a_hidden_octave_is_found_downwards_too) {
+    const HumdrumChorale chorale = score({
+        "4G\t4g\t4d\t4dd",  // a twelfth
+        "4D\t4g\t4d\t4d",   // both down, the soprano a fifth, into an octave
+        "4D\t4g\t4d\t4d",
+        "4D\t4g\t4d\t4d",
+    });
+    const std::vector<Finding> findings = findHiddenMotion(chorale);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].check, std::string("hiddenOctaves"));
+    CHECK_EQ(findings[0].direction, std::string("down"));
+}
+
+TEST_CASE(a_step_of_the_soprano_contrary_motion_and_a_held_bass_hide_nothing) {
+    const HumdrumChorale chorale = score({
+        "4G\t4g\t4e\t4b",
+        "4c\t4g\t4e\t4cc", // both up, but the soprano by a step: excused
+        "4G\t4g\t4e\t4g",  // both down, octave to octave: a parallel, no hidden one
+        "4C\t4g\t4e\t4cc", // bass down, soprano up: contrary
+        "4C\t4g\t4e\t4gg", // the bass holds: oblique
+    });
+    CHECK_EQ(findHiddenMotion(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(a_fifth_or_octave_that_follows_the_same_one_is_a_parallel_and_no_hidden_one) {
+    const HumdrumChorale chorale = score({
+        "4C\t4g\t4e\t4c",
+        "4D\t4g\t4f\t4d", // octave to octave, even though the soprano is a step
+        "4C\t4g\t4e\t4g",
+        "4F\t4g\t4f\t4cc", // a twelfth up to a twelfth by a leap up: the same fifth
+    });
+    CHECK_EQ(findHiddenMotion(chorale).size(), std::size_t{0});
+}
+
+TEST_CASE(a_step_of_the_soprano_into_a_perfect_interval_is_found_when_steps_are_not_allowed) {
+    const HumdrumChorale chorale = score({
+        "4G\t4g\t4e\t4b",
+        "4c\t4g\t4e\t4cc", // both up, the soprano by a step, into an octave
+        "4c\t4g\t4e\t4cc",
+        "4c\t4g\t4e\t4cc",
+    });
+    CHECK_EQ(findHiddenMotion(chorale).size(), std::size_t{0});
+    CHECK_EQ(findHiddenMotion(chorale, true).size(), std::size_t{0});
+
+    const std::vector<Finding> findings = findHiddenMotion(chorale, false);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].check, std::string("hiddenOctaves"));
+    CHECK_EQ(findings[0].startLine, kFirstRow);
+}
+
+TEST_CASE(run_checks_passes_on_whether_steps_are_allowed_in_hidden_motion) {
+    const HumdrumChorale chorale = score({
+        "4G\t4g\t4e\t4b",
+        "4c\t4g\t4e\t4cc",
+        "4c\t4g\t4e\t4cc",
+        "4c\t4g\t4e\t4cc",
+    });
+    const auto ranges = choralesearch::VoiceRangeSet::StraussBerlioz;
+    CHECK_EQ(runChecks(chorale, ranges).size(), std::size_t{0});
+    CHECK_EQ(runChecks(chorale, ranges, true).size(), std::size_t{0});
+    CHECK_EQ(runChecks(chorale, ranges, false).size(), std::size_t{1});
+}
+
+TEST_CASE(hidden_motion_needs_both_voices_to_attack_the_same_notes) {
+    const HumdrumChorale chorale = score({
+        "4C\t4g\t4e\t4c",
+        "4D\t4g\t4f\t4a",
+    });
+    CHECK_EQ(findHiddenMotion(chorale).size(), std::size_t{1});
+
+    const HumdrumChorale offset = score({
+        "2C\t4g\t4e\t4c",
+        ".\t4g\t4f\t4a",  // the bass holds its note under the soprano's move
+        "4D\t4g\t4f\t4a",
+    });
+    CHECK_EQ(findHiddenMotion(offset).size(), std::size_t{0});
 }
 
 TEST_CASE(notes_outside_the_range_of_their_voice_are_found_with_the_side_they_lie_on) {
