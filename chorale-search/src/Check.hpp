@@ -56,6 +56,7 @@ std::vector<Finding> findVoiceCrossings(const HumdrumChorale& chorale);
 // The melodic leaps that are not allowed, in any voice, as warnings: all above a fifth, except the
 // octave and the minor sixth upwards. A move across a rest, or from a note under a
 // fermata to the next, is no leap. The finding names the voice, the two notes and the direction.
+// Found with the search's own queries, comparing the size of the interval.
 std::vector<Finding> findLargeLeaps(const HumdrumChorale& chorale);
 
 // Phrase ends without a cadence bass, as warnings: the bass note under a fermata is not reached from
@@ -64,7 +65,7 @@ std::vector<Finding> findLargeLeaps(const HumdrumChorale& chorale);
 std::vector<Finding> findBassPhraseEndings(const HumdrumChorale& chorale);
 
 // The notes outside the range of their voice (see VoiceRanges.hpp), as warnings: a range is a
-// custom of the voices, not a rule.
+// custom of the voices, not a rule. Found with the search's own queries, comparing the pitch.
 std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale,
                                                VoiceRangeSet ranges = VoiceRangeSet::StraussBerlioz);
 

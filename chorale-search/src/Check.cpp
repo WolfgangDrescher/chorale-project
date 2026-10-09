@@ -1,7 +1,6 @@
 #include "Check.hpp"
 
 #include <algorithm>
-#include <cstdlib>
 #include <tuple>
 #include <utility>
 
@@ -163,6 +162,57 @@ std::vector<FindingQuery> buildBassPhraseEndQueries() {
     return queries;
 }
 
+// The leaps that are not allowed, one query for each voice and direction: the note after a note that is
+// neither a rest nor under a fermata (the next note opens a phrase) lies further away than a fifth. The
+// octave is allowed, and so is the minor sixth upwards. mint looks from the last sounding note, but a rest
+// in between ends the position before it, so no leap across a rest is found.
+std::vector<FindingQuery> buildLargeLeapQueries() {
+    std::vector<FindingQuery> queries;
+    for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
+        for (const auto& [direction, sign] : directions()) {
+            AttributeMap before;
+            before["!kern"] = {"r"};
+            before["!fermata"] = {"true"};
+
+            AttributeMap leap;
+            leap["mint"] = {PatternValue(ComparisonOperator::GreaterThan, sign + "P5")};
+            leap["!mint"] = sign == "+" ? std::vector<PatternValue>{"+m6", "+P8"} : std::vector<PatternValue>{"-P8"};
+
+            Query query;
+            query.id = queryId("largeLeap", direction, voice, voice);
+            query.feature = "mint";
+            query.voices = std::to_string(voice);
+            query.pattern = {before, leap};
+
+            queries.push_back({std::move(query), "largeLeap", "warning", direction, voice, voice});
+        }
+    }
+    return queries;
+}
+
+// The notes outside the range of their voice, one query for each voice and side: a note that is lower than
+// the lowest note of the voice, or higher than its highest one. A rest has no pitch to compare.
+std::vector<FindingQuery> buildVoiceRangeQueries(const VoiceRanges& limits) {
+    std::vector<FindingQuery> queries;
+    for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
+        const VoiceRange& range = limits[voice - 1];
+        const std::vector<std::tuple<const char*, ComparisonOperator, int>> sides = {
+            {"above", ComparisonOperator::GreaterThan, range.upper},
+            {"below", ComparisonOperator::LessThan, range.lower},
+        };
+        for (const auto& [direction, comparisonOperator, limit] : sides) {
+            Query query;
+            query.id = queryId("voiceRange", direction, voice, voice);
+            query.feature = "kern";
+            query.voices = std::to_string(voice);
+            query.pattern = {{{"kern", {PatternValue(comparisonOperator, hum::Convert::base12ToKern(limit))}}}};
+
+            queries.push_back({std::move(query), "voiceRange", "warning", direction, voice, voice});
+        }
+    }
+    return queries;
+}
+
 // The findings of the queries in the chorale, in the order of the score and, at the same place, by voices
 // and kind, so the result doesn't depend on the order the queries run in.
 std::vector<Finding> runFindingQueries(const HumdrumChorale& chorale, const std::vector<FindingQuery>& queries) {
@@ -212,9 +262,6 @@ std::vector<std::vector<hum::HTp>> lineTokensOf(const HumdrumChorale& chorale) {
 hum::HTp soundingNote(hum::HTp token) {
     return token->isNull() ? token->resolveNull() : token;
 }
-
-// One octave in base 40.
-constexpr int kBase40Octave = 40;
 
 // From one note to another.
 Finding makeFinding(const char* check, const char* severity, const char* direction, std::size_t lowerVoice,
@@ -271,35 +318,7 @@ std::vector<Finding> findVoiceCrossings(const HumdrumChorale& chorale) {
 }
 
 std::vector<Finding> findLargeLeaps(const HumdrumChorale& chorale) {
-    // Base 40: a perfect fifth is 23 and a minor sixth 28.
-    constexpr int kPerfectFifth = 23;
-    constexpr int kMinorSixth = 28;
-    std::vector<Finding> findings;
-    for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
-        const hum::HTp start = chorale.spine("kern", voice);
-        if (!start) continue;
-
-        // Every note and rest the voice attacks (not the continuation of a tie), with the one before it.
-        hum::HTp previous = nullptr;
-        for (hum::HTp to = start->getNextToken(); to; to = to->getNextToken()) {
-            if (!to->getOwner()->isData() || to->isNull() || to->isSecondaryTiedNote()) continue;
-            const hum::HTp from = previous;
-            previous = to;
-            if (!from) continue;
-            const int fromPitch = hum::Convert::kernToBase40(from);
-            const int toPitch = hum::Convert::kernToBase40(to);
-            // A rest in between ends the line, and so does a fermata: the next note opens a phrase.
-            if (fromPitch <= 0 || toPitch <= 0 || from->hasFermata()) continue;
-
-            // Allowed are the leaps up to a fifth, the octave and the minor sixth upwards; any other one
-            // is too large, a major sixth too.
-            const int move = toPitch - fromPitch;
-            const int size = std::abs(move);
-            if (size <= kPerfectFifth || size == kBase40Octave || (size == kMinorSixth && move > 0)) continue;
-            findings.push_back(makeFinding("largeLeap", "warning", move > 0 ? "up" : "down", voice, voice, from, to));
-        }
-    }
-    return findings;
+    return runFindingQueries(chorale, buildLargeLeapQueries());
 }
 
 std::vector<Finding> findBassPhraseEndings(const HumdrumChorale& chorale) {
@@ -307,34 +326,7 @@ std::vector<Finding> findBassPhraseEndings(const HumdrumChorale& chorale) {
 }
 
 std::vector<Finding> findVoiceRangeViolations(const HumdrumChorale& chorale, VoiceRangeSet ranges) {
-    const VoiceRanges& limits = voiceRanges(ranges);
-    std::vector<Finding> findings;
-    for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
-        const hum::HTp start = chorale.spine("kern", voice);
-        if (!start) continue;
-        const VoiceRange& range = limits[voice - 1];
-
-        for (hum::HTp token = start->getNextToken(); token; token = token->getNextToken()) {
-            if (!token->getOwner()->isData() || token->isNull() || token->isSecondaryTiedNote()) continue;
-
-            // A rest has no pitch, which humlib reports as a number below the lowest note.
-            const int midi = hum::Convert::kernToMidiNoteNumber(std::string(*token));
-            if (midi <= 0 || (midi >= range.lower && midi <= range.upper)) continue;
-
-            Finding finding;
-            finding.check = "voiceRange";
-            finding.severity = "warning";
-            finding.direction = midi > range.upper ? "above" : "below";
-            finding.lowerVoice = voice;
-            finding.upperVoice = voice;
-            finding.startLine = token->getLineNumber();
-            finding.endLine = finding.startLine;
-            finding.startPosition = humNumToString(token->getDurationFromStart());
-            finding.endPosition = finding.startPosition;
-            findings.push_back(std::move(finding));
-        }
-    }
-    return findings;
+    return runFindingQueries(chorale, buildVoiceRangeQueries(voiceRanges(ranges)));
 }
 
 std::vector<Finding> runChecks(const HumdrumChorale& chorale, VoiceRangeSet ranges, bool allowStepwiseHiddenMotion) {
