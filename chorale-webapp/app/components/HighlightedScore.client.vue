@@ -81,20 +81,24 @@ function backgroundBehind(elem) {
 // the notes scrolling underneath do not show through. It sits above the markers (up to z-30).
 function useStickySystemStart({ scoreContainer, wrapperElem, horizontal }) {
     const PADDING = 8;
-    // A fade on its right edge hints that the score continues to its left; it is only shown once
-    // the score is scrolled, so it does not mark the true start of the piece.
+    // A fade on its right edge hints that the score continues to its left; it is only shown
+    // together with the copy, so it does not mark the true start of the piece.
     const FADE_WIDTH = 28;
-    const FADE_DISTANCE = 40;
 
     const elem = useTemplateRef('stickySystemStartElem');
     const style = reactive({ width: '0px', height: '0px', backgroundColor: '#fff' });
     const scrollLeft = ref(0);
+    // The copy only takes over once the real system start has scrolled out of view. Before that
+    // it would cover markers reaching left of the first note (a segment at the start of the
+    // piece), which then jump as soon as the score is scrolled by a pixel.
+    const visible = computed(() => scrollLeft.value >= (parseFloat(style.width) || 0));
+
     const fadeStyle = computed(() => ({
         left: '100%',
         width: `${FADE_WIDTH}px`,
         height: style.height,
         backgroundImage: `linear-gradient(to right, ${style.backgroundColor}, transparent)`,
-        opacity: Math.min(scrollLeft.value / FADE_DISTANCE, 1),
+        opacity: visible.value ? 1 : 0,
     }));
 
     function onScroll() {
@@ -156,15 +160,16 @@ function useStickySystemStart({ scoreContainer, wrapperElem, horizontal }) {
 
     function containsPoint(x, y) {
         const rect = elem.value?.getBoundingClientRect();
-        return !!rect?.width && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        return visible.value && !!rect?.width && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
     }
 
-    return { style, fadeStyle, update, onScroll, containsPoint };
+    return { style, fadeStyle, visible, update, onScroll, containsPoint };
 }
 
 const {
     style: stickySystemStartStyle,
     fadeStyle: stickySystemStartFadeStyle,
+    visible: stickySystemStartVisible,
     update: updateStickySystemStart,
     onScroll,
     containsPoint: stickySystemStartContainsPoint,
@@ -288,8 +293,8 @@ onMounted(async () => {
     <div class="relative" :class="horizontal && 'overflow-x-auto'" ref="wrapperElem" :key="horizontal ? 'horizontal' : 'vertical'" @click="onClick" @scroll.passive="onScroll">
         <div class="relative" :class="horizontal && 'w-max min-w-full'">
             <div v-if="horizontal" class="sticky left-0 z-40 h-0" :style="{ width: stickySystemStartStyle.width }">
-                <div ref="stickySystemStartElem" class="overflow-hidden" :style="stickySystemStartStyle" />
-                <div class="absolute top-0 pointer-events-none" :style="stickySystemStartFadeStyle" />
+                <div ref="stickySystemStartElem" class="overflow-hidden transition-opacity duration-150" :class="!stickySystemStartVisible && 'opacity-0'" :style="stickySystemStartStyle" />
+                <div class="absolute top-0 pointer-events-none transition-opacity duration-150" :style="stickySystemStartFadeStyle" />
             </div>
             <div class="absolute h-full top-0 left-0 overflow-hidden" :class="!horizontal && 'w-full'" ref="markerContainer" :key="scoreKey" :style="markerContainerStyle">
                 <template v-if="scoreContainer">
