@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <optional>
 #include <regex>
 #include <sstream>
 
@@ -103,6 +104,25 @@ bool isValidDurationValue(const std::string& v) {
     return std::regex_match(v, re);
 }
 
+// The pitch a kern comparison measures against: a **kern pitch without rhythm or fermata. Humlib
+// reads the octave off the number of letters and calls a pitch that mixes upper and lower case
+// invalid (Convert::kernToOctaveNumber), and **kern writes the register as one letter repeated,
+// so "gg" and "GG" are pitches and "gG" and "gf" are not. An accidental is sharps or flats of
+// one kind, or a natural.
+bool isValidKernPitchValue(const std::string& v) {
+    static const std::regex re(R"(^([A-Ga-g])\1*(?:#+|-+|n)?$)");
+    return std::regex_match(v, re);
+}
+
+// The size of an interval to compare with: a diatonic number from 1 to 999 and, optionally, the
+// quality the interval has ("M3", "P5", "A4"). Without one the number alone is compared; with
+// one, the size in semitones is, which is why a quality a number cannot have ("P3") is rejected.
+bool isValidIntervalSize(const std::string& quality, const std::string& number) {
+    if (number.empty()) return false;
+    if (quality.empty()) return true;
+    return isValidIntervalQuality(quality, std::stoi(number));
+}
+
 // Strips a leading '!' negation prefix (see AttributeMatcher.cpp / docs/patterns#negating-a-feature)
 // if present. A lone "!" isn't treated as a prefix -- there'd be nothing left to negate --
 // matching AttributeMatcher.cpp's own negate-detection.
@@ -134,6 +154,51 @@ bool isKnownPatternKey(const std::string& rawKey) {
     std::string key = stripNegationPrefix(rawKey);
     return isKnownDrivingFeature(key) || key == "duration" || key == "fermata" || key == "phrase" ||
            isHintRelativeKey(key) || isHintWildcardKey(key);
+}
+
+std::optional<int> intervalSizeInSemitones(const std::string& quality, int number) {
+    if (number < 1) return std::nullopt;
+    static const int kMajorOrPerfectSemitones[7] = {0, 2, 4, 5, 7, 9, 11};
+    const int degree = (number - 1) % 7;
+    const int octaves = (number - 1) / 7;
+    // A unison, fourth and fifth (and their octaves) are perfect; the rest are major or minor.
+    const bool perfectClass = degree == 0 || degree == 3 || degree == 4;
+    const int base = kMajorOrPerfectSemitones[degree] + 12 * octaves;
+
+    if (quality == "P") return perfectClass ? std::optional<int>(base) : std::nullopt;
+    if (quality == "M") return perfectClass ? std::nullopt : std::optional<int>(base);
+    if (quality == "m") return perfectClass ? std::nullopt : std::optional<int>(base - 1);
+
+    // Augmented raises either class by a semitone per letter; diminished lowers a perfect interval
+    // by one per letter, and a major one by one more than that, past the minor.
+    const auto allOf = [&](char c) { return !quality.empty() && quality.find_first_not_of(c) == std::string::npos; };
+    const int letters = static_cast<int>(quality.size());
+    if (letters > 3) return std::nullopt;
+    if (allOf('A')) return base + letters;
+    if (allOf('d')) return perfectClass ? base - letters : base - letters - 1;
+    return std::nullopt;
+}
+
+bool isValidIntervalQuality(const std::string& quality, int number) {
+    return intervalSizeInSemitones(quality, number).has_value();
+}
+
+bool supportsComparison(const std::string& rawKey) {
+    std::string key = stripNegationPrefix(rawKey);
+    return key == "kern" || key == "duration" || key == "mint" || isHintFlavoredKey(key);
+}
+
+bool isValidComparisonValue(const std::string& rawKey, const std::string& value) {
+    std::string key = stripNegationPrefix(rawKey);
+    // [sign][quality]number: only mint compares in a direction, and the hint keys are never signed.
+    static const std::regex mintRe(R"(^([+-]?)([A-Za-z]*)([1-9]\d{0,2})$)");
+    static const std::regex hintRe(R"(^()([A-Za-z]*)([1-9]\d{0,2})$)");
+    std::smatch m;
+    if (key == "kern") return isValidKernPitchValue(value);
+    if (key == "duration") return isValidDurationValue(value);
+    if (key == "mint") return std::regex_match(value, m, mintRe) && isValidIntervalSize(m[2].str(), m[3].str());
+    if (isHintFlavoredKey(key)) return std::regex_match(value, m, hintRe) && isValidIntervalSize(m[2].str(), m[3].str());
+    return false;
 }
 
 bool isValidMintComplementationValue(const std::string& value) {

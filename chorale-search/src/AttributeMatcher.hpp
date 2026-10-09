@@ -55,7 +55,7 @@ private:
     // judged at all because the spine or token it needs isn't there -- that fails the
     // position outright, negation included.
     std::optional<bool> matchKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
-                                  const std::string& rawKey, const std::vector<std::string>& allowed) const;
+                                  const std::string& rawKey, const std::vector<PatternValue>& allowed) const;
 
     // Consumes one or more consecutive onsets starting at onsets[onsetIndex] that together
     // make up one "logical note" for this pattern position, until their summed duration hits
@@ -73,7 +73,7 @@ private:
     // helpers. Same contract as matchKey otherwise: negation applied, nullopt when the key
     // can't be judged at all.
     std::optional<bool> matchReAttackKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
-                                          const std::string& rawKey, const std::vector<std::string>& allowed) const;
+                                          const std::string& rawKey, const std::vector<PatternValue>& allowed) const;
 
     // The converse of matchSplitPosition: consumes one or more consecutive pattern positions
     // starting at m_pattern[patternIndex] that together describe the single onset `tok`,

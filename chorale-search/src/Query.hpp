@@ -2,15 +2,64 @@
 
 #include <map>
 #include <optional>
+#include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
 namespace choralesearch {
 
+// How a pattern value is held against what the score has. EqualTo is the feature's own matching
+// (a literal, or the partial forms the feature pages describe); the other four order the score's
+// value against the one given. Named after Symfony's comparison constraints.
+enum class ComparisonOperator { EqualTo, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual };
+
+// One acceptable value of a pattern key, and how it is held against the score.
+struct PatternValue {
+    ComparisonOperator comparisonOperator = ComparisonOperator::EqualTo;
+    std::string text;
+
+    PatternValue() = default;
+    // Both string types, because a braced list of string literals, {"4", "8"}, would otherwise need
+    // two implicit conversions per entry, const char* to std::string to PatternValue.
+    PatternValue(const char* value) : text(value) {}
+    PatternValue(std::string value) : text(std::move(value)) {}
+    PatternValue(ComparisonOperator o, std::string value) : comparisonOperator(o), text(std::move(value)) {}
+
+    // Whether the value is held against the score with a relational operator (greater than "4", at most
+    // "g"), rather than being matched by the feature's own rules as EqualTo is.
+    bool hasRelationalOperator() const { return comparisonOperator != ComparisonOperator::EqualTo; }
+    bool operator==(const PatternValue& other) const {
+        return comparisonOperator == other.comparisonOperator && text == other.text;
+    }
+};
+
+inline const char* comparisonOperatorName(ComparisonOperator comparisonOperator) {
+    switch (comparisonOperator) {
+        case ComparisonOperator::EqualTo: return "equalTo";
+        case ComparisonOperator::GreaterThan: return "greaterThan";
+        case ComparisonOperator::GreaterThanOrEqual: return "greaterThanOrEqual";
+        case ComparisonOperator::LessThan: return "lessThan";
+        case ComparisonOperator::LessThanOrEqual: return "lessThanOrEqual";
+    }
+    return "equalTo";
+}
+
+// For diagnostics (test failure messages): the plain string, or "greaterThan 4" for an order comparison.
+inline std::ostream& operator<<(std::ostream& os, const PatternValue& value) {
+    if (value.hasRelationalOperator()) os << comparisonOperatorName(value.comparisonOperator) << " ";
+    return os << value.text;
+}
+
+// The list of values that is a string list's EqualTo entries.
+inline std::vector<PatternValue> toPatternValues(const std::vector<std::string>& texts) {
+    return std::vector<PatternValue>(texts.begin(), texts.end());
+}
+
 // feature name -> OR-list of acceptable values ("*" anywhere in the list = wildcard)
-using AttributeMap = std::map<std::string, std::vector<std::string>>;
+using AttributeMap = std::map<std::string, std::vector<PatternValue>>;
 
 // What AttributeMatcher is allowed to treat as equal beyond a literal comparison
 struct MatcherOptions {
@@ -135,6 +184,12 @@ struct Query {
     std::string simultaneousAlignment = "start";
 };
 
+// A plain string for an EqualTo value, the {"operator", "value"} object for an order comparison.
+inline nlohmann::json patternValueToJson(const PatternValue& value) {
+    if (!value.hasRelationalOperator()) return value.text;
+    return {{"operator", comparisonOperatorName(value.comparisonOperator)}, {"value", value.text}};
+}
+
 inline nlohmann::json patternToJson(const std::vector<AttributeMap>& pattern) {
     nlohmann::json arr = nlohmann::json::array();
     for (const auto& position : pattern) {
@@ -144,8 +199,12 @@ inline nlohmann::json patternToJson(const std::vector<AttributeMap>& pattern) {
             // as, not as a one-entry OR-list -- the two mean the same thing (see
             // docs/patterns#values), and the array form only earns its brackets with a choice
             // in it.
-            if (values.size() == 1) posJson[key] = values.front();
-            else posJson[key] = values;
+            if (values.size() == 1) posJson[key] = patternValueToJson(values.front());
+            else {
+                nlohmann::json list = nlohmann::json::array();
+                for (const PatternValue& value : values) list.push_back(patternValueToJson(value));
+                posJson[key] = std::move(list);
+            }
         }
         arr.push_back(posJson);
     }

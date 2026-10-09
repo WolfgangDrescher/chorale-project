@@ -149,12 +149,12 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
                 if (kernToken->hasFermata()) roles.push_back("end");
                 // A note in the middle of a phrase is neither, which is how a pattern asks for it.
                 if (roles.empty()) position["!" + kPhraseKey] = {"start", "end"};
-                else position[kPhraseKey] = roles;
+                else position[kPhraseKey] = toPatternValues(roles);
             }
         }
         if (options.metricPositions) {
             if (hum::HTp metweightToken = findTokenAtLine(chorale.spine(kMetweightFeature, voice), lineNumber)) {
-                position[kMetweightFeature] = equivalentMetricWeights(std::string(*metweightToken));
+                position[kMetweightFeature] = toPatternValues(equivalentMetricWeights(std::string(*metweightToken)));
             }
         }
         if (crossReferenceHintPairs) {

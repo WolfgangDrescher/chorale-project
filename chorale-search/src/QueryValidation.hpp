@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,28 @@ bool isKnownPatternKey(const std::string& key);
 // the empty string are the caller's responsibility to handle first -- this only judges the
 // feature-specific grammar.
 bool isValidPatternValue(const std::string& key, const std::string& value);
+
+// The size of an interval in semitones, from its quality ("P", "M", "m", "A", "d", doubled or
+// tripled for "AA"/"dd") and its diatonic number, compound intervals included: "M" and 3 is 4,
+// "P" and 8 is 12, "m" and 10 is 15. nullopt where there is no such interval, a perfect third or
+// a major fifth, and for any other letters.
+std::optional<int> intervalSizeInSemitones(const std::string& quality, int number);
+
+// True if an interval of that diatonic number can have that quality: perfect for a unison,
+// fourth, fifth and their octaves, major or minor for the rest, augmented or diminished for all.
+bool isValidIntervalQuality(const std::string& quality, int number);
+
+// True if a pattern key can be ordered (greater than, less than) instead of matched for
+// equality: kern (the pitch), duration, mint and the hint keys (the interval size). `key` may
+// carry a leading '!' negation, same as isKnownPatternKey.
+bool supportsComparison(const std::string& key);
+
+// True if `value` is a legal value to compare `key` against (already known-good per
+// supportsComparison): a pitch ("g", "f#", "BB-") for kern, a recip duration ("4", "4.") for
+// duration, an interval size for mint and the hint keys: a diatonic number ("3", mint also
+// "+3"/"-3" to compare in a direction), or the number with the quality of the interval
+// ("m3", "+P5", "A4") to compare the size in semitones.
+bool isValidComparisonValue(const std::string& key, const std::string& value);
 
 // True if `value` is a legal entry of the "mintAllowIntervalComplementation" option: a single
 // diatonic number "1"-"8" (the simple intervals, the only ones with a complement inside the

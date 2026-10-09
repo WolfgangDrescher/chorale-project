@@ -7,8 +7,12 @@ using choralesearch::isKnownDrivingFeature;
 using choralesearch::isKnownPatternKey;
 using choralesearch::isKnownQueryKey;
 using choralesearch::isKnownSimultaneousGroupKey;
+using choralesearch::intervalSizeInSemitones;
+using choralesearch::isValidIntervalQuality;
+using choralesearch::isValidComparisonValue;
 using choralesearch::isValidMintComplementationValue;
 using choralesearch::isValidPatternValue;
+using choralesearch::supportsComparison;
 
 TEST_CASE(is_known_simultaneous_group_key_accepts_every_shared_field) {
     for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
@@ -275,6 +279,98 @@ TEST_CASE(is_valid_mint_complementation_value_rejects_compound_and_non_numeric_v
     for (const std::string& v : {"0", "9", "10", "", "P5", "+5", "5 4"}) {
         CHECK(!isValidMintComplementationValue(v));
     }
+}
+
+TEST_CASE(supports_comparison_for_pitch_duration_and_interval_size_only) {
+    for (const std::string& key : {"kern", "duration", "mint", "hint-14", "hint-2", "hint-*4", "!kern", "!hint-14"}) {
+        CHECK(supportsComparison(key));
+    }
+    for (const std::string& key : {"deg", "fb", "metweight", "fermata", "phrase", "!deg", "hint", "bogus"}) {
+        CHECK(!supportsComparison(key));
+    }
+}
+
+TEST_CASE(is_valid_comparison_value_for_kern_is_a_pitch) {
+    for (const std::string& v : {"g", "GG", "f#", "bb-", "c##", "dn", "F--"}) CHECK(isValidComparisonValue("kern", v));
+    // Rhythm, fermata and rests are not pitches; nor is a mix of cases or of letters, which humlib
+    // already calls invalid (Convert::kernToOctaveNumber).
+    for (const std::string& v : {"4", "4g", "r", "g;", "gG", "gf", "h", "", "*", "#", "c#-"}) {
+        CHECK(!isValidComparisonValue("kern", v));
+    }
+}
+
+TEST_CASE(is_valid_comparison_value_for_duration_is_a_recip_length) {
+    for (const std::string& v : {"1", "4", "4.", "8..", "3%2"}) CHECK(isValidComparisonValue("duration", v));
+    for (const std::string& v : {"g", "", "*", "-4", "4;"}) CHECK(!isValidComparisonValue("duration", v));
+}
+
+TEST_CASE(is_valid_comparison_value_for_mint_is_an_interval_size_with_an_optional_sign) {
+    for (const std::string& v : {"3", "+3", "-3", "10", "M3", "+m6", "-P8", "A4", "+AA4", "dd5"}) {
+        CHECK(isValidComparisonValue("mint", v));
+    }
+    // No bare sign or quality, no zero, and no quality the number cannot have.
+    for (const std::string& v : {"+", "-", "M", "0", "", "*", "[gg]", "P3", "M5", "m4", "X3", "AAAA4", "1000"}) {
+        CHECK(!isValidComparisonValue("mint", v));
+    }
+}
+
+TEST_CASE(is_valid_comparison_value_for_hint_is_an_unsigned_interval_size) {
+    for (const std::string& key : {"hint-14", "hint-2", "hint-**"}) {
+        CHECK(isValidComparisonValue(key, "10"));
+        CHECK(isValidComparisonValue(key, "M10"));
+        CHECK(isValidComparisonValue(key, "A4"));
+        CHECK(!isValidComparisonValue(key, "+3"));
+        CHECK(!isValidComparisonValue(key, "P3"));
+        CHECK(!isValidComparisonValue(key, "0"));
+    }
+}
+
+TEST_CASE(is_valid_comparison_value_rejects_a_key_that_cannot_be_compared) {
+    CHECK(!isValidComparisonValue("deg", "1"));
+    CHECK(!isValidComparisonValue("fb", "3"));
+}
+
+TEST_CASE(interval_size_in_semitones_counts_simple_and_compound_intervals) {
+    CHECK_EQ(*intervalSizeInSemitones("P", 1), 0);
+    CHECK_EQ(*intervalSizeInSemitones("m", 2), 1);
+    CHECK_EQ(*intervalSizeInSemitones("M", 3), 4);
+    CHECK_EQ(*intervalSizeInSemitones("P", 5), 7);
+    CHECK_EQ(*intervalSizeInSemitones("m", 6), 8);
+    CHECK_EQ(*intervalSizeInSemitones("M", 7), 11);
+    CHECK_EQ(*intervalSizeInSemitones("P", 8), 12);
+    CHECK_EQ(*intervalSizeInSemitones("m", 10), 15);
+    CHECK_EQ(*intervalSizeInSemitones("P", 15), 24);
+}
+
+TEST_CASE(interval_size_in_semitones_applies_augmented_and_diminished) {
+    CHECK_EQ(*intervalSizeInSemitones("A", 4), 6);
+    CHECK_EQ(*intervalSizeInSemitones("d", 5), 6); // the tritone either way
+    CHECK_EQ(*intervalSizeInSemitones("A", 2), 3);
+    CHECK_EQ(*intervalSizeInSemitones("d", 3), 2);
+    CHECK_EQ(*intervalSizeInSemitones("AA", 4), 7);
+    CHECK_EQ(*intervalSizeInSemitones("dd", 5), 5);
+}
+
+TEST_CASE(interval_size_in_semitones_rejects_a_quality_the_number_cannot_have) {
+    CHECK(!intervalSizeInSemitones("P", 3));
+    CHECK(!intervalSizeInSemitones("M", 5));
+    CHECK(!intervalSizeInSemitones("m", 4));
+    CHECK(!intervalSizeInSemitones("X", 3));
+    CHECK(!intervalSizeInSemitones("", 3));
+    CHECK(!intervalSizeInSemitones("Ad", 3));
+    CHECK(!intervalSizeInSemitones("P", 0));
+}
+
+TEST_CASE(is_valid_interval_quality_pairs_the_quality_with_the_kind_of_interval) {
+    CHECK(isValidIntervalQuality("P", 5));
+    CHECK(isValidIntervalQuality("P", 11));
+    CHECK(isValidIntervalQuality("M", 6));
+    CHECK(isValidIntervalQuality("m", 7));
+    CHECK(isValidIntervalQuality("A", 4));
+    CHECK(isValidIntervalQuality("dd", 2));
+    CHECK(!isValidIntervalQuality("P", 6));
+    CHECK(!isValidIntervalQuality("M", 4));
+    CHECK(!isValidIntervalQuality("", 4));
 }
 
 TEST_MAIN()

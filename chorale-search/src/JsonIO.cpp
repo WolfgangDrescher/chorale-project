@@ -2,7 +2,11 @@
 #include "QueryValidation.hpp"
 #include "VoiceMap.hpp"
 
+#include <algorithm>
+#include <optional>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace choralesearch {
 
@@ -20,26 +24,85 @@ void rejectUnknownKeys(const nlohmann::json& j, bool (*isKnown)(const std::strin
     }
 }
 
-std::vector<std::string> attributeValueFromJson(const nlohmann::json& v, const std::string& key, const std::string& context) {
-    std::vector<std::string> values;
+// Every way a query may spell an order comparison: the name of the constraint, its abbreviation, or
+// the symbol. "equalTo" is not among them, an equal value is the plain string.
+const std::vector<std::pair<std::vector<std::string>, ComparisonOperator>> kComparisonOperatorSpellings = {
+    {{"greaterThan", "gt", ">"}, ComparisonOperator::GreaterThan},
+    {{"greaterThanOrEqual", "gte", ">="}, ComparisonOperator::GreaterThanOrEqual},
+    {{"lessThan", "lt", "<"}, ComparisonOperator::LessThan},
+    {{"lessThanOrEqual", "lte", "<="}, ComparisonOperator::LessThanOrEqual},
+};
+
+std::optional<ComparisonOperator> parseComparisonOperator(const std::string& spelling) {
+    for (const auto& [spellings, comparisonOperator] : kComparisonOperatorSpellings) {
+        if (std::find(spellings.begin(), spellings.end(), spelling) != spellings.end()) return comparisonOperator;
+    }
+    return std::nullopt;
+}
+
+// {"operator": "gt", "value": "4"}: one order comparison, which is one entry of the OR-list like
+// any string. Anything else in the object, or a value that is not a plain string (a list of them
+// would only ever mean its smallest or largest, write one entry per comparison instead), is an
+// error rather than something to guess at.
+PatternValue comparisonFromJson(const nlohmann::json& v, const std::string& key, const std::string& context) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+        if (it.key() != "operator" && it.key() != "value") {
+            throw std::invalid_argument(context + ": a comparison has an unknown field '" + it.key() +
+                                         "' (only 'operator' and 'value')");
+        }
+    }
+    if (!v.contains("operator") || !v["operator"].is_string()) {
+        throw std::invalid_argument(context + ": a comparison needs a string field 'operator'");
+    }
+    if (!v.contains("value")) throw std::invalid_argument(context + ": a comparison needs a field 'value'");
+    if (v["value"].is_array()) {
+        throw std::invalid_argument(context + ": the 'value' of a comparison must be a single string, not an array "
+                                              "(list one comparison per entry instead)");
+    }
+    if (!v["value"].is_string()) throw std::invalid_argument(context + ": the 'value' of a comparison must be a string");
+
+    const std::string spelling = v["operator"].get<std::string>();
+    const std::string text = v["value"].get<std::string>();
+    std::optional<ComparisonOperator> comparisonOperator = parseComparisonOperator(spelling);
+    if (!comparisonOperator) {
+        throw std::invalid_argument(context + ": 'operator' must be one of greaterThan (gt, >), greaterThanOrEqual "
+                                              "(gte, >=), lessThan (lt, <), lessThanOrEqual (lte, <=), got '" + spelling + "'");
+    }
+
+    if (!supportsComparison(key)) {
+        throw std::invalid_argument(context + ": '" + key + "' cannot be compared with '" + spelling +
+                                     "', only kern, duration, mint and the hint keys can");
+    }
+    if (!isValidComparisonValue(key, text)) {
+        throw std::invalid_argument(context + ": '" + text + "' is not a valid value to compare '" + key + "' with");
+    }
+    return PatternValue(*comparisonOperator, text);
+}
+
+std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const std::string& key, const std::string& context) {
+    std::vector<PatternValue> values;
     if (v.is_string()) {
-        values = {v.get<std::string>()};
+        values = {PatternValue(v.get<std::string>())};
     } else if (v.is_boolean()) {
-        values = {v.get<bool>() ? "true" : "false"};
+        values = {PatternValue(v.get<bool>() ? "true" : "false")};
+    } else if (v.is_object()) {
+        values.push_back(comparisonFromJson(v, key, context));
     } else if (v.is_array()) {
         for (const auto& entry : v) {
-            if (!entry.is_string()) throw std::invalid_argument(context + ": array entries must be strings");
-            values.push_back(entry.get<std::string>());
+            if (entry.is_string()) values.emplace_back(entry.get<std::string>());
+            else if (entry.is_object()) values.push_back(comparisonFromJson(entry, key, context));
+            else throw std::invalid_argument(context + ": array entries must be strings or comparison objects");
         }
         if (values.empty()) throw std::invalid_argument(context + ": OR-list must not be empty");
     } else {
-        throw std::invalid_argument(context + ": must be a string, boolean, or an array of strings");
+        throw std::invalid_argument(context + ": must be a string, boolean, comparison object, or an array of them");
     }
 
-    for (const std::string& value : values) {
-        if (value == "*") continue; // universal wildcard, valid for any key
-        if (value.empty() || !isValidPatternValue(key, value)) {
-            throw std::invalid_argument(context + ": '" + value + "' is not a valid '" + key + "' value");
+    for (const PatternValue& value : values) {
+        if (value.hasRelationalOperator()) continue; // already checked above
+        if (value.text == "*") continue; // universal wildcard, valid for any key
+        if (value.text.empty() || !isValidPatternValue(key, value.text)) {
+            throw std::invalid_argument(context + ": '" + value.text + "' is not a valid '" + key + "' value");
         }
     }
     return values;

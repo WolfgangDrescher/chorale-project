@@ -4,10 +4,12 @@
 
 using choralesearch::queryArrayFromJson;
 using choralesearch::queryFromJson;
+using choralesearch::PatternValue;
 using choralesearch::Result;
 using choralesearch::Query;
 using choralesearch::resultsToJson;
 using choralesearch::resultToJson;
+using choralesearch::ComparisonOperator;
 using choralesearch::resultsGroupedByChoraleToJson;
 using nlohmann::json;
 
@@ -17,7 +19,7 @@ TEST_CASE(query_from_json_parses_minimal_query) {
     CHECK_EQ(q.voices, std::string("all")); // default when omitted
     REQUIRE(q.pattern.size() == 1u);
     REQUIRE(q.pattern[0].count("deg") == 1u);
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"1"}));
+    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"1"}));
     CHECK(!q.limit.has_value());
     CHECK(!q.mintStartAtPreviousToken); // default when omitted
 }
@@ -428,18 +430,18 @@ TEST_CASE(result_to_json_includes_query_id_when_set) {
 
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
-    CHECK_EQ(q.pattern[0]["fermata"], (std::vector<std::string>{"true"}));
+    CHECK_EQ(q.pattern[0]["fermata"], (std::vector<choralesearch::PatternValue>{"true"}));
 }
 
 TEST_CASE(query_from_json_accepts_array_or_list_for_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":["1","3","5"]}]})"));
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"1", "3", "5"}));
+    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"1", "3", "5"}));
 }
 
 TEST_CASE(query_from_json_preserves_a_negated_key_as_is) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"!deg":["1","3"]}]})"));
     REQUIRE(q.pattern[0].count("!deg") == 1u);
-    CHECK_EQ(q.pattern[0]["!deg"], (std::vector<std::string>{"1", "3"}));
+    CHECK_EQ(q.pattern[0]["!deg"], (std::vector<choralesearch::PatternValue>{"1", "3"}));
 }
 
 TEST_CASE(query_from_json_requires_feature_field) {
@@ -536,7 +538,7 @@ TEST_CASE(query_from_json_rejects_a_hint_wildcard_key_with_a_non_voice_digit) {
 
 TEST_CASE(query_from_json_accepts_valid_deg_values) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":["1","4+","6--","r"]}]})"));
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"1", "4+", "6--", "r"}));
+    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"1", "4+", "6--", "r"}));
 }
 
 TEST_CASE(query_from_json_rejects_invalid_deg_values) {
@@ -550,13 +552,13 @@ TEST_CASE(query_from_json_rejects_invalid_fermata_values) {
 
 TEST_CASE(query_from_json_accepts_fermata_bool_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
-    CHECK_EQ(q.pattern[0]["fermata"], std::vector<std::string>{"true"});
+    CHECK_EQ(q.pattern[0]["fermata"], std::vector<choralesearch::PatternValue>{"true"});
 }
 
 TEST_CASE(query_from_json_accepts_every_way_to_write_a_metweight_value) {
     for (const std::string& v : {"s", "hs", "w", "u", "strong", "half-strong", "weak", "unclassified", "1", "2", "3", "4"}) {
         Query q = queryFromJson(json::parse(R"({"feature":"metweight","pattern":[{"metweight":")" + v + R"("}]})"));
-        CHECK_EQ(q.pattern[0]["metweight"], (std::vector<std::string>{v}));
+        CHECK_EQ(q.pattern[0]["metweight"], (std::vector<choralesearch::PatternValue>{v}));
     }
 }
 
@@ -566,7 +568,7 @@ TEST_CASE(query_from_json_rejects_an_invalid_metweight_value) {
 
 TEST_CASE(query_from_json_accepts_the_mint_first_note_bracket_literal) {
     Query q = queryFromJson(json::parse(R"({"feature":"mint","pattern":[{"mint":"[gg]"}]})"));
-    CHECK_EQ(q.pattern[0]["mint"], (std::vector<std::string>{"[gg]"}));
+    CHECK_EQ(q.pattern[0]["mint"], (std::vector<choralesearch::PatternValue>{"[gg]"}));
 }
 
 TEST_CASE(query_from_json_rejects_an_invalid_mint_value) {
@@ -589,7 +591,7 @@ TEST_CASE(query_from_json_rejects_an_invalid_duration_value) {
 TEST_CASE(query_from_json_accepts_wildcard_for_any_key) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"kern","pattern":[{"kern":"*","deg":"*","mint":"*","fb":"*","hint-14":"*","metweight":"*","duration":"*","fermata":"*"}]})"));
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<std::string>{"*"}));
+    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"*"}));
 }
 
 TEST_CASE(query_from_json_rejects_an_empty_pattern_value) {
@@ -770,6 +772,105 @@ TEST_CASE(results_grouped_by_chorale_to_json_handles_empty_list) {
     json obj = resultsGroupedByChoraleToJson({});
     REQUIRE(obj.is_object());
     CHECK_EQ(obj.size(), 0u);
+}
+
+// Comparisons: {"operator": "gt", "value": "4"} as one entry of a value list.
+
+TEST_CASE(query_from_json_parses_a_comparison_object) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"duration":{"operator":"gt","value":"4"}}]})"));
+    REQUIRE(q.pattern[0]["duration"].size() == 1u);
+    const PatternValue& v = q.pattern[0]["duration"][0];
+    CHECK(v.comparisonOperator == ComparisonOperator::GreaterThan);
+    CHECK_EQ(v.text, std::string("4"));
+}
+
+TEST_CASE(query_from_json_accepts_the_name_the_abbreviation_and_the_symbol_of_every_operator) {
+    struct Case { std::vector<const char*> spellings; ComparisonOperator comparisonOperator; };
+    for (const Case& c : {Case{{"greaterThan", "gt", ">"}, ComparisonOperator::GreaterThan},
+                          Case{{"greaterThanOrEqual", "gte", ">="}, ComparisonOperator::GreaterThanOrEqual},
+                          Case{{"lessThan", "lt", "<"}, ComparisonOperator::LessThan},
+                          Case{{"lessThanOrEqual", "lte", "<="}, ComparisonOperator::LessThanOrEqual}}) {
+        for (const char* spelling : c.spellings) {
+            json j = {{"feature", "kern"}, {"pattern", {{{"kern", {{"operator", spelling}, {"value", "g"}}}}}}};
+            Query q = queryFromJson(j);
+            CHECK(q.pattern[0]["kern"][0].comparisonOperator == c.comparisonOperator);
+        }
+    }
+}
+
+TEST_CASE(query_from_json_mixes_plain_values_and_comparisons_in_one_list) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"mint","pattern":[{"mint":[{"operator":"gt","value":"+3"},"P1"]}]})"));
+    REQUIRE(q.pattern[0]["mint"].size() == 2u);
+    CHECK(q.pattern[0]["mint"][0] == PatternValue(ComparisonOperator::GreaterThan, "+3"));
+    CHECK(q.pattern[0]["mint"][1] == PatternValue("P1"));
+}
+
+TEST_CASE(query_from_json_accepts_a_comparison_under_a_negated_key) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"!kern":{"operator":"lte","value":"c"}}]})"));
+    CHECK(q.pattern[0]["!kern"][0] == PatternValue(ComparisonOperator::LessThanOrEqual, "c"));
+}
+
+TEST_CASE(query_from_json_accepts_comparisons_for_hint_keys) {
+    for (const char* key : {"hint-14", "hint-2", "hint-*4"}) {
+        json j = {{"feature", "kern"}, {"pattern", {{{key, {{"operator", "gt"}, {"value", "10"}}}}}}};
+        CHECK_NOTHROW(queryFromJson(j));
+    }
+}
+
+TEST_CASE(query_from_json_rejects_a_malformed_comparison) {
+    auto parse = [](const char* position) {
+        return [position] {
+            queryFromJson(json::parse(std::string(R"({"feature":"kern","pattern":[)") + position + "]}"));
+        };
+    };
+    CHECK_THROWS(parse(R"({"duration":{"operator":"gt"}})")());                              // no value
+    CHECK_THROWS(parse(R"({"duration":{"value":"4"}})")());                                  // no operator
+    CHECK_THROWS(parse(R"({"duration":{"operator":"between","value":"4"}})")());             // unknown operator
+    CHECK_THROWS(parse(R"({"duration":{"operator":">>","value":"4"}})")());
+    CHECK_THROWS(parse(R"({"duration":{"operator":"equalTo","value":"4"}})")());            // equal is the plain string
+    CHECK_THROWS(parse(R"({"duration":{"operator":"GT","value":"4"}})")());                  // spelled exactly
+    CHECK_THROWS(parse(R"({"duration":{"operator":"gt","value":["4","1"]}})")());            // one value per comparison
+    CHECK_THROWS(parse(R"({"duration":{"operator":"gt","value":4}})")());                    // a string, like any value
+    CHECK_THROWS(parse(R"({"duration":{"operator":"gt","value":"4","extra":1}})")());        // unknown field
+    CHECK_THROWS(parse(R"({"duration":{"operator":"gt","value":"*"}})")());                  // no wildcard comparison
+    CHECK_THROWS(parse(R"({"duration":[{"operator":"gt","value":"4"},5]})")());              // not a string or an object
+}
+
+TEST_CASE(query_from_json_rejects_a_comparison_value_the_feature_cannot_compare_with) {
+    auto parse = [](const char* position) {
+        return [position] {
+            queryFromJson(json::parse(std::string(R"({"feature":"kern","pattern":[)") + position + "]}"));
+        };
+    };
+    CHECK_THROWS(parse(R"({"kern":{"operator":"gt","value":"4"}})")());      // a pitch, not a rhythm
+    CHECK_THROWS(parse(R"({"kern":{"operator":"gt","value":"4g"}})")());
+    CHECK_THROWS(parse(R"({"kern":{"operator":"gt","value":"gG"}})")());     // upper and lower case do not mix
+    CHECK_THROWS(parse(R"({"mint":{"operator":"gt","value":"P3"}})")());     // no perfect third
+    CHECK_THROWS(parse(R"({"mint":{"operator":"gt","value":"+"}})")());      // a size is needed
+    CHECK_THROWS(parse(R"({"hint-14":{"operator":"gt","value":"+3"}})")()); // never signed
+    CHECK_THROWS(parse(R"({"hint-14":{"operator":"gt","value":"M5"}})")()); // no major fifth
+    CHECK_THROWS(parse(R"({"duration":{"operator":"gt","value":"g"}})")());
+}
+
+TEST_CASE(query_from_json_rejects_a_comparison_on_a_feature_that_cannot_be_compared) {
+    for (const char* key : {"deg", "fb", "metweight", "fermata", "phrase", "!deg"}) {
+        json j = {{"feature", "kern"}, {"pattern", {{{key, {{"operator", "gt"}, {"value", "1"}}}}}}};
+        CHECK_THROWS(queryFromJson(j));
+    }
+}
+
+TEST_CASE(query_to_json_writes_a_comparison_back_as_the_object_it_came_from) {
+    // Whichever way the operator was spelled, it is written back as the name of the constraint.
+    json in = json::parse(R"({"feature":"mint","voices":"all","pattern":[
+        {"mint":[{"operator":">=","value":"-m3"},"P1"],"duration":{"operator":"lt","value":"4"}}]})");
+    json out = choralesearch::queryToJson(queryFromJson(in));
+    CHECK_EQ(out["pattern"][0]["duration"], json::parse(R"({"operator":"lessThan","value":"4"})"));
+    CHECK_EQ(out["pattern"][0]["mint"], json::parse(R"([{"operator":"greaterThanOrEqual","value":"-m3"},"P1"])"));
+    // And what was written reads back as the same query.
+    CHECK_EQ(choralesearch::queryToJson(queryFromJson(out)), out);
 }
 
 TEST_MAIN()

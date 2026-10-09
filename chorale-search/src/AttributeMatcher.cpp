@@ -1,5 +1,6 @@
 #include "AttributeMatcher.hpp"
 #include "HumdrumUtils.hpp"
+#include "QueryValidation.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -7,6 +8,7 @@
 #include <optional>
 #include <regex>
 #include <sstream>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -85,12 +87,58 @@ std::optional<std::string> resolveHintRelativeKey(const std::string& key, std::s
     return "hint-" + std::to_string(lower) + std::to_string(upper);
 }
 
-bool isWildcard(const std::vector<std::string>& allowed) {
-    return std::find(allowed.begin(), allowed.end(), "*") != allowed.end();
+bool isWildcard(const std::vector<PatternValue>& allowed) {
+    return std::any_of(allowed.begin(), allowed.end(), [](const PatternValue& v) { return v.text == "*"; });
 }
 
-bool inList(const std::vector<std::string>& allowed, const std::string& actual) {
-    return std::find(allowed.begin(), allowed.end(), actual) != allowed.end();
+bool inList(const std::vector<PatternValue>& allowed, const std::string& actual) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return v.text == actual; });
+}
+
+// Whether a list of diatonic numbers (mintAllowIntervalComplementation) names `number`, or "*" for all.
+bool containsNumberOrWildcard(const std::vector<std::string>& allowedNumbers, const std::string& number) {
+    return std::find(allowedNumbers.begin(), allowedNumbers.end(), "*") != allowedNumbers.end() ||
+           std::find(allowedNumbers.begin(), allowedNumbers.end(), number) != allowedNumbers.end();
+}
+
+// Whether `actual` stands in the relation `comparisonOperator` names to `threshold`:
+// GreaterThan is actual > threshold.
+template <typename T>
+bool evaluateComparison(ComparisonOperator comparisonOperator, const T& actual, const T& threshold) {
+    switch (comparisonOperator) {
+        case ComparisonOperator::GreaterThan: return actual > threshold;
+        case ComparisonOperator::GreaterThanOrEqual: return actual >= threshold;
+        case ComparisonOperator::LessThan: return actual < threshold;
+        case ComparisonOperator::LessThanOrEqual: return actual <= threshold;
+        case ComparisonOperator::EqualTo: break;
+    }
+    return actual == threshold;
+}
+
+// A "duration" pattern's values against how long the onset sounds. An equal value is judged by
+// its recip spelling like it always was; a comparison by the length that spelling stands for,
+// so ">4" is "longer than a quarter" and ">4." "longer than a dotted quarter".
+bool durationInList(const std::vector<PatternValue>& allowed, hum::HumNum duration) {
+    std::string recip;
+    for (const PatternValue& v : allowed) {
+        if (v.hasRelationalOperator()) {
+            if (evaluateComparison(v.comparisonOperator, duration, hum::Convert::recipToDuration(v.text))) return true;
+            continue;
+        }
+        if (recip.empty()) recip = hum::Convert::durationToRecip(duration);
+        if (v.text == recip) return true;
+    }
+    return false;
+}
+
+// Whether a position's "duration" is nothing but exact lengths to divide notes up by or add notes up
+// to (see durationAllowSplitNotes / durationAllowMergedNotes). Not the wildcard, and not a list with a
+// relational operator in it, even next to exact lengths: that one describes a whole note and has no
+// length to work toward, so such a position is judged on the single note it lands on.
+bool hasOnlyExactDurations(const AttributeMap& position) {
+    auto it = position.find(kDurationKey);
+    return it != position.end() && !isWildcard(it->second) &&
+           std::none_of(it->second.begin(), it->second.end(), [](const PatternValue& v) { return v.hasRelationalOperator(); });
 }
 
 // Extracts the pitch+accidental from a **kern token (e.g. "f#" from "8f#L"), ignoring
@@ -148,10 +196,22 @@ bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok, bool 
     return true;
 }
 
-bool kernInList(const std::vector<std::string>& allowed, hum::HTp actualTok, bool ignoreOctave,
+// A comparison of the note's pitch (GreaterThan "g" is "higher than g"), judged by sound: the MIDI
+// note number, which counts the octave and gives enharmonic spellings the same height, so c# is
+// neither higher nor lower than d-. A rest has no pitch to compare, and kernIgnoreOctave has no
+// say: a pitch class is neither higher nor lower than another.
+bool kernComparisonMatches(const PatternValue& v, hum::HTp actualTok) {
+    std::string pitch = kernToPitch(std::string(*actualTok));
+    if (pitch.empty() || pitch == "r") return false;
+    return evaluateComparison(v.comparisonOperator, hum::Convert::kernToMidiNoteNumber(pitch),
+                                hum::Convert::kernToMidiNoteNumber(v.text));
+}
+
+bool kernInList(const std::vector<PatternValue>& allowed, hum::HTp actualTok, bool ignoreOctave,
                  hum::HumNum duration) {
-    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        return kernValueMatches(v, actualTok, ignoreOctave, duration);
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) {
+        if (v.hasRelationalOperator()) return kernComparisonMatches(v, actualTok);
+        return kernValueMatches(v.text, actualTok, ignoreOctave, duration);
     });
 }
 
@@ -224,7 +284,7 @@ bool mintComplementationAllowedFor(const std::vector<std::string>& allowedNumber
     if (!parsed) return false;
     const std::string& number = std::get<2>(*parsed);
     if (number.empty()) return false;
-    return isWildcard(allowedNumbers) || inList(allowedNumbers, number);
+    return containsNumberOrWildcard(allowedNumbers, number);
 }
 
 // A **mint pattern or token with its interval number folded within an octave, sign and quality
@@ -237,15 +297,72 @@ std::string reduceMintValue(const std::string& value) {
     return sign + reduceHintInterval(quality + number);
 }
 
-bool mintInList(const std::vector<std::string>& allowed, const std::string& actual,
+// An interval as a mint token or a pattern value writes it: [direction][quality]number.
+struct IntervalParts {
+    std::string direction; // "+", "-" or empty
+    std::string quality;   // "M", "P", ... or empty
+    std::string number;    // the diatonic number
+};
+
+// The size of an interval, as far as the pattern tells intervals apart. Without a quality in the
+// pattern's value ("6") every interval of that number is as wide as any other, so the steps above
+// the unison are compared; with one ("m6") the intervals are told apart by their size in semitones.
+// nullopt for a quality the number cannot have, which no interval of the score has either.
+std::optional<long> intervalSize(const IntervalParts& interval, bool inSemitones) {
+    long diatonicNumber = std::stol(interval.number);
+    if (!inSemitones) return diatonicNumber - 1;
+    std::optional<int> semitones = intervalSizeInSemitones(interval.quality, static_cast<int>(diatonicNumber));
+    if (!semitones) return std::nullopt;
+    return *semitones;
+}
+
+// Evaluates "actual <operator> threshold" for two intervals (docs/features/mint#direction). The sizes
+// are compared, and a direction in the threshold also requires the interval to go that way: GreaterThan
+// "-m6" is a descent wider than a minor sixth, and never an ascent or a unison.
+bool evaluateIntervalComparison(ComparisonOperator comparisonOperator, const IntervalParts& actual,
+                                const IntervalParts& threshold) {
+    if (actual.number.empty() || threshold.number.empty()) return false;
+    if (!threshold.direction.empty() && actual.direction != threshold.direction) return false;
+
+    bool inSemitones = !threshold.quality.empty();
+    std::optional<long> actualSize = intervalSize(actual, inSemitones);
+    std::optional<long> thresholdSize = intervalSize(threshold, inSemitones);
+    if (!actualSize || !thresholdSize) return false;
+    return evaluateComparison(comparisonOperator, *actualSize, *thresholdSize);
+}
+
+// The first note of a voice has no interval to compare, and neither does a token that is not one.
+bool mintComparisonMatches(const PatternValue& v, const std::string& actual) {
+    auto token = parseMintValue(actual);
+    auto threshold = parseMintValue(v.text);
+    if (!token || !threshold) return false;
+    const auto& [tokenDirection, tokenQuality, tokenNumber] = *token;
+    const auto& [thresholdDirection, thresholdQuality, thresholdNumber] = *threshold;
+    return evaluateIntervalComparison(v.comparisonOperator, {tokenDirection, tokenQuality, tokenNumber},
+                                      {thresholdDirection, thresholdQuality, thresholdNumber});
+}
+
+// Whether one value of a mint pattern, with its operator, holds for the interval token `actual`. `seen` is `actual` as
+// hintReduceCompound would have it folded into the octave. An order comparison is about the
+// interval as it is in the score: folding would make "wider than an octave" mean nothing, and a
+// complement is another size by definition. Only an equal value can be complemented or folded.
+bool mintPatternValueMatches(const PatternValue& entry, const std::string& actual, const std::string& seen,
+                      const std::vector<std::string>& allowComplementationFor, bool reduceCompound) {
+    if (entry.hasRelationalOperator()) return mintComparisonMatches(entry, actual);
+
+    const std::string& v = entry.text;
+    if (mintValueMatches(reduceCompound ? reduceMintValue(v) : v, seen)) return true;
+    if (allowComplementationFor.empty()) return false; // complementation off (the default)
+    if (!mintComplementationAllowedFor(allowComplementationFor, v)) return false;
+    auto complement = complementMintValue(v);
+    return complement && mintValueMatches(*complement, seen);
+}
+
+bool mintInList(const std::vector<PatternValue>& allowed, const std::string& actual,
                  const std::vector<std::string>& allowComplementationFor, bool reduceCompound) {
     const std::string seen = reduceCompound ? reduceMintValue(actual) : actual;
-    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        if (mintValueMatches(reduceCompound ? reduceMintValue(v) : v, seen)) return true;
-        if (allowComplementationFor.empty()) return false; // complementation off (the default)
-        if (!mintComplementationAllowedFor(allowComplementationFor, v)) return false;
-        auto complement = complementMintValue(v);
-        return complement && mintValueMatches(*complement, seen);
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& entry) {
+        return mintPatternValueMatches(entry, actual, seen, allowComplementationFor, reduceCompound);
     });
 }
 
@@ -291,9 +408,9 @@ bool fbValueMatches(const std::string& patternValue, const std::string& actual, 
     return true;
 }
 
-bool fbInList(const std::vector<std::string>& allowed, const std::string& actual, bool exactChord) {
+bool fbInList(const std::vector<PatternValue>& allowed, const std::string& actual, bool exactChord) {
     return std::any_of(allowed.begin(), allowed.end(),
-                        [&](const std::string& v) { return fbValueMatches(v, actual, exactChord); });
+                        [&](const PatternValue& v) { return fbValueMatches(v.text, actual, exactChord); });
 }
 
 } // namespace
@@ -327,9 +444,22 @@ bool hintValueMatches(const std::string& patternValue, const std::string& actual
     return fbIntervalMatches(reduceHintInterval(patternValue), reduceHintInterval(actual));
 }
 
-bool hintInList(const std::vector<std::string>& allowed, const std::string& actual, bool reduceCompound) {
-    return std::any_of(allowed.begin(), allowed.end(),
-                        [&](const std::string& v) { return hintValueMatches(v, actual, reduceCompound); });
+// A hint interval is never signed, it is the distance between the two voices. Like a mint interval
+// it can be compared by its number ("10") or, with a quality ("M10"), by its size in semitones, as
+// it is in the score: hintReduceCompound does not fold it, it is meant for telling a tenth from a third.
+bool hintComparisonMatches(const PatternValue& v, const std::string& actual) {
+    auto token = parseFbValue(actual);
+    auto threshold = parseFbValue(v.text);
+    if (!token || !threshold) return false;
+    return evaluateIntervalComparison(v.comparisonOperator, {"", token->first, token->second},
+                                      {"", threshold->first, threshold->second});
+}
+
+bool hintInList(const std::vector<PatternValue>& allowed, const std::string& actual, bool reduceCompound) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) {
+        if (v.hasRelationalOperator()) return hintComparisonMatches(v, actual);
+        return hintValueMatches(v.text, actual, reduceCompound);
+    });
 }
 
 // Tool_metweight writes the **metweight spine in abbreviated form ("s"/"hs"/"w"/"u",
@@ -347,16 +477,16 @@ bool metweightValueMatches(const std::string& patternValue, const std::string& a
     return normalizeMetweightValue(patternValue) == actual;
 }
 
-bool metweightInList(const std::vector<std::string>& allowed, const std::string& actual) {
+bool metweightInList(const std::vector<PatternValue>& allowed, const std::string& actual) {
     return std::any_of(allowed.begin(), allowed.end(),
-                        [&](const std::string& v) { return metweightValueMatches(v, actual); });
+                        [&](const PatternValue& v) { return metweightValueMatches(v.text, actual); });
 }
 
 // Whether a "phrase" pattern value ("start"/"end") fits a note that does or doesn't open a phrase
 // and does or doesn't end one. A middle note has neither role: it's asked for as "!phrase".
-bool phraseInList(const std::vector<std::string>& allowed, bool starts, bool ends) {
-    for (const std::string& value : allowed) {
-        if ((value == "start" && starts) || (value == "end" && ends)) return true;
+bool phraseInList(const std::vector<PatternValue>& allowed, bool starts, bool ends) {
+    for (const PatternValue& value : allowed) {
+        if ((value.text == "start" && starts) || (value.text == "end" && ends)) return true;
     }
     return false;
 }
@@ -380,8 +510,7 @@ std::string stripNegationPrefix(const std::string& rawKey) {
 // Whether a **mint octave leap may pass for a re-attack: only for a query that opted the
 // unison-octave pair itself into complementation, P8 being P1's complement.
 bool mintOctaveIsReAttack(const std::vector<std::string>& mintAllowComplementation) {
-    return isWildcard(mintAllowComplementation) || inList(mintAllowComplementation, "1") ||
-           inList(mintAllowComplementation, "8");
+    return containsNumberOrWildcard(mintAllowComplementation, "1") || containsNumberOrWildcard(mintAllowComplementation, "8");
 }
 
 // Whether the onset whose token is `tok` (and whose interval into it is `mint`, already
@@ -406,11 +535,15 @@ bool continuesLogicalNote(const std::string& drivingFeature, hum::HTp first, hum
 // the note a merged run started on. Such a re-attack is a unison by definition -- or an
 // octave, with the same opt-in continuesLogicalNote asks for. Nothing in the score is
 // consulted: the re-attack the values describe is precisely what isn't written there.
-bool mintReAttackInList(const std::vector<std::string>& allowed,
+bool mintReAttackInList(const std::vector<PatternValue>& allowed,
                          const std::vector<std::string>& mintAllowComplementation) {
-    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
-        if (mintValueMatches(v, "P1")) return true;
-        return mintOctaveIsReAttack(mintAllowComplementation) && mintValueMatches(v, "P8");
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
+        auto matches = [&](const char* interval) {
+            return value.hasRelationalOperator() ? mintComparisonMatches(value, interval)
+                                             : mintValueMatches(value.text, interval);
+        };
+        if (matches("P1")) return true;
+        return mintOctaveIsReAttack(mintAllowComplementation) && matches("P8");
     });
 }
 
@@ -419,11 +552,14 @@ bool mintReAttackInList(const std::vector<std::string>& allowed,
 // fermata, which the onset either carries or doesn't. Only the rhythm component has to be
 // dropped: the onset's duration is the whole merged note's, not this position's share of it.
 // Constrain the share with "duration" instead, which is what the run divides the onset up by.
-bool kernReAttackInList(const std::vector<std::string>& allowed, hum::HTp tok, bool ignoreOctave) {
+bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, bool ignoreOctave) {
     // Every value below has had its rhythm component dropped one way or another, so the
     // duration handed on is never actually consulted.
     hum::HumNum duration = soundingDuration(tok);
-    return std::any_of(allowed.begin(), allowed.end(), [&](const std::string& v) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
+        // A comparison is of the pitch, which a re-attack has: the merged note's.
+        if (value.hasRelationalOperator()) return kernComparisonMatches(value, tok);
+        const std::string& v = value.text;
         auto parsed = parseKernValue(v);
         if (!parsed) return kernValueMatches(v, tok, ignoreOctave, duration); // literal markup -- no rhythm to drop
         const auto& [recip, pitch, fermata] = *parsed;
@@ -485,7 +621,21 @@ std::string mintIntervalToken(hum::HTp from, hum::HTp to) {
 }
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern, MatcherOptions options)
-    : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)), m_options(std::move(options)) {}
+    : m_drivingFeature(std::move(drivingFeature)), m_pattern(std::move(pattern)), m_options(std::move(options)) {
+    // A pattern read from JSON has been through this already, with the path to the offending value in
+    // its message. One built in code has not, and the matching below relies on it: an order
+    // comparison only ever sits under a key that can be ordered, with a value of the right kind.
+    for (const AttributeMap& position : m_pattern) {
+        for (const auto& [key, values] : position) {
+            for (const PatternValue& value : values) {
+                if (!value.hasRelationalOperator()) continue;
+                if (!supportsComparison(key) || !isValidComparisonValue(key, value.text)) {
+                    throw std::invalid_argument("'" + key + "' cannot be compared with '" + value.text + "'");
+                }
+            }
+        }
+    }
+}
 
 std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const HumdrumChorale& chorale,
                                                                     std::size_t voice) const {
@@ -544,7 +694,7 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
 
 std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
                                                 const std::string& rawKey,
-                                                const std::vector<std::string>& allowed) const {
+                                                const std::vector<PatternValue>& allowed) const {
     // A "!" prefix negates the whole position's result (De Morgan's over the OR-list:
     // {"!deg": ["3","5"]} means "neither 3 nor 5"), not individual values -- negating single
     // OR-list entries doesn't compose sensibly.
@@ -561,7 +711,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         // currently satisfies the value, e.g. "is any voice a 10th above the soprano
         // right now" -- not "are all of them".
         std::vector<std::string> pairs = expandHintPairKey(key);
-        const std::vector<std::string>& allowedRef = allowed;
+        const std::vector<PatternValue>& allowedRef = allowed;
         matched = std::any_of(pairs.begin(), pairs.end(), [&](const std::string& pairFeature) {
             hum::HTp valTok = lookupToken(chorale, 1, lineNumber, pairFeature);
             return valTok && hintInList(allowedRef, std::string(*valTok), m_options.hintReduceCompound);
@@ -605,6 +755,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
         else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
         else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave, onset.duration);
+        else if (key == kDurationKey) matched = durationInList(allowed, onset.duration);
         else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
         else matched = inList(allowed, actual);
     }
@@ -615,12 +766,12 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
                                                                  const std::vector<Onset>& onsets,
                                                                  std::size_t onsetIndex,
                                                                  const AttributeMap& position) const {
-    const std::vector<std::string>& allowedDurations = position.at(kDurationKey);
+    const std::vector<PatternValue>& allowedDurations = position.at(kDurationKey);
     if (allowedDurations.empty()) return std::nullopt;
 
     std::vector<hum::HumNum> targets;
     targets.reserve(allowedDurations.size());
-    for (const std::string& recip : allowedDurations) targets.push_back(hum::Convert::recipToDuration(recip));
+    for (const PatternValue& recip : allowedDurations) targets.push_back(hum::Convert::recipToDuration(recip.text));
     hum::HumNum maxTarget = *std::max_element(targets.begin(), targets.end());
 
     hum::HumNum sum(0);
@@ -652,7 +803,6 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
         sum += onset.duration;
 
         if (std::find(targets.begin(), targets.end(), sum) != targets.end()) {
-            std::string sumRecip = hum::Convert::durationToRecip(sum);
             for (const auto& [rawKey, allowed] : position) {
                 const std::string key = stripNegationPrefix(rawKey);
                 if (key == kFermataKey) {
@@ -667,7 +817,7 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
                 } else if (key == kDurationKey && isNegatedKey(rawKey)) {
                     // A negated duration is judged against the summed duration too, so
                     // "!duration" keeps excluding exactly what "duration" would have matched.
-                    if (isWildcard(allowed) || inList(allowed, sumRecip)) return std::nullopt;
+                    if (isWildcard(allowed) || durationInList(allowed, sum)) return std::nullopt;
                 }
             }
             return idx - onsetIndex + 1;
@@ -680,7 +830,7 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
 
 std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& chorale, std::size_t voice,
                                                         const Onset& onset, const std::string& rawKey,
-                                                        const std::vector<std::string>& allowed) const {
+                                                        const std::vector<PatternValue>& allowed) const {
     bool negate = isNegatedKey(rawKey);
     const std::string key = stripNegationPrefix(rawKey);
     hum::HTp tok = onset.token;
@@ -712,10 +862,10 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
                                                                    hum::HumNum remaining, bool isContinuation) const {
     if (patternIndex >= m_pattern.size()) return std::nullopt;
     const AttributeMap& position = m_pattern[patternIndex];
-    auto durationIt = position.find(kDurationKey);
     // Without a concrete duration there is no share of the onset this position could claim,
     // so the run cannot reach across it.
-    if (durationIt == position.end() || isWildcard(durationIt->second)) return std::nullopt;
+    if (!hasOnlyExactDurations(position)) return std::nullopt;
+    auto durationIt = position.find(kDurationKey);
 
     for (const auto& [rawKey, allowed] : position) {
         const std::string key = stripNegationPrefix(rawKey);
@@ -739,13 +889,13 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
     }
 
     auto negatedDurationIt = position.find("!" + kDurationKey);
-    for (const std::string& recip : durationIt->second) {
-        hum::HumNum value = hum::Convert::recipToDuration(recip);
+    for (const PatternValue& recip : durationIt->second) {
+        hum::HumNum value = hum::Convert::recipToDuration(recip.text);
         if (value > remaining) continue;
         // A negated duration excludes the very share this position would be claiming, so
         // "!duration" keeps excluding exactly what "duration" would have matched.
         if (negatedDurationIt != position.end() &&
-            (isWildcard(negatedDurationIt->second) || inList(negatedDurationIt->second, recip))) continue;
+            (isWildcard(negatedDurationIt->second) || durationInList(negatedDurationIt->second, value))) continue;
         if (value == remaining) return 1;
         auto rest = matchMergedPositions(chorale, voice, onset, patternIndex + 1, remaining - value, true);
         if (rest) return *rest + 1;
@@ -783,8 +933,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         bool ok = true;
         while (offset < n) {
             const AttributeMap& position = m_pattern[offset];
-            auto durationIt = position.find(kDurationKey);
-            bool concreteDuration = durationIt != position.end() && !isWildcard(durationIt->second);
+            bool concreteDuration = hasOnlyExactDurations(position);
 
             if (concreteDuration && m_options.durationAllowSplitNotes) {
                 auto consumed = matchSplitPosition(chorale, voice, onsets, idx, position);

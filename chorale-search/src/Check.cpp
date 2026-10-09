@@ -75,7 +75,7 @@ std::vector<FindingQuery> buildParallelQueries() {
                     // The interval to the lower voice, from the walked upper voice's point of view.
                     const std::string intervalKey = "hint-" + std::to_string(lower);
                     AttributeMap interval;
-                    interval[intervalKey] = kind.intervals;
+                    interval[intervalKey] = toPatternValues(kind.intervals);
 
                     Query query;
                     query.id = queryId(kind.parallelType, direction, lower, upper);
@@ -111,9 +111,9 @@ std::vector<FindingQuery> buildHiddenMotionQueries(bool allowStepwiseSoprano) {
             const AttributeMap noRest = {{"!kern", {"r"}}};
 
             AttributeMap before = noRest;
-            before["!hint-1"] = kind.intervals;
+            before["!hint-1"] = toPatternValues(kind.intervals);
             AttributeMap into;
-            into["hint-1"] = kind.intervals;
+            into["hint-1"] = toPatternValues(kind.intervals);
             if (allowStepwiseSoprano) into["!mint"] = {sign + "2", sign + "1"};
 
             Query query;
@@ -149,7 +149,7 @@ std::vector<FindingQuery> buildBassPhraseEndQueries() {
         AttributeMap position;
         position["mint"] = {move};
         position["fermata"] = {"true"};
-        position["!mint"] = cadenceSteps;
+        position["!mint"] = toPatternValues(cadenceSteps);
 
         Query query;
         query.id = queryId("bassPhraseEnd", direction, kBass, kBass);

@@ -6,12 +6,15 @@
 #include <vector>
 
 #include "AttributeMatcher.hpp"
+#include "QueryValidation.hpp"
 #include "HumdrumChorale.hpp"
 
 using choralesearch::AttributeMap;
 using choralesearch::AttributeMatcher;
 using choralesearch::HumdrumChorale;
 using choralesearch::MatcherOptions;
+using choralesearch::PatternValue;
+using choralesearch::ComparisonOperator;
 
 // General AttributeMatcher mechanics against chor029.krn: literal/duration/fermata/
 // cross-spine matching, wildcards, multi-position patterns, voice scoping. Exhaustive
@@ -1742,4 +1745,302 @@ TEST_CASE(matcher_phrase_merged_second_position_ends_a_phrase_with_the_written_n
     };
     CHECK_EQ(count({{"kern", {"a"}}, {"duration", {"4"}}, {"phrase", {"end"}}}),
               count({{"kern", {"a"}}, {"duration", {"4"}}, {"fermata", {"true"}}}));
+}
+
+// Comparisons ({"operator": "gt", "value": ...}) against chor029.krn. They split the onsets of a voice into
+// the ones beyond a threshold and the ones at or before it, so most of these check that the two halves add
+// up to the whole instead of pinning down note numbers.
+
+TEST_CASE(matcher_compares_duration_by_length) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 2).size();
+    };
+    PatternValue longerThanQuarter(ComparisonOperator::GreaterThan, "4");
+    PatternValue quarterOrLonger(ComparisonOperator::GreaterThanOrEqual, "4");
+    PatternValue quarterOrShorter(ComparisonOperator::LessThanOrEqual, "4");
+    PatternValue shorterThanQuarter(ComparisonOperator::LessThan, "4");
+
+    std::size_t all = count({{"kern", {"*"}}});
+    std::size_t quarters = count({{"duration", {"4"}}});
+    REQUIRE(quarters > 0);
+    REQUIRE(count({{"duration", {longerThanQuarter}}}) > 0);
+    CHECK_EQ(count({{"duration", {longerThanQuarter}}}) + count({{"duration", {quarterOrShorter}}}), all);
+    CHECK_EQ(count({{"duration", {shorterThanQuarter}}}) + count({{"duration", {quarterOrLonger}}}), all);
+    CHECK_EQ(count({{"duration", {quarterOrLonger}}}), count({{"duration", {longerThanQuarter}}}) + quarters);
+}
+
+TEST_CASE(matcher_compares_duration_by_the_sounding_length_of_tied_notes) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 2).size();
+    };
+    // "[4G" tied to "8GL]" sounds as a dotted quarter: longer than a quarter, but neither shorter nor
+    // longer than a dotted one.
+    std::size_t dotted = count({{"duration", {"4."}}});
+    REQUIRE(dotted > 0);
+    CHECK(count({{"duration", {{ComparisonOperator::GreaterThan, "4"}}}}) >= dotted);
+    CHECK_EQ(count({{"!duration", {{ComparisonOperator::LessThan, "4."}, {ComparisonOperator::GreaterThan, "4."}}}}),
+              dotted);
+}
+
+TEST_CASE(matcher_a_comparison_in_an_or_list_is_one_more_choice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 2).size();
+    };
+    CHECK_EQ(count({{"duration", {{ComparisonOperator::GreaterThan, "4"}, "4"}}}),
+              count({{"duration", {{ComparisonOperator::GreaterThanOrEqual, "4"}}}}));
+}
+
+TEST_CASE(matcher_a_range_is_a_key_and_its_negation_in_one_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 2).size();
+    };
+    // From an eighth up to a quarter: at least an eighth, and not longer than a quarter.
+    AttributeMap eighthToQuarter{{"duration", {{ComparisonOperator::GreaterThanOrEqual, "8"}}},
+                                 {"!duration", {{ComparisonOperator::GreaterThan, "4"}}}};
+    std::size_t eighths = count({{"duration", {"8"}}});
+    std::size_t quarters = count({{"duration", {"4"}}});
+    REQUIRE(eighths > 0);
+    REQUIRE(quarters > 0);
+    CHECK_EQ(count(eighthToQuarter), eighths + quarters);
+}
+
+TEST_CASE(matcher_duration_comparisons_leave_split_and_merged_notes_alone) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // The options divide notes up by or add them up to a length, which a comparison does not name.
+    MatcherOptions options;
+    options.durationAllowSplitNotes = true;
+    options.durationAllowMergedNotes = true;
+    AttributeMap longer{{"duration", {{ComparisonOperator::GreaterThan, "4"}}}};
+    CHECK_EQ(AttributeMatcher("kern", {longer}, options).findAll(chorale, 2).size(),
+              AttributeMatcher("kern", {longer}).findAll(chorale, 2).size());
+}
+
+TEST_CASE(matcher_compares_pitch_with_higher_and_lower_notes) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](std::size_t voice, const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, voice).size();
+    };
+    PatternValue higherThanG(ComparisonOperator::GreaterThan, "g");
+    PatternValue gOrLower(ComparisonOperator::LessThanOrEqual, "g");
+    // Rests have no pitch: they are neither higher nor lower than anything.
+    for (std::size_t voice : {1u, 4u}) {
+        CHECK_EQ(count(voice, {{"kern", {higherThanG}}}) + count(voice, {{"kern", {gOrLower}}}),
+                  count(voice, {{"!kern", {"r"}}}));
+    }
+    // The bass stays below middle c, the soprano never goes down to it.
+    PatternValue cOrHigher(ComparisonOperator::GreaterThanOrEqual, "c");
+    PatternValue lowerThanC(ComparisonOperator::LessThan, "c");
+    CHECK_EQ(count(1, {{"kern", {cOrHigher}}}), std::size_t{0});
+    CHECK(count(1, {{"kern", {lowerThanC}}}) > 0);
+    CHECK_EQ(count(4, {{"kern", {lowerThanC}}}), std::size_t{0});
+}
+
+TEST_CASE(matcher_pitch_comparison_counts_the_octave_and_equates_enharmonics) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const std::string& pitch, MatcherOptions options = {}) {
+        AttributeMap position{{"kern", {{ComparisonOperator::GreaterThan, pitch}}}};
+        return AttributeMatcher("kern", {position}, options).findAll(chorale, 4).size();
+    };
+    // "g" is the g above middle c, "G" the one an octave below it.
+    CHECK(count("G") > count("g"));
+    // c# and d- are the same key.
+    CHECK_EQ(count("c#"), count("d-"));
+    // kernIgnoreOctave has no effect on comparisons.
+    MatcherOptions ignoreOctave;
+    ignoreOctave.kernIgnoreOctave = true;
+    CHECK_EQ(count("g", ignoreOctave), count("g"));
+}
+
+TEST_CASE(matcher_negated_pitch_comparison_includes_rests) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 4).size();
+    };
+    PatternValue higherThanG(ComparisonOperator::GreaterThan, "g");
+    PatternValue gOrLower(ComparisonOperator::LessThanOrEqual, "g");
+    // "not higher than g" is true of a rest as well as of every note at g or below.
+    std::size_t rests = count({{"kern", {"r"}}});
+    REQUIRE(rests > 0);
+    CHECK_EQ(count({{"!kern", {higherThanG}}}), count({{"kern", {gOrLower}}}) + rests);
+}
+
+TEST_CASE(matcher_compares_melodic_interval_by_size) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("mint", {position}).findAll(chorale, 4).size();
+    };
+    PatternValue widerThanThird(ComparisonOperator::GreaterThan, "3");
+    PatternValue thirdOrNarrower(ComparisonOperator::LessThanOrEqual, "3");
+    // Everything but the voice's first note (which has no interval, only a bracketed pitch) falls on one
+    // side or the other of a third.
+    std::size_t withInterval = count({{"mint", {"*"}}}) - 1;
+    REQUIRE(count({{"mint", {widerThanThird}}}) > 0);
+    REQUIRE(count({{"mint", {thirdOrNarrower}}}) > 0);
+    CHECK_EQ(count({{"mint", {widerThanThird}}}) + count({{"mint", {thirdOrNarrower}}}), withInterval);
+}
+
+TEST_CASE(matcher_a_sign_restricts_an_interval_comparison_to_that_direction) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("mint", {position}).findAll(chorale, 1).size();
+    };
+    auto countOf = [&](ComparisonOperator comparisonOperator, const std::string& value) {
+        return count({{"mint", {{comparisonOperator, value}}}});
+    };
+    const ComparisonOperator greaterThan = ComparisonOperator::GreaterThan;
+    const ComparisonOperator lessThanOrEqual = ComparisonOperator::LessThanOrEqual;
+    // Without a sign the size alone counts, with one the interval has to go that way as well.
+    REQUIRE(countOf(greaterThan, "+3") > 0);
+    REQUIRE(countOf(greaterThan, "-3") > 0);
+    CHECK_EQ(countOf(greaterThan, "3"), countOf(greaterThan, "+3") + countOf(greaterThan, "-3"));
+    // Every interval that goes somewhere is wider than the unison, and the unison goes nowhere.
+    CHECK_EQ(countOf(greaterThan, "+1"), count({{"mint", {"+"}}}));
+    CHECK_EQ(countOf(greaterThan, "-1"), count({{"mint", {"-"}}}));
+    // Up, wider than a third or not.
+    CHECK_EQ(countOf(greaterThan, "+3") + countOf(lessThanOrEqual, "+3"), count({{"mint", {"+"}}}));
+}
+
+TEST_CASE(matcher_a_signed_interval_comparison_with_a_quality_compares_in_semitones_in_that_direction) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("mint", {position}).findAll(chorale, 4).size();
+    };
+    auto countOf = [&](ComparisonOperator comparisonOperator, const std::string& value) {
+        return count({{"mint", {{comparisonOperator, value}}}});
+    };
+    const ComparisonOperator greaterThan = ComparisonOperator::GreaterThan;
+    // Wider than a minor sixth in either direction is the two directions together.
+    CHECK_EQ(countOf(greaterThan, "m6"), countOf(greaterThan, "+m6") + countOf(greaterThan, "-m6"));
+    // A descent wider than a minor sixth is a descent, and no ascent is one.
+    CHECK(countOf(greaterThan, "-m6") <= count({{"mint", {"-"}}}));
+    CHECK_EQ(countOf(ComparisonOperator::LessThanOrEqual, "-m6") + countOf(greaterThan, "-m6"), count({{"mint", {"-"}}}));
+}
+
+TEST_CASE(matcher_interval_comparison_without_a_quality_treats_all_intervals_of_a_number_alike) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("mint", {position}).findAll(chorale, 4).size();
+    };
+    CHECK_EQ(count({{"mint", {{ComparisonOperator::GreaterThanOrEqual, "3"}}}}),
+              count({{"mint", {"3", {ComparisonOperator::GreaterThan, "3"}}}}));
+    CHECK_EQ(count({{"mint", {{ComparisonOperator::LessThanOrEqual, "2"}}}}),
+              count({{"mint", {"1", "2", "3"}}}) - count({{"mint", {"3"}}}));
+}
+
+TEST_CASE(matcher_compares_harmonic_interval_by_size) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position, MatcherOptions options = {}) {
+        return AttributeMatcher("hint-14", {position}, options).findAll(chorale, 1).size();
+    };
+    AttributeMap widerThanTenth{{"hint-14", {{ComparisonOperator::GreaterThan, "10"}}}};
+    AttributeMap tenthOrNarrower{{"hint-14", {{ComparisonOperator::LessThanOrEqual, "10"}}}};
+    REQUIRE(count(widerThanTenth) > 0);
+    REQUIRE(count(tenthOrNarrower) > 0);
+    CHECK_EQ(count(widerThanTenth) + count(tenthOrNarrower), count({{"hint-14", {"*"}}}));
+
+    // hintReduceCompound folds a tenth into a third for an equal value, but a comparison asks about the
+    // size as it is in the score.
+    MatcherOptions reduce;
+    reduce.hintReduceCompound = true;
+    CHECK_EQ(count(widerThanTenth, reduce), count(widerThanTenth));
+}
+
+TEST_CASE(matcher_compares_the_interval_to_a_given_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 4).size();
+    };
+    // "hint-1" seen from the soprano is the same interval as hint-14.
+    PatternValue widerThanTenth(ComparisonOperator::GreaterThan, "10");
+    CHECK_EQ(count({{"hint-1", {widerThanTenth}}}), count({{"hint-14", {widerThanTenth}}}));
+    CHECK(count({{"hint-*4", {{ComparisonOperator::GreaterThanOrEqual, "1"}}}}) > 0);
+}
+
+TEST_CASE(matcher_compares_intervals_with_a_quality_by_their_size_in_semitones) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("mint", {position}).findAll(chorale, 4).size();
+    };
+    auto countOf = [&](ComparisonOperator comparisonOperator, const std::string& value) {
+        return count({{"mint", {{comparisonOperator, value}}}});
+    };
+    // Without a quality every interval of that number is equally wide: nothing is wider than a third
+    // but the fourths and up. With one, the intervals are told apart: a major third is wider than a minor.
+    std::size_t majorThirds = count({{"mint", {"M3"}}});
+    REQUIRE(majorThirds > 0);
+    CHECK_EQ(countOf(ComparisonOperator::GreaterThan, "m3"), countOf(ComparisonOperator::GreaterThan, "3") + majorThirds);
+    CHECK_EQ(countOf(ComparisonOperator::GreaterThanOrEqual, "m3"),
+              countOf(ComparisonOperator::GreaterThan, "m3") + count({{"mint", {"m3"}}}));
+    // d5 and A4 are the same size, so neither is wider than the other.
+    CHECK_EQ(countOf(ComparisonOperator::GreaterThan, "A4"), countOf(ComparisonOperator::GreaterThan, "d5"));
+}
+
+TEST_CASE(matcher_compares_the_harmonic_interval_with_a_quality_in_semitones) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto countOf = [&](ComparisonOperator comparisonOperator, const std::string& value) {
+        AttributeMap position{{"hint-14", {{comparisonOperator, value}}}};
+        return AttributeMatcher("hint-14", {position}).findAll(chorale, 1).size();
+    };
+    const ComparisonOperator greaterThan = ComparisonOperator::GreaterThan;
+    std::size_t all = AttributeMatcher("hint-14", {AttributeMap{{"hint-14", {"*"}}}}).findAll(chorale, 1).size();
+    CHECK_EQ(countOf(greaterThan, "M10") + countOf(ComparisonOperator::LessThanOrEqual, "M10"), all);
+    // A minor tenth is narrower than a major one, but both are tenths.
+    CHECK(countOf(greaterThan, "m10") >= countOf(greaterThan, "M10"));
+    // Past a ninth is a tenth or more, whatever its quality; past a minor tenth leaves out the minor one.
+    CHECK(countOf(greaterThan, "9") >= countOf(greaterThan, "m10"));
+}
+
+TEST_CASE(matcher_an_interval_wider_than_a_given_one_but_not_an_octave_takes_two_keys_in_one_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("mint", {position}).findAll(chorale, 4).size();
+    };
+    PatternValue widerThanMinorSixth(ComparisonOperator::GreaterThan, "m6");
+    std::size_t octaves = count({{"mint", {"P8"}}});
+    CHECK_EQ(count({{"mint", {widerThanMinorSixth}}, {"!mint", {"P8"}}}), count({{"mint", {widerThanMinorSixth}}}) - octaves);
+}
+
+TEST_CASE(matcher_refuses_an_order_comparison_it_cannot_judge) {
+    // Built in code rather than read from JSON, so the matcher is the one to say no.
+    auto build = [](const AttributeMap& position) { return AttributeMatcher("kern", {position}); };
+    CHECK_NOTHROW(build({{"kern", {{ComparisonOperator::GreaterThan, "g"}}}}));
+    CHECK_THROWS(build({{"deg", {{ComparisonOperator::GreaterThan, "1"}}}}));
+    CHECK_THROWS(build({{"fb", {{ComparisonOperator::GreaterThan, "3"}}}}));
+    CHECK_THROWS(build({{"kern", {{ComparisonOperator::GreaterThan, "4"}}}}));      // a rhythm is not a pitch
+    CHECK_THROWS(build({{"mint", {{ComparisonOperator::GreaterThan, "P3"}}}}));     // no perfect third
+    CHECK_THROWS(build({{"hint-14", {{ComparisonOperator::GreaterThan, "+3"}}}}));  // never signed
+}
+
+// The semitone size of an interval comes from a small table of our own (intervalSizeInSemitones), as humlib
+// only goes the other way, from a base-40 interval to its name. Every interval humlib can name has to be
+// the size that table says, or a threshold would be ordered differently from the tokens the spines carry.
+TEST_CASE(matcher_interval_sizes_agree_with_humlibs_base40_interval_names) {
+    using choralesearch::intervalSizeInSemitones;
+    const int c4 = hum::Convert::kernToBase40("c");
+    int named = 0;
+    for (int base40Interval = 0; base40Interval < 40 * 3; ++base40Interval) {
+        std::string name = hum::Convert::base40ToIntervalAbbr(base40Interval);
+        if (name.find('X') != std::string::npos) continue; // a slot that names no interval
+        // The last two slots of an octave, C-- and C-, are the octave less two or one semitones, which
+        // humlib names as if they were the unison ("dd1", "d1") and not "dd8"/"d8".
+        if (base40Interval % 40 >= 38) continue;
+        std::size_t digits = name.find_first_of("0123456789");
+        REQUIRE(digits != std::string::npos);
+        std::string quality = name.substr(0, digits);
+        for (char& c : quality) {
+            if (c == 'p') c = 'P';
+            else if (c == 'a') c = 'A';
+        }
+        int number = std::stoi(name.substr(digits));
+        int expected = hum::Convert::base40ToMidiNoteNumber(c4 + base40Interval) - hum::Convert::base40ToMidiNoteNumber(c4);
+        auto size = intervalSizeInSemitones(quality, number);
+        REQUIRE(size.has_value());
+        CHECK_EQ(*size, expected);
+        ++named;
+    }
+    CHECK(named > 60);
 }

@@ -65,7 +65,7 @@ TEST_CASE(the_inner_voices_are_asked_about_as_an_exact_fb_chord_in_the_groups_on
             for (const auto& group : segment.query.simultaneousWith) {
                 for (const auto& position : group.pattern) {
                     auto it = position.find("fb");
-                    if (it != position.end() && !it->second.empty()) values.push_back(it->second.front());
+                    if (it != position.end() && !it->second.empty()) values.push_back(it->second.front().text);
                 }
             }
         }
@@ -135,8 +135,8 @@ TEST_CASE(interval_qualities_are_left_out_of_the_patterns_unless_asked_for) {
         for (const Segment& segment : segments) {
             for (const auto& position : segment.query.pattern) {
                 auto it = position.find("mint");
-                if (it != position.end() && !it->second.empty() && it->second.front() != "*" &&
-                    hasQuality(it->second.front())) {
+                if (it != position.end() && !it->second.empty() && it->second.front().text != "*" &&
+                    hasQuality(it->second.front().text)) {
                     return true;
                 }
             }
