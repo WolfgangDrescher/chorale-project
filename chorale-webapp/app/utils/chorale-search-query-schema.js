@@ -1,3 +1,27 @@
+// One comparison, an entry of a pattern value list like any string: the score's value is
+// compared with `value` instead of matched against it. A list is an OR, so a range ("at least
+// an eighth and at most a quarter") is written as the negation of both ends instead.
+const comparisonSchema = {
+    type: 'object',
+    required: ['operator', 'value'],
+    additionalProperties: false,
+    properties: {
+        operator: {
+            // The editor suggests the spelled-out names. The abbreviations and the symbols the backend also
+            // accepts (gt, >, ...) are valid too, but are not offered.
+            anyOf: [
+                { type: 'string', enum: ['greaterThan', 'greaterThanOrEqual', 'lessThan', 'lessThanOrEqual'] },
+                { type: 'string', pattern: '^(gte?|lte?|>=?|<=?)$' },
+            ],
+            description: 'greaterThan, greaterThanOrEqual, lessThan or lessThanOrEqual. For kern the greater note is the higher one, for duration the longer one, for mint and hint-<pair>/hint-<voice> the wider interval.',
+        },
+        value: {
+            type: 'string',
+            description: 'What to compare with: a pitch for "kern" (e.g. "g", "f#"), a recip duration for "duration" (e.g. "4", "4."), and for "mint" and the hint keys the size of an interval: a diatonic number ("3" compares the number alone, so any third is as wide as any other) or a number with a quality ("m3", "A4", "M10" compare the size in semitones). "mint" may also carry a sign ("+3", "-m6") to compare in that direction only. Only kern, duration, mint and the hint keys can be compared.',
+        },
+    },
+};
+
 // Fields shared by the top-level query and each simultaneousWith entry, defined once so
 // both schemas below stay in sync.
 const searchRequestFieldSchemas = {
@@ -24,11 +48,12 @@ const searchRequestFieldSchemas = {
             additionalProperties: false,
             patternProperties: {
                 '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]))$': {
-                    description: 'An OR-list of acceptable values for this feature at this position (or a single value). Prefix the key with "!" to negate the whole position.',
+                    description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). Prefix the key with "!" to negate the whole position.',
                     oneOf: [
                         { type: 'string' },
                         { type: 'boolean' },
-                        { type: 'array', items: { type: 'string' }, minItems: 1 },
+                        comparisonSchema,
+                        { type: 'array', items: { oneOf: [{ type: 'string' }, comparisonSchema] }, minItems: 1 },
                     ],
                 },
             },
