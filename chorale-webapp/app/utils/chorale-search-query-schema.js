@@ -17,7 +17,7 @@ const comparisonSchema = {
         },
         value: {
             type: 'string',
-            description: 'What to compare with: a pitch for "kern" (e.g. "g", "f#"), a recip duration for "duration" (e.g. "4", "4."), and for "mint" and the hint keys the size of an interval: a diatonic number ("3" compares the number alone, so any third is as wide as any other) or a number with a quality ("m3", "A4", "M10" compare the size in semitones). "mint" may also carry a sign ("+3", "-m6") to compare in that direction only. Only kern, duration, mint and the hint keys can be compared.',
+            description: 'What to compare with: a pitch for "kern" (e.g. "g", "f#"), a recip duration for "duration" (e.g. "4", "4."), and for "mint" and the hint keys the size of an interval: a diatonic number ("3" compares the number alone, so any third is as wide as any other) or a number with a quality ("m3", "A4", "M10" compare the size in semitones). "mint" may also carry a sign ("+3", "-m6") to compare in that direction only. Only kern, duration, mint and the hint keys can be compared. For kern and duration it can also be a voice reference ("@2", "@below", "@anyBelow", ...): the note another voice sounds at the same time.',
         },
     },
 };
@@ -48,7 +48,7 @@ const searchRequestFieldSchemas = {
             additionalProperties: false,
             patternProperties: {
                 '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]))$': {
-                    description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). Prefix the key with "!" to negate the whole position.',
+                    description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. Prefix the key with "!" to negate the whole position.',
                     oneOf: [
                         { type: 'string' },
                         { type: 'boolean' },
