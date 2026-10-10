@@ -31,6 +31,9 @@ struct PatternValue {
     // Whether the value is held against the score with a relational operator (greater than "4", at most
     // "g"), rather than being matched by the feature's own rules as EqualTo is.
     bool hasRelationalOperator() const { return comparisonOperator != ComparisonOperator::EqualTo; }
+    // Whether the value names a voice ("@2", "@below", see VoiceReference.hpp) instead of stating one:
+    // what it is held against is whatever that voice has at the same position in the score.
+    bool isVoiceReference() const { return !text.empty() && text[0] == '@'; }
     bool operator==(const PatternValue& other) const {
         return comparisonOperator == other.comparisonOperator && text == other.text;
     }

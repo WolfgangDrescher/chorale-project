@@ -53,6 +53,11 @@ bool isValidIntervalQuality(const std::string& quality, int number);
 // carry a leading '!' negation, same as isKnownPatternKey.
 bool supportsComparison(const std::string& key);
 
+// True if a pattern value of `key` may be a voice reference (see VoiceReference.hpp), held against what
+// another voice has at the same position: kern (the pitch) and duration. `key` may carry a leading '!'
+// negation, same as isKnownPatternKey.
+bool supportsVoiceReference(const std::string& key);
+
 // True if `value` is a legal value to compare `key` against (already known-good per
 // supportsComparison): a pitch ("g", "f#", "BB-") for kern, a recip duration ("4", "4.") for
 // duration, an interval size for mint and the hint keys: a diatonic number ("3", mint also

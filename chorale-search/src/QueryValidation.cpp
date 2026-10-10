@@ -188,6 +188,11 @@ bool supportsComparison(const std::string& rawKey) {
     return key == "kern" || key == "duration" || key == "mint" || isHintFlavoredKey(key);
 }
 
+bool supportsVoiceReference(const std::string& rawKey) {
+    std::string key = stripNegationPrefix(rawKey);
+    return key == "kern" || key == "duration";
+}
+
 bool isValidComparisonValue(const std::string& rawKey, const std::string& value) {
     std::string key = stripNegationPrefix(rawKey);
     // [sign][quality]number: only mint compares in a direction, and the hint keys are never signed.

@@ -1,6 +1,7 @@
 #include "AttributeMatcher.hpp"
 #include "HumdrumUtils.hpp"
 #include "QueryValidation.hpp"
+#include "VoiceReference.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -121,6 +122,7 @@ bool evaluateComparison(ComparisonOperator comparisonOperator, const T& actual, 
 bool durationInList(const std::vector<PatternValue>& allowed, hum::HumNum duration) {
     std::string recip;
     for (const PatternValue& v : allowed) {
+        if (v.isVoiceReference()) continue; // judged against the other voice, see voiceReferenceInList()
         if (v.hasRelationalOperator()) {
             if (evaluateComparison(v.comparisonOperator, duration, hum::Convert::recipToDuration(v.text))) return true;
             continue;
@@ -133,12 +135,14 @@ bool durationInList(const std::vector<PatternValue>& allowed, hum::HumNum durati
 
 // Whether a position's "duration" is nothing but exact lengths to divide notes up by or add notes up
 // to (see durationAllowSplitNotes / durationAllowMergedNotes). Not the wildcard, and not a list with a
-// relational operator in it, even next to exact lengths: that one describes a whole note and has no
-// length to work toward, so such a position is judged on the single note it lands on.
+// relational operator or a voice reference in it, even next to exact lengths: that one describes a whole
+// note and has no length to work toward, so such a position is judged on the single note it lands on.
 bool hasOnlyExactDurations(const AttributeMap& position) {
     auto it = position.find(kDurationKey);
     return it != position.end() && !isWildcard(it->second) &&
-           std::none_of(it->second.begin(), it->second.end(), [](const PatternValue& v) { return v.hasRelationalOperator(); });
+           std::none_of(it->second.begin(), it->second.end(), [](const PatternValue& v) {
+               return v.hasRelationalOperator() || v.isVoiceReference();
+           });
 }
 
 // Extracts the pitch+accidental from a **kern token (e.g. "f#" from "8f#L"), ignoring
@@ -210,6 +214,7 @@ bool kernComparisonMatches(const PatternValue& v, hum::HTp actualTok) {
 bool kernInList(const std::vector<PatternValue>& allowed, hum::HTp actualTok, bool ignoreOctave,
                  hum::HumNum duration) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) {
+        if (v.isVoiceReference()) return false; // judged against the other voice, see voiceReferenceInList()
         if (v.hasRelationalOperator()) return kernComparisonMatches(v, actualTok);
         return kernValueMatches(v.text, actualTok, ignoreOctave, duration);
     });
@@ -557,6 +562,7 @@ bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, 
     // duration handed on is never actually consulted.
     hum::HumNum duration = soundingDuration(tok);
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
+        if (value.isVoiceReference()) return false; // judged against the other voice, see voiceReferenceInList()
         // A comparison is of the pitch, which a re-attack has: the merged note's.
         if (value.hasRelationalOperator()) return kernComparisonMatches(value, tok);
         const std::string& v = value.text;
@@ -574,7 +580,8 @@ bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, 
 // down the file, so this is a step sideways along one line -- the line `tok` already knows it
 // belongs to -- rather than a walk down a spine from its beginning as findTokenAtLine() does.
 // buildOnsets() asks this of every onset it walks, which that one would make quadratic.
-hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart) {
+// A null token (the voice holds a note) is nullptr, or with `resolveNull` the note it stands for.
+hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull = false) {
     if (!tok || !spineStart) return nullptr;
     int track = spineStart->getTrack();
     hum::HLp line = tok->getOwner();
@@ -582,9 +589,51 @@ hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart) {
         hum::HTp candidate = line->token(field);
         // The leftmost field of the track, which for a split spine is the branch
         // findTokenAtLine() reaches too -- getNextToken() follows the left side of a split.
-        if (candidate->getTrack() == track) return candidate->isNull() ? nullptr : candidate;
+        if (candidate->getTrack() != track) continue;
+        if (!candidate->isNull()) return candidate;
+        hum::HTp note = resolveNull ? candidate->resolveNull() : nullptr;
+        return note && note->isData() ? note : nullptr;
     }
     return nullptr;
+}
+
+// Whether a voice reference ("@2", "@anyBelow", ...) among the pattern values of `key` ("kern" or
+// "duration") holds at the line `lineToken` sits on. What the walked voice has there, its note
+// `walkedNote` or the `walkedDuration` of its onset, is held against what the referenced voice sounds on
+// that line, with the relation of the entry: equal for a plain value, higher/lower or longer/shorter for
+// a comparison. A referenced voice that sounds no note there (a rest, no spine) satisfies nothing, and a
+// reference that names no voice at all, @below of the bass, holds for neither "any" nor "all" of them.
+// The entries that are no voice reference are not looked at, they are for the ...InList functions.
+bool voiceReferenceInList(const HumdrumChorale& chorale, std::size_t voice, const std::string& key,
+                          const std::vector<PatternValue>& allowed, hum::HTp lineToken, hum::HTp walkedNote,
+                          hum::HumNum walkedDuration, bool ignoreOctave) {
+    for (const PatternValue& entry : allowed) {
+        if (!entry.isVoiceReference()) continue;
+        auto reference = resolveVoiceReference(entry.text, voice);
+        if (!reference || reference->voices.empty()) continue;
+
+        auto holdsFor = [&](std::size_t other) {
+            hum::HTp note = tokenBesideOnLine(lineToken, chorale.spine(kKernFeature, other), true);
+            if (!note) return false;
+            if (key == kDurationKey) {
+                // A tied note is one note, and its duration is counted from where it was struck.
+                hum::HTp start = note;
+                while (start && start->isSecondaryTiedNote()) start = start->getPreviousNNDT();
+                if (!start) return false;
+                return evaluateComparison(entry.comparisonOperator, walkedDuration, soundingDuration(start));
+            }
+            std::string pitch = kernToPitch(std::string(*note));
+            if (pitch.empty() || pitch == "r") return false;
+            return kernInList({PatternValue(entry.comparisonOperator, pitch)}, walkedNote, ignoreOctave, walkedDuration);
+        };
+
+        const std::vector<std::size_t>& voices = reference->voices;
+        bool holds = reference->quantifier == ReferenceQuantifier::All
+                         ? std::all_of(voices.begin(), voices.end(), holdsFor)
+                         : std::any_of(voices.begin(), voices.end(), holdsFor);
+        if (holds) return true;
+    }
+    return false;
 }
 
 } // namespace
@@ -628,6 +677,19 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
     for (const AttributeMap& position : m_pattern) {
         for (const auto& [key, values] : position) {
             for (const PatternValue& value : values) {
+                if (value.isVoiceReference()) {
+                    if (!supportsVoiceReference(key) || !isValidVoiceReference(value.text)) {
+                        throw std::invalid_argument("'" + key + "' cannot be held against '" + value.text + "'");
+                    }
+                    // The runs those options build out of a duration add up lengths, which a negated
+                    // duration would have to be judged against one by one, not against another voice.
+                    if (isNegatedKey(key) && stripNegationPrefix(key) == kDurationKey &&
+                        (m_options.durationAllowSplitNotes || m_options.durationAllowMergedNotes)) {
+                        throw std::invalid_argument("'" + key + "' cannot be held against '" + value.text +
+                                                     "' with durationAllowSplitNotes or durationAllowMergedNotes");
+                    }
+                    continue;
+                }
                 if (!value.hasRelationalOperator()) continue;
                 if (!supportsComparison(key) || !isValidComparisonValue(key, value.text)) {
                     throw std::invalid_argument("'" + key + "' cannot be compared with '" + value.text + "'");
@@ -754,8 +816,13 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation, m_options.hintReduceCompound);
         else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
         else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
-        else if (key == kKernFeature) matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave, onset.duration);
-        else if (key == kDurationKey) matched = durationInList(allowed, onset.duration);
+        else if (key == kKernFeature) {
+            matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave, onset.duration) ||
+                      voiceReferenceInList(chorale, voice, key, allowed, tok, kernTok, onset.duration, m_options.kernIgnoreOctave);
+        } else if (key == kDurationKey) {
+            matched = durationInList(allowed, onset.duration) ||
+                      voiceReferenceInList(chorale, voice, key, allowed, tok, nullptr, onset.duration, m_options.kernIgnoreOctave);
+        }
         else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
         else matched = inList(allowed, actual);
     }
@@ -852,7 +919,9 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
                                 ? tok
                                 : lookupToken(chorale, voice, tok->getLineNumber(), kKernFeature);
         if (!kernTok) return std::nullopt;
-        matched = kernReAttackInList(allowed, kernTok, m_options.kernIgnoreOctave);
+        matched = kernReAttackInList(allowed, kernTok, m_options.kernIgnoreOctave) ||
+                  voiceReferenceInList(chorale, voice, kKernFeature, allowed, tok, kernTok, soundingDuration(kernTok),
+                                       m_options.kernIgnoreOctave);
     }
     return negate ? !matched : matched;
 }

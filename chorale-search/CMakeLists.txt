@@ -27,6 +27,7 @@ target_compile_options(humlib PRIVATE -w)
 add_library(chorale_core STATIC
     src/HumdrumChorale.cpp
     src/VoiceMap.cpp
+    src/VoiceReference.cpp
     src/AttributeMatcher.cpp
     src/CorpusSearch.cpp
     src/SplitScoreIntoVoices.cpp
@@ -72,7 +73,11 @@ if(BUILD_TESTS)
     target_include_directories(test_voicemap PRIVATE src tests)
     add_test(NAME voicemap COMMAND test_voicemap)
 
-    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/QueryValidation.cpp src/VoiceMap.cpp)
+    add_executable(test_voicereference tests/test_voicereference.cpp src/VoiceReference.cpp)
+    target_include_directories(test_voicereference PRIVATE src tests)
+    add_test(NAME voicereference COMMAND test_voicereference)
+
+    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/QueryValidation.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
     target_include_directories(test_jsonio PRIVATE src tests external/json/single_include)
     add_test(NAME jsonio COMMAND test_jsonio)
 

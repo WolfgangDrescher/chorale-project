@@ -13,6 +13,7 @@ using choralesearch::isValidComparisonValue;
 using choralesearch::isValidMintComplementationValue;
 using choralesearch::isValidPatternValue;
 using choralesearch::supportsComparison;
+using choralesearch::supportsVoiceReference;
 
 TEST_CASE(is_known_simultaneous_group_key_accepts_every_shared_field) {
     for (const std::string& key : {"feature", "voices", "pattern", "mintStartAtPreviousToken",
@@ -371,6 +372,16 @@ TEST_CASE(is_valid_interval_quality_pairs_the_quality_with_the_kind_of_interval)
     CHECK(!isValidIntervalQuality("P", 6));
     CHECK(!isValidIntervalQuality("M", 4));
     CHECK(!isValidIntervalQuality("", 4));
+}
+
+TEST_CASE(supports_voice_reference_for_kern_and_duration_only) {
+    CHECK(supportsVoiceReference("kern"));
+    CHECK(supportsVoiceReference("duration"));
+    CHECK(supportsVoiceReference("!kern"));
+    CHECK(supportsVoiceReference("!duration"));
+    for (const std::string& key : {"deg", "mint", "fb", "metweight", "fermata", "phrase", "hint-2", "hint-14"}) {
+        CHECK(!supportsVoiceReference(key));
+    }
 }
 
 TEST_MAIN()

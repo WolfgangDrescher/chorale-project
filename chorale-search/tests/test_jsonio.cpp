@@ -873,4 +873,39 @@ TEST_CASE(query_to_json_writes_a_comparison_back_as_the_object_it_came_from) {
     CHECK_EQ(choralesearch::queryToJson(queryFromJson(out)), out);
 }
 
+// Voice references: "@2", "@below", ... as a value, or as the value of a comparison.
+TEST_CASE(query_from_json_reads_a_voice_reference_as_a_value) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"@2","duration":["4","@below"]}]})"));
+    REQUIRE(q.pattern.size() == 1u);
+    CHECK_EQ(q.pattern[0]["kern"], (std::vector<PatternValue>{"@2"}));
+    CHECK_EQ(q.pattern[0]["duration"], (std::vector<PatternValue>{"4", "@below"}));
+    CHECK(q.pattern[0]["kern"][0].isVoiceReference());
+    CHECK(!q.pattern[0]["duration"][0].isVoiceReference());
+}
+
+TEST_CASE(query_from_json_reads_a_voice_reference_in_a_comparison) {
+    Query q = queryFromJson(json::parse(
+        R"({"feature":"kern","voices":"all","pattern":[{"kern":{"operator":"lt","value":"@anyBelow"}}]})"));
+    REQUIRE(q.pattern.size() == 1u);
+    CHECK_EQ(q.pattern[0]["kern"], (std::vector<PatternValue>{{ComparisonOperator::LessThan, "@anyBelow"}}));
+
+    Query negated = queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"!duration":[{"operator":">","value":"@2"},"@3"]}]})"));
+    CHECK_EQ(negated.pattern[0]["!duration"],
+              (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "@2"}, "@3"}));
+}
+
+TEST_CASE(query_from_json_rejects_a_voice_reference_it_cannot_judge) {
+    auto parse = [](const std::string& position) {
+        return [position] { return queryFromJson(json::parse(R"({"feature":"kern","pattern":[)" + position + "]}")); };
+    };
+    CHECK_NOTHROW(parse(R"({"kern":"@4"})")());
+    CHECK_THROWS(parse(R"({"deg":"@2"})")());                                         // only kern and duration
+    CHECK_THROWS(parse(R"({"mint":{"operator":"gt","value":"@2"}})")());
+    CHECK_THROWS(parse(R"({"kern":"@5"})")());                                        // no such voice
+    CHECK_THROWS(parse(R"({"kern":"@sideways"})")());                                 // no such reference
+    CHECK_THROWS(parse(R"({"kern":{"operator":"gt","value":"@"}})")());
+    CHECK_THROWS(parse(R"({"kern":{"operator":"gt","value":["@2","@3"]}})")());       // one value per comparison
+}
+
 TEST_MAIN()

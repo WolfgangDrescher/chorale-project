@@ -1,6 +1,7 @@
 #include "JsonIO.hpp"
 #include "QueryValidation.hpp"
 #include "VoiceMap.hpp"
+#include "VoiceReference.hpp"
 
 #include <algorithm>
 #include <optional>
@@ -40,6 +41,19 @@ std::optional<ComparisonOperator> parseComparisonOperator(const std::string& spe
     return std::nullopt;
 }
 
+// A value that names another voice ("@2", "@below") instead of stating one. Only the keys whose value
+// can be read off the other voice's note take one, and the name has to be one of the known spellings.
+void checkVoiceReference(const std::string& key, const std::string& text, const std::string& context) {
+    if (!supportsVoiceReference(key)) {
+        throw std::invalid_argument(context + ": '" + key + "' cannot be held against another voice with '" + text +
+                                     "', only kern and duration can");
+    }
+    if (!isValidVoiceReference(text)) {
+        throw std::invalid_argument(context + ": '" + text + "' is not a voice reference (@1 to @4, @below, @above, "
+                                              "@anyBelow, @allBelow, @anyAbove, @allAbove, @anyOther, @allOther)");
+    }
+}
+
 // {"operator": "gt", "value": "4"}: one order comparison, which is one entry of the OR-list like
 // any string. Anything else in the object, or a value that is not a plain string (a list of them
 // would only ever mean its smallest or largest, write one entry per comparison instead), is an
@@ -73,6 +87,10 @@ PatternValue comparisonFromJson(const nlohmann::json& v, const std::string& key,
         throw std::invalid_argument(context + ": '" + key + "' cannot be compared with '" + spelling +
                                      "', only kern, duration, mint and the hint keys can");
     }
+    if (PatternValue(text).isVoiceReference()) {
+        checkVoiceReference(key, text, context);
+        return PatternValue(*comparisonOperator, text);
+    }
     if (!isValidComparisonValue(key, text)) {
         throw std::invalid_argument(context + ": '" + text + "' is not a valid value to compare '" + key + "' with");
     }
@@ -99,6 +117,10 @@ std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const 
     }
 
     for (const PatternValue& value : values) {
+        if (value.isVoiceReference()) {
+            checkVoiceReference(key, value.text, context);
+            continue;
+        }
         if (value.hasRelationalOperator()) continue; // already checked above
         if (value.text == "*") continue; // universal wildcard, valid for any key
         if (value.text.empty() || !isValidPatternValue(key, value.text)) {

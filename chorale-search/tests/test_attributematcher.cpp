@@ -2015,6 +2015,126 @@ TEST_CASE(matcher_refuses_an_order_comparison_it_cannot_judge) {
     CHECK_THROWS(build({{"hint-14", {{ComparisonOperator::GreaterThan, "+3"}}}}));  // never signed
 }
 
+// Voice references ("@2", "@below", ...) against chor029.krn: a value held against what another voice sounds
+// on the same line. Like the comparisons, most of these check that the halves add up to the whole.
+
+TEST_CASE(matcher_orders_a_pitch_against_another_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position, std::size_t voice) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, voice).size();
+    };
+    PatternValue lowerThanTenor(ComparisonOperator::LessThan, "@2");
+    PatternValue notLowerThanTenor(ComparisonOperator::GreaterThanOrEqual, "@2");
+
+    // The alto against the tenor: lower or not lower, and a rest is neither, so negating adds the rests.
+    std::size_t all = count({{"kern", {"*"}}}, 3);
+    std::size_t lower = count({{"kern", {lowerThanTenor}}}, 3);
+    std::size_t notLower = count({{"kern", {notLowerThanTenor}}}, 3);
+    REQUIRE(notLower > 0);
+    CHECK(lower + notLower <= all);
+    CHECK_EQ(count({{"!kern", {lowerThanTenor}}}, 3) + lower, all);
+
+    // The neighbours are the voices next to the one walked.
+    CHECK_EQ(count({{"kern", {{ComparisonOperator::LessThan, "@below"}}}}, 3), lower);
+    CHECK_EQ(count({{"kern", {{ComparisonOperator::LessThan, "@above"}}}}, 3),
+              count({{"kern", {{ComparisonOperator::LessThan, "@4"}}}}, 3));
+}
+
+TEST_CASE(matcher_reference_to_a_voice_that_does_not_exist_holds_for_nothing) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position, std::size_t voice) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, voice).size();
+    };
+    // Nothing is below the bass, nor above the soprano, nor is a voice its own reference: not even "all" of
+    // no voices holds.
+    for (const char* reference : {"@below", "@anyBelow", "@allBelow", "@1"}) {
+        CHECK_EQ(count({{"kern", {{ComparisonOperator::LessThan, reference}}}}, 1), std::size_t{0});
+    }
+    for (const char* reference : {"@above", "@anyAbove", "@allAbove", "@4"}) {
+        CHECK_EQ(count({{"kern", {{ComparisonOperator::LessThan, reference}}}}, 4), std::size_t{0});
+    }
+    // ...so its negation holds everywhere.
+    CHECK_EQ(count({{"!kern", {{ComparisonOperator::LessThan, "@allBelow"}}}}, 1), count({{"kern", {"*"}}}, 1));
+}
+
+TEST_CASE(matcher_reference_to_a_group_of_voices_is_any_or_all_of_them) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 4).size();
+    };
+    auto higherThan = [&](const char* reference) {
+        return count({{"kern", {{ComparisonOperator::GreaterThan, reference}}}});
+    };
+    // The soprano against the three voices below it.
+    std::size_t any = higherThan("@anyBelow");
+    std::size_t all = higherThan("@allBelow");
+    for (const char* single : {"@1", "@2", "@3"}) {
+        CHECK(higherThan(single) <= any);
+        CHECK(higherThan(single) >= all);
+    }
+    // A list of values is any of them, so listing the voices is the same as naming the group.
+    CHECK_EQ(count({{"kern", {{ComparisonOperator::GreaterThan, "@1"}, {ComparisonOperator::GreaterThan, "@2"},
+                              {ComparisonOperator::GreaterThan, "@3"}}}}),
+              any);
+    // Negated, they hold wherever they did not hold before, the rests included.
+    CHECK_EQ(count({{"!kern", {{ComparisonOperator::GreaterThan, "@anyBelow"}}}}),
+              count({{"kern", {"*"}}}) - any);
+    CHECK_EQ(count({{"!kern", {{ComparisonOperator::GreaterThan, "@allBelow"}}}}),
+              count({{"kern", {"*"}}}) - all);
+}
+
+TEST_CASE(matcher_plain_reference_is_the_same_pitch_as_another_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    MatcherOptions ignoreOctave;
+    ignoreOctave.kernIgnoreOctave = true;
+    auto count = [&](const AttributeMap& position, const MatcherOptions& options = MatcherOptions()) {
+        return AttributeMatcher("kern", {position}, options).findAll(chorale, 4).size();
+    };
+    // The soprano sings what the tenor sings: the same note in the register it is written in, or with the
+    // octave ignored the same pitch class.
+    std::size_t sameNote = count({{"kern", {"@2"}}});
+    std::size_t samePitchClass = count({{"kern", {"@2"}}}, ignoreOctave);
+    CHECK(sameNote <= samePitchClass);
+    // With four voices to a chord, some other voice nearly always sings the soprano's pitch class too.
+    std::size_t doubled = count({{"kern", {"@anyOther"}}}, ignoreOctave);
+    REQUIRE(doubled > 0);
+    CHECK(doubled >= samePitchClass);
+    CHECK(sameNote <= count({{"kern", {{ComparisonOperator::GreaterThanOrEqual, "@2"}}}}));
+    CHECK(sameNote <= count({{"kern", {{ComparisonOperator::LessThanOrEqual, "@2"}}}}));
+}
+
+TEST_CASE(matcher_compares_duration_with_another_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) {
+        return AttributeMatcher("kern", {position}).findAll(chorale, 3).size();
+    };
+    // A note of the alto is shorter, as long as or longer than the note the tenor sounds with it.
+    std::size_t same = count({{"duration", {"@2"}}});
+    std::size_t shorter = count({{"duration", {{ComparisonOperator::LessThan, "@2"}}}});
+    std::size_t longer = count({{"duration", {{ComparisonOperator::GreaterThan, "@2"}}}});
+    REQUIRE(same > 0);
+    CHECK_EQ(same + shorter + longer, count({{"kern", {"*"}}}));
+    CHECK_EQ(count({{"duration", {{ComparisonOperator::LessThanOrEqual, "@2"}}}}), same + shorter);
+}
+
+TEST_CASE(matcher_refuses_a_voice_reference_it_cannot_judge) {
+    auto build = [](const AttributeMap& position, MatcherOptions options = MatcherOptions()) {
+        return AttributeMatcher("kern", {position}, options);
+    };
+    CHECK_NOTHROW(build({{"kern", {"@2"}}}));
+    CHECK_NOTHROW(build({{"!kern", {{ComparisonOperator::GreaterThan, "@anyBelow"}}}}));
+    CHECK_NOTHROW(build({{"duration", {"@below"}}}));
+    CHECK_THROWS(build({{"deg", {"@2"}}}));            // only kern and duration
+    CHECK_THROWS(build({{"mint", {"@2"}}}));
+    CHECK_THROWS(build({{"kern", {"@5"}}}));           // no such voice
+    CHECK_THROWS(build({{"kern", {"@sideways"}}}));    // no such reference
+
+    MatcherOptions splitNotes;
+    splitNotes.durationAllowSplitNotes = true;
+    CHECK_NOTHROW(build({{"duration", {"@2"}}}, splitNotes));
+    CHECK_THROWS(build({{"!duration", {"@2"}}}, splitNotes));
+}
+
 // The semitone size of an interval comes from a small table of our own (intervalSizeInSemitones), as humlib
 // only goes the other way, from a base-40 interval to its name. Every interval humlib can name has to be
 // the size that table says, or a threshold would be ordered differently from the tokens the spines carry.
