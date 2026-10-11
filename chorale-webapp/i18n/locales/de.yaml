@@ -18,6 +18,9 @@ sortDescending: Absteigend sortiert
 readDocs: Dokumentation lesen
 applyDemoQuery: Beispiel Query verwenden
 query: Query
+showQueryResults: Ergebnis dieses Queries anzeigen
+searchResults: Suchergebnisse
+editQuery: Query bearbeiten
 searchError: Die Suche ist fehlgeschlagen.
 choraleAnalysis: Choralanalyse
 segmentAnalysis: Segmente

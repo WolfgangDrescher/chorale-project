@@ -13,7 +13,19 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    // Without a maxHeight the editor fills its parent, at least as tall as minHeight. With one,
+    // it grows with its content between minHeight and maxHeight (in px) and scrolls beyond that.
+    minHeight: {
+        type: Number,
+        default: 300,
+    },
+    maxHeight: {
+        type: Number,
+        default: null,
+    },
 });
+
+const height = ref(props.minHeight);
 
 const monacoEl = ref();
 let editor = null;
@@ -59,6 +71,14 @@ onMounted(() => {
         }, props.options));
         editor.getModel().onDidChangeContent(() => modelValue.value = editor.getValue());
 
+        if (props.maxHeight) {
+            const fitHeightToContent = () => {
+                height.value = Math.min(Math.max(editor.getContentHeight(), props.minHeight), props.maxHeight);
+            };
+            editor.onDidContentSizeChange(fitHeightToContent);
+            fitHeightToContent();
+        }
+
         // The suggestion details panel (property/enum descriptions) is collapsed by
         // default and its open/closed state is a flag shared across every editor on the
         // page, persisted only for this page load. Flipping it the first time the
@@ -77,5 +97,10 @@ onMounted(() => {
 </script>
 
 <template>
-    <div ref="monacoEl" class="w-full h-full min-h-75"></div>
+    <div
+        ref="monacoEl"
+        class="w-full"
+        :class="maxHeight ? undefined : 'h-full min-h-75'"
+        :style="maxHeight ? { height: `${height}px` } : undefined"
+    ></div>
 </template>
