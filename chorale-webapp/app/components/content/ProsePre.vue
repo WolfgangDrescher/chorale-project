@@ -49,14 +49,16 @@ const isRunnable = computed(() => {
     }
 });
 
-const search = useChoraleSearch(props.code);
+// The code of a block ends with a line break, which the editor would show as an empty last line.
+const query = computed(() => props.code?.trimEnd());
+const search = useChoraleSearch(query.value);
 const drawerOpen = ref(false);
 
 // Opening the drawer starts from the query of the code block again, and searches unless the
 // results shown are already those of that query.
 watch(drawerOpen, (open) => {
     if (!open || search.pending.value) return;
-    search.query.value = props.code;
+    search.query.value = query.value;
     if (search.searchedQuery.value !== search.query.value) {
         search.fetchSearchResults();
     }
