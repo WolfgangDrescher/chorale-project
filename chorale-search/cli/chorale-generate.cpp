@@ -155,8 +155,8 @@ int main(int argc, char** argv) {
             }
         }
 
-        // The chorales do not depend on each other, so several are generated at once. They are
-        // reported in order, whichever finishes first.
+        // The chorales do not depend on each other, so several are generated at once.
+        std::size_t generated = 0;
         choralesearch::FileDispatcher<std::string>(
             choraleIds.size(),
             [&](std::size_t i) {
@@ -165,10 +165,14 @@ int main(int argc, char** argv) {
                                 sourceDir, outDir, applyAnalysis);
                 return choraleIds[i];
             },
-            [&](std::size_t, std::string& choraleId) {
-                std::cout << "generated " << choraleId << "\n";
+            [&](std::size_t, std::string&) {
+                ++generated;
                 return true;
             }).run();
+
+        // One line instead of one per chorale. The directory tells kern from corpus.
+        std::cout << "✅ Generated " << generated << (generated == 1 ? " chorale" : " chorales") << " in "
+                  << outDir.string() << (applyAnalysis ? " (with analysis)" : "") << "\n";
     } catch (const nlohmann::json::exception& e) {
         std::cerr << "Error: invalid JSON in modulations file: " << e.what() << "\n";
         return 1;
