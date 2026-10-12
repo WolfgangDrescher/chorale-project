@@ -96,7 +96,6 @@ const files = fs.readdirSync(pathToKernScores).filter((file) => file.endsWith('.
 
 for (const file of files) {
     const id = basename(file, '.krn');
-    console.log(`✅ Extract metadata for ${id}`);
 
     const kern = fs.readFileSync(`${pathToKernScores}/${file}`, 'utf8');
     const referenceRecords = parseHumdrumReferenceRecords(kern);
@@ -125,3 +124,5 @@ for (const file of files) {
         sortKeys: true,
     }));
 }
+
+console.log(`✅ Extract metadata for all ${files.length} chorales`);
