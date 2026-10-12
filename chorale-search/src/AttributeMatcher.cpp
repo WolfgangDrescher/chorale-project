@@ -7,10 +7,8 @@
 #include <cstdlib>
 #include <iterator>
 #include <optional>
-#include <regex>
 #include <sstream>
 #include <stdexcept>
-#include <tuple>
 #include <utility>
 
 namespace choralesearch {
@@ -160,20 +158,70 @@ std::string kernToPitch(const std::string& kerndata) {
     return pitch;
 }
 
+// Reads a value from left to right, one kind of character after the other, the way the grammar
+// of the value is written down. The pattern and token values the parsers below take apart are
+// short and simple, and they are taken apart for every onset a pattern is held against, which a
+// std::regex did far too slowly. It only holds a reference to the text, so the text has to
+// outlive the scanner.
+class ValueScanner {
+public:
+    explicit ValueScanner(const std::string& text) : m_text(text) {}
+
+    std::string digits() { return readWhile(isDigit); }
+    std::string letters() { return readWhile(isLetter); }
+    // The longest run of characters that are all one of `chars`.
+    std::string anyOf(const std::string& chars) {
+        return readWhile([&](char c) { return chars.find(c) != std::string::npos; });
+    }
+    // Moves past `c` and answers true if it is what comes next, otherwise stays and answers false.
+    bool accept(char c) {
+        if (m_position >= m_text.size() || m_text[m_position] != c) return false;
+        ++m_position;
+        return true;
+    }
+    bool atEnd() const { return m_position == m_text.size(); }
+
+private:
+    // ASCII only, like the \d and [A-Za-z] of the grammars: the current locale has no say.
+    static bool isDigit(char c) { return c >= '0' && c <= '9'; }
+    static bool isLetter(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'); }
+
+    template <typename Accept>
+    std::string readWhile(Accept accept) {
+        std::size_t begin = m_position;
+        while (m_position < m_text.size() && accept(m_text[m_position])) ++m_position;
+        return m_text.substr(begin, m_position - begin);
+    }
+
+    const std::string& m_text;
+    std::size_t m_position = 0;
+};
+
+// A **kern pattern value taken apart: rhythm, pitch-or-rest and fermata, each of them left out
+// (empty, false) when the value does not state it.
+struct KernValue {
+    std::string rhythm;
+    std::string pitch;
+    bool fermata;
+};
+
 // Splits a **kern pattern value into rhythm, pitch-or-rest, and/or fermata (";") --
 // any subset, in any combination; an omitted component is a wildcard, not "absent"
 // (no ";" doesn't mean "no fermata"). nullopt for anything else -- falls back to literal.
-std::optional<std::tuple<std::string, std::string, bool>> parseKernValue(const std::string& patternValue) {
-    static const std::regex re(R"(^(\d+\.*)?([A-Ga-g]+[#n-]*|r)?(;)?$)");
-    std::smatch m;
-    if (!std::regex_match(patternValue, m, re)) return std::nullopt;
+std::optional<KernValue> parseKernValue(const std::string& patternValue) {
+    ValueScanner scan(patternValue);
+    std::string rhythm = scan.digits();
+    if (!rhythm.empty()) rhythm += scan.anyOf(".");
 
-    std::string recip = m[1].str();
-    std::string pitch = m[2].str();
-    bool fermata = m[3].matched;
-    if (recip.empty() && pitch.empty() && !fermata) return std::nullopt; // e.g. "" -- nothing to match on
+    std::string pitch = scan.anyOf("ABCDEFGabcdefg");
+    if (!pitch.empty()) pitch += scan.anyOf("#n-");
+    else if (scan.accept('r')) pitch = "r";
 
-    return std::make_tuple(recip, pitch, fermata);
+    bool fermata = scan.accept(';');
+    if (!scan.atEnd()) return std::nullopt;
+    if (rhythm.empty() && pitch.empty() && !fermata) return std::nullopt; // e.g. "" -- nothing to match on
+
+    return KernValue{std::move(rhythm), std::move(pitch), fermata};
 }
 
 // A **kern pattern value independently checks rhythm, pitch-or-rest, and/or fermata,
@@ -188,8 +236,8 @@ bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok, bool 
     auto parsed = parseKernValue(patternValue);
     if (!parsed) return patternValue == actual;
 
-    const auto& [recip, pitch, fermata] = *parsed;
-    if (!recip.empty() && recip != hum::Convert::durationToRecip(duration)) return false;
+    const auto& [rhythm, pitch, fermata] = *parsed;
+    if (!rhythm.empty() && rhythm != hum::Convert::durationToRecip(duration)) return false;
     if (!pitch.empty()) {
         std::string actualPitch = kernToPitch(actual);
         bool pitchMatches = ignoreOctave ? hum::Convert::kernToBase40PC(pitch) == hum::Convert::kernToBase40PC(actualPitch)
@@ -220,14 +268,25 @@ bool kernInList(const std::vector<PatternValue>& allowed, hum::HTp actualTok, bo
     });
 }
 
-// Splits a **mint interval token ("+M2", "-m3", ...) into (sign, quality, number).
+// An interval as a mint token or a pattern value writes it: [direction][quality]number.
+struct IntervalParts {
+    std::string direction; // "+", "-" or empty
+    std::string quality;   // "M", "P", ... or empty
+    std::string number;    // the diatonic number
+};
+
+// Splits a **mint interval token ("+M2", "-m3", ...) into its IntervalParts.
 // Sign, quality, and number each come back empty when the string has none (e.g. a
 // bare "2", or a bare "+"), which mintValueMatches() below treats as "matches any".
-std::optional<std::tuple<std::string, std::string, std::string>> parseMintValue(const std::string& s) {
-    static const std::regex re(R"(^([+-]?)([A-Za-z]*)(\d*)$)");
-    std::smatch m;
-    if (!std::regex_match(s, m, re)) return std::nullopt;
-    return std::make_tuple(m[1].str(), m[2].str(), m[3].str());
+std::optional<IntervalParts> parseMintValue(const std::string& s) {
+    ValueScanner scan(s);
+    std::string direction;
+    if (scan.accept('+')) direction = "+";
+    else if (scan.accept('-')) direction = "-";
+    std::string quality = scan.letters();
+    std::string number = scan.digits();
+    if (!scan.atEnd()) return std::nullopt;
+    return IntervalParts{std::move(direction), std::move(quality), std::move(number)};
 }
 
 // A pattern value may omit sign, quality, and/or number to match any of them -- "+2"
@@ -287,7 +346,7 @@ std::optional<std::string> complementMintValue(const std::string& patternValue) 
 bool mintComplementationAllowedFor(const std::vector<std::string>& allowedNumbers, const std::string& patternValue) {
     auto parsed = parseMintValue(patternValue);
     if (!parsed) return false;
-    const std::string& number = std::get<2>(*parsed);
+    const std::string& number = parsed->number;
     if (number.empty()) return false;
     return containsNumberOrWildcard(allowedNumbers, number);
 }
@@ -301,13 +360,6 @@ std::string reduceMintValue(const std::string& value) {
     if (number.empty()) return value;
     return sign + reduceHintInterval(quality + number);
 }
-
-// An interval as a mint token or a pattern value writes it: [direction][quality]number.
-struct IntervalParts {
-    std::string direction; // "+", "-" or empty
-    std::string quality;   // "M", "P", ... or empty
-    std::string number;    // the diatonic number
-};
 
 // The size of an interval, as far as the pattern tells intervals apart. Without a quality in the
 // pattern's value ("6") every interval of that number is as wide as any other, so the steps above
@@ -341,10 +393,7 @@ bool mintComparisonMatches(const PatternValue& v, const std::string& actual) {
     auto token = parseMintValue(actual);
     auto threshold = parseMintValue(v.text);
     if (!token || !threshold) return false;
-    const auto& [tokenDirection, tokenQuality, tokenNumber] = *token;
-    const auto& [thresholdDirection, thresholdQuality, thresholdNumber] = *threshold;
-    return evaluateIntervalComparison(v.comparisonOperator, {tokenDirection, tokenQuality, tokenNumber},
-                                      {thresholdDirection, thresholdQuality, thresholdNumber});
+    return evaluateIntervalComparison(v.comparisonOperator, *token, *threshold);
 }
 
 // Whether one value of a mint pattern, with its operator, holds for the interval token `actual`. `seen` is `actual` as
@@ -371,14 +420,21 @@ bool mintInList(const std::vector<PatternValue>& allowed, const std::string& act
     });
 }
 
-// Splits a figured-bass interval ("m6", "P5", ...) into (quality, figure). A bare
+// A figured-bass interval taken apart, as parseFbValue() does.
+struct FbValue {
+    std::string quality; // "M", "P", ... or empty
+    std::string figure;  // the interval number
+};
+
+// Splits a figured-bass interval ("m6", "P5", ...) into its FbValue. A bare
 // figure like "6" comes back with an empty quality, which fbValueMatches() treats
 // as "any quality" for that figure.
-std::optional<std::pair<std::string, std::string>> parseFbValue(const std::string& s) {
-    static const std::regex re(R"(^([A-Za-z]*)(\d+)$)");
-    std::smatch m;
-    if (!std::regex_match(s, m, re)) return std::nullopt;
-    return std::make_pair(m[1].str(), m[2].str());
+std::optional<FbValue> parseFbValue(const std::string& s) {
+    ValueScanner scan(s);
+    std::string quality = scan.letters();
+    std::string figure = scan.digits();
+    if (figure.empty() || !scan.atEnd()) return std::nullopt;
+    return FbValue{std::move(quality), std::move(figure)};
 }
 
 bool fbIntervalMatches(const std::string& patternValue, const std::string& actual) {
@@ -456,8 +512,8 @@ bool hintComparisonMatches(const PatternValue& v, const std::string& actual) {
     auto token = parseFbValue(actual);
     auto threshold = parseFbValue(v.text);
     if (!token || !threshold) return false;
-    return evaluateIntervalComparison(v.comparisonOperator, {"", token->first, token->second},
-                                      {"", threshold->first, threshold->second});
+    return evaluateIntervalComparison(v.comparisonOperator, {"", token->quality, token->figure},
+                                      {"", threshold->quality, threshold->figure});
 }
 
 bool hintInList(const std::vector<PatternValue>& allowed, const std::string& actual, bool reduceCompound) {
@@ -566,8 +622,8 @@ bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, 
         const std::string& v = value.text;
         auto parsed = parseKernValue(v);
         if (!parsed) return kernValueMatches(v, tok, ignoreOctave, duration); // literal markup -- no rhythm to drop
-        const auto& [recip, pitch, fermata] = *parsed;
-        if (recip.empty()) return kernValueMatches(v, tok, ignoreOctave, duration);
+        const auto& [rhythm, pitch, fermata] = *parsed;
+        if (rhythm.empty()) return kernValueMatches(v, tok, ignoreOctave, duration);
         std::string withoutRhythm = pitch + (fermata ? ";" : "");
         if (withoutRhythm.empty()) return true; // a rhythm and nothing else -- nothing left to judge
         return kernValueMatches(withoutRhythm, tok, ignoreOctave, duration);
