@@ -497,9 +497,7 @@ bool phraseInList(const std::vector<PatternValue>& allowed, bool starts, bool en
 }
 
 hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineNumber, const std::string& feature) {
-    hum::HTp start = chorale.spine(feature, voice);
-    if (!start) return nullptr;
-    return findTokenAtLine(start, lineNumber);
+    return chorale.tokenAtLine(feature, voice, lineNumber);
 }
 
 // Strips the "!" negation prefix (see the pattern loop below). A lone "!" isn't a prefix --
@@ -578,7 +576,7 @@ bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, 
 
 // The token `spineStart`'s spine has on the line `tok` sits on. The spines run side by side
 // down the file, so this is a step sideways along one line -- the line `tok` already knows it
-// belongs to -- rather than a walk down a spine from its beginning as findTokenAtLine() does.
+// belongs to -- rather than going by a line number as HumdrumChorale::tokenAtLine() does.
 // buildOnsets() asks this of every onset it walks, which that one would make quadratic.
 // A null token (the voice holds a note) is nullptr, or with `resolveNull` the note it stands for.
 hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull = false) {
@@ -588,7 +586,7 @@ hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull =
     for (int field = 0; field < line->getFieldCount(); ++field) {
         hum::HTp candidate = line->token(field);
         // The leftmost field of the track, which for a split spine is the branch
-        // findTokenAtLine() reaches too -- getNextToken() follows the left side of a split.
+        // tokenAtLine() reaches too -- getNextToken() follows the left side of a split.
         if (candidate->getTrack() != track) continue;
         if (!candidate->isNull()) return candidate;
         hum::HTp note = resolveNull ? candidate->resolveNull() : nullptr;

@@ -212,7 +212,7 @@ std::optional<BassLine> readBassLine(const HumdrumChorale& chorale, const std::v
     // two where the match starts belongs to it.
     const std::string intervalSpine = "hint-" + std::to_string(kBassVoice) + std::to_string(match.voice);
     const int startLine = static_cast<int>(match.startLineNumber);
-    if (hum::HTp token = choralesearch::findTokenAtLine(chorale.spine(intervalSpine, 1), startLine)) {
+    if (hum::HTp token = chorale.tokenAtLine(intervalSpine, 1, startLine)) {
         bassLine.startInterval = std::string(*token);
         if (options.matcherOptions.hintReduceCompound) {
             bassLine.startInterval = choralesearch::reduceHintInterval(bassLine.startInterval);
@@ -293,7 +293,7 @@ public:
 
 private:
     static hum::HTp matchStartNote(const HumdrumChorale& chorale, const Result& match) {
-        return choralesearch::findTokenAtLine(chorale.spine("kern", match.voice), static_cast<int>(match.startLineNumber));
+        return chorale.tokenAtLine("kern", match.voice, static_cast<int>(match.startLineNumber));
     }
 
     SegmentQueryOptions m_options;

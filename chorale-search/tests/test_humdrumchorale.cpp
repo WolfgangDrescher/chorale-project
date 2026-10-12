@@ -2,7 +2,6 @@
 
 #include "HumdrumChorale.hpp"
 
-using choralesearch::findTokenAtLine;
 using choralesearch::HumdrumChorale;
 
 namespace {
@@ -77,7 +76,7 @@ TEST_CASE(spine_voice_order_matches_bass_tenor_alto_soprano_columns) {
     const int line = dataLineAtPosition(chorale.spine("kern", 1), 0);
     REQUIRE(line > 0);
     auto tokenTextAt = [&](std::size_t voice) {
-        auto tok = findTokenAtLine(chorale.spine("kern", voice), line);
+        auto tok = chorale.tokenAtLine("kern", voice, line);
         REQUIRE(tok != nullptr);
         return std::string(*tok);
     };
@@ -87,31 +86,39 @@ TEST_CASE(spine_voice_order_matches_bass_tenor_alto_soprano_columns) {
     CHECK_EQ(tokenTextAt(4), std::string("4g"));
 }
 
-TEST_CASE(find_token_at_line_returns_null_for_a_null_token) {
+TEST_CASE(token_at_line_returns_null_for_a_null_token) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // The second half of beat 4 in bar 1, where the tenor moves and the bass does not: the
     // bass column is "." there, still sounding its previous note, so it has no onset and must
     // not be read as a match. The line is looked up through the tenor, the voice that moves.
     const int line = dataLineAtPosition(chorale.spine("kern", 2), hum::HumNum(7, 2));
     REQUIRE(line > 0);
-    CHECK(findTokenAtLine(chorale.spine("kern", 1), line) == nullptr);
+    CHECK(chorale.tokenAtLine("kern", 1, line) == nullptr);
     // Same line, tenor column has a real (if tied) onset: "8F#J".
-    auto tenorTok = findTokenAtLine(chorale.spine("kern", 2), line);
+    auto tenorTok = chorale.tokenAtLine("kern", 2, line);
     REQUIRE(tenorTok != nullptr);
     CHECK_EQ(std::string(*tenorTok), std::string("8F#J"));
 }
 
-TEST_CASE(find_token_at_line_returns_null_for_a_non_data_line) {
+TEST_CASE(token_at_line_returns_null_for_a_non_data_line) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // The barline opening bar 1 ("=1-") stands at the same position as the first onset and is
     // not a data line.
     const int line = barlineAtPosition(chorale.spine("kern", 1), 0);
     REQUIRE(line > 0);
-    CHECK(findTokenAtLine(chorale.spine("kern", 1), line) == nullptr);
+    CHECK(chorale.tokenAtLine("kern", 1, line) == nullptr);
 }
 
-TEST_CASE(find_token_at_line_returns_null_for_a_null_spine) {
-    CHECK(findTokenAtLine(nullptr, 1) == nullptr);
+TEST_CASE(token_at_line_returns_null_for_a_missing_spine) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CHECK(chorale.tokenAtLine("nonexistent", 1, 10) == nullptr);
+    CHECK(chorale.tokenAtLine("kern", 5, 10) == nullptr);
+}
+
+TEST_CASE(token_at_line_returns_null_for_a_line_outside_the_file) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CHECK(chorale.tokenAtLine("kern", 1, 0) == nullptr);
+    CHECK(chorale.tokenAtLine("kern", 1, 1000000) == nullptr);
 }
 
 TEST_CASE(has_feature_is_true_for_all_six_hint_pair_spines) {

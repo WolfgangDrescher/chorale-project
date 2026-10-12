@@ -143,7 +143,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
             position[kDurationKey] = {hum::Convert::durationToRecip(onsets[i].duration)};
         }
         if (options.includePhrase) {
-            if (hum::HTp kernToken = findTokenAtLine(chorale.spine(kKernFeature, voice), lineNumber)) {
+            if (hum::HTp kernToken = chorale.tokenAtLine(kKernFeature, voice, lineNumber)) {
                 std::vector<std::string> roles;
                 if (startsPhrase(kernToken)) roles.push_back("start");
                 if (kernToken->hasFermata()) roles.push_back("end");
@@ -153,7 +153,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
             }
         }
         if (options.metricPositions) {
-            if (hum::HTp metweightToken = findTokenAtLine(chorale.spine(kMetweightFeature, voice), lineNumber)) {
+            if (hum::HTp metweightToken = chorale.tokenAtLine(kMetweightFeature, voice, lineNumber)) {
                 position[kMetweightFeature] = toPatternValues(equivalentMetricWeights(std::string(*metweightToken)));
             }
         }
@@ -161,7 +161,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
             for (const std::string& pair : options.hintPairs) {
                 // A hint spine belongs to the pair, not to a voice: there is one per score, and
                 // it's always found under the first voice (see docs/features/hint).
-                if (hum::HTp hintToken = findTokenAtLine(chorale.spine(pair, 1), lineNumber)) {
+                if (hum::HTp hintToken = chorale.tokenAtLine(pair, 1, lineNumber)) {
                     std::string interval = std::string(*hintToken);
                     if (options.ignoreIntervalQuality) interval = withoutQuality(interval);
                     position[pair] = {interval};
@@ -169,7 +169,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
             }
             if (options.innerVoices) {
                 // Like a hint spine, fb is one per score, found under the first voice.
-                if (hum::HTp fbToken = findTokenAtLine(chorale.spine(kFbFeature, 1), lineNumber)) {
+                if (hum::HTp fbToken = chorale.tokenAtLine(kFbFeature, 1, lineNumber)) {
                     std::string chord = std::string(*fbToken);
                     if (options.ignoreIntervalQuality) chord = chordWithoutQuality(chord);
                     position[kFbFeature] = {chord};

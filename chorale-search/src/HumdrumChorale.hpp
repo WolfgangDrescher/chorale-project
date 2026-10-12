@@ -28,6 +28,11 @@ public:
 
     hum::HTp spine(const std::string& feature, std::size_t voice) const;
 
+    // The data token the spine of `feature` and `voice` has on `lineNumber`, or nullptr when the
+    // spine is missing, the line is no data line, or the voice holds its note there (a null
+    // token). It goes straight to the line, so asking it of every onset of a corpus stays cheap.
+    hum::HTp tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const;
+
 private:
     // What both constructors do once the file is parsed: derive the analysis spines, then note
     // down which spine answers to which feature name.
@@ -38,7 +43,5 @@ private:
     hum::HumdrumFile m_infile;
     std::map<std::string, std::vector<hum::HTp>> m_spinesByFeature;
 };
-
-hum::HTp findTokenAtLine(hum::HTp spineStart, int targetLineNumber);
 
 } // namespace choralesearch

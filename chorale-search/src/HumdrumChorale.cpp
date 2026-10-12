@@ -62,13 +62,21 @@ hum::HTp HumdrumChorale::spine(const std::string& feature, std::size_t voice) co
     return it->second[voice - 1];
 }
 
-hum::HTp findTokenAtLine(hum::HTp spineStart, int targetLineNumber) {
-    if (!spineStart) return nullptr;
-    hum::HTp t = spineStart->getNextToken();
-    while (t) {
-        if (t->getLineNumber() > targetLineNumber) return nullptr; // walked past it -- not present
-        if (t->getOwner()->isData() && !t->isNull() && t->getLineNumber() == targetLineNumber) return t;
-        t = t->getNextToken();
+hum::HTp HumdrumChorale::tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {
+    hum::HTp start = spine(feature, voice);
+    if (!start) return nullptr;
+    hum::HumdrumFile* file = start->getOwner()->getOwner();
+    if (lineNumber < 1 || lineNumber > file->getLineCount()) return nullptr;
+    hum::HLp line = file->getLine(lineNumber - 1);
+    if (!line->isData()) return nullptr;
+
+    int track = start->getTrack();
+    for (int field = 0; field < line->getFieldCount(); ++field) {
+        hum::HTp candidate = line->token(field);
+        // The leftmost field of the track, which for a split spine is the branch
+        // getNextToken() follows.
+        if (candidate->getTrack() != track) continue;
+        return candidate->isNull() ? nullptr : candidate;
     }
     return nullptr;
 }
