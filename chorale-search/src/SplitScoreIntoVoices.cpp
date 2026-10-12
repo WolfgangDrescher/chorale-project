@@ -12,11 +12,13 @@ namespace choralesearch {
 
 namespace {
 
-// A staff of the grand-staff input: its track number and which of its two layers sounds the
-// upper voice. Everything else about it is read off the file when a line is printed.
+// A staff of the grand-staff input: its track number, whether it carries one voice or two, and
+// which of its two layers sounds the upper voice. Everything else about it is read off the file
+// when a line is printed.
 struct Staff {
     int track = 0;
-    int upperLayer = 0; // index into the track's tokens on a line (0 = leftmost subspine)
+    bool twoVoices = false; // false: a lone voice -- the staff's other voice stays silent
+    int upperLayer = 0;     // index into the track's tokens on a line (0 = leftmost subspine)
 };
 
 std::vector<std::string> splitChordNotes(const std::string& token) {
@@ -29,6 +31,16 @@ std::vector<std::string> splitChordNotes(const std::string& token) {
 
 bool isRestToken(const std::string& token) {
     return token.find('r') != std::string::npos;
+}
+
+// How many notes a token sounds: a chord counts each of its notes, a rest, a null token and
+// anything unreadable none.
+int noteCount(const std::string& token) {
+    int count = 0;
+    for (const std::string& note : splitChordNotes(token)) {
+        if (!isRestToken(note) && note != "." && hum::Convert::kernToMidiNoteNumber(note) > 0) ++count;
+    }
+    return count;
 }
 
 // Mean MIDI note number of everything a track (or one of its layers) plays. What tells the
@@ -56,6 +68,22 @@ double meanPitch(hum::HumdrumFile& infile, int track, int onlyLayer = -1) {
         }
     }
     return count ? sum / count : 0;
+}
+
+// Whether a staff ever sounds two notes at once -- a chord, or two layers that both play. A staff
+// that never does is a lone voice, however it was written: a MusicXML export may give it a second
+// layer that only rests, or none at all.
+bool soundsTwoVoices(hum::HumdrumFile& infile, int track) {
+    for (int i = 0; i < infile.getLineCount(); ++i) {
+        if (!infile[i].isData()) continue;
+        int notes = 0;
+        for (int j = 0; j < infile[i].getFieldCount(); ++j) {
+            hum::HTp token = infile.token(i, j);
+            if (token->getTrack() == track) notes += noteCount(*token);
+        }
+        if (notes > 1) return true;
+    }
+    return false;
 }
 
 std::vector<hum::HTp> tokensOfTrack(hum::HumdrumFile& infile, int line, int track) {
@@ -101,6 +129,30 @@ std::pair<std::string, std::string> voicesOnDataLine(const std::vector<hum::HTp>
                                  ") -- not a four-voice setting");
 }
 
+// What a lone-voice staff says on one data line: the layer that plays a note, else one that
+// carries on (a null token holds the note before it), else a rest.
+std::string loneVoiceOnDataLine(const std::vector<hum::HTp>& tokens) {
+    std::string result = ".";
+    int rank = -1;
+    for (hum::HTp token : tokens) {
+        const std::string text = *token;
+        const int thisRank = noteCount(text) > 0 ? 2 : (text == "." ? 1 : 0);
+        if (thisRank > rank) {
+            result = text;
+            rank = thisRank;
+        }
+    }
+    return result;
+}
+
+// The silent voice of a lone-voice staff: one rest for the rest of the bar where a bar begins
+// (the way a MusicXML export writes a whole-bar rest), null tokens for the other lines.
+std::string silentVoiceOnDataLine(hum::HumdrumLine& line, bool& barBegins) {
+    if (!barBegins) return ".";
+    barBegins = false;
+    return hum::Convert::durationToRecip(line.getDurationToBarline()) + "r";
+}
+
 } // namespace
 
 std::string splitScoreIntoVoices(hum::HumdrumFile& infile) {
@@ -114,10 +166,13 @@ std::string splitScoreIntoVoices(hum::HumdrumFile& infile) {
     Staff high{tracks[1], 0};
     if (meanPitch(infile, low.track) > meanPitch(infile, high.track)) std::swap(low.track, high.track);
     for (Staff* staff : {&low, &high}) {
+        staff->twoVoices = soundsTwoVoices(infile, staff->track);
+        if (!staff->twoVoices) continue;
         if (meanPitch(infile, staff->track, 0) < meanPitch(infile, staff->track, 1)) staff->upperLayer = 1;
     }
 
     std::ostringstream out;
+    bool barBegins = true;
     for (int i = 0; i < infile.getLineCount(); ++i) {
         hum::HumdrumLine& line = infile[i];
         if (!line.hasSpines()) {
@@ -146,6 +201,7 @@ std::string splitScoreIntoVoices(hum::HumdrumFile& infile) {
         }
         if (line.isLocalComment()) continue; // spine-bound layout hints whose spines no longer exist
 
+        if (line.isBarline()) barBegins = true;
         if (line.isInterpretation() || line.isBarline()) {
             // Whatever a staff states -- clef, key, meter, a barline -- both of its voices
             // inherit. Subspines rarely disagree here; the leftmost speaks for the staff.
@@ -156,8 +212,17 @@ std::string splitScoreIntoVoices(hum::HumdrumFile& infile) {
         }
 
         if (line.isData()) {
-            const auto [bass, tenor] = voicesOnDataLine(tokensOfTrack(infile, i, low.track), low, i + 1);
-            const auto [alto, soprano] = voicesOnDataLine(tokensOfTrack(infile, i, high.track), high, i + 1);
+            // A lone-voice staff gives its voice to the outer part (bass, soprano) and rests in
+            // the inner one (tenor, alto).
+            const std::string silent = silentVoiceOnDataLine(line, barBegins);
+            const std::pair<std::string, std::string> lowVoices =
+                low.twoVoices ? voicesOnDataLine(tokensOfTrack(infile, i, low.track), low, i + 1)
+                              : std::make_pair(loneVoiceOnDataLine(tokensOfTrack(infile, i, low.track)), silent);
+            const std::pair<std::string, std::string> highVoices =
+                high.twoVoices ? voicesOnDataLine(tokensOfTrack(infile, i, high.track), high, i + 1)
+                               : std::make_pair(silent, loneVoiceOnDataLine(tokensOfTrack(infile, i, high.track)));
+            const auto& [bass, tenor] = lowVoices;
+            const auto& [alto, soprano] = highVoices;
             out << bass << '\t' << tenor << '\t' << alto << '\t' << soprano << '\n';
             continue;
         }

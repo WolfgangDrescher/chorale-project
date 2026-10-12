@@ -9,7 +9,7 @@ namespace choralesearch {
 struct PreparedScore {
     std::string kern;
     std::string inputFormat; // "kern" or "musicxml": what arrived
-    std::string layout;      // "satb" (four voices passed through) or "grand-staff" (split into four)
+    std::string layout;      // "satb" (four voices passed through) or "grand-staff" (split into four, a lone voice per staff becoming bass or soprano)
 };
 
 // A **kern or MusicXML score as four **kern spines in the corpus's header shape: MusicXML is

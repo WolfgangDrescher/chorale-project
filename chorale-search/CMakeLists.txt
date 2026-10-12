@@ -101,6 +101,11 @@ if(BUILD_TESTS)
     target_link_libraries(test_segmentation PRIVATE chorale_core)
     add_test(NAME segmentation COMMAND test_segmentation)
 
+    add_executable(test_splitscoreintovoices tests/test_splitscoreintovoices.cpp)
+    target_include_directories(test_splitscoreintovoices PRIVATE tests)
+    target_link_libraries(test_splitscoreintovoices PRIVATE chorale_core)
+    add_test(NAME splitscoreintovoices COMMAND test_splitscoreintovoices)
+
     add_executable(test_check tests/test_check.cpp)
     target_include_directories(test_check PRIVATE tests)
     target_link_libraries(test_check PRIVATE chorale_core)
