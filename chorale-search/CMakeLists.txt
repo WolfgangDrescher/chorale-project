@@ -43,7 +43,8 @@ target_include_directories(chorale_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
 )
 target_compile_options(chorale_core PRIVATE -Wall -Wextra)
-target_link_libraries(chorale_core PUBLIC humlib)
+find_package(Threads REQUIRED)
+target_link_libraries(chorale_core PUBLIC humlib Threads::Threads)
 
 add_executable(chorale-search cli/chorale-search.cpp)
 target_link_libraries(chorale-search PRIVATE chorale_core)

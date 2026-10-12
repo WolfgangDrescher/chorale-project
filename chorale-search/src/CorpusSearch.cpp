@@ -1,10 +1,13 @@
 #include "CorpusSearch.hpp"
 
 #include <algorithm>
+#include <atomic>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
 #include "AttributeMatcher.hpp"
+#include "FileDispatcher.hpp"
 #include "HumdrumChorale.hpp"
 #include "HumdrumUtils.hpp"
 #include "VoiceMap.hpp"
@@ -70,6 +73,13 @@ ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale
     }
     return resolved;
 }
+
+// A chorale together with the results of searching it, one list for each query. A HumdrumChorale
+// can be neither copied nor moved, which is why it is held by a pointer.
+struct SearchedChorale {
+    std::unique_ptr<HumdrumChorale> chorale;
+    std::vector<Results> results; // per query
+};
 
 } // namespace
 
@@ -143,21 +153,10 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
 }
 
 Results CorpusSearch::run(const Query& query) const {
-    Results allResults;
-    const auto files = findChoraleFiles();
-    for (std::size_t i = 0; i < files.size(); ++i) {
-        HumdrumChorale chorale(files[i].string(), m_applyAnalysis);
-        if (chorale.hasFeature(query.feature)) {
-            auto results = runOne(chorale, query);
-            allResults.insert(allResults.end(), std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()));
-        }
-        reportProgress(i + 1, files.size(), chorale.id(), allResults.size());
-        if (query.limit && allResults.size() >= *query.limit) {
-            allResults.resize(*query.limit);
-            break;
-        }
-    }
-    return allResults;
+    // The same search as for a list of one, which numbers its results; a lone query has no use for that.
+    Results results = run(std::vector<Query>{query});
+    for (Result& result : results) result.queryId.reset();
+    return results;
 }
 
 Results CorpusSearch::run(const std::vector<Query>& queries) const {
@@ -168,36 +167,44 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
     }
 
     // Each query gets its own result bucket (so its own `limit`, if any, caps only its own
-    // matches) and its own `done` flag (so a query that already hit its limit is skipped
-    // for every remaining file, without stopping the others still running).
+    // matches) and its own `done` flag (so a query that already hit its limit is not added to
+    // for the remaining files, without stopping the others still running).
     std::vector<Results> perQuery(queries.size());
-    std::vector<bool> done(queries.size(), false);
+    std::vector<std::atomic<bool>> done(queries.size()); // read while searching, set while collecting
+    for (std::atomic<bool>& flag : done) flag = false;
 
     const auto files = findChoraleFiles();
-    for (std::size_t fileIndex = 0; fileIndex < files.size(); ++fileIndex) {
-        // The loop only ever reaches this point if at least one query is still pending (see
-        // the all_of(done) break below), so this is never wasted work -- no need to defer
-        // construction.
-        HumdrumChorale chorale(files[fileIndex].string(), m_applyAnalysis); // parsed once per file, shared by every query
-        for (std::size_t i = 0; i < queries.size(); ++i) {
-            if (done[i]) continue;
-            const Query& query = queries[i];
-            if (!chorale.hasFeature(query.feature)) continue;
-
-            auto results = runOne(chorale, query);
-            for (auto& r : results) r.queryId = queryIds[i];
-            Results& bucket = perQuery[i];
-            bucket.insert(bucket.end(), std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()));
-            if (query.limit && bucket.size() >= *query.limit) {
-                bucket.resize(*query.limit);
-                done[i] = true;
+    FileDispatcher<SearchedChorale>(
+        files.size(),
+        [&](std::size_t fileIndex) {
+            // Parsed once per file, shared by every query.
+            SearchedChorale searched{std::make_unique<HumdrumChorale>(files[fileIndex].string(), m_applyAnalysis),
+                                     std::vector<Results>(queries.size())};
+            for (std::size_t i = 0; i < queries.size(); ++i) {
+                const Query& query = queries[i];
+                if (done[i] || !searched.chorale->hasFeature(query.feature)) continue;
+                searched.results[i] = runOne(*searched.chorale, query);
+                for (auto& r : searched.results[i]) r.queryId = queryIds[i];
             }
-        }
-        std::size_t matchesSoFar = 0;
-        for (const Results& bucket : perQuery) matchesSoFar += bucket.size();
-        reportProgress(fileIndex + 1, files.size(), chorale.id(), matchesSoFar);
-        if (std::all_of(done.begin(), done.end(), [](bool d) { return d; })) break;
-    }
+            return searched;
+        },
+        [&](std::size_t fileIndex, SearchedChorale& searched) {
+            for (std::size_t i = 0; i < queries.size(); ++i) {
+                if (done[i]) continue;
+                Results& bucket = perQuery[i];
+                bucket.insert(bucket.end(), std::make_move_iterator(searched.results[i].begin()),
+                              std::make_move_iterator(searched.results[i].end()));
+                if (queries[i].limit && bucket.size() >= *queries[i].limit) {
+                    bucket.resize(*queries[i].limit);
+                    done[i] = true;
+                }
+            }
+            std::size_t matchesSoFar = 0;
+            for (const Results& bucket : perQuery) matchesSoFar += bucket.size();
+            reportProgress(fileIndex + 1, files.size(), searched.chorale->id(), matchesSoFar);
+            // Every query has its limit, what is left of the corpus is not needed.
+            return !std::all_of(done.begin(), done.end(), [](const std::atomic<bool>& d) { return d.load(); });
+        }).run();
 
     Results allResults;
     for (auto& bucket : perQuery) {
@@ -209,20 +216,28 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
 void CorpusSearch::forEachMatch(const std::vector<Query>& queries, const MatchVisitor& visit) const {
     const auto files = findChoraleFiles();
     std::size_t matchesSoFar = 0;
-    for (std::size_t fileIndex = 0; fileIndex < files.size(); ++fileIndex) {
-        HumdrumChorale chorale(files[fileIndex].string(), m_applyAnalysis);
-        for (std::size_t i = 0; i < queries.size(); ++i) {
-            const Query& query = queries[i];
-            if (!chorale.hasFeature(query.feature)) continue;
-
-            for (Result& result : runOne(chorale, query)) {
-                result.queryId = query.id.value_or(std::to_string(i));
-                ++matchesSoFar;
-                visit(chorale, result);
+    FileDispatcher<SearchedChorale>(
+        files.size(),
+        [&](std::size_t fileIndex) {
+            SearchedChorale searched{std::make_unique<HumdrumChorale>(files[fileIndex].string(), m_applyAnalysis),
+                                     std::vector<Results>(queries.size())};
+            for (std::size_t i = 0; i < queries.size(); ++i) {
+                if (!searched.chorale->hasFeature(queries[i].feature)) continue;
+                searched.results[i] = runOne(*searched.chorale, queries[i]);
             }
-        }
-        reportProgress(fileIndex + 1, files.size(), chorale.id(), matchesSoFar);
-    }
+            return searched;
+        },
+        [&](std::size_t fileIndex, SearchedChorale& searched) {
+            for (std::size_t i = 0; i < queries.size(); ++i) {
+                for (Result& result : searched.results[i]) {
+                    result.queryId = queries[i].id.value_or(std::to_string(i));
+                    ++matchesSoFar;
+                    visit(*searched.chorale, result);
+                }
+            }
+            reportProgress(fileIndex + 1, files.size(), searched.chorale->id(), matchesSoFar);
+            return true;
+        }).run();
 }
 
 } // namespace choralesearch

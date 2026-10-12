@@ -1,7 +1,9 @@
 #include "test_framework.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <filesystem>
+#include <fstream>
 
 #include "CorpusSearch.hpp"
 #include "HumdrumChorale.hpp"
@@ -544,6 +546,59 @@ TEST_CASE(for_each_match_visits_the_same_matches_run_collects_with_their_chorale
     CHECK(visited > 0u);
     CHECK(choraleMatchesResult);
     CHECK(queryIdSet);
+}
+
+TEST_CASE(for_each_match_visits_one_file_at_a_time_and_in_file_order) {
+    // The files are searched side by side, but `visit` is called for one match at a time, files in
+    // order, with the chorale the match was found in.
+    auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    CorpusSearch search(fixturesDir);
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+
+    std::atomic<int> visiting{0};
+    bool neverTwoAtOnce = true;
+    bool choraleMatchesResult = true;
+    std::vector<std::string> choraleIds;
+    search.forEachMatch({q}, [&](const HumdrumChorale& chorale, const Result& result) {
+        if (++visiting != 1) neverTwoAtOnce = false;
+        if (chorale.id() != result.choraleId) choraleMatchesResult = false;
+        choraleIds.push_back(result.choraleId);
+        --visiting;
+    });
+
+    CHECK(neverTwoAtOnce);
+    CHECK(choraleMatchesResult);
+    CHECK_EQ(choraleIds.size(), std::size_t{51});
+    CHECK(std::is_sorted(choraleIds.begin(), choraleIds.end()));
+}
+
+TEST_CASE(run_throws_for_a_file_that_cannot_be_parsed) {
+    auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    auto corpus = std::filesystem::temp_directory_path() / "chorale-search-unparsable-corpus";
+    std::filesystem::remove_all(corpus);
+    std::filesystem::create_directories(corpus);
+    for (const auto& entry : std::filesystem::directory_iterator(fixturesDir)) {
+        if (entry.path().extension() == ".krn") std::filesystem::copy_file(entry.path(), corpus / entry.path().filename());
+    }
+    std::ofstream(corpus / "chor0050.krn") << "this is not humdrum\n";
+
+    CorpusSearch search(corpus);
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    bool threw = false;
+    try {
+        minitest::SilenceStderr silence; // humlib writes what it cannot parse to stderr
+        search.run(q);
+    } catch (const std::exception&) {
+        threw = true;
+    }
+    std::filesystem::remove_all(corpus);
+    CHECK(threw);
 }
 
 TEST_MAIN()

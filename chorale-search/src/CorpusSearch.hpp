@@ -30,6 +30,9 @@ using ProgressCallback = std::function<void(const SearchProgress&)>;
 // score around the match and not only at where it is.
 using MatchVisitor = std::function<void(const HumdrumChorale&, const Result&)>;
 
+// The chorale files are loaded and searched side by side, on one thread per hardware thread. What
+// a caller gets does not depend on that: the matches, their order, a query's `limit`, the progress
+// events and the order `forEachMatch` visits in are those of a search file by file.
 class CorpusSearch {
 public:
     // `applyAnalysis` false skips deriving the analysis spines while loading each chorale,
@@ -52,7 +55,7 @@ public:
 
     // The same search as run(queries), except that no results are collected: every match is
     // handed to `visit` along with its chorale, which is loaded once per file and gone again
-    // after it. The Result's queryId is set the way run(queries) sets it. A query's `limit` is
+    // after it. `visit` is never called from two threads at once, and files are visited in order. The Result's queryId is set the way run(queries) sets it. A query's `limit` is
     // not applied, since there is nothing collected to cap.
     void forEachMatch(const std::vector<Query>& queries, const MatchVisitor& visit) const;
 

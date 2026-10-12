@@ -1,5 +1,6 @@
 #include "SpineAnalysis.hpp"
 
+#include <mutex>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
@@ -26,8 +27,15 @@ void verifyLineCount(const hum::HumdrumFile& infile, int expectedLineCount, cons
 void applySpineAnalysisTools(hum::HumdrumFile& infile) {
     const int lineCount = infile.getLineCount();
 
+    // Tool_deg keeps its settings in static members that every run writes (and the run itself reads),
+    // so two runs at once would be a data race even though they write the same values. It is a tenth
+    // of the work here, the other tools do not share anything and run side by side.
+    static std::mutex degMutex;
     hum::Tool_deg degTool;
-    degTool.run(infile);
+    {
+        std::lock_guard<std::mutex> lock(degMutex);
+        degTool.run(infile);
+    }
     if (degTool.hasHumdrumText()) {
         infile.readString(degTool.getHumdrumText());
         verifyLineCount(infile, lineCount, "deg");
