@@ -1,15 +1,20 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
+#include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #if defined(__unix__) || defined(__APPLE__)
+#include <fcntl.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #endif
 
@@ -159,50 +164,189 @@ inline std::string formatMillis(double ms) {
     return oss.str();
 }
 
-inline int minitestMain(const char* sourceFile) {
-    using clock = std::chrono::steady_clock;
+inline long currentProcessId() {
+#if defined(__unix__) || defined(__APPLE__)
+    return getpid();
+#else
+    return 0;
+#endif
+}
 
-    const std::string fileLabel = shortFileName(sourceFile);
-    const auto suiteStart = clock::now();
+// The directory this run of the suite keeps its files in, made before the first test case and
+// removed after the last.
+inline std::filesystem::path& tempDirectory() {
+    static std::filesystem::path path;
+    return path;
+}
 
-    struct FailedTest {
-        std::string name;
-        std::vector<std::string> failures;
-    };
-    std::vector<FailedTest> failedTests;
-    std::string dots; // one character per test case, in run order: '.' passed, '×' failed
+// The path of a file of that name for the running test case, in the directory of the run. The test
+// cases run side by side, so each gets a file of its own, and a name can be used by all of them.
+inline std::filesystem::path tempFile(const std::string& name) {
+    return tempDirectory() / (std::to_string(currentProcessId()) + "_" + name);
+}
 
-    const auto& tests = minitest::registry();
-    int failedCount = 0;
+// What running a test case came to.
+struct TestCaseResult {
+    std::vector<std::string> failures; // what it reported
+    std::string printed;               // what it wrote to stdout and stderr
+};
 
-    for (const auto& tc : tests) {
-        minitest::currentTestName() = tc.name;
-        minitest::currentTestFailures().clear();
-        try {
-            tc.fn();
-        } catch (const minitest::RequireFailed&) {
-            // already reported; test case aborted early
-        } catch (const std::exception& e) {
-            minitest::reportFailure(sourceFile, 0, std::string("uncaught exception: ") + e.what());
-        } catch (...) {
-            minitest::reportFailure(sourceFile, 0, "uncaught non-std::exception");
-        }
-        if (minitest::currentTestFailures().empty()) {
-            dots += color::green(".");
-        } else {
-            ++failedCount;
-            failedTests.push_back({tc.name, minitest::currentTestFailures()});
-            dots += color::boldRed("×");
-        }
+// Runs a test case in this process and returns the failures it reported.
+inline std::vector<std::string> runTestCase(const TestCase& testCase, const char* sourceFile) {
+    currentTestName() = testCase.name;
+    currentTestFailures().clear();
+    try {
+        testCase.fn();
+    } catch (const RequireFailed&) {
+        // already reported; test case aborted early
+    } catch (const std::exception& e) {
+        reportFailure(sourceFile, 0, std::string("uncaught exception: ") + e.what());
+    } catch (...) {
+        reportFailure(sourceFile, 0, "uncaught non-std::exception");
     }
+    return currentTestFailures();
+}
 
-    const auto suiteEnd = clock::now();
-    const double durationMs = std::chrono::duration<double, std::milli>(suiteEnd - suiteStart).count();
+// One character per finished test case, written as soon as it is: the progress of the suite.
+inline void printProgressDot(bool passed) {
+    std::fputs((passed ? color::green(".") : color::boldRed("×")).c_str(), stdout);
+    std::fflush(stdout);
+}
 
+#if defined(__unix__) || defined(__APPLE__)
+
+// How many test cases run at the same time: MINITEST_JOBS if it is set (1 runs them one after the
+// other in this process, which is what a debugger needs), otherwise one per processor.
+inline std::size_t maxParallelTestCases() {
+    if (const char* setting = std::getenv("MINITEST_JOBS")) {
+        const long jobs = std::strtol(setting, nullptr, 10);
+        if (jobs > 0) return static_cast<std::size_t>(jobs);
+    }
+    const long processors = sysconf(_SC_NPROCESSORS_ONLN);
+    return processors > 0 ? static_cast<std::size_t>(processors) : 1;
+}
+
+inline std::string readWholeFile(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    std::ostringstream content;
+    content << file.rdbuf();
+    return content.str();
+}
+
+// The failures of a test case go to its .err file one after the other, each ended by a NUL
+// character, which a failure message does not contain.
+inline void writeFailures(const std::string& path, const std::vector<std::string>& failures) {
+    std::ofstream file(path, std::ios::binary);
+    for (const std::string& failure : failures) file << failure << '\0';
+}
+
+inline std::vector<std::string> readFailures(const std::string& path) {
+    std::vector<std::string> failures;
+    std::istringstream file(readWholeFile(path));
+    for (std::string failure; std::getline(file, failure, '\0');) failures.push_back(failure);
+    return failures;
+}
+
+// Starts a process that runs the test case and writes what it printed to <filePrefix>.out and the
+// failures it reported to <filePrefix>.err. Returns the id of the process.
+inline pid_t startTestProcess(const TestCase& testCase, const char* sourceFile, const std::string& filePrefix) {
+    std::fflush(nullptr); // or the new process would write out what this one has buffered, too
+    const pid_t process = fork();
+    if (process < 0) {
+        std::perror("minitest: fork");
+        std::exit(2);
+    }
+    if (process > 0) return process;
+
+    const int printedFile = open((filePrefix + ".out").c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    dup2(printedFile, STDOUT_FILENO);
+    dup2(printedFile, STDERR_FILENO);
+    close(printedFile);
+    writeFailures(filePrefix + ".err", runTestCase(testCase, sourceFile));
+    std::fflush(nullptr);
+    _exit(0); // not exit(), which would run the copy of the static destructors in this process
+}
+
+// What the process of a test case came to, from its files and from the way it ended.
+inline TestCaseResult collectTestCaseResult(const std::string& filePrefix, int exitStatus) {
+    TestCaseResult testCaseResult;
+    testCaseResult.printed = readWholeFile(filePrefix + ".out");
+    if (WIFEXITED(exitStatus) && WEXITSTATUS(exitStatus) == 0) {
+        testCaseResult.failures = readFailures(filePrefix + ".err");
+    } else if (WIFSIGNALED(exitStatus)) {
+        testCaseResult.failures = {"the test case crashed (signal " + std::to_string(WTERMSIG(exitStatus)) + ")"};
+    } else {
+        testCaseResult.failures = {"the test case ended without reporting (exit status " +
+                             std::to_string(WEXITSTATUS(exitStatus)) + ")"};
+    }
+    return testCaseResult;
+}
+
+// Runs the test cases in processes of their own, `maxProcesses` at a time, and calls
+// `onFinished(testIndex, testCaseResult)` as each one is done. Only this process writes to the terminal,
+// because what the test cases print goes to their .out files.
+template <class OnFinished>
+void runInProcesses(const std::vector<TestCase>& testCases, const char* sourceFile, std::size_t maxProcesses,
+                    OnFinished onFinished) {
+    auto filePrefix = [](std::size_t testIndex) { return (tempDirectory() / std::to_string(testIndex)).string(); };
+
+    std::map<pid_t, std::size_t> testOfProcess;
+    std::size_t nextTest = 0;
+    for (std::size_t finishedTests = 0; finishedTests < testCases.size(); ++finishedTests) {
+        while (testOfProcess.size() < maxProcesses && nextTest < testCases.size()) {
+            const pid_t process = startTestProcess(testCases[nextTest], sourceFile, filePrefix(nextTest));
+            testOfProcess[process] = nextTest++;
+        }
+
+        int exitStatus = 0;
+        const pid_t process = waitpid(-1, &exitStatus, 0);
+        if (process < 0) {
+            std::perror("minitest: waitpid");
+            std::exit(2);
+        }
+        const std::size_t testIndex = testOfProcess.at(process);
+        testOfProcess.erase(process);
+        onFinished(testIndex, collectTestCaseResult(filePrefix(testIndex), exitStatus));
+    }
+}
+
+#endif
+
+// Runs all the test cases of the suite: side by side in processes of their own, or one after the
+// other in this process where that is not possible or not wanted.
+inline std::vector<TestCaseResult> runAllTestCases(const std::vector<TestCase>& testCases, const char* sourceFile) {
+    std::vector<TestCaseResult> testCaseResults(testCases.size());
+    auto onFinished = [&](std::size_t testIndex, TestCaseResult testCaseResult) {
+        printProgressDot(testCaseResult.failures.empty());
+        testCaseResults[testIndex] = std::move(testCaseResult);
+    };
+
+    if (!testCases.empty()) std::printf(" ");
+    std::fflush(stdout);
+
+#if defined(__unix__) || defined(__APPLE__)
+    const std::size_t maxProcesses = std::min(maxParallelTestCases(), testCases.size());
+    if (maxProcesses > 1) {
+        runInProcesses(testCases, sourceFile, maxProcesses, onFinished);
+        return testCaseResults;
+    }
+#endif
+    for (std::size_t testIndex = 0; testIndex < testCases.size(); ++testIndex) {
+        onFinished(testIndex, TestCaseResult{runTestCase(testCases[testIndex], sourceFile), ""});
+    }
+    return testCaseResults;
+}
+
+// Prints how the suite went, and returns whether every test case passed.
+inline bool printSummary(const std::string& fileLabel, const std::vector<TestCase>& testCases,
+                         const std::vector<TestCaseResult>& testCaseResults, double durationMs) {
+    int failedCount = 0;
+    for (const TestCaseResult& testCaseResult : testCaseResults) {
+        failedCount += testCaseResult.failures.empty() ? 0 : 1;
+    }
     const bool allPassed = failedCount == 0;
-    const std::size_t total = tests.size();
+    const std::size_t total = testCases.size();
 
-    if (!dots.empty()) std::printf(" %s\n", dots.c_str());
     if (allPassed) {
         std::printf(" %s %s %s\n", color::green("✓").c_str(), fileLabel.c_str(),
                      color::gray("(" + std::to_string(total) + (total == 1 ? " test)" : " tests)") + " " + formatMillis(durationMs)).c_str());
@@ -210,16 +354,37 @@ inline int minitestMain(const char* sourceFile) {
         std::printf(" %s %s %s\n", color::red("❯").c_str(), fileLabel.c_str(),
                      color::gray("(" + std::to_string(total) + (total == 1 ? " test | " : " tests | ") +
                                   std::to_string(failedCount) + " failed) " + formatMillis(durationMs)).c_str());
-        for (const auto& ft : failedTests) {
-            std::printf("   %s %s\n", color::red("×").c_str(), ft.name.c_str());
-            for (const auto& msg : ft.failures) {
-                std::printf("     %s %s\n", color::gray("→").c_str(), msg.c_str());
+        for (std::size_t testIndex = 0; testIndex < total; ++testIndex) {
+            const TestCaseResult& testCaseResult = testCaseResults[testIndex];
+            if (testCaseResult.failures.empty()) continue;
+            std::printf("   %s %s\n", color::red("×").c_str(), testCases[testIndex].name.c_str());
+            for (const auto& failure : testCaseResult.failures) {
+                std::printf("     %s %s\n", color::gray("→").c_str(), failure.c_str());
+            }
+            if (!testCaseResult.printed.empty()) {
+                std::printf("     %s\n", color::gray("printed:").c_str());
+                std::istringstream lines(testCaseResult.printed);
+                for (std::string line; std::getline(lines, line);) std::printf("       %s\n", line.c_str());
             }
         }
     }
     std::printf("\n");
+    return allPassed;
+}
 
-    return allPassed ? 0 : 1;
+inline int minitestMain(const char* sourceFile) {
+    using clock = std::chrono::steady_clock;
+    const auto suiteStart = clock::now();
+    const auto& testCases = registry();
+
+    tempDirectory() = std::filesystem::temp_directory_path() / ("minitest-" + std::to_string(currentProcessId()));
+    std::filesystem::create_directories(tempDirectory());
+    const std::vector<TestCaseResult> testCaseResults = runAllTestCases(testCases, sourceFile);
+    std::filesystem::remove_all(tempDirectory());
+
+    const double durationMs = std::chrono::duration<double, std::milli>(clock::now() - suiteStart).count();
+    if (!testCases.empty()) std::printf("\n");
+    return printSummary(shortFileName(sourceFile), testCases, testCaseResults, durationMs) ? 0 : 1;
 }
 
 } // namespace minitest

@@ -50,7 +50,7 @@ ProcessResult runCli(const std::vector<std::string>& args) {
 }
 
 std::string writeTempQueryFile(const std::string& jsonText) {
-    auto path = std::filesystem::temp_directory_path() / "chorale_search_test_query.json";
+    auto path = minitest::tempFile("query.json");
     std::ofstream f(path);
     f << jsonText;
     return path.string();
