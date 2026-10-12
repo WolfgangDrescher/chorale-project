@@ -13,7 +13,9 @@
 #     generate ./kern (bach-370-chorales scores with modulations) from
 #     annotations/bach-modulations.json -- never committed, always derived.
 #     This is the corpus the webapp serves to Verovio for rendering, so it
-#     carries no analysis spines.
+#     carries no analysis spines. Only generated again if the sources, the
+#     annotations or chorale-generate changed since the last time (./kern/.generated
+#     records when that was), so a make that has nothing to do takes no time.
 #
 # make kern chor001 chor009
 #     generate ./kern for only the given chorales
@@ -26,7 +28,8 @@
 #     (**deg, **mint, **metweight, **fb, **hint-xy) baked in. This is what
 #     chorale-search --no-analysis reads, which is what makes a full-corpus
 #     search take under a second instead of ~36s. Also never committed.
-#     Takes chorale ids the same way `make kern` does.
+#     Takes chorale ids the same way `make kern` does, and like it is only
+#     generated again if something changed (./corpus/.generated).
 #
 # make webapp
 #     generate chorale-webapp/content/chorales from ./kern with
@@ -82,6 +85,20 @@ all: build corpus kern webapp test
 build:
 	$(MAKE) -C chorale-search
 
+# chorale-generate is one of the tools that `build` makes. Saying so lets what is generated depend on
+# that file, so it is generated again if `build` changed it, and only then.
+$(CHORALE_GENERATE): build ;
+
+# Everything the generated chorales are made of. The marker files record when they were generated
+# last, so that generating them again is left out if none of this is newer.
+CHORALE_INPUTS := $(wildcard $(SOURCE_KERN)/*.krn) $(MODULATIONS) $(CHORALE_GENERATE)
+
+# Without chorale ids the whole of it is generated, if something changed. With ids it is generated
+# for just those, which leaves the marker alone, since the rest is not up to date because of it.
+ifeq ($(CHORALES),)
+kern: kern/.generated
+corpus: corpus/.generated
+else
 kern: build
 	$(CHORALE_GENERATE) $(SOURCE_KERN) kern/bach-370-chorales \
 		--modulations $(MODULATIONS) \
@@ -92,6 +109,18 @@ corpus: build
 		--modulations $(MODULATIONS) \
 		--analysis \
 		$(CHORALES)
+endif
+
+kern/.generated: $(CHORALE_INPUTS)
+	$(CHORALE_GENERATE) $(SOURCE_KERN) kern/bach-370-chorales \
+		--modulations $(MODULATIONS)
+	@touch $@
+
+corpus/.generated: $(CHORALE_INPUTS)
+	$(CHORALE_GENERATE) $(SOURCE_KERN) corpus/bach-370-chorales \
+		--modulations $(MODULATIONS) \
+		--analysis
+	@touch $@
 
 chorale-webapp/node_modules: chorale-webapp/package-lock.json
 	npm ci --prefix chorale-webapp
