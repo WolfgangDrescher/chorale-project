@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "FileDispatcher.hpp"
 #include "Modulations.hpp"
 #include "SpineAnalysis.hpp"
 #include "humlib.h"
@@ -46,7 +47,6 @@ void processChorale(const std::string& choraleId, const std::vector<Modulation>&
     }
 
     out << infile;
-    std::cout << "generated " << choraleId << "\n";
 }
 
 // Every chorale the source directory offers, by id (the filename stem), sorted.
@@ -147,15 +147,28 @@ int main(int argc, char** argv) {
 
         fs::create_directories(outDir);
 
+        std::vector<std::string> choraleIds;
         for (const std::string& choraleId : availableIds) {
-            if (!requestedIds.empty() &&
-                std::find(requestedIds.begin(), requestedIds.end(), choraleId) == requestedIds.end()) {
-                continue;
+            if (requestedIds.empty() ||
+                std::find(requestedIds.begin(), requestedIds.end(), choraleId) != requestedIds.end()) {
+                choraleIds.push_back(choraleId);
             }
-            auto it = modulations.find(choraleId);
-            processChorale(choraleId, it == modulations.end() ? std::vector<Modulation>{} : it->second, sourceDir,
-                            outDir, applyAnalysis);
         }
+
+        // The chorales do not depend on each other, so several are generated at once. They are
+        // reported in order, whichever finishes first.
+        choralesearch::FileDispatcher<std::string>(
+            choraleIds.size(),
+            [&](std::size_t i) {
+                auto it = modulations.find(choraleIds[i]);
+                processChorale(choraleIds[i], it == modulations.end() ? std::vector<Modulation>{} : it->second,
+                                sourceDir, outDir, applyAnalysis);
+                return choraleIds[i];
+            },
+            [&](std::size_t, std::string& choraleId) {
+                std::cout << "generated " << choraleId << "\n";
+                return true;
+            }).run();
     } catch (const nlohmann::json::exception& e) {
         std::cerr << "Error: invalid JSON in modulations file: " << e.what() << "\n";
         return 1;

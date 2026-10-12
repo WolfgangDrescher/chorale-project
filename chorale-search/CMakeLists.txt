@@ -61,7 +61,7 @@ target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
 )
 target_compile_options(chorale-generate PRIVATE -Wall -Wextra)
-target_link_libraries(chorale-generate PRIVATE humlib)
+target_link_libraries(chorale-generate PRIVATE humlib Threads::Threads)
 
 install(TARGETS chorale-search chorale-segment chorale-check RUNTIME DESTINATION bin)
 
