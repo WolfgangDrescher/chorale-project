@@ -57,6 +57,9 @@ target_link_libraries(chorale-segment PRIVATE chorale_core)
 add_executable(chorale-check cli/chorale-check.cpp)
 target_link_libraries(chorale-check PRIVATE chorale_core)
 
+add_executable(chorale-info cli/chorale-info.cpp)
+target_link_libraries(chorale-info PRIVATE chorale_core)
+
 add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/SpineAnalysis.cpp)
 target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -65,7 +68,7 @@ target_include_directories(chorale-generate PRIVATE
 target_compile_options(chorale-generate PRIVATE -Wall -Wextra)
 target_link_libraries(chorale-generate PRIVATE humlib Threads::Threads)
 
-install(TARGETS chorale-search chorale-segment chorale-check RUNTIME DESTINATION bin)
+install(TARGETS chorale-search chorale-segment chorale-check chorale-info RUNTIME DESTINATION bin)
 
 option(BUILD_TESTS "Build the minitest test binaries in tests/" ON)
 

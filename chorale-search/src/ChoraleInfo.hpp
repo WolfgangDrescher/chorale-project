@@ -22,6 +22,10 @@ struct ChoraleInfo {
     // number of its own and is not counted.
     std::size_t measureCount = 0;
 
+    // The length of the score in quarter notes: the time of its last barline, counted from the start
+    // (hum::HumdrumFile::getScoreDuration), so a pickup measure is part of it.
+    double duration = 0.0;
+
     // The number of phrases, which the fermatas delimit (see HumdrumChorale::phraseEndings).
     std::size_t phraseCount = 0;
 

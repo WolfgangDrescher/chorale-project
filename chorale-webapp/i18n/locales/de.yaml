@@ -13,6 +13,7 @@ searchDuration: "in {duration}"
 sortBy: Sortieren nach
 sortById: Choral-ID
 sortByMatches: Anzahl Treffer
+sortByDensity: Trefferdichte
 sortAscending: Aufsteigend sortiert
 sortDescending: Absteigend sortiert
 readDocs: Dokumentation lesen

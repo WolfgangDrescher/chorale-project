@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +9,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // The corpus `make kern` generates in the project root, or another directory given as the first
 // argument (e.g. the plain bach-370-chorales/kern sources).
 const pathToKernScores = resolve(process.argv[2] ?? `${__dirname}/../../kern/bach-370-chorales`);
+// What the scores state about themselves as a whole (the key, the meter, the length) comes from
+// the chorale-search build, so it is read the same way the search reads it.
+const choraleInfoBinary = `${__dirname}/../../chorale-search/build/chorale-info`;
 const choralesYamlPath = `${__dirname}/../content/chorales/`;
 
 const HTML_ENTITIES = {
@@ -50,36 +54,6 @@ function parseHumdrumReferenceRecords(humdrum) {
     return output;
 }
 
-// The meter the chorale starts in, e.g. `*M3/4`.
-function parseMeter(humdrum) {
-    return humdrum.match(/^\*M(\d+\/\d+)/m)?.[1] ?? null;
-}
-
-// Humdrum's abbreviations of the modes that come after the colon of a key (`*a:dor`).
-const MODES = {
-    ion: 'ionian',
-    dor: 'dorian',
-    phr: 'phrygian',
-    lyd: 'lydian',
-    mix: 'mixolydian',
-    aeo: 'aeolian',
-    loc: 'locrian',
-};
-
-// The key the chorale starts in, e.g. `*G:` or `*a:dor` for a mode, as a line all spines share.
-function parseKey(humdrum) {
-    for (const line of humdrum.split(/\r?\n/)) {
-        const tokens = line.split('\t');
-        const match = tokens[0].match(/^\*([a-gA-G][#-]*):([a-z]*)$/);
-        if (match && tokens.every((token) => token === tokens[0])) {
-            // Without a mode label the case of the tonic says major or minor.
-            const mode = MODES[match[2]] ?? (match[1] === match[1].toLowerCase() ? 'minor' : 'major');
-            return { key: match[1], mode };
-        }
-    }
-    return { key: null, mode: null };
-}
-
 function first(value) {
     return Array.isArray(value) ? value[0] : value;
 }
@@ -88,6 +62,15 @@ if (!fs.existsSync(pathToKernScores)) {
     console.error(`❌ ${pathToKernScores} does not exist. Run \`make kern\` in the project root first.`);
     process.exit(1);
 }
+
+if (!fs.existsSync(choraleInfoBinary)) {
+    console.error(`❌ ${choraleInfoBinary} does not exist. Run \`make build\` in the project root first.`);
+    process.exit(1);
+}
+
+const infosById = Object.fromEntries(
+    JSON.parse(execFileSync(choraleInfoBinary, [pathToKernScores], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })).map((info) => [info.id, info]),
+);
 
 fs.rmSync(choralesYamlPath, { recursive: true, force: true });
 fs.mkdirSync(choralesYamlPath, { recursive: true });
@@ -99,7 +82,7 @@ for (const file of files) {
 
     const kern = fs.readFileSync(`${pathToKernScores}/${file}`, 'utf8');
     const referenceRecords = parseHumdrumReferenceRecords(kern);
-    const { key, mode } = parseKey(kern);
+    const info = infosById[id];
 
     const config = {
         choraleId: id,
@@ -107,9 +90,11 @@ for (const file of files) {
         composer: first(referenceRecords.COM) ?? null,
         bwv: first(referenceRecords.SCT) ?? null,
         number: parseInt(first(referenceRecords['PC#']), 10) || null,
-        key,
-        mode,
-        meter: parseMeter(kern),
+        key: info?.key ?? null,
+        mode: info?.mode ?? null,
+        meter: info?.meters?.[0] ?? null,
+        // The length in quarter notes, which the search results are ranked by.
+        duration: info?.duration ?? null,
     };
 
     // Missing values are left out instead of written as null, so the collection schema can mark

@@ -184,6 +184,7 @@ TEST_CASE(collect_info_reads_the_meters_the_key_and_the_measures_off_a_small_sco
     CHECK_EQ(*info.key, std::string("e")); // the first key, not the one it changes to
     CHECK_EQ(*info.mode, std::string("phrygian"));
     CHECK_EQ(info.measureCount, std::size_t{3}); // the highest number a barline carries, "3a" included
+    CHECK_EQ(info.duration, 3.0); // three quarter notes
 }
 
 TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
@@ -194,6 +195,7 @@ TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
     CHECK(!info.key.has_value());
     CHECK(!info.mode.has_value());
     CHECK_EQ(info.measureCount, std::size_t{0});
+    CHECK_EQ(info.duration, 2.0);
     CHECK_EQ(info.phraseCount, std::size_t{0});
 }
 

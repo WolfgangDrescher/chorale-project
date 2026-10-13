@@ -34,7 +34,8 @@
 # make webapp
 #     generate chorale-webapp/content/chorales from ./kern with
 #     chorale-webapp/scripts/extract-chorales.mjs: one YAML file per chorale
-#     with the metadata for the chorale pages. Installs the webapp's npm
+#     with the metadata for the chorale pages. The key, the meter and the
+#     length come from chorale-info. Installs the webapp's npm
 #     dependencies first if chorale-webapp/node_modules is missing or older
 #     than its package-lock.json. Never committed
 #

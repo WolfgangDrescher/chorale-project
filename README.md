@@ -26,7 +26,7 @@ part-writing errors such as parallel fifths and octaves.
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bach-370-chorales/`  | Git submodule with the source `**kern` files. Source: [github.com/craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales).         |
 | `annotations/`        | Hand-made annotations, e.g. `bach-modulations.json`.                                                                                                     |
-| `chorale-search/`     | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`) and their test suite.                                              |
+| `chorale-search/`     | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`) and their test suite.                                              |
 | `chorale-webapp/`     | Nuxt application.                                                                                                                                        |
 | `kern/`               | Generated. Scores with modulations, served to Verovio for rendering. Not committed.                                                                     |
 | `corpus/`             | Generated. Same scores plus analysis spines, read by the search. Not committed.                                                                         |

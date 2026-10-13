@@ -14,13 +14,20 @@ export function useChoraleSearch(initialQuery = '') {
     // The query the current results are for, once a search has succeeded.
     const searchedQuery = ref(null);
 
-    // The order of the chorales: by their id (ascending is the natural one) or by how many matches
-    // each has (most first). Chorales with as many matches stay in the order of their ids.
+    // The length of each chorale in quarter notes, from the metadata extract-chorales.mjs wrote.
+    const { data: durations } = useAsyncData('chorale-durations', async () => {
+        const chorales = await queryCollection('chorales').select('choraleId', 'duration').all();
+        return Object.fromEntries(chorales.map(({ choraleId, duration }) => [choraleId, duration]));
+    });
+
+    // The order of the chorales: by their id (ascending is the natural one), by how many matches
+    // each has (most first), or by how many matches fall on each quarter note of it (most first), so
+    // a long chorale does not win just by having more room. Chorales that tie stay in the order of their ids.
     const sortBy = ref('id');
     const sortDescending = ref(false);
 
     watch(sortBy, (value) => {
-        sortDescending.value = value === 'matches';
+        sortDescending.value = value !== 'id';
         page.value = 1;
     });
     watch(sortDescending, () => {
@@ -32,7 +39,11 @@ export function useChoraleSearch(initialQuery = '') {
         const direction = sortDescending.value ? -1 : 1;
         const byId = ([a], [b]) => a.localeCompare(b, undefined, { numeric: true });
         const byMatches = ([, a], [, b]) => a.length - b.length;
-        return entries.sort((a, b) => direction * (sortBy.value === 'matches' ? byMatches(a, b) || byId(a, b) : byId(a, b)));
+        const density = ([choraleId, items]) => (durations.value?.[choraleId] ? items.length / durations.value[choraleId] : 0);
+        const byDensity = (a, b) => density(a) - density(b);
+        const comparators = { id: byId, matches: byMatches, density: byDensity };
+        const compare = comparators[sortBy.value];
+        return entries.sort((a, b) => direction * (sortBy.value === 'id' ? byId(a, b) : compare(a, b) || byId(a, b)));
     });
 
     const totalMatches = computed(() => choraleEntries.value.reduce((sum, [, items]) => sum + items.length, 0));

@@ -98,6 +98,7 @@ function sectionsForItems(items) {
                             :items="[
                                 { label: $t('sortById'), value: 'id' },
                                 { label: $t('sortByMatches'), value: 'matches' },
+                                { label: $t('sortByDensity'), value: 'density' },
                             ]"
                             size="xs"
                             class="w-28"

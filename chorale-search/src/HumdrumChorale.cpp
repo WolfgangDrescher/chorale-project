@@ -122,6 +122,8 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
     const std::vector<int> measureNumbers = file.getMeasureNumbers();
     if (!measureNumbers.empty()) info.measureCount = std::max(0, *std::max_element(measureNumbers.begin(), measureNumbers.end()));
 
+    info.duration = file.getScoreDuration().getFloat();
+
     info.phraseCount = phraseEndings().size();
     return info;
 }

@@ -16,6 +16,7 @@ export default defineContentConfig({
                 key: z.string().optional(),
                 mode: z.enum(['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']).optional(),
                 meter: z.string().optional(),
+                duration: z.number().optional(),
             }),
         }),
         docs: defineCollection({
