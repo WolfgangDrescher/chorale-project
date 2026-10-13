@@ -29,6 +29,13 @@ export default defineNuxtConfig({
         routeRules: {
             '/kern/**': { prerender: false },
         },
+        // The font of the PDF downloads (see server/utils/chorale-pdf.js).
+        serverAssets: [
+            {
+                baseName: 'fonts',
+                dir: fileURLToPath(new URL('./node_modules/@fontsource/alegreya-sans/files', import.meta.url)),
+            },
+        ],
         publicAssets: [
             {
                 baseURL: 'kern/bach-370-chorales',

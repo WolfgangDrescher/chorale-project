@@ -19,12 +19,36 @@ const SCORE_SCALE = 85;
 const SPACING_LINEAR = 0.35;
 const SPACING_SYSTEM = 10;
 
-// PDF only knows its own base fonts, so the text of the score is set in Times.
-function fontCallback(family, bold, italic) {
-    if (bold && italic) return 'Times-BoldItalic';
-    if (bold) return 'Times-Bold';
-    if (italic) return 'Times-Italic';
-    return 'Times-Roman';
+// The font of the website, from the @fontsource package. Its files are server assets, see nuxt.config.ts.
+const FONTS = {
+    regular: 'alegreya-sans-latin-400-normal.woff',
+    italic: 'alegreya-sans-latin-400-italic.woff',
+    bold: 'alegreya-sans-latin-700-normal.woff',
+};
+
+// What the PDF is set in without the font: its own base fonts.
+const FALLBACK_FONTS = { regular: 'Helvetica', italic: 'Helvetica-Oblique', bold: 'Helvetica-Bold' };
+
+// Registers the font with the document and resolves with the names of its styles. Where the
+// package is not installed (npm install), the base fonts of PDF stand in for it.
+async function registerFonts(doc) {
+    const assets = useStorage('assets:fonts');
+    const fonts = {};
+    for (const [style, file] of Object.entries(FONTS)) {
+        const data = await assets.getItemRaw(file);
+        if (!data) {
+            console.warn(`The font file ${file} was not found, the PDF is set in Helvetica. Run "npm install" (it is part of @fontsource/alegreya-sans) and restart the server.`);
+            return FALLBACK_FONTS;
+        }
+        fonts[style] = `AlegreyaSans-${style}`;
+        doc.registerFont(fonts[style], Buffer.from(data));
+    }
+    return fonts;
+}
+
+// The text in the score (the measure numbers) is set in the same font.
+function createFontCallback(fonts) {
+    return (family, bold, italic) => (bold ? fonts.bold : italic ? fonts.italic : fonts.regular);
 }
 
 // svg-to-pdfkit clips to the view box of the inner <svg> unless that says overflow="visible", which
@@ -65,6 +89,7 @@ export async function renderChoralePdf(kern, { filters }) {
         compress: true,
         autoFirstPage: false,
     });
+    const fonts = await registerFonts(doc);
     const chunks = [];
     doc.on('data', (chunk) => chunks.push(chunk));
     const finished = new Promise((resolve, reject) => {
@@ -76,7 +101,7 @@ export async function renderChoralePdf(kern, { filters }) {
 
     for (let page = 1; page <= toolkit.getPageCount(); page++) {
         doc.addPage();
-        SVGtoPDF(doc, prepareSvg(toolkit.renderToSVG(page, {})), margin, margin, { fontCallback });
+        SVGtoPDF(doc, prepareSvg(toolkit.renderToSVG(page, {})), margin, margin, { fontCallback: createFontCallback(fonts) });
     }
     doc.end();
     toolkit.destroy();
