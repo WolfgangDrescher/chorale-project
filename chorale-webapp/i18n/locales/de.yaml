@@ -183,6 +183,7 @@ pageOrientation: Seitenformat
 portrait: Hochformat
 landscape: Querformat
 downloadFormat: "{format} herunterladen"
+downloadAll: Alle Kombinationen als ZIP
 filterChorales: Choräle filtern
 noChoralesFound: Keine Choräle gefunden.
 noChoralesFoundDescription: Die Choräle werden aus dem Korpus extrahiert. Führen Sie dazu im Projektverzeichnis `make webapp` aus.

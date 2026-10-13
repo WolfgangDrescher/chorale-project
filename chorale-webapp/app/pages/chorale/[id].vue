@@ -73,6 +73,44 @@ function useChoraleExport() {
         };
     }
 
+    // Every combination there is, for trying them all out.
+    function allExportLinks() {
+        const links = [];
+        for (const content of ['cantus-firmus', 'complete']) {
+            for (const layout of ['score', 'piano']) {
+                for (const orientation of ['portrait', 'landscape']) links.push(exportLink({ format: 'pdf', content, layout, orientation }));
+                links.push(exportLink({ format: 'mei', content, layout, voices: '4' }));
+                links.push(exportLink({ format: 'mei', content, layout, voices: '2' }));
+            }
+        }
+        return links;
+    }
+
+    // All of them in one ZIP file, which a browser takes without asking, as opposed to a dozen
+    // downloads that start at once. What does not come out right is in it as a text file.
+    async function downloadAll() {
+        const { zipSync, strToU8 } = await import('fflate');
+        const files = {};
+        for (const { to, download } of allExportLinks()) {
+            try {
+                const response = await fetch(to);
+                if (response.ok) {
+                    files[download] = new Uint8Array(await response.arrayBuffer());
+                } else {
+                    files[`${download}.error.txt`] = strToU8(`${response.status} ${response.statusText}\n${await response.text()}`);
+                }
+            } catch (error) {
+                files[`${download}.error.txt`] = strToU8(String(error));
+            }
+        }
+        const url = URL.createObjectURL(new Blob([zipSync(files)], { type: 'application/zip' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${chorale.value.choraleId}-all.zip`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
     const downloadItems = computed(() => {
         const link = exportLink({
             format: exportFormat.value,
@@ -81,12 +119,16 @@ function useChoraleExport() {
             voices: exportVoices.value,
             orientation: pageOrientation.value,
         });
-        return [[{
+        const items = [[{
             label: t('downloadFormat', { format: exportFormat.value.toUpperCase() }),
             icon: 'lucide:download',
             external: true,
             ...link,
         }]];
+        if (import.meta.dev) {
+            items.push([{ label: t('downloadAll'), icon: 'lucide:bug', onSelect: downloadAll }]);
+        }
+        return items;
     });
 
     return {
