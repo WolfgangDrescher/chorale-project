@@ -1,0 +1,5 @@
+lessons: Lektionen
+lessonNumber: "Lektion {number}"
+showQueryTitle: "Query anzeigen: {title}"
+exerciseNumber: "Aufgabe {number}"
+exerciseOpenScore: "{chorale} im Browser öffnen"

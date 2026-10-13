@@ -12,7 +12,7 @@ export default defineNuxtConfig({
     i18n: {
         strategy: 'prefix_except_default',
         locales: [
-            { code: 'de', language: 'de-DE', file: 'de.yaml', dir: 'ltr' },
+            { code: 'de', language: 'de-DE', files: ['de.yaml', 'de.lessons.yaml'], dir: 'ltr' },
         ],
         defaultLocale: 'de',
         langDir: 'locales/',

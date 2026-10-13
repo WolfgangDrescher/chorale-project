@@ -19,6 +19,33 @@ export default defineContentConfig({
                 duration: z.number().optional(),
             }),
         }),
+        lessons: defineCollection({
+            type: 'page',
+            source: 'lessons/**/*.md',
+            schema: z.object({
+                icon: z.string().optional(),
+                lessonNumber: z.number().optional(),
+                queries: z.array(z.object({
+                    id: z.string(),
+                    title: z.string(),
+                    query: z.string(),
+                })).optional(),
+                exercises: z.array(z.object({
+                    type: z.enum(['composition', 'analysis', 'comparison']).optional(),
+                    title: z.string(),
+                    description: z.string(),
+                    chorales: z.array(z.string()),
+                    export: z.object({
+                        formats: z.array(z.enum(['pdf', 'mei'])).optional(),
+                        content: z.enum(['cantus-firmus', 'complete']).optional(),
+                        layout: z.enum(['score', 'piano']).optional(),
+                        voices: z.enum(['4', '2']).optional(),
+                        orientation: z.enum(['portrait', 'landscape']).optional(),
+                    }).optional(),
+                    scoreFilters: z.array(z.string()).optional(),
+                })).optional(),
+            }),
+        }),
         docs: defineCollection({
             type: 'page',
             source: 'docs/**/*.md',

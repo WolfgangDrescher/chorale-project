@@ -27,6 +27,14 @@ const { githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator()
 
 const scoreOptions = useScoreOptions();
 
+// A link can open the score with its filters set, as an exercise of a lesson does:
+// ?filters=hideMiddleVoices,intervallsatz turns those on and every other filter off.
+const filters = String(useRoute().query.filters ?? '').split(',').filter((filter) => filter in scoreOptions.humdrumFilterDefinitions);
+if (filters.length) {
+    scoreOptions.resetHumdrumFilters();
+    for (const filter of filters) scoreOptions[filter] = true;
+}
+
 const { copy, copied } = useClipboard();
 
 // The downloads of a chorale, or of a worksheet with only the cantus firmus written out: as a PDF to print or as MEI for notation programs.

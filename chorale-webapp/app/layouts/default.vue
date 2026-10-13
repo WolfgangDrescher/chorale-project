@@ -1,7 +1,11 @@
 <script setup>
 import { de } from '@nuxt/ui/locale';
 
+const { locale } = useI18n();
+
 useHead({
+    // The browser hyphenates by the language of the page.
+    htmlAttrs: { lang: locale },
     titleTemplate: (titleChunk) => {
         return titleChunk ? `${titleChunk} | Chorale Project` : 'Chorale Project';
     },

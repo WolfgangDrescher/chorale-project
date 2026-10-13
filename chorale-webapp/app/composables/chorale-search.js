@@ -3,7 +3,7 @@ export const CHORALES_PER_PAGE = 10;
 // The state of one search: the query, its results (grouped by chorale), how they are sorted and
 // paged, and the progress of a running search. The initial query can be a ref, e.g. one kept in
 // local storage, which then holds the query of the search.
-export function useChoraleSearch(initialQuery = '') {
+export function useChoraleSearch(initialQuery = '', { sortBy: initialSortBy = 'id' } = {}) {
     const searchFetchCompleted = ref(false);
     const results = ref([]);
     const error = ref(null);
@@ -24,8 +24,8 @@ export function useChoraleSearch(initialQuery = '') {
     // The order of the chorales: by their id (ascending is the natural one), by how many matches
     // each has (most first), or by how many matches fall on each quarter note of it (most first), so
     // a long chorale does not win just by having more room. Chorales that tie stay in the order of their ids.
-    const sortBy = ref('id');
-    const sortDescending = ref(false);
+    const sortBy = ref(initialSortBy);
+    const sortDescending = ref(initialSortBy !== 'id');
 
     watch(sortBy, (value) => {
         sortDescending.value = value !== 'id';

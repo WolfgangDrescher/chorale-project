@@ -20,6 +20,10 @@ const items = [
         to: localePath({name: 'search'}),
     },
     {
+        label: t('lessons'),
+        to: localePath('/lessons'),
+    },
+    {
         label: t('docs'),
         to: localePath('/docs'),
     },
