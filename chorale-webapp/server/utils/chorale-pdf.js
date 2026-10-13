@@ -27,6 +27,12 @@ function fontCallback(family, bold, italic) {
     return 'Times-Roman';
 }
 
+// svg-to-pdfkit clips to the view box of the inner <svg> unless that says overflow="visible", which
+// is what lets the brace and the measure numbers stand outside of the staves, in the margin of the page.
+function prepareSvg(svg) {
+    return svg.replace('<svg class="definition-scale"', '<svg class="definition-scale" overflow="visible"');
+}
+
 // Typesets the score on A4 pages and resolves with the PDF as a Buffer.
 export async function renderChoralePdf(kern, { filters }) {
     const pageWidth = A4_SHORT_SIDE;
@@ -41,10 +47,11 @@ export async function renderChoralePdf(kern, { filters }) {
             scale: SCORE_SCALE,
             pageWidth: (pageWidth - PAGE_MARGIN * 2) * (100 / SCORE_SCALE),
             pageHeight: (pageHeight - PAGE_MARGIN * 2) * (100 / SCORE_SCALE),
-            // Room for the brace and the measure numbers, which are drawn outside of the staves.
+            // The staves run from the left to the right edge of the text of the page (the brace and
+            // the measure numbers stand outside, see prepareSvg).
             pageMarginTop: 0,
-            pageMarginLeft: 60,
-            pageMarginRight: 20,
+            pageMarginLeft: 0,
+            pageMarginRight: 0,
             pageMarginBottom: 0,
             spacingSystem: SPACING_SYSTEM,
             spacingLinear: SPACING_LINEAR,
@@ -69,7 +76,7 @@ export async function renderChoralePdf(kern, { filters }) {
 
     for (let page = 1; page <= toolkit.getPageCount(); page++) {
         doc.addPage();
-        SVGtoPDF(doc, toolkit.renderToSVG(page, {}), margin, margin, { fontCallback });
+        SVGtoPDF(doc, prepareSvg(toolkit.renderToSVG(page, {})), margin, margin, { fontCallback });
     }
     doc.end();
     toolkit.destroy();
