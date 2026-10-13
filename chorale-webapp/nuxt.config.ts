@@ -13,6 +13,8 @@ export default defineNuxtConfig({
         ],
         defaultLocale: 'de',
         langDir: 'locales/',
+        // What the server translates in, e.g. the footer of a PDF (see i18n/localeDetector.js).
+        experimental: { localeDetector: 'localeDetector.js' },
     },
     vite: {
         worker: {

@@ -19,6 +19,12 @@ const SCORE_SCALE = 85;
 const SPACING_LINEAR = 0.35;
 const SPACING_SYSTEM = 10;
 
+// The sizes of the text on the page, in points: the title is larger than the subtitle (and the
+// composer, who stands on its line), which is larger than the footer.
+const TITLE_SIZE = 20;
+const SUBTITLE_SIZE = 12;
+const FOOTER_SIZE = 10;
+
 // The font of the website, from the @fontsource package. Its files are server assets, see nuxt.config.ts.
 const FONTS = {
     regular: 'alegreya-sans-latin-400-normal.woff',
@@ -57,10 +63,12 @@ function prepareSvg(svg) {
     return svg.replace('<svg class="definition-scale"', '<svg class="definition-scale" overflow="visible"');
 }
 
-// Typesets the score on A4 pages and resolves with the PDF as a Buffer.
-export async function renderChoralePdf(kern, { filters }) {
+// Typesets the score on A4 pages and resolves with the PDF as a Buffer. The title, the subtitle
+// and the footer are written by PDFKit, `t` translates what is in the footer.
+export async function renderChoralePdf(kern, { filters, chorale, t, siteUrl }) {
     const pageWidth = A4_SHORT_SIDE;
     const pageHeight = A4_LONG_SIDE;
+    const title = [chorale.number, chorale.title].filter(Boolean).join('. ');
 
     const toolkit = await createChoraleToolkit(kern, {
         filters,
@@ -72,11 +80,12 @@ export async function renderChoralePdf(kern, { filters }) {
             pageWidth: (pageWidth - PAGE_MARGIN * 2) * (100 / SCORE_SCALE),
             pageHeight: (pageHeight - PAGE_MARGIN * 2) * (100 / SCORE_SCALE),
             // The staves run from the left to the right edge of the text of the page (the brace and
-            // the measure numbers stand outside, see prepareSvg).
-            pageMarginTop: 0,
+            // the measure numbers stand outside, see prepareSvg). Above them is room for the title
+            // and the subtitle, below for the footer.
+            pageMarginTop: 180,
             pageMarginLeft: 0,
             pageMarginRight: 0,
-            pageMarginBottom: 0,
+            pageMarginBottom: 60,
             spacingSystem: SPACING_SYSTEM,
             spacingLinear: SPACING_LINEAR,
             justifyVertically: true,
@@ -88,6 +97,7 @@ export async function renderChoralePdf(kern, { filters }) {
         margin: 0,
         compress: true,
         autoFirstPage: false,
+        info: { Title: title },
     });
     const fonts = await registerFonts(doc);
     const chunks = [];
@@ -98,10 +108,31 @@ export async function renderChoralePdf(kern, { filters }) {
     });
 
     const margin = verovioUnitToPoints(PAGE_MARGIN);
+    const contentWidth = verovioUnitToPoints(pageWidth - PAGE_MARGIN * 2);
+    const footerTop = verovioUnitToPoints(pageHeight) - 40;
+    // Two lines in a corner of the footer, the second of them a link where there is an address.
+    const footer = (align, [first, second], link) => {
+        doc.text(first, margin, footerTop, { width: contentWidth, align });
+        doc.text(second, margin, doc.y, { width: contentWidth, align, link });
+    };
 
     for (let page = 1; page <= toolkit.getPageCount(); page++) {
         doc.addPage();
         SVGtoPDF(doc, prepareSvg(toolkit.renderToSVG(page, {})), margin, margin, { fontCallback: createFontCallback(fonts) });
+
+        doc.font(fonts.regular).fontSize(FOOTER_SIZE).fillColor('black');
+        footer('left', ['Chorale Project', siteUrl], siteUrl);
+        footer('center', [title, t('pageNumber', { page })]);
+        footer('right', ['Prof. Wolfgang Drescher', 'w.drescher@mh-freiburg.de'], 'mailto:w.drescher@mh-freiburg.de');
+
+        if (page === 1) {
+            doc.fontSize(TITLE_SIZE).text(title, margin, margin - 5, { width: contentWidth });
+            // The subtitle and the composer share a baseline, below the title.
+            doc.fontSize(SUBTITLE_SIZE);
+            const subtitleTop = doc.y + 2;
+            if (chorale.bwv) doc.text(chorale.bwv, margin, subtitleTop, { width: contentWidth, align: 'left' });
+            if (chorale.composer) doc.text(readableName(chorale.composer), margin, subtitleTop, { width: contentWidth, align: 'right' });
+        }
     }
     doc.end();
     toolkit.destroy();

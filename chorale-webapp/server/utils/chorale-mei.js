@@ -176,7 +176,7 @@ export async function createChoraleToolkit(kern, { filters = [], options = {} } 
 }
 
 // "Bach, Johann Sebastian" as it reads in the score.
-function readableName(name) {
+export function readableName(name) {
     const [family, ...given] = name.split(',').map((part) => part.trim());
     return given.length ? `${given.join(' ')} ${family}` : family;
 }

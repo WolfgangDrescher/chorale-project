@@ -1,3 +1,5 @@
+import { queryCollection } from '@nuxt/content/server';
+
 // Downloads a chorale: /api/chorales/:id/export?format=pdf|mei&layout=score|piano
 // See chorale-mei.js for what the options mean.
 const FORMATS = ['pdf', 'mei'];
@@ -13,6 +15,13 @@ function invalidQuery(name, allowed) {
         statusMessage: 'Unprocessable Content',
         message: `"${name}" must be one of: ${allowed.join(', ')}`,
     });
+}
+
+// The chorale of the content (see content.config.ts), where the title of a PDF comes from.
+async function findChorale(event, id) {
+    const chorale = await queryCollection(event, 'chorales').where('stem', '=', `chorales/${id}`).first();
+    if (!chorale) throw createError({ statusCode: 404, statusMessage: 'Page Not Found' });
+    return chorale;
 }
 
 export default defineEventHandler(async (event) => {
@@ -33,6 +42,7 @@ export default defineEventHandler(async (event) => {
     // program.
     const filters = choraleFilters({ format, layout });
     const prepared = format === 'mei' ? restOtherVoices(kern) : kern;
+    const chorale = format === 'pdf' ? await findChorale(event, id) : null;
 
     setResponseHeader(event, 'Content-Type', CONTENT_TYPES[format]);
     setResponseHeader(event, 'Content-Disposition', `attachment; filename="${id}-cantus-firmus-${layout}.${format}"`);
@@ -44,5 +54,10 @@ export default defineEventHandler(async (event) => {
         return mei;
     }
 
-    return renderChoralePdf(prepared, { filters });
+    return renderChoralePdf(prepared, {
+        filters,
+        chorale,
+        t: await useTranslation(event),
+        siteUrl: getRequestURL(event).origin,
+    });
 });
