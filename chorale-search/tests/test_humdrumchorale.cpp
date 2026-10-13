@@ -1,5 +1,7 @@
 #include "test_framework.hpp"
 
+#include <algorithm>
+
 #include "HumdrumChorale.hpp"
 
 using choralesearch::HumdrumChorale;
@@ -136,6 +138,20 @@ TEST_CASE(hint_pair_spine_has_exactly_one_entry_regardless_of_the_pair) {
     CHECK(chorale.spine("hint-14", 1) != nullptr);
     CHECK(chorale.spine("hint-14", 2) == nullptr);
     CHECK(chorale.spine("hint-14", 0) == nullptr);
+}
+
+TEST_CASE(voice_count_is_the_number_of_kern_spines) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CHECK_EQ(chorale.voiceCount(), std::size_t{4});
+}
+
+TEST_CASE(phrase_endings_are_where_the_fermatas_close_a_phrase) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    std::vector<hum::HumNum> endings = chorale.phraseEndings();
+    CHECK_EQ(endings.size(), std::size_t{6});
+    CHECK(std::is_sorted(endings.begin(), endings.end()));
+    // Every chorale closes on a fermata: the last ending is where the piece ends.
+    CHECK(endings.back() > endings.front());
 }
 
 TEST_MAIN()

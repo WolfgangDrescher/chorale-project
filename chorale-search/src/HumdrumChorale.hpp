@@ -28,6 +28,13 @@ public:
 
     hum::HTp spine(const std::string& feature, std::size_t voice) const;
 
+    // The number of voices: the **kern spines the score has.
+    std::size_t voiceCount() const;
+
+    // Where the phrases end, in order: a fermata closes one, and fermata notes sounding at the same time
+    // close one phrase together, where the last of them stops.
+    std::vector<hum::HumNum> phraseEndings() const;
+
     // The data token the spine of `feature` and `voice` has on `lineNumber`, or nullptr when the
     // spine is missing, the line is no data line, or the voice holds its note there (a null
     // token). It goes straight to the line, so asking it of every onset of a corpus stays cheap.

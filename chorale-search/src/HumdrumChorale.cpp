@@ -1,8 +1,10 @@
 #include "HumdrumChorale.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <stdexcept>
 
+#include "HumdrumUtils.hpp"
 #include "SpineAnalysis.hpp"
 
 namespace fs = std::filesystem;
@@ -60,6 +62,33 @@ hum::HTp HumdrumChorale::spine(const std::string& feature, std::size_t voice) co
     if (it == m_spinesByFeature.end()) return nullptr;
     if (voice < 1 || voice > it->second.size()) return nullptr;
     return it->second[voice - 1];
+}
+
+std::size_t HumdrumChorale::voiceCount() const {
+    std::size_t count = 0;
+    while (spine("kern", count + 1)) ++count;
+    return count;
+}
+
+std::vector<hum::HumNum> HumdrumChorale::phraseEndings() const {
+    std::vector<std::pair<hum::HumNum, hum::HumNum>> fermataNotes; // attacked at .first, over at .second
+    for (std::size_t voice = 1; voice <= voiceCount(); ++voice) {
+        hum::HTp start = spine("kern", voice);
+        if (!start) continue;
+        for (hum::HTp t = start->getNextToken(); t; t = t->getNextToken()) {
+            if (!t->getOwner()->isData() || t->isNull() || t->isSecondaryTiedNote() || !t->hasFermata()) continue;
+            fermataNotes.emplace_back(t->getDurationFromStart(), t->getDurationFromStart() + soundingDuration(t));
+        }
+    }
+    std::sort(fermataNotes.begin(), fermataNotes.end());
+
+    std::vector<hum::HumNum> endings;
+    for (const auto& [attacked, over] : fermataNotes) {
+        bool sameChordAsPrevious = !endings.empty() && attacked < endings.back();
+        if (sameChordAsPrevious) endings.back() = std::max(endings.back(), over);
+        else endings.push_back(over);
+    }
+    return endings;
 }
 
 hum::HTp HumdrumChorale::tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {

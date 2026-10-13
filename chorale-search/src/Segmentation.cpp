@@ -75,39 +75,6 @@ std::vector<std::string> equivalentMetricWeights(const std::string& weight) {
     return {weight};
 }
 
-std::size_t voiceCount(const HumdrumChorale& chorale) {
-    std::size_t count = 0;
-    while (chorale.spine(kKernFeature, count + 1)) ++count;
-    return count;
-}
-
-// Where the phrases end, in order: a fermata closes one, and it is over when that note stops
-// sounding. The voices disagree about where the fermata is -- one may take it a quarter before
-// the others (chor039) or let go early and keep moving under the held chord (chor234's bass) --
-// so fermata notes sounding at the same time close one phrase, which lasts until the last of
-// them stops. The final ending is where the piece ends: every chorale closes on a fermata, and
-// the three writing a rest after it have nothing there worth a segment.
-std::vector<hum::HumNum> phraseEndings(const HumdrumChorale& chorale) {
-    std::vector<std::pair<hum::HumNum, hum::HumNum>> fermataNotes; // attacked at .first, over at .second
-    for (std::size_t voice = 1; voice <= voiceCount(chorale); ++voice) {
-        hum::HTp start = chorale.spine(kKernFeature, voice);
-        if (!start) continue;
-        for (hum::HTp t = start->getNextToken(); t; t = t->getNextToken()) {
-            if (!t->getOwner()->isData() || t->isNull() || t->isSecondaryTiedNote() || !t->hasFermata()) continue;
-            fermataNotes.emplace_back(t->getDurationFromStart(), t->getDurationFromStart() + soundingDuration(t));
-        }
-    }
-    std::sort(fermataNotes.begin(), fermataNotes.end());
-
-    std::vector<hum::HumNum> endings;
-    for (const auto& [attacked, over] : fermataNotes) {
-        bool sameChordAsPrevious = !endings.empty() && attacked < endings.back();
-        if (sameChordAsPrevious) endings.back() = std::max(endings.back(), over);
-        else endings.push_back(over);
-    }
-    return endings;
-}
-
 // One pattern position per onset, stating everything the options ask for about it. A key whose
 // spine has nothing at that line is left out rather than written as a wildcard: a rest, for
 // instance, has no interval to the soprano, and demanding one there would keep the segment from
@@ -256,7 +223,7 @@ std::vector<Segment> segmentScore(const HumdrumChorale& chorale, const Segmentat
     if (options.step <= 0) throw std::invalid_argument("Segment step must be positive");
 
     std::vector<Segment> segments;
-    const std::vector<hum::HumNum> endings = phraseEndings(chorale);
+    const std::vector<hum::HumNum> endings = chorale.phraseEndings();
     if (endings.empty()) return segments;
 
     // A segment may end where a phrase does and it may start there, but it may not run from one
