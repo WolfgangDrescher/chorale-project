@@ -108,9 +108,10 @@ function pickupSystemNumbers(svg, measureNumbers) {
 
 // Typesets the score on A4 pages and resolves with the PDF as a Buffer. The title, the subtitle
 // and the footer are written by PDFKit, `t` translates what is in the footer.
-export async function renderChoralePdf(kern, { filters, chorale, t, siteUrl }) {
-    const pageWidth = A4_SHORT_SIDE;
-    const pageHeight = A4_LONG_SIDE;
+export async function renderChoralePdf(kern, { filters, orientation = 'portrait', chorale, t, siteUrl }) {
+    const landscape = orientation === 'landscape';
+    const pageWidth = landscape ? A4_LONG_SIDE : A4_SHORT_SIDE;
+    const pageHeight = landscape ? A4_SHORT_SIDE : A4_LONG_SIDE;
     const title = [chorale.number, chorale.title].filter(Boolean).join('. ');
 
     const toolkit = await createChoraleToolkit(kern, {

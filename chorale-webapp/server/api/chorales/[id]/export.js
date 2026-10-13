@@ -1,8 +1,10 @@
 import { queryCollection } from '@nuxt/content/server';
 
 // Downloads a chorale: /api/chorales/:id/export?format=pdf|mei&layout=score|piano
+// and, for the PDF &orientation=portrait|landscape.
 // See chorale-mei.js for what the options mean.
 const FORMATS = ['pdf', 'mei'];
+const ORIENTATIONS = ['portrait', 'landscape'];
 
 const CONTENT_TYPES = {
     pdf: 'application/pdf',
@@ -26,10 +28,11 @@ async function findChorale(event, id) {
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event);
-    const { format = 'pdf', layout = 'piano' } = getQuery(event);
+    const { format = 'pdf', layout = 'piano', orientation = 'portrait' } = getQuery(event);
 
     if (!FORMATS.includes(format)) throw invalidQuery('format', FORMATS);
     if (!CHORALE_EXPORT_LAYOUTS.includes(layout)) throw invalidQuery('layout', CHORALE_EXPORT_LAYOUTS);
+    if (!ORIENTATIONS.includes(orientation)) throw invalidQuery('orientation', ORIENTATIONS);
 
     let kern;
     try {
@@ -45,7 +48,7 @@ export default defineEventHandler(async (event) => {
     const chorale = format === 'pdf' ? await findChorale(event, id) : null;
 
     setResponseHeader(event, 'Content-Type', CONTENT_TYPES[format]);
-    setResponseHeader(event, 'Content-Disposition', `attachment; filename="${id}-cantus-firmus-${layout}.${format}"`);
+    setResponseHeader(event, 'Content-Disposition', `attachment; filename="${id}-cantus-firmus-${layout}${format === 'pdf' ? `-${orientation}` : ''}.${format}"`);
 
     if (format === 'mei') {
         const toolkit = await createChoraleToolkit(prepared, { filters });
@@ -56,6 +59,7 @@ export default defineEventHandler(async (event) => {
 
     return renderChoralePdf(prepared, {
         filters,
+        orientation,
         chorale,
         t: await useTranslation(event),
         siteUrl: getRequestURL(event).origin,

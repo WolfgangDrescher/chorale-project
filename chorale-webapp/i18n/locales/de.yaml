@@ -173,6 +173,9 @@ exportLayout: Notation
 scoreLayout: Partitur
 pianoSetting: Klaviersatz
 pageNumber: "Seite {page}"
+pageOrientation: Seitenformat
+portrait: Hochformat
+landscape: Querformat
 downloadFormat: "{format} herunterladen"
 filterChorales: Choräle filtern
 noChoralesFound: Keine Choräle gefunden.

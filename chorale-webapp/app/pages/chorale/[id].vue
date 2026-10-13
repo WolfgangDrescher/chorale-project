@@ -35,6 +35,7 @@ function useChoraleExport() {
 
     const exportFormat = ref('pdf');
     const exportLayout = ref('piano');
+    const pageOrientation = ref('portrait');
 
     const exportFormatItems = [
         { label: 'PDF', value: 'pdf' },
@@ -44,13 +45,18 @@ function useChoraleExport() {
         { label: t('scoreLayout'), value: 'score' },
         { label: t('pianoSetting'), value: 'piano' },
     ]);
+    const pageOrientationItems = computed(() => [
+        { label: t('portrait'), value: 'portrait' },
+        { label: t('landscape'), value: 'landscape' },
+    ]);
 
-    // The URL and the file name of a download.
-    function exportLink({ format, layout }) {
+    // The URL and the file name of a download. The page orientation is a matter of the PDF only.
+    function exportLink({ format, layout, orientation }) {
         const query = new URLSearchParams({ format, layout });
+        if (format === 'pdf') query.set('orientation', orientation);
         return {
             to: `/api/chorales/${chorale.value.choraleId}/export?${query}`,
-            download: `${chorale.value.choraleId}-cantus-firmus-${layout}.${format}`,
+            download: `${chorale.value.choraleId}-cantus-firmus-${layout}${format === 'pdf' ? `-${orientation}` : ''}.${format}`,
         };
     }
 
@@ -58,6 +64,7 @@ function useChoraleExport() {
         const link = exportLink({
             format: exportFormat.value,
             layout: exportLayout.value,
+            orientation: pageOrientation.value,
         });
         return [[{
             label: t('downloadFormat', { format: exportFormat.value.toUpperCase() }),
@@ -70,8 +77,10 @@ function useChoraleExport() {
     return {
         exportFormat,
         exportLayout,
+        pageOrientation,
         exportFormatItems,
         exportLayoutItems,
+        pageOrientationItems,
         downloadItems,
     };
 }
@@ -79,8 +88,10 @@ function useChoraleExport() {
 const {
     exportFormat,
     exportLayout,
+    pageOrientation,
     exportFormatItems,
     exportLayoutItems,
+    pageOrientationItems,
     downloadItems,
 } = useChoraleExport();
 
@@ -151,6 +162,12 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                                         {{ $t('exportLayout') }}
                                     </div>
                                     <UTabs v-model="exportLayout" :items="exportLayoutItems" :content="false" size="xs" class="w-full" />
+                                </div>
+                                <div v-if="exportFormat === 'pdf'">
+                                    <div class="text-xs text-muted mb-1">
+                                        {{ $t('pageOrientation') }}
+                                    </div>
+                                    <UTabs v-model="pageOrientation" :items="pageOrientationItems" :content="false" size="xs" class="w-full" />
                                 </div>
                             </div>
                         </template>
