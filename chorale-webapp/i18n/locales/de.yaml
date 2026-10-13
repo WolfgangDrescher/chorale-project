@@ -168,6 +168,7 @@ next: Nächstes
 github: GitHub
 vhv: VHV
 download: Download
+exportFormat: Dateiformat
 exportLayout: Notation
 scoreLayout: Partitur
 pianoSetting: Klaviersatz

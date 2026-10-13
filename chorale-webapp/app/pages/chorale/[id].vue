@@ -29,12 +29,17 @@ const scoreOptions = useScoreOptions();
 
 const { copy, copied } = useClipboard();
 
-// The download of the cantus firmus of a chorale with the other voices left empty, as MEI for notation programs.
+// The downloads of the cantus firmus of a chorale with the other voices left empty: as a PDF to print or as MEI for notation programs.
 function useChoraleExport() {
     const { t } = useI18n();
 
+    const exportFormat = ref('pdf');
     const exportLayout = ref('piano');
 
+    const exportFormatItems = [
+        { label: 'PDF', value: 'pdf' },
+        { label: 'MEI', value: 'mei' },
+    ];
     const exportLayoutItems = computed(() => [
         { label: t('scoreLayout'), value: 'score' },
         { label: t('pianoSetting'), value: 'piano' },
@@ -51,11 +56,11 @@ function useChoraleExport() {
 
     const downloadItems = computed(() => {
         const link = exportLink({
-            format: 'mei',
+            format: exportFormat.value,
             layout: exportLayout.value,
         });
         return [[{
-            label: t('downloadFormat', { format: 'MEI' }),
+            label: t('downloadFormat', { format: exportFormat.value.toUpperCase() }),
             icon: 'lucide:download',
             external: true,
             ...link,
@@ -63,13 +68,21 @@ function useChoraleExport() {
     });
 
     return {
+        exportFormat,
         exportLayout,
+        exportFormatItems,
         exportLayoutItems,
         downloadItems,
     };
 }
 
-const { exportLayout, exportLayoutItems, downloadItems } = useChoraleExport();
+const {
+    exportFormat,
+    exportLayout,
+    exportFormatItems,
+    exportLayoutItems,
+    downloadItems,
+} = useChoraleExport();
 
 useChoraleKeyboardShortcuts({ prevChorale, nextChorale });
 
@@ -127,6 +140,12 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                         </UButton>
                         <template #content-top>
                             <div class="flex flex-col gap-2 p-1.5 pb-1">
+                                <div>
+                                    <div class="text-xs text-muted mb-1">
+                                        {{ $t('exportFormat') }}
+                                    </div>
+                                    <UTabs v-model="exportFormat" :items="exportFormatItems" :content="false" size="xs" class="w-full" />
+                                </div>
                                 <div>
                                     <div class="text-xs text-muted mb-1">
                                         {{ $t('exportLayout') }}

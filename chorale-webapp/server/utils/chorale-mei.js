@@ -125,17 +125,40 @@ export function restOtherVoices(kern) {
     }).join('\n');
 }
 
+// The cantus firmus and the bass: the first and the last spine.
+const OUTER_VOICES = 'extract -k 1,$';
+
 // The stems of the cantus firmus point up, which is what it needs as the upper voice of a piano
 // system. Not those of its rests, which have none.
 const STEMS_UP = 'shed -s $ -e "s#$#/#D" -E r';
 
+// What a PDF shows of the voices that are not written out: nothing. Their notes are removed and a
+// hidden rest as long as the measure stays, so that they do not widen the measures of the cantus
+// firmus. restfill fills the measures that have no data in a spine. The spines are **temp until
+// then, because the rhythm analysis does not take a spine without any durations; restfill
+// turns them back into **kern.
+function hideVoices(spines) {
+    return [
+        `shed -s ${spines} -e "s/kern/temp/X"`,
+        `shed -s ${spines} -e "s/.*/./D"`,
+        'restfill -i temp -y',
+    ];
+}
+
 // The Humdrum filters (of humlib, Verovio runs them on the **kern text) that turn the chorale
 // into what is downloaded.
-export function choraleFilters({ layout }) {
+export function choraleFilters({ format, layout }) {
+    // A PDF shows the cantus firmus in a piano layout with the one voice below it, its other voices
+    // are invisible anyway.
+    const outerVoicesOnly = format === 'pdf' && layout === 'piano';
     const filters = [];
 
+    if (outerVoicesOnly) filters.push(OUTER_VOICES);
+    // The voices of a MEI that are not written out are rests, see restOtherVoices.
+    if (format === 'pdf') filters.push(...hideVoices(outerVoicesOnly ? '1' : '1-3'));
+    if (layout === 'piano') filters.push(STEMS_UP);
     // The four voices share the two staves of a piano system.
-    if (layout === 'piano') filters.push(STEMS_UP, 'satb2gs');
+    if (layout === 'piano' && !outerVoicesOnly) filters.push('satb2gs');
 
     return filters;
 }
