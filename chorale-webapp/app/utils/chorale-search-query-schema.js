@@ -154,6 +154,65 @@ const mintStartAtPreviousTokenOnlyForMint = [
     },
 ];
 
+// Which chorales a query searches: one entry of a list of ids is a number or a string, and a count is a
+// number or a range. Only the top-level query has one, a simultaneousWith group runs in the same chorale.
+const choraleIdSchema = {
+    oneOf: [
+        { type: 'integer', minimum: 0 },
+        {
+            type: 'string',
+            pattern: '^([cC][hH][oO][rR])?\\d+(-([cC][hH][oO][rR])?\\d+)?$',
+            description: 'A chorale by its number ("29", "029" or "chor029") or a range of them ("5-20", "chor005-chor020").',
+        },
+    ],
+};
+
+const choraleIdsSchema = (description) => ({
+    description,
+    oneOf: [choraleIdSchema, { type: 'array', minItems: 1, items: choraleIdSchema }],
+});
+
+const stringsSchema = (itemSchema, description) => ({
+    description,
+    oneOf: [itemSchema, { type: 'array', minItems: 1, items: itemSchema }],
+});
+
+const countSchema = (description) => ({
+    description,
+    oneOf: [
+        { type: 'integer', minimum: 0 },
+        {
+            type: 'object',
+            minProperties: 1,
+            additionalProperties: false,
+            properties: {
+                min: { type: 'integer', minimum: 0 },
+                max: { type: 'integer', minimum: 0 },
+            },
+        },
+    ],
+});
+
+const choraleFilterSchema = {
+    type: 'object',
+    description: 'Which chorales are searched. A chorale is searched only if every field that is set fits it; a list is an OR.',
+    additionalProperties: false,
+    suggestSortText: '2.5',
+    properties: {
+        ids: choraleIdsSchema('Only these chorales, by the number in their id: 29, "029", "chor029", or a range such as "5-20".'),
+        excludeIds: choraleIdsSchema('All chorales but these, written like ids.'),
+        title: stringsSchema({ type: 'string', minLength: 1 }, 'Text the German or English title contains, without regard to case.'),
+        meter: stringsSchema({ type: 'string', pattern: '^\\d+/\\d+$' }, 'A meter the chorale is in at some point, e.g. "4/4".'),
+        measureCount: countSchema('The number of measures, a pickup not counted: a number or { "min": 8, "max": 16 }.'),
+        phraseCount: countSchema('The number of phrases, which the fermatas delimit: a number or { "min": 4 }.'),
+        startKey: stringsSchema({ type: 'string', pattern: '^[a-gA-G][#-]*$' }, 'The key the chorale starts in, not one it modulates to later. The key is written as in the score: "G" is G major, "e" is E minor, "B-" is B-flat major.'),
+        startMode: stringsSchema(
+            { type: 'string', enum: ['major', 'minor', 'ionian', 'aeolian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian'] },
+            'The mode the chorale starts in, not one it modulates to later. ionian is interpreted as major and aeolian as minor.',
+        ),
+    },
+};
+
 const singleQuerySchema = {
     type: 'object',
     title: 'Chorale Search Query',
@@ -174,6 +233,7 @@ const singleQuerySchema = {
             description: 'Stop after this many results, counted across the whole corpus.',
             suggestSortText: '3',
         },
+        choraleFilter: choraleFilterSchema,
         simultaneousWith: {
             type: 'array',
             description: 'Additional patterns (typically in other voices) that must each have a match at the same musical position as a match of this query\'s own pattern, for that match to be kept.',
