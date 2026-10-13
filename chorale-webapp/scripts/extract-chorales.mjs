@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import yaml from 'js-yaml';
+import { dump } from 'js-yaml';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -118,7 +118,7 @@ for (const file of files) {
         if (config[name] === null) delete config[name];
     }
 
-    fs.writeFileSync(`${choralesYamlPath}${id}.yaml`, yaml.dump(config, {
+    fs.writeFileSync(`${choralesYamlPath}${id}.yaml`, dump(config, {
         indent: 4,
         lineWidth: -1,
         sortKeys: true,
