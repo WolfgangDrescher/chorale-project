@@ -9,6 +9,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "ChoraleFilter.hpp"
+
 namespace choralesearch {
 
 // How a pattern value is held against what the score has. EqualTo is the feature's own matching
@@ -111,6 +113,9 @@ struct Query {
     std::string voices = "all";
 
     std::vector<AttributeMap> pattern;
+
+    // Which chorales are searched at all. The default filter lets every chorale in. See ChoraleFilter.hpp.
+    ChoraleFilter choraleFilter;
 
     // Additional patterns (typically in other voices) that must each have a match starting
     // at the same musical position as a match of the query's own pattern, for that match to
@@ -241,6 +246,7 @@ inline nlohmann::json queryToJson(const Query& q) {
     j["voices"] = q.voices;
     j["pattern"] = patternToJson(q.pattern);
 
+    if (!q.choraleFilter.empty()) j["choraleFilter"] = choraleFilterToJson(q.choraleFilter);
     if (q.limit) j["limit"] = *q.limit;
     if (q.mintStartAtPreviousToken) j["mintStartAtPreviousToken"] = true;
     if (!q.mintAllowIntervalComplementation.empty()) j["mintAllowIntervalComplementation"] = q.mintAllowIntervalComplementation;

@@ -908,4 +908,66 @@ TEST_CASE(query_from_json_rejects_a_voice_reference_it_cannot_judge) {
     CHECK_THROWS(parse(R"({"kern":{"operator":"gt","value":["@2","@3"]}})")());       // one value per comparison
 }
 
+TEST_CASE(query_from_json_reads_chorales) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"deg","pattern":[{"deg":"1"}],
+        "choraleFilter":{"ids":[1,"5-20"],"title":"Herz","measureCount":{"min":8},"startMode":"minor"}
+    })"));
+    CHECK(!q.choraleFilter.empty());
+    CHECK_EQ(q.choraleFilter.ids.size(), std::size_t{2});
+    CHECK(q.choraleFilter.matchesId("chor012"));
+    CHECK(!q.choraleFilter.matchesId("chor030"));
+    CHECK_EQ(q.choraleFilter.title, (std::vector<std::string>{"Herz"}));
+    CHECK_EQ(q.choraleFilter.startMode, (std::vector<std::string>{"minor"}));
+    REQUIRE(q.choraleFilter.measureCount.has_value());
+    CHECK_EQ(*q.choraleFilter.measureCount->min, std::size_t{8});
+}
+
+TEST_CASE(query_without_chorales_has_an_empty_filter) {
+    Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1"}]})"));
+    CHECK(q.choraleFilter.empty());
+    CHECK(!queryToJson(q).contains("choraleFilter"));
+}
+
+TEST_CASE(query_from_json_rejects_a_malformed_chorale_filter_and_names_the_query) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1"}],"choraleFilter":[]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1"}],"choraleFilter":{"startMode":"blues"}})")));
+    try {
+        queryArrayFromJson(json::parse(R"([
+            {"feature":"deg","pattern":[{"deg":"1"}]},
+            {"feature":"deg","pattern":[{"deg":"1"}],"choraleFilter":{"ids":"abc"}}
+        ])"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("queries[1]") != std::string::npos);
+    }
+}
+
+TEST_CASE(chorales_belong_to_the_query_and_not_to_its_simultaneous_groups) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"deg","pattern":[{"deg":"1"}],
+        "simultaneousWith":[{"feature":"deg","voices":"bass","pattern":[{"deg":"1"}],"choraleFilter":{"startMode":"minor"}}]
+    })")));
+}
+
+TEST_CASE(every_query_of_an_array_has_a_chorale_filter_of_its_own) {
+    std::vector<Query> queries = queryArrayFromJson(json::parse(R"([
+        {"id":"a","feature":"deg","pattern":[{"deg":"1"}],"choraleFilter":{"ids":1}},
+        {"id":"b","feature":"deg","pattern":[{"deg":"1"}]}
+    ])"));
+    REQUIRE(queries.size() == 2u);
+    CHECK(!queries[0].choraleFilter.matchesId("chor002"));
+    CHECK(queries[1].choraleFilter.matchesId("chor002"));
+}
+
+TEST_CASE(query_to_json_writes_the_chorale_filter_back_and_reads_it_again) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"deg","pattern":[{"deg":"1"}],
+        "choraleFilter":{"ids":["chor005-chor020"],"meter":["4/4"],"phraseCount":6,"startKey":"e"}
+    })"));
+    Query again = queryFromJson(queryToJson(q));
+    CHECK(q.choraleFilter == again.choraleFilter);
+    CHECK(queryToJson(q).contains("choraleFilter"));
+}
+
 TEST_MAIN()

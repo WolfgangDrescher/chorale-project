@@ -74,6 +74,20 @@ ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale
     return resolved;
 }
 
+// The files a run has to open: those whose chorale id matches the filter of at least one query. Any other
+// is skipped without being parsed. (What else a filter asks is only known once a chorale is loaded, see runOne.)
+std::vector<fs::path> filesWithMatchingId(std::vector<fs::path> files, const std::vector<Query>& queries) {
+    files.erase(std::remove_if(files.begin(), files.end(),
+                               [&](const fs::path& file) {
+                                   const std::string id = file.stem().string();
+                                   return std::none_of(queries.begin(), queries.end(), [&](const Query& query) {
+                                       return query.choraleFilter.matchesId(id);
+                                   });
+                               }),
+                files.end());
+    return files;
+}
+
 // A chorale together with the results of searching it, one list for each query. A HumdrumChorale
 // can be neither copied nor moved, which is why it is held by a pointer.
 struct SearchedChorale {
@@ -112,6 +126,8 @@ void CorpusSearch::reportProgress(std::size_t choralesSearched, std::size_t chor
 Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) const {
     Results results;
     if (!chorale.hasFeature(query.feature)) return results;
+    if (!query.choraleFilter.matchesId(chorale.id())) return results;
+    if (query.choraleFilter.needsChoraleInfo() && !query.choraleFilter.matches(chorale.collectInfo())) return results;
 
     AttributeMatcher matcher(query.feature, query.pattern, matcherOptions(query));
 
@@ -173,7 +189,7 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
     std::vector<std::atomic<bool>> done(queries.size()); // read while searching, set while collecting
     for (std::atomic<bool>& flag : done) flag = false;
 
-    const auto files = findChoraleFiles();
+    const auto files = filesWithMatchingId(findChoraleFiles(), queries);
     FileDispatcher<SearchedChorale>(
         files.size(),
         [&](std::size_t fileIndex) {
@@ -214,7 +230,7 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
 }
 
 void CorpusSearch::forEachMatch(const std::vector<Query>& queries, const MatchVisitor& visit) const {
-    const auto files = findChoraleFiles();
+    const auto files = filesWithMatchingId(findChoraleFiles(), queries);
     std::size_t matchesSoFar = 0;
     FileDispatcher<SearchedChorale>(
         files.size(),

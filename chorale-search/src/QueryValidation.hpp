@@ -11,8 +11,8 @@ namespace choralesearch {
 bool isKnownSimultaneousGroupKey(const std::string& key);
 
 // True if `key` is any field a top-level Query can have -- everything
-// isKnownSimultaneousGroupKey accepts, plus "id", "limit", "simultaneousWith" (only meaningful
-// on the top-level query, not inside a nested simultaneousWith group).
+// isKnownSimultaneousGroupKey accepts, plus "id", "limit", "choraleFilter", "simultaneousWith" (only
+// meaningful on the top-level query, not inside a nested simultaneousWith group).
 bool isKnownQueryKey(const std::string& key);
 
 // The only spines the analysis ever generates (see SpineAnalysis.cpp's

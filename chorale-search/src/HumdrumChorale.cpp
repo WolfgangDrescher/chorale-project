@@ -91,6 +91,41 @@ std::vector<hum::HumNum> HumdrumChorale::phraseEndings() const {
     return endings;
 }
 
+ChoraleInfo HumdrumChorale::collectInfo() const {
+    // humlib's accessors are not const, though reading a score changes nothing.
+    hum::HumdrumFile& file = const_cast<hum::HumdrumFile&>(m_infile);
+
+    ChoraleInfo info;
+    info.id = m_id;
+
+    for (hum::HLp record : file.getReferenceRecords()) {
+        if (record->getReferenceKey().rfind("OTL", 0) != 0) continue;
+        const std::string title = decodeHtmlEntities(record->getReferenceValue());
+        if (!title.empty()) info.titles.push_back(title);
+    }
+
+    // Every voice states the meters and the keys, so the first one speaks for the score.
+    for (hum::HTp token = spine("kern", 1); token; token = token->getNextToken()) {
+        if (token->isTimeSignature()) {
+            const std::string meter = token->substr(2);
+            if (std::find(info.meters.begin(), info.meters.end(), meter) == info.meters.end()) {
+                info.meters.push_back(meter);
+            }
+        } else if (!info.key && token->isKeyDesignation()) {
+            const std::size_t colon = token->find(':');
+            info.key = token->substr(1, colon - 1);
+            info.mode = modeFromKeyDesignation(*info.key, token->substr(colon + 1));
+        }
+    }
+
+    // The highest number a barline carries, so a pickup measure, which has none, is not counted.
+    const std::vector<int> measureNumbers = file.getMeasureNumbers();
+    if (!measureNumbers.empty()) info.measureCount = std::max(0, *std::max_element(measureNumbers.begin(), measureNumbers.end()));
+
+    info.phraseCount = phraseEndings().size();
+    return info;
+}
+
 hum::HTp HumdrumChorale::tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {
     hum::HTp start = spine(feature, voice);
     if (!start) return nullptr;

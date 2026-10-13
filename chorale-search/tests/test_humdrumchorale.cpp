@@ -1,6 +1,7 @@
 #include "test_framework.hpp"
 
 #include <algorithm>
+#include <sstream>
 
 #include "HumdrumChorale.hpp"
 
@@ -152,6 +153,71 @@ TEST_CASE(phrase_endings_are_where_the_fermatas_close_a_phrase) {
     CHECK(std::is_sorted(endings.begin(), endings.end()));
     // Every chorale closes on a fermata: the last ending is where the piece ends.
     CHECK(endings.back() > endings.front());
+}
+
+TEST_CASE(collect_info_reads_the_meters_the_key_and_the_measures_off_a_small_score) {
+    std::istringstream score(
+        "!!!OTL@@DE: Ein Titel mit Umlaut: &auml;\n"
+        "!!!OTL@EN: A title\n"
+        "**kern\t**kern\n"
+        "*clefF4\t*clefG2\n"
+        "*e:phr\t*e:phr\n"
+        "*M4/4\t*M4/4\n"
+        "4E\t4e\n"
+        "=1\t=1\n"
+        "4F\t4f\n"
+        "=:|!\t=:|!\n"
+        "*M3/4\t*M3/4\n"
+        "*G:\t*G:\n"
+        "=3a\t=3a\n"
+        "4G\t4g\n"
+        "==\t==\n"
+        "*-\t*-\n");
+    choralesearch::ChoraleInfo info = HumdrumChorale(score, "score", false).collectInfo();
+
+    CHECK_EQ(info.id, std::string("score"));
+    REQUIRE(info.titles.size() == 2u);
+    CHECK_EQ(info.titles[0], std::string("Ein Titel mit Umlaut: \xC3\xA4"));
+    CHECK_EQ(info.titles[1], std::string("A title"));
+    CHECK_EQ(info.meters, (std::vector<std::string>{"4/4", "3/4"}));
+    REQUIRE(info.key.has_value());
+    CHECK_EQ(*info.key, std::string("e")); // the first key, not the one it changes to
+    CHECK_EQ(*info.mode, std::string("phrygian"));
+    CHECK_EQ(info.measureCount, std::size_t{3}); // the highest number a barline carries, "3a" included
+}
+
+TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
+    std::istringstream score("**kern\n4c\n4d\n*-\n");
+    choralesearch::ChoraleInfo info = HumdrumChorale(score, "bare", false).collectInfo();
+    CHECK(info.titles.empty());
+    CHECK(info.meters.empty());
+    CHECK(!info.key.has_value());
+    CHECK(!info.mode.has_value());
+    CHECK_EQ(info.measureCount, std::size_t{0});
+    CHECK_EQ(info.phraseCount, std::size_t{0});
+}
+
+TEST_CASE(collect_info_reads_what_the_score_states_about_itself) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    choralesearch::ChoraleInfo info = chorale.collectInfo();
+    CHECK_EQ(info.id, std::string("chor001"));
+    REQUIRE(info.titles.size() == 2u);
+    CHECK_EQ(info.titles[0], std::string("Aus meines Herzens Grunde"));
+    CHECK_EQ(info.meters, (std::vector<std::string>{"3/4"}));
+    CHECK_EQ(info.measureCount, std::size_t{21});
+    CHECK_EQ(info.phraseCount, std::size_t{6});
+    REQUIRE(info.key.has_value());
+    CHECK_EQ(*info.key, std::string("G")); // it modulates to e minor later, but starts in G
+    CHECK_EQ(*info.mode, std::string("major"));
+}
+
+TEST_CASE(collect_info_decodes_the_html_entities_of_a_title_and_reads_a_church_mode) {
+    CHECK_EQ(HumdrumChorale(FIXTURE_CHORALE("chor005")).collectInfo().titles.front(),
+             std::string("An Wasserfl\xC3\xBC" "ssen Babylon"));
+    choralesearch::ChoraleInfo dorian = HumdrumChorale(FIXTURE_CHORALE("chor008")).collectInfo();
+    CHECK_EQ(*dorian.key, std::string("f"));
+    CHECK_EQ(*dorian.mode, std::string("dorian"));
+    CHECK_EQ(dorian.phraseCount, std::size_t{9});
 }
 
 TEST_MAIN()

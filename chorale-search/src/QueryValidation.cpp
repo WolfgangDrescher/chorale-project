@@ -11,7 +11,7 @@ namespace choralesearch {
 namespace {
 
 // Fields shared by Query and SimultaneousGroup (see Query.hpp / JsonIO.cpp's
-// parseSearchRequestFields). "id", "limit", and "simultaneousWith" are Query-only additions on
+// parseSearchRequestFields). "id", "limit", "choraleFilter" and "simultaneousWith" are Query-only additions on
 // top of this, handled by isKnownQueryKey below.
 const std::vector<std::string> kSharedRequestFieldNames = {
     "feature", "voices", "pattern", "mintStartAtPreviousToken", "mintAllowIntervalComplementation",
@@ -137,7 +137,7 @@ bool isKnownSimultaneousGroupKey(const std::string& key) {
 }
 
 bool isKnownQueryKey(const std::string& key) {
-    return isKnownSimultaneousGroupKey(key) || key == "id" || key == "limit" || key == "simultaneousWith";
+    return isKnownSimultaneousGroupKey(key) || key == "id" || key == "limit" || key == "choraleFilter" || key == "simultaneousWith";
 }
 
 const std::vector<std::string>& drivingFeatureNames() {

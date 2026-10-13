@@ -4,13 +4,16 @@
 #include <atomic>
 #include <filesystem>
 #include <fstream>
+#include <map>
 
 #include "CorpusSearch.hpp"
 #include "HumdrumChorale.hpp"
 #include "Query.hpp"
 
 using choralesearch::AttributeMap;
+using choralesearch::ChoraleIdRange;
 using choralesearch::CorpusSearch;
+using choralesearch::CountRange;
 using choralesearch::HumdrumChorale;
 using choralesearch::Query;
 using choralesearch::Result;
@@ -599,6 +602,316 @@ TEST_CASE(run_throws_for_a_file_that_cannot_be_parsed) {
     }
     std::filesystem::remove_all(corpus);
     CHECK(threw);
+}
+
+TEST_CASE(chorale_filter_without_filters_searches_every_chorale) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    std::vector<std::string> found; // the chorales with a match, in the order of the results
+
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found.size(), std::size_t{8});
+    CHECK_EQ(search.run(q).size(), std::size_t{51});
+}
+
+TEST_CASE(chorale_filter_ids_and_excluded_ids_pick_the_chorales_searched) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    std::vector<std::string> found; // the chorales with a match, in the order of the results
+
+    q.choraleFilter.ids = {ChoraleIdRange{"29", 29, 29}, ChoraleIdRange{"chor039", 39, 39}};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor029", "chor039"}));
+
+    q.choraleFilter = {};
+    q.choraleFilter.ids = {ChoraleIdRange{"5-9", 5, 9}};
+    q.choraleFilter.excludeIds = {ChoraleIdRange{"006", 6, 6}};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor005", "chor008", "chor009"}));
+
+    q.choraleFilter = {};
+    q.choraleFilter.excludeIds = {ChoraleIdRange{"1-100", 1, 100}};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor103"}));
+
+    q.choraleFilter = {};
+    q.choraleFilter.ids = {ChoraleIdRange{"2", 2, 2}};
+    CHECK(search.run(q).empty());
+}
+
+TEST_CASE(chorale_filter_title_finds_a_chorale_by_a_word_of_either_title_without_regard_to_case) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    std::vector<std::string> found; // the chorales with a match, in the order of the results
+
+    // chor103 is "Nun ruhen alle W&auml;lder" in the file
+    q.choraleFilter.title = {"W\xC3\x84LDER"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor103"}));
+
+    q.choraleFilter.title = {"depths of my"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor001"}));
+
+    q.choraleFilter.title = {"babylon", "S\xC3\xBCnder"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor005", "chor039"}));
+}
+
+TEST_CASE(chorale_filter_meter_and_counts_pick_the_chorales_searched) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    std::vector<std::string> found; // the chorales with a match, in the order of the results
+
+    q.choraleFilter.meter = {"3/4", "2/2"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor001"}));
+
+    q.choraleFilter = {};
+    q.choraleFilter.measureCount = CountRange{17, std::nullopt};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor001", "chor005", "chor008"}));
+
+    q.choraleFilter.measureCount = CountRange{std::nullopt, 8};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor006"}));
+
+    q.choraleFilter.measureCount = CountRange{13, 13};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor029"}));
+
+    q.choraleFilter = {};
+    q.choraleFilter.phraseCount = CountRange{8, std::nullopt};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor005", "chor008"}));
+
+    q.choraleFilter.phraseCount = CountRange{4, 4};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor006"}));
+}
+
+TEST_CASE(chorale_filter_key_and_mode_are_those_a_chorale_starts_in) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    std::vector<std::string> found; // the chorales with a match, in the order of the results
+
+    // chor001 modulates to e minor, but starts in G major
+    q.choraleFilter.startKey = {"G"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor001", "chor005", "chor009", "chor029"}));
+
+    q.choraleFilter = {};
+    q.choraleFilter.startMode = {"minor"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor039"}));
+
+    q.choraleFilter.startMode = {"dorian"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor008"}));
+
+    q.choraleFilter.startMode = {"dorian", "minor"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor008", "chor039"}));
+
+    q.choraleFilter.startMode = {"phrygian"};
+    CHECK(search.run(q).empty());
+
+    q.choraleFilter = {};
+    q.choraleFilter.startMode = {"major"};
+    q.choraleFilter.phraseCount = CountRange{6, 6};
+    q.choraleFilter.meter = {"4/4"};
+    q.choraleFilter.startKey = {"G", "B-"};
+    found.clear();
+    for (const Result& result : search.run(q)) {
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(found, (std::vector<std::string>{"chor009", "chor029", "chor103"}));
+}
+
+TEST_CASE(chorale_filter_leaves_the_matches_of_the_chorales_it_lets_in_as_they_are) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+
+    std::vector<Result> expected;
+    for (const Result& result : search.run(q)) {
+        if (result.choraleId == "chor008" || result.choraleId == "chor029") expected.push_back(result);
+    }
+
+    q.choraleFilter.ids = {ChoraleIdRange{"8", 8, 8}, ChoraleIdRange{"29", 29, 29}};
+    std::vector<Result> filtered = search.run(q);
+    REQUIRE(filtered.size() == expected.size());
+    for (std::size_t i = 0; i < filtered.size(); ++i) {
+        CHECK_EQ(filtered[i].choraleId, expected[i].choraleId);
+        CHECK_EQ(filtered[i].startLineNumber, expected[i].startLineNumber);
+        CHECK_EQ(filtered[i].endPosition, expected[i].endPosition);
+    }
+}
+
+TEST_CASE(chorale_filter_applies_before_the_limit_counts) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    q.choraleFilter.ids = {ChoraleIdRange{"29-39", 29, 39}};
+    q.limit = 8;
+
+    std::vector<Result> results = search.run(q);
+    CHECK_EQ(results.size(), std::size_t{8});
+    // chor029 has six matches and chor039 the two after them: the limit is not used up by chorales left out
+    CHECK_EQ(results.front().choraleId, std::string("chor029"));
+    CHECK_EQ(results.back().choraleId, std::string("chor039"));
+}
+
+TEST_CASE(every_query_of_a_combined_run_has_a_chorale_filter_of_its_own) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query minor;
+    minor.id = "minor";
+    minor.feature = "kern";
+    minor.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    minor.voices = "soprano";
+    Query dorian = minor;
+    dorian.id = "dorian";
+    Query one = minor;
+    one.id = "one";
+    minor.choraleFilter.startMode = {"minor"};
+    dorian.choraleFilter.startMode = {"dorian"};
+    one.choraleFilter.ids = {ChoraleIdRange{"103", 103, 103}};
+
+    std::map<std::string, std::vector<std::string>> chorales; // by the id of the query
+    for (const Result& result : search.run(std::vector<Query>{minor, dorian, one})) {
+        std::vector<std::string>& found = chorales[*result.queryId];
+        if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
+    }
+    CHECK_EQ(chorales["minor"], (std::vector<std::string>{"chor039"}));
+    CHECK_EQ(chorales["dorian"], (std::vector<std::string>{"chor008"}));
+    CHECK_EQ(chorales["one"], (std::vector<std::string>{"chor103"}));
+}
+
+TEST_CASE(chorale_filter_ids_leave_the_other_files_unopened_and_out_of_the_progress) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    std::vector<choralesearch::SearchProgress> reports;
+    search.setProgressCallback([&](const choralesearch::SearchProgress& progress) { reports.push_back(progress); });
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+    q.choraleFilter.ids = {ChoraleIdRange{"1", 1, 1}, ChoraleIdRange{"5", 5, 5}};
+    search.run(q);
+    REQUIRE(reports.size() == 2u);
+    CHECK_EQ(reports[0].choralesTotal, std::size_t{2});
+    CHECK_EQ(reports[0].choraleId, std::string("chor001"));
+    CHECK_EQ(reports[1].choraleId, std::string("chor005"));
+
+    // The files are only skipped when no query wants them.
+    reports.clear();
+    Query one = q;
+    one.choraleFilter = {};
+    one.choraleFilter.ids = {ChoraleIdRange{"1", 1, 1}};
+    Query other = q;
+    other.choraleFilter = {};
+    other.choraleFilter.startMode = {"minor"};
+    search.run(std::vector<Query>{one, other});
+    CHECK_EQ(reports.size(), std::size_t{8});
+}
+
+TEST_CASE(chorale_filter_applies_to_for_each_match_and_to_run_one) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    q.voices = "soprano";
+
+    Query minor = q;
+    minor.choraleFilter.startMode = {"minor"};
+    std::vector<std::string> visited;
+    search.forEachMatch({minor}, [&](const HumdrumChorale&, const Result& result) {
+        if (visited.empty() || visited.back() != result.choraleId) visited.push_back(result.choraleId);
+    });
+    CHECK_EQ(visited, (std::vector<std::string>{"chor039"}));
+
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CHECK(!search.runOne(chorale, q).empty());
+
+    q.choraleFilter.ids = {ChoraleIdRange{"29", 29, 29}};
+    q.choraleFilter.startMode = {"major"};
+    CHECK(!search.runOne(chorale, q).empty());
+
+    q.choraleFilter.ids = {ChoraleIdRange{"30", 30, 30}};
+    CHECK(search.runOne(chorale, q).empty());
+
+    q.choraleFilter = {};
+    q.choraleFilter.startMode = {"minor"};
+    CHECK(search.runOne(chorale, q).empty());
 }
 
 TEST_MAIN()

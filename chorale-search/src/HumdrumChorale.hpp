@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "ChoraleInfo.hpp"
 #include "humlib.h"
 
 namespace choralesearch {
@@ -34,6 +35,10 @@ public:
     // Where the phrases end, in order: a fermata closes one, and fermata notes sounding at the same time
     // close one phrase together, where the last of them stops.
     std::vector<hum::HumNum> phraseEndings() const;
+
+    // What the score states about itself as a whole, which a ChoraleFilter is held against. It reads the
+    // reference records and walks the voices every time it is called, so ask once per chorale.
+    ChoraleInfo collectInfo() const;
 
     // The data token the spine of `feature` and `voice` has on `lineNumber`, or nullptr when the
     // spine is missing, the line is no data line, or the voice holds its note there (a null

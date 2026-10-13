@@ -4,7 +4,9 @@
 #include "VoiceReference.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <optional>
+#include <regex>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -308,6 +310,146 @@ std::vector<SimultaneousGroup> simultaneousWithFromJson(const nlohmann::json& j)
     return groups;
 }
 
+// What a field is called in an error message: "'choraleFilter.title' in Query JSON".
+std::string choraleFilterFieldLocation(const std::string& field, const std::string& context) {
+    return "'choraleFilter." + field + "' in " + context;
+}
+
+// The number one end of an id range names: "29", "029" or "chor029". At most nine digits, so the number
+// always fits in a size_t. Anything else, a space included, is no number.
+std::optional<std::size_t> integerFromIdText(const std::string& text) {
+    std::string digits = text;
+    if (digits.size() >= 4) {
+        std::string prefix = digits.substr(0, 4);
+        std::transform(prefix.begin(), prefix.end(), prefix.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (prefix == "chor") digits = digits.substr(4);
+    }
+    if (digits.empty() || digits.size() > 9 || digits.find_first_not_of("0123456789") != std::string::npos) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(std::stoul(digits));
+}
+
+ChoraleIdRange idRangeFromJson(const nlohmann::json& entry, const std::string& field, const std::string& context) {
+    const std::string where = choraleFilterFieldLocation(field, context);
+    ChoraleIdRange range;
+
+    if (entry.is_number_unsigned()) {
+        range.first = range.last = entry.get<std::size_t>();
+        range.text = std::to_string(range.first);
+        if (range.text.size() > 9) throw std::invalid_argument(where + ": " + range.text + " is not a chorale number");
+        return range;
+    }
+    if (!entry.is_string()) {
+        throw std::invalid_argument(where + " must hold chorale numbers (29) or strings (\"029\", \"chor029\", \"5-20\"), "
+                                            "got " + entry.dump());
+    }
+
+    range.text = entry.get<std::string>();
+    const std::size_t dash = range.text.find('-');
+    const std::optional<std::size_t> first = integerFromIdText(range.text.substr(0, dash));
+    const std::optional<std::size_t> last = dash == std::string::npos ? first : integerFromIdText(range.text.substr(dash + 1));
+    if (!first || !last || (dash != std::string::npos && range.text.find('-', dash + 1) != std::string::npos)) {
+        throw std::invalid_argument(where + ": '" + range.text + "' is not a chorale id (29, \"029\", \"chor029\") or a range "
+                                            "of them (\"5-20\", \"chor005-chor020\")");
+    }
+    if (*first > *last) {
+        throw std::invalid_argument(where + ": the range '" + range.text + "' ends before it starts");
+    }
+    range.first = *first;
+    range.last = *last;
+    return range;
+}
+
+// A field that takes a single entry or an array of them, read into a vector either way. `readEntry` reads and
+// checks one entry. An empty array is an error, so a field that is set always holds at least one entry.
+template <typename T, typename ReadEntry>
+std::vector<T> listFromJson(const nlohmann::json& j, const std::string& field, const std::string& context,
+                            ReadEntry readEntry) {
+    std::vector<T> entries;
+    if (j.is_array()) {
+        for (const auto& entry : j) entries.push_back(readEntry(entry, field, context));
+        if (entries.empty()) {
+            throw std::invalid_argument(choraleFilterFieldLocation(field, context) +
+                                        " must not be an empty array (omit it to leave the chorales unrestricted)");
+        }
+    } else {
+        entries.push_back(readEntry(j, field, context));
+    }
+    return entries;
+}
+
+std::string nonEmptyStringFromJson(const nlohmann::json& entry, const std::string& field, const std::string& context) {
+    if (!entry.is_string() || entry.get<std::string>().empty()) {
+        throw std::invalid_argument(choraleFilterFieldLocation(field, context) + ": " + entry.dump() + " is not a non-empty string");
+    }
+    return entry.get<std::string>();
+}
+
+std::string meterFromJson(const nlohmann::json& entry, const std::string& field, const std::string& context) {
+    static const std::regex meterRe(R"(^\d+/\d+$)");
+    const std::string meter = nonEmptyStringFromJson(entry, field, context);
+    if (!std::regex_match(meter, meterRe)) {
+        throw std::invalid_argument(choraleFilterFieldLocation(field, context) + ": '" + meter + "' is not a meter like \"4/4\"");
+    }
+    return meter;
+}
+
+std::string keyFromJson(const nlohmann::json& entry, const std::string& field, const std::string& context) {
+    static const std::regex keyRe(R"(^[a-gA-G][#-]*$)");
+    const std::string key = nonEmptyStringFromJson(entry, field, context);
+    if (!std::regex_match(key, keyRe)) {
+        throw std::invalid_argument(choraleFilterFieldLocation(field, context) + ": '" + key + "' is not a key like \"G\", \"e\" "
+                                    "or \"B-\" (a capital letter is a major key, a small one a minor key)");
+    }
+    return key;
+}
+
+std::string modeFromJson(const nlohmann::json& entry, const std::string& field, const std::string& context) {
+    const std::string name = nonEmptyStringFromJson(entry, field, context);
+    const std::optional<std::string> mode = normalizeModeName(name);
+    if (!mode) {
+        std::string joined;
+        for (const std::string& known : modeNames()) joined += (joined.empty() ? "" : ", ") + known;
+        throw std::invalid_argument(choraleFilterFieldLocation(field, context) + ": '" + name + "' is not a mode (" + joined + ")");
+    }
+    return *mode;
+}
+
+CountRange countRangeFromJson(const nlohmann::json& j, const std::string& field, const std::string& context) {
+    const std::string where = choraleFilterFieldLocation(field, context);
+    CountRange range;
+    if (j.is_number_unsigned()) {
+        range.min = range.max = j.get<std::size_t>();
+        return range;
+    }
+    if (!j.is_object()) {
+        throw std::invalid_argument(where + " must be a number or an object with 'min' and/or 'max'");
+    }
+    for (auto it = j.begin(); it != j.end(); ++it) {
+        if (it.key() != "min" && it.key() != "max") {
+            throw std::invalid_argument(where + " has an unknown field '" + it.key() + "' (only 'min' and 'max')");
+        }
+        if (!it.value().is_number_unsigned()) {
+            throw std::invalid_argument(where + ": '" + it.key() + "' must be a non-negative integer");
+        }
+    }
+    if (j.contains("min")) range.min = j["min"].get<std::size_t>();
+    if (j.contains("max")) range.max = j["max"].get<std::size_t>();
+    if (!range.min && !range.max) throw std::invalid_argument(where + " needs 'min' and/or 'max'");
+    if (range.min && range.max && *range.min > *range.max) {
+        throw std::invalid_argument(where + ": 'min' is greater than 'max'");
+    }
+    return range;
+}
+
+bool isKnownChoraleFilterField(const std::string& key) {
+    static const std::vector<std::string> known = {
+        "ids", "excludeIds", "title", "meter", "measureCount", "phraseCount", "startKey", "startMode",
+    };
+    return std::find(known.begin(), known.end(), key) != known.end();
+}
+
 // Internal overload (not declared in the header) shared by the single-query and
 // array-of-queries entrypoints below, so the error message can name which array element
 // failed ("'queries[2]'") instead of always saying "Query JSON".
@@ -330,6 +472,8 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
         q.limit = j["limit"].get<std::size_t>();
     }
 
+    if (j.contains("choraleFilter")) q.choraleFilter = choraleFilterFromJson(j["choraleFilter"], context);
+
     if (j.contains("simultaneousWith")) {
         q.simultaneousWith = simultaneousWithFromJson(j["simultaneousWith"]);
     }
@@ -338,6 +482,24 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
 }
 
 } // namespace
+
+ChoraleFilter choraleFilterFromJson(const nlohmann::json& j, const std::string& context) {
+    if (!j.is_object()) throw std::invalid_argument("'choraleFilter' in " + context + " must be an object");
+    rejectUnknownKeys(j, isKnownChoraleFilterField, "'choraleFilter' in " + context);
+
+    ChoraleFilter filter;
+    if (j.contains("ids")) filter.ids = listFromJson<ChoraleIdRange>(j["ids"], "ids", context, idRangeFromJson);
+    if (j.contains("excludeIds")) {
+        filter.excludeIds = listFromJson<ChoraleIdRange>(j["excludeIds"], "excludeIds", context, idRangeFromJson);
+    }
+    if (j.contains("title")) filter.title = listFromJson<std::string>(j["title"], "title", context, nonEmptyStringFromJson);
+    if (j.contains("meter")) filter.meter = listFromJson<std::string>(j["meter"], "meter", context, meterFromJson);
+    if (j.contains("measureCount")) filter.measureCount = countRangeFromJson(j["measureCount"], "measureCount", context);
+    if (j.contains("phraseCount")) filter.phraseCount = countRangeFromJson(j["phraseCount"], "phraseCount", context);
+    if (j.contains("startKey")) filter.startKey = listFromJson<std::string>(j["startKey"], "startKey", context, keyFromJson);
+    if (j.contains("startMode")) filter.startMode = listFromJson<std::string>(j["startMode"], "startMode", context, modeFromJson);
+    return filter;
+}
 
 Query queryFromJson(const nlohmann::json& j) {
     return queryFromJson(j, "Query JSON");

@@ -25,6 +25,8 @@ target_include_directories(humlib SYSTEM PUBLIC external/humlib/min)
 target_compile_options(humlib PRIVATE -w)
 
 add_library(chorale_core STATIC
+    src/ChoraleInfo.cpp
+    src/ChoraleFilter.cpp
     src/HumdrumChorale.cpp
     src/VoiceMap.cpp
     src/VoiceReference.cpp
@@ -78,9 +80,13 @@ if(BUILD_TESTS)
     target_include_directories(test_voicereference PRIVATE src tests)
     add_test(NAME voicereference COMMAND test_voicereference)
 
-    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/QueryValidation.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
+    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/QueryValidation.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
     target_include_directories(test_jsonio PRIVATE src tests external/json/single_include)
     add_test(NAME jsonio COMMAND test_jsonio)
+
+    add_executable(test_choralefilter tests/test_choralefilter.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/JsonIO.cpp src/QueryValidation.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
+    target_include_directories(test_choralefilter PRIVATE src tests external/json/single_include)
+    add_test(NAME choralefilter COMMAND test_choralefilter)
 
     add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp)
     target_include_directories(test_queryvalidation PRIVATE src tests)
