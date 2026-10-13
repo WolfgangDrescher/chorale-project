@@ -169,6 +169,9 @@ github: GitHub
 vhv: VHV
 download: Download
 exportFormat: Dateiformat
+exportContent: Inhalt
+cantusFirmusOnly: Nur Cantus firmus
+completeChorale: Ganzer Choral
 exportLayout: Notation
 scoreLayout: Partitur
 pianoSetting: Klaviersatz
