@@ -29,6 +29,48 @@ const scoreOptions = useScoreOptions();
 
 const { copy, copied } = useClipboard();
 
+// The download of the cantus firmus of a chorale with the other voices left empty, as MEI for notation programs.
+function useChoraleExport() {
+    const { t } = useI18n();
+
+    const exportLayout = ref('piano');
+
+    const exportLayoutItems = computed(() => [
+        { label: t('scoreLayout'), value: 'score' },
+        { label: t('pianoSetting'), value: 'piano' },
+    ]);
+
+    // The URL and the file name of a download.
+    function exportLink({ format, layout }) {
+        const query = new URLSearchParams({ format, layout });
+        return {
+            to: `/api/chorales/${chorale.value.choraleId}/export?${query}`,
+            download: `${chorale.value.choraleId}-cantus-firmus-${layout}.${format}`,
+        };
+    }
+
+    const downloadItems = computed(() => {
+        const link = exportLink({
+            format: 'mei',
+            layout: exportLayout.value,
+        });
+        return [[{
+            label: t('downloadFormat', { format: 'MEI' }),
+            icon: 'lucide:download',
+            external: true,
+            ...link,
+        }]];
+    });
+
+    return {
+        exportLayout,
+        exportLayoutItems,
+        downloadItems,
+    };
+}
+
+const { exportLayout, exportLayoutItems, downloadItems } = useChoraleExport();
+
 useChoraleKeyboardShortcuts({ prevChorale, nextChorale });
 
 // The key as the score writes it, e.g. "G major" or "f# minor".
@@ -79,6 +121,21 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                     <UButton :to="vhvScoreUrlGenerator(chorale.choraleId)" target="_blank">
                         {{ $t('vhv') }}
                     </UButton>
+                    <UDropdownMenu :items="downloadItems" arrow>
+                        <UButton trailing-icon="lucide:chevron-down">
+                            {{ $t('download') }}
+                        </UButton>
+                        <template #content-top>
+                            <div class="flex flex-col gap-2 p-1.5 pb-1">
+                                <div>
+                                    <div class="text-xs text-muted mb-1">
+                                        {{ $t('exportLayout') }}
+                                    </div>
+                                    <UTabs v-model="exportLayout" :items="exportLayoutItems" :content="false" size="xs" class="w-full" />
+                                </div>
+                            </div>
+                        </template>
+                    </UDropdownMenu>
                 </div>
             </div>
 

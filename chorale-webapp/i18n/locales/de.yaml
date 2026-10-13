@@ -167,6 +167,11 @@ previous: Vorheriges
 next: Nächstes
 github: GitHub
 vhv: VHV
+download: Download
+exportLayout: Notation
+scoreLayout: Partitur
+pianoSetting: Klaviersatz
+downloadFormat: "{format} herunterladen"
 filterChorales: Choräle filtern
 noChoralesFound: Keine Choräle gefunden.
 noChoralesFoundDescription: Die Choräle werden aus dem Korpus extrahiert. Führen Sie dazu im Projektverzeichnis `make webapp` aus.
