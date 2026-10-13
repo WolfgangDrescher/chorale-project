@@ -63,6 +63,49 @@ function prepareSvg(svg) {
     return svg.replace('<svg class="definition-scale"', '<svg class="definition-scale" overflow="visible"');
 }
 
+// Where Verovio writes the number of a measure, as the size of its text and the height of its
+// baseline above the top line of the staff, in the units of the SVG.
+const MEASURE_NUMBER_SIZE = 324;
+const MEASURE_NUMBER_RISE = 243;
+
+// The numbers of the measures by their ids, in the order of the score. A pickup measure has none.
+function readMeasureNumbers(mei) {
+    return new Map([...mei.matchAll(/<measure\b([^>]*)>/g)].map(([, attributes]) => [
+        attributes.match(/xml:id="([^"]+)"/)?.[1],
+        attributes.match(/\bn="([^"]*)"/)?.[1],
+    ]));
+}
+
+// Verovio writes the number of the measure that starts a system, but not where that is a pickup
+// measure (the one after a repeat, which completes the measure before it), because it has none.
+// The first full measure of such a system gets its number instead, above the barline in front of
+// it. Resolves with those numbers as { text, x, y, size } in points, from the corner of the SVG.
+function pickupSystemNumbers(svg, measureNumbers) {
+    const unit = parseFloat(svg.match(/<svg width="([\d.]+)mm"/)[1]) * 72 / 25.4 / Number(svg.match(/viewBox="0 0 (\d+)/)[1]);
+    // The page margins shift the content of the page, and with it the coordinates of the staves.
+    const [, shiftX, shiftY] = svg.match(/class="page-margin" transform="translate\((-?[\d.]+), (-?[\d.]+)\)"/) ?? [, 0, 0];
+    const [firstMeasure] = measureNumbers.keys();
+    const numbers = [];
+
+    for (const system of svg.split('class="system"').slice(1)) {
+        const measures = [...system.matchAll(/<g id="([^"]+)" class="measure">/g)];
+        // The first measure of the score is a pickup measure as well, and needs no number.
+        if (!measures.length || measureNumbers.get(measures[0][1]) || measures[0][1] === firstMeasure) continue;
+
+        const full = measures.find(([, id]) => measureNumbers.get(id));
+        const topLine = full && system.slice(full.index).match(/class="staff">\s*<path d="M(-?\d+) (-?\d+)/);
+        if (!topLine) continue;
+
+        numbers.push({
+            text: measureNumbers.get(full[1]),
+            x: (Number(topLine[1]) + Number(shiftX)) * unit,
+            y: (Number(topLine[2]) + Number(shiftY) - MEASURE_NUMBER_RISE) * unit,
+            size: MEASURE_NUMBER_SIZE * unit,
+        });
+    }
+    return numbers;
+}
+
 // Typesets the score on A4 pages and resolves with the PDF as a Buffer. The title, the subtitle
 // and the footer are written by PDFKit, `t` translates what is in the footer.
 export async function renderChoralePdf(kern, { filters, chorale, t, siteUrl }) {
@@ -92,6 +135,8 @@ export async function renderChoralePdf(kern, { filters, chorale, t, siteUrl }) {
         },
     });
 
+    const measureNumbers = readMeasureNumbers(toolkit.getMEI());
+
     const doc = new PDFDocument({
         size: [verovioUnitToPoints(pageWidth), verovioUnitToPoints(pageHeight)],
         margin: 0,
@@ -118,7 +163,12 @@ export async function renderChoralePdf(kern, { filters, chorale, t, siteUrl }) {
 
     for (let page = 1; page <= toolkit.getPageCount(); page++) {
         doc.addPage();
-        SVGtoPDF(doc, prepareSvg(toolkit.renderToSVG(page, {})), margin, margin, { fontCallback: createFontCallback(fonts) });
+        const svg = toolkit.renderToSVG(page, {});
+        SVGtoPDF(doc, prepareSvg(svg), margin, margin, { fontCallback: createFontCallback(fonts) });
+        for (const { text, x, y, size } of pickupSystemNumbers(svg, measureNumbers)) {
+            doc.font(fonts.italic).fontSize(size).fillColor('black');
+            doc.text(text, margin + x - 20, margin + y, { width: 40, align: 'center', baseline: 'alphabetic' });
+        }
 
         doc.font(fonts.regular).fontSize(FOOTER_SIZE).fillColor('black');
         footer('left', ['Chorale Project', siteUrl], siteUrl);
