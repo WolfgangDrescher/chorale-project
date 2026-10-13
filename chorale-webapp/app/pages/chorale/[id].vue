@@ -35,6 +35,7 @@ function useChoraleExport() {
 
     const exportFormat = ref('pdf');
     const exportContent = ref('cantus-firmus');
+    const exportVoices = ref('4');
     const exportLayout = ref('piano');
     const pageOrientation = ref('portrait');
 
@@ -46,6 +47,10 @@ function useChoraleExport() {
         { label: t('cantusFirmusOnly'), value: 'cantus-firmus' },
         { label: t('completeChorale'), value: 'complete' },
     ]);
+    const exportVoicesItems = computed(() => [
+        { label: t('fourVoices'), value: '4' },
+        { label: t('twoVoices'), value: '2' },
+    ]);
     const exportLayoutItems = computed(() => [
         { label: t('scoreLayout'), value: 'score' },
         { label: t('pianoSetting'), value: 'piano' },
@@ -55,13 +60,16 @@ function useChoraleExport() {
         { label: t('landscape'), value: 'landscape' },
     ]);
 
-    // The URL and the file name of a download. The page orientation is a matter of the PDF only.
-    function exportLink({ format, content, layout, orientation }) {
+    // The URL and the file name of a download. The number of voices is a matter of the MEI only,
+    // the page orientation of the PDF.
+    function exportLink({ format, content, layout, voices, orientation }) {
+        const isMei = format === 'mei';
         const query = new URLSearchParams({ format, content, layout });
-        if (format === 'pdf') query.set('orientation', orientation);
+        if (isMei) query.set('voices', voices);
+        else query.set('orientation', orientation);
         return {
             to: `/api/chorales/${chorale.value.choraleId}/export?${query}`,
-            download: `${chorale.value.choraleId}-${content}-${layout}${format === 'pdf' ? `-${orientation}` : ''}.${format}`,
+            download: `${chorale.value.choraleId}-${content}-${layout}-${isMei ? voices : orientation}.${format}`,
         };
     }
 
@@ -70,6 +78,7 @@ function useChoraleExport() {
             format: exportFormat.value,
             content: exportContent.value,
             layout: exportLayout.value,
+            voices: exportVoices.value,
             orientation: pageOrientation.value,
         });
         return [[{
@@ -83,10 +92,12 @@ function useChoraleExport() {
     return {
         exportFormat,
         exportContent,
+        exportVoices,
         exportLayout,
         pageOrientation,
         exportFormatItems,
         exportContentItems,
+        exportVoicesItems,
         exportLayoutItems,
         pageOrientationItems,
         downloadItems,
@@ -96,10 +107,12 @@ function useChoraleExport() {
 const {
     exportFormat,
     exportContent,
+    exportVoices,
     exportLayout,
     pageOrientation,
     exportFormatItems,
     exportContentItems,
+    exportVoicesItems,
     exportLayoutItems,
     pageOrientationItems,
     downloadItems,
@@ -172,6 +185,12 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                                         {{ $t('exportContent') }}
                                     </div>
                                     <UTabs v-model="exportContent" :items="exportContentItems" :content="false" size="xs" class="w-full" />
+                                </div>
+                                <div v-if="exportFormat === 'mei'">
+                                    <div class="text-xs text-muted mb-1">
+                                        {{ $t('exportVoices') }}
+                                    </div>
+                                    <UTabs v-model="exportVoices" :items="exportVoicesItems" :content="false" size="xs" class="w-full" />
                                 </div>
                                 <div>
                                     <div class="text-xs text-muted mb-1">

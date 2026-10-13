@@ -7,8 +7,10 @@ import createVerovioModule from 'verovio/wasm-hum';
 //   layout   score (the voices on staves of their own) or piano (a piano system)
 //   content  the cantus firmus (the top voice, and so the last spine of the **kern file) alone,
 //            with the other voices left empty, or the whole chorale
+//   voices   all four, or two: the cantus firmus and the bass
 export const CHORALE_EXPORT_LAYOUTS = ['score', 'piano'];
 export const CHORALE_EXPORT_CONTENTS = ['cantus-firmus', 'complete'];
+export const CHORALE_EXPORT_VOICES = ['4', '2'];
 
 // The generated kern files, which the page serves as public assets (see nuxt.config.ts).
 const KERN_DIR = '../kern/bach-370-chorales';
@@ -150,11 +152,13 @@ function hideVoices(spines) {
 
 // The Humdrum filters (of humlib, Verovio runs them on the **kern text) that turn the chorale
 // into what is downloaded.
-export function choraleFilters({ format, layout, content }) {
+export function choraleFilters({ format, layout, content, voices }) {
     const cantusFirmusOnly = content === 'cantus-firmus';
-    // A PDF shows the cantus firmus alone in a piano layout with the one voice below it, its other
+    // Two voices have the bass as the only voice of the lower staff, and not as a second voice below
+    // the rests of the tenor, which is less to look at in a notation program. It is a choice for
+    // the MEI only. A PDF shows the cantus firmus alone in a piano layout like that, its other
     // voices are invisible anyway.
-    const outerVoicesOnly = format === 'pdf' && layout === 'piano' && cantusFirmusOnly;
+    const outerVoicesOnly = format === 'mei' ? voices === '2' : (layout === 'piano' && cantusFirmusOnly);
     const filters = [];
 
     if (outerVoicesOnly) filters.push(OUTER_VOICES);

@@ -172,6 +172,9 @@ exportFormat: Dateiformat
 exportContent: Inhalt
 cantusFirmusOnly: Nur Cantus firmus
 completeChorale: Ganzer Choral
+exportVoices: Stimmen
+fourVoices: 4 Stimmen
+twoVoices: c.f. und Bass
 exportLayout: Notation
 scoreLayout: Partitur
 pianoSetting: Klaviersatz
