@@ -138,12 +138,7 @@ docker compose up -d --build   # build the images here
 Nothing is built on the server. Every push to master runs
 `.github/workflows/build.yaml`: if the tests pass, both images are pushed to
 ghcr.io as `sha-3f9a1c2` (the commit) and `latest`. Pull requests only run the
-tests. To run a version on the server:
-
-```sh
-CHORALE_VERSION=sha-3f9a1c2 docker compose pull
-CHORALE_VERSION=sha-3f9a1c2 docker compose up -d
-```
+tests.
 
 The build needs the `bach-370-chorales` submodule checked out and network
 access, for the pinned C++ libraries.
@@ -155,6 +150,35 @@ passes those requests on to it. Without it they run the tools directly, so
 `npm run dev` needs no Docker.
 
 `docker/nginx.example.conf` is a starting point for the reverse proxy on the server.
+
+### Server
+
+Clone the repository on the server, without the submodule since the scores are
+part of the images, and run the update script. Nothing is built there.
+
+```sh
+git clone https://github.com/WolfgangDrescher/chorale-project.git
+cd chorale-project
+docker/update.sh
+```
+
+The script shows what is running and what is new, and asks before it updates to
+the newest commit that has images: commits whose tests failed, or whose build is
+still running, are skipped. It checks out that commit, so `compose.yaml` and the
+images fit together, and starts the containers with it.
+
+```sh
+docker/update.sh            # ask, then update to the newest commit with images
+docker/update.sh 3f9a1c2    # a rollback, or any other commit with images
+docker/update.sh --build    # build the images on the server instead (fetches the submodule)
+```
+
+It warns when `docker/nginx.example.conf` differs between the running and the
+new commit, since the nginx config of the server is not part of the repository
+and has to be adjusted by hand. It says so when the target is older than what is
+running (a rollback), and when the clone has commits that are not on
+`origin/master`. Tracked files must not be edited on the server: settings that
+belong to it go in `compose.override.yaml` and `.env`, which git ignores.
 
 
 ## Updating after changes

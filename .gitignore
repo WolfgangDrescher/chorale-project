@@ -6,3 +6,7 @@
 .fleet
 .idea
 .vscode
+
+# Server-specific: the version docker/update.sh deployed, and local compose settings
+/.env
+/compose.override.yaml
