@@ -145,7 +145,8 @@ main() {
     esac
 
     git checkout --quiet --detach "$target"
-    echo "CHORALE_VERSION=sha-$(short "$target")" > .env
+    # The version goes into .env only when the update has worked.
+    export CHORALE_VERSION="sha-$(short "$target")"
     if [ "$build" -eq 1 ]; then
         git submodule update --init --quiet
         docker compose up -d --build --wait
@@ -153,6 +154,7 @@ main() {
         docker compose pull
         docker compose up -d --wait
     fi
+    echo "CHORALE_VERSION=$CHORALE_VERSION" > .env
     docker image prune --force > /dev/null
 
     echo "Now running: $(describe "$target")"
