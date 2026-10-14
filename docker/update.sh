@@ -38,6 +38,42 @@ images_exist() {
     done
 }
 
+# The architecture the images have to be built for: the one of the Docker
+# server, or the one DOCKER_DEFAULT_PLATFORM asks for.
+platform_arch() {
+    if [ -n "${DOCKER_DEFAULT_PLATFORM:-}" ]; then
+        echo "${DOCKER_DEFAULT_PLATFORM#*/}" | cut -d/ -f1
+    else
+        docker version --format '{{.Server.Arch}}'
+    fi
+}
+
+# The architectures an image is built for, separated by commas. Empty when the
+# registry does not say.
+image_archs() {
+    docker manifest inspect "$1" 2> /dev/null \
+        | grep -oE '"architecture": *"[a-z0-9]+"' \
+        | sed 's/.*"\([a-z0-9]*\)"$/\1/' \
+        | grep -v '^unknown$' | sort -u | paste -sd, -
+}
+
+# Fails with a message when the images of a commit do not fit this machine.
+check_platform() {
+    arch=$(platform_arch)
+    for image in $(CHORALE_VERSION="sha-$(short "$1")" docker compose config --images); do
+        archs=$(image_archs "$image")
+        case ",$archs," in
+            ,,|*,"$arch",*) ;;
+            *)
+                echo "Error: the images of $(short "$1") are built for $archs, not for $arch." >&2
+                echo "  Build them here with --build, or run them with" >&2
+                echo "  DOCKER_DEFAULT_PLATFORM=linux/${archs%%,*} docker/update.sh" >&2
+                return 1
+                ;;
+        esac
+    done
+}
+
 # Whether the nginx template differs between two commits.
 nginx_changed() {
     [ -n "$1" ] && ! git diff --quiet "$1" "$2" -- "$NGINX_TEMPLATE"
@@ -102,6 +138,10 @@ main() {
     if [ "$target" = "$current" ] && [ "$target" = "$here" ]; then
         echo "Already up to date."
         exit 0
+    fi
+
+    if [ "$build" -eq 0 ]; then
+        check_platform "$target" || exit 1
     fi
 
     # What the target is, compared with what is running (or else checked out).

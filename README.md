@@ -176,9 +176,11 @@ docker/update.sh --build    # build the images on the server instead (fetches th
 It warns when `docker/nginx.example.conf` differs between the running and the
 new commit, since the nginx config of the server is not part of the repository
 and has to be adjusted by hand. It says so when the target is older than what is
-running (a rollback), and when the clone has commits that are not on
-`origin/master`. Tracked files must not be edited on the server: settings that
-belong to it go in `compose.override.yaml` and `.env`, which git ignores.
+running (a rollback), when the clone has commits that are not on
+`origin/master`, and when the images are not built for the architecture of the
+machine (the CI builds `linux/amd64`). Tracked files must not be edited on the
+server: settings that belong to it go in `compose.override.yaml` and `.env`,
+which git ignores.
 
 
 ## Updating after changes
