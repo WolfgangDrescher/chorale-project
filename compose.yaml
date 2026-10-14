@@ -4,6 +4,7 @@
 
 services:
     tools:
+        image: ghcr.io/wolfgangdrescher/chorale-project-tools:${CHORALE_VERSION:-latest}
         build:
             context: .
             target: tools
@@ -20,6 +21,7 @@ services:
         networks: [backend]
 
     webapp:
+        image: ghcr.io/wolfgangdrescher/chorale-project-webapp:${CHORALE_VERSION:-latest}
         build:
             context: .
             target: webapp

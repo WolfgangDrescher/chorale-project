@@ -132,7 +132,17 @@ machine where `make` has been run. The scores for rendering are served from
 | `tools`  | Runs the search, the segmentation and the check, together with the corpus. Only the webapp can reach it, over a network without access to the outside. |
 
 ```sh
-docker compose up -d --build
+docker compose up -d --build   # build the images here
+```
+
+Nothing is built on the server. Every push to master runs
+`.github/workflows/build.yaml`: if the tests pass, both images are pushed to
+ghcr.io as `sha-3f9a1c2` (the commit) and `latest`. Pull requests only run the
+tests. To run a version on the server:
+
+```sh
+CHORALE_VERSION=sha-3f9a1c2 docker compose pull
+CHORALE_VERSION=sha-3f9a1c2 docker compose up -d
 ```
 
 The build needs the `bach-370-chorales` submodule checked out and network

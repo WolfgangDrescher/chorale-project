@@ -26,6 +26,12 @@ COPY chorale-search chorale-search
 RUN make -C chorale-search
 
 
+# The tests of chorale-search. No other stage needs this one, so it only runs
+# when asked for: the workflow does that before it pushes the images.
+FROM toolchain AS test
+RUN make -C chorale-search run-tests
+
+
 # ./kern and ./corpus, generated the way `make kern corpus` does.
 FROM toolchain AS data
 COPY Makefile ./
