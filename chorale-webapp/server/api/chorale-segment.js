@@ -3,9 +3,6 @@ const CHORALE_SEGMENT_BIN = '../chorale-search/build/chorale-segment';
 // Generated corpus (`make corpus`) with the analysis spines already in it.
 const CORPUS_DIR = '../corpus/bach-370-chorales';
 
-// The stats run searches every segment query over the whole corpus, which takes ~30s.
-const SEGMENT_TIMEOUT = 60_000;
-
 const MAX_SCORE_BYTES = 2 * 1024 * 1024;
 
 const DEFAULT_SEGMENT_LENGTH = 4;
@@ -96,7 +93,6 @@ export default defineEventHandler(async (event) => {
                 input: data,
                 exitCodeErrors: EXIT_CODE_ERRORS,
                 overflowHint: 'Segment with a longer "length"',
-                timeout: SEGMENT_TIMEOUT,
                 onEvent,
                 signal,
             });
