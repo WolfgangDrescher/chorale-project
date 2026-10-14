@@ -22,14 +22,15 @@ part-writing errors such as parallel fifths and octaves.
 
 ## Repository overview
 
-| Path                  | Description                                                                                                                                              |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bach-370-chorales/`  | Git submodule with the source `**kern` files. Source: [github.com/craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales).         |
-| `annotations/`        | Hand-made annotations, e.g. `bach-modulations.json`.                                                                                                     |
-| `chorale-search/`     | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`) and their test suite.                                              |
-| `chorale-webapp/`     | Nuxt application.                                                                                                                                        |
-| `kern/`               | Generated. Scores with modulations, served to Verovio for rendering. Not committed.                                                                     |
-| `corpus/`             | Generated. Same scores plus analysis spines, read by the search. Not committed.                                                                         |
+| Path                 | Description                                                                                                                                     |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bach-370-chorales/` | Git submodule with the source `**kern` files. Source: [github.com/craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales). |
+| `annotations/`       | Hand-made annotations, e.g. `bach-modulations.json`.                                                                                            |
+| `chorale-search/`    | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`) and their test suite.                      |
+| `chorale-webapp/`    | Nuxt application.                                                                                                                               |
+| `chorale-tools/`     | Build setup of the tools service for Docker, see [Docker](#docker).                                                                             |
+| `kern/`              | Generated. Scores with modulations, served to Verovio for rendering. Not committed.                                                             |
+| `corpus/`            | Generated. Same scores plus analysis spines, read by the search. Not committed.                                                                 |
 
 
 ## Requirements
@@ -119,6 +120,31 @@ The server endpoints in `chorale-webapp/server/api/` call the binaries in
 `chorale-search/build/` and read `corpus/`, so the app has to be started on a
 machine where `make` has been run. The scores for rendering are served from
 `kern/`.
+
+
+## Docker
+
+`Dockerfile` and `compose.yaml` run the project as two services:
+
+| Service  | Description                                                                                                                                            |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `webapp` | The Nuxt application as a plain Node application. It contains none of the C++ tools. Published on `127.0.0.1:3000` for the reverse proxy of the host.  |
+| `tools`  | Runs the search, the segmentation and the check, together with the corpus. Only the webapp can reach it, over a network without access to the outside. |
+
+```sh
+docker compose up -d --build
+```
+
+The build needs the `bach-370-chorales` submodule checked out and network
+access, for the pinned C++ libraries.
+
+The `tools` service runs the endpoints `chorale-search`, `chorale-segment` and
+`chorale-check` of the webapp as a Nitro server of their own
+(`chorale-tools/nitro.config.ts`). With `CHORALE_TOOLS_URL` set, the webapp
+passes those requests on to it. Without it they run the tools directly, so
+`npm run dev` needs no Docker.
+
+`docker/nginx.example.conf` is a starting point for the reverse proxy on the server.
 
 
 ## Updating after changes

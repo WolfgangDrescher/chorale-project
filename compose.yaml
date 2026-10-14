@@ -1,0 +1,42 @@
+# The webapp listens on 127.0.0.1:3000 only, for the reverse proxy of the host
+# (see docker/nginx.example.conf). The tools service is not published at all: it
+# is reachable from the webapp alone, over a network that has no way out.
+
+services:
+    tools:
+        build:
+            context: .
+            target: tools
+        restart: unless-stopped
+        read_only: true
+        tmpfs: [/tmp]
+        cap_drop: [ALL]
+        security_opt: ['no-new-privileges:true']
+        # The tools use one thread per CPU core. Cap what they may take if the
+        # host is shared, e.g.:
+        # deploy:
+        #     resources:
+        #         limits: { cpus: '2', memory: 2g }
+        networks: [backend]
+
+    webapp:
+        build:
+            context: .
+            target: webapp
+        restart: unless-stopped
+        environment:
+            # The webapp image is Node only on purpose: it cannot run the C++
+            # tools, so it passes their requests to the tools service (without
+            # this: 503). In development no extra service is needed, the
+            # endpoints run chorale-search/build directly.
+            CHORALE_TOOLS_URL: http://tools:4000
+        ports:
+            - '127.0.0.1:3000:3000'
+        depends_on:
+            tools:
+                condition: service_healthy
+        networks: [default, backend]
+
+networks:
+    backend:
+        internal: true

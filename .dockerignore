@@ -1,0 +1,12 @@
+# Generated files and local build output stay out of the context.
+**/.git
+**/node_modules
+**/.nuxt
+**/.output
+**/.nitro
+**/.data
+chorale-search/build
+chorale-search/external
+chorale-webapp/content/chorales
+kern
+corpus

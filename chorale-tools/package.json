@@ -1,0 +1,11 @@
+{
+    "name": "chorale-tools",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build": "nitropack build"
+    },
+    "dependencies": {
+        "nitropack": "2.13.4"
+    }
+}
