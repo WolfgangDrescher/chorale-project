@@ -50,17 +50,6 @@ std::string queryId(const char* type, const char* direction, std::size_t lower, 
     return std::string(type) + ":" + direction + ":" + std::to_string(lower) + "-" + std::to_string(upper);
 }
 
-// Two consecutive notes of a voice: any first, a second reached by a move in the given direction
-// ("+" up, "-" down, whatever the size or quality of the interval).
-std::vector<AttributeMap> movePattern(const std::string& sign, const AttributeMap& firstExtra,
-                                       const AttributeMap& secondExtra) {
-    AttributeMap first = firstExtra;
-    first["mint"] = {"*"};
-    AttributeMap second = secondExtra;
-    second["mint"] = {sign};
-    return {first, second};
-}
-
 // The move of a voice into the second sonority of a finding: its note is not a rest, and the next onset of the
 // voice, which has to be attacked on the line of the second sonority (a simultaneousWith group that ends there),
 // is reached by a move in the given direction. A rest in between is no sonority, the hint spine has no token on
@@ -111,36 +100,34 @@ std::vector<FindingQuery> buildParallelQueries() {
     return queries;
 }
 
-// A hidden fifth or octave: the soprano moves into a perfect interval to the bass that it was not
+// A hidden fifth or octave: the soprano moves into a perfect interval to the bass that the two were not
 // already in, the bass moving the same way, as in the parallels. The soprano has to leap, unless
-// `allowStepwiseSoprano` is off. Neither of the two notes before may be a rest.
+// `allowStepwiseSoprano` is off. Like the parallels it is found in the hint spine of the outer voices, whose
+// token on every line is the sonority: the first position is the sonority before, and both voices move into the
+// second one.
 std::vector<FindingQuery> buildHiddenMotionQueries(bool allowStepwiseSoprano) {
     constexpr std::size_t kBass = 1;
     constexpr std::size_t kSoprano = kVoiceCount;
+    const std::string pairKey = "hint-" + std::to_string(kBass) + std::to_string(kSoprano);
     std::vector<FindingQuery> queries;
     for (const PerfectInterval& kind : perfectIntervals()) {
         for (const auto& [direction, sign] : directions()) {
-            const AttributeMap noRest = {{"!kern", {"r"}}};
-
-            AttributeMap before = noRest;
-            before["!hint-1"] = toPatternValues(kind.intervals);
+            AttributeMap before;
+            before["!" + pairKey] = toPatternValues(kind.intervals);
             AttributeMap into;
-            into["hint-1"] = toPatternValues(kind.intervals);
-            if (allowStepwiseSoprano) into["!mint"] = {sign + "2", sign + "1"};
+            into[pairKey] = toPatternValues(kind.intervals);
+
+            AttributeMap leap;
+            if (allowStepwiseSoprano) leap["!mint"] = {sign + "2", sign + "1"};
 
             Query query;
             query.id = queryId(kind.hiddenType, direction, kBass, kSoprano);
-            query.feature = "mint";
-            query.voices = std::to_string(kSoprano);
-            query.pattern = movePattern(sign, before, into);
+            query.feature = pairKey;
+            query.voices = std::to_string(kSoprano); // the pair has one spine, any voice reads it
+            query.pattern = {before, into};
             query.hintReduceCompound = true;
-            query.simultaneousAlignment = "start-end";
-
-            SimultaneousGroup bass;
-            bass.feature = "mint";
-            bass.voices = std::to_string(kBass);
-            bass.pattern = movePattern(sign, noRest, {});
-            query.simultaneousWith.push_back(std::move(bass));
+            query.simultaneousWith.push_back(movesInto(kBass, sign));
+            query.simultaneousWith.push_back(movesInto(kSoprano, sign, leap));
 
             queries.push_back({std::move(query), kind.hiddenType, "warning", direction, kBass, kSoprano});
         }

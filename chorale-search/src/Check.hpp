@@ -44,9 +44,10 @@ struct Finding {
 // counts as a fifth and a unison as an octave. Found with the search's own queries.
 std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale);
 
-// Hidden fifths and octaves between the outer voices, as warnings: bass and soprano move the same way
-// into a perfect fifth or octave, the soprano by a leap (a step too, if `allowStepwiseSoprano` is off).
-// A fifth or octave that follows the same one is a parallel, reported by findParallelMotion.
+// Hidden fifths and octaves between the outer voices, as warnings: from one sonority of bass and soprano
+// to the next, they move the same way into a perfect fifth or octave they were not in, the soprano by a
+// leap (a step too, if `allowStepwiseSoprano` is off). A fifth or octave that follows the same one is a
+// parallel, reported by findParallelMotion. Found with the search's own queries.
 std::vector<Finding> findHiddenMotion(const HumdrumChorale& chorale, bool allowStepwiseSoprano = true);
 
 // The voices that go below the bass, as warnings, reported where the crossing begins (a voice that

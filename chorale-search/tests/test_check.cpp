@@ -290,6 +290,60 @@ TEST_CASE(hidden_motion_needs_both_voices_to_attack_the_same_notes) {
     CHECK_EQ(findHiddenMotion(offset).size(), std::size_t{0});
 }
 
+// Bass and soprano each reach the sonority before the hidden motion an eighth after the other voice, which holds its
+// note. A hidden fifth up with the bass attacking last, and a hidden octave down with the soprano attacking last.
+TEST_CASE(hidden_motion_is_found_when_one_voice_attacks_the_sonority_before_it_after_the_other) {
+    const HumdrumChorale chorale = score({
+        "8G\t4g\t4c\t4e",
+        "8C\t.\t.\t.",
+        "4D\t4g\t4f\t4a",   // the bass a step up, the soprano a fourth up into a twelfth
+        "4F\t4g\t4c\t8d",
+        ".\t.\t.\t8a",
+        "4E\t4g\t4c\t4e",   // the bass a step down, the soprano a fourth down into an octave
+    });
+    for (const bool allowSteps : {true, false}) {
+        const std::vector<Finding> findings = findHiddenMotion(chorale, allowSteps);
+        REQUIRE(findings.size() == 2);
+
+        CHECK_EQ(findings[0].check, std::string("hiddenFifths"));
+        CHECK_EQ(findings[0].direction, std::string("up"));
+        CHECK_EQ(findings[0].startLine, kFirstRow + 1);
+        CHECK_EQ(findings[0].endLine, kFirstRow + 2);
+
+        CHECK_EQ(findings[1].check, std::string("hiddenOctaves"));
+        CHECK_EQ(findings[1].direction, std::string("down"));
+        CHECK_EQ(findings[1].startLine, kFirstRow + 4);
+        CHECK_EQ(findings[1].endLine, kFirstRow + 5);
+    }
+}
+
+// The other way round: a hidden fifth down with the soprano attacking last, and a hidden octave up with the bass
+// attacking last.
+TEST_CASE(hidden_motion_is_found_when_the_other_voice_attacks_the_sonority_before_it_after_the_first) {
+    const HumdrumChorale chorale = score({
+        "4A\t4g\t4c\t8b",
+        ".\t.\t.\t8gg",
+        "4G\t4g\t4c\t4dd",  // the bass a step down, the soprano a fourth down into a twelfth
+        "8B\t4g\t4c\t4d",
+        "8F\t.\t.\t.",
+        "4G\t4g\t4c\t4g",   // the bass a step up, the soprano a fourth up into an octave
+    });
+    for (const bool allowSteps : {true, false}) {
+        const std::vector<Finding> findings = findHiddenMotion(chorale, allowSteps);
+        REQUIRE(findings.size() == 2);
+
+        CHECK_EQ(findings[0].check, std::string("hiddenFifths"));
+        CHECK_EQ(findings[0].direction, std::string("down"));
+        CHECK_EQ(findings[0].startLine, kFirstRow + 1);
+        CHECK_EQ(findings[0].endLine, kFirstRow + 2);
+
+        CHECK_EQ(findings[1].check, std::string("hiddenOctaves"));
+        CHECK_EQ(findings[1].direction, std::string("up"));
+        CHECK_EQ(findings[1].startLine, kFirstRow + 4);
+        CHECK_EQ(findings[1].endLine, kFirstRow + 5);
+    }
+}
+
 TEST_CASE(a_voice_below_the_bass_is_a_voice_crossing_at_the_note_it_begins_with) {
     const HumdrumChorale chorale = score({
         "4G\t4d\t4b\t4dd",
