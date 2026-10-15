@@ -5,6 +5,7 @@
 using choralesearch::queryArrayFromJson;
 using choralesearch::queryFromJson;
 using choralesearch::PatternValue;
+using choralesearch::NoteSection;
 using choralesearch::Result;
 using choralesearch::Query;
 using choralesearch::resultsToJson;
@@ -426,6 +427,33 @@ TEST_CASE(result_to_json_includes_query_id_when_set) {
     json j = resultToJson(r);
     REQUIRE(j.contains("queryId"));
     CHECK_EQ(j.at("queryId").get<std::string>(), std::string("my-id"));
+}
+
+TEST_CASE(result_to_json_lists_the_linked_sections_only_when_there_are_some) {
+    Result r;
+    r.choraleId = "chor029";
+    r.startLineNumber = 25;
+    CHECK(!resultToJson(r).contains("linkedSections"));
+    CHECK_EQ(resultToJson(r).at("startLine").get<std::size_t>(), std::size_t{25});
+
+    NoteSection section;
+    section.feature = "hint-24";
+    section.voice = 4;
+    section.startLineNumber = 25;
+    section.endLineNumber = 26;
+    section.startPosition = "5";
+    section.endPosition = "5+1/2";
+    r.linkedSections = {section};
+    json j = resultToJson(r);
+    REQUIRE(j.contains("linkedSections"));
+    REQUIRE(j.at("linkedSections").size() == 1u);
+    const json& linked = j.at("linkedSections")[0];
+    CHECK_EQ(linked.at("feature").get<std::string>(), std::string("hint-24"));
+    CHECK_EQ(linked.at("voice").get<std::size_t>(), std::size_t{4});
+    CHECK_EQ(linked.at("startLine").get<std::size_t>(), std::size_t{25});
+    CHECK_EQ(linked.at("endLine").get<std::size_t>(), std::size_t{26});
+    CHECK_EQ(linked.at("startPosition").get<std::string>(), std::string("5"));
+    CHECK_EQ(linked.at("endPosition").get<std::string>(), std::string("5+1/2"));
 }
 
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {

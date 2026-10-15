@@ -1054,13 +1054,19 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         std::size_t idx = start;
         std::size_t offset = 0;
         bool ok = true;
+        std::vector<AttributeMatch::PositionOnset> positionOnsets(n);
         while (offset < n) {
             const AttributeMap& position = m_pattern[offset];
             bool concreteDuration = hasOnlyExactDurations(position);
 
             if (concreteDuration && m_options.durationAllowSplitNotes) {
                 auto consumed = matchSplitPosition(chorale, voice, onsets, idx, position);
-                if (consumed) { idx += *consumed; ++offset; continue; }
+                if (consumed) {
+                    positionOnsets[offset] = {static_cast<std::size_t>(onsets[idx].token->getLineNumber()), onsets[idx].token->getDurationFromStart()};
+                    idx += *consumed;
+                    ++offset;
+                    continue;
+                }
                 // With both options on, a position the pattern splits notes for may still be
                 // the start of a merged run instead -- the two describe opposite mismatches
                 // between pattern and score and never the same one.
@@ -1073,6 +1079,9 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
             if (concreteDuration && m_options.durationAllowMergedNotes) {
                 auto consumed = matchMergedPositions(chorale, voice, onset, offset, onset.duration, false);
                 if (!consumed) { ok = false; break; }
+                for (std::size_t covered = offset; covered < offset + *consumed && covered < n; ++covered) {
+                    positionOnsets[covered] = {static_cast<std::size_t>(onset.token->getLineNumber()), onset.token->getDurationFromStart()};
+                }
                 offset += *consumed;
                 ++idx;
                 continue;
@@ -1083,6 +1092,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
                 if (!matched || !*matched) { ok = false; break; }
             }
             if (!ok) break;
+            positionOnsets[offset] = {static_cast<std::size_t>(onset.token->getLineNumber()), onset.token->getDurationFromStart()};
             ++idx;
             ++offset;
         }
@@ -1110,6 +1120,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         m.endLineNumber = static_cast<std::size_t>(endTok->getLineNumber());
         m.startPosition = startTok->getDurationFromStart();
         m.endPosition = endTok->getDurationFromStart();
+        m.positionOnsets = std::move(positionOnsets);
         matches.push_back(std::move(m));
     }
     return matches;

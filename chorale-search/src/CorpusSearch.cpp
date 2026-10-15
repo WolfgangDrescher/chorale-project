@@ -51,7 +51,7 @@ MatcherOptions matcherOptions(const Query& query, const SimultaneousGroup& group
 // decides which of a group's match positions must line up with the primary match, which is
 // this file's own job rather than anything the matcher does.
 struct ResolvedSimultaneousGroup {
-    std::vector<std::pair<hum::HumNum, hum::HumNum>> positions; // (startPosition, endPosition) per match
+    std::vector<AttributeMatch> matches;
     bool checkStart;
     bool checkEnd;
 };
@@ -67,9 +67,7 @@ ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale
 
     AttributeMatcher matcher(group.feature, group.pattern, matcherOptions(query, group));
     for (std::size_t voice : resolveVoices(group.voices)) {
-        for (const auto& m : matcher.findAll(chorale, voice)) {
-            resolved.positions.emplace_back(m.startPosition, m.endPosition);
-        }
+        for (const auto& m : matcher.findAll(chorale, voice)) resolved.matches.push_back(m);
     }
     return resolved;
 }
@@ -86,6 +84,61 @@ std::vector<fs::path> filesWithMatchingId(std::vector<fs::path> files, const std
                                }),
                 files.end());
     return files;
+}
+
+// The other voice a hint-<voice> key compares the voice searched with ("hint-2": 2), possibly negated ("!hint-2"),
+// or 0 for any other key.
+std::size_t otherVoiceOfHintKey(const std::string& key) {
+    const std::string bare = key.substr(!key.empty() && key[0] == '!' ? 1 : 0);
+    const bool voiceKey = bare.size() == 6 && bare.rfind("hint-", 0) == 0 && bare[5] >= '1' && bare[5] <= '4';
+    return voiceKey ? static_cast<std::size_t>(bare[5] - '0') : 0;
+}
+
+// The two voices of the spine of a pair ("hint-24": 2 and 4), none for any other feature.
+std::vector<std::size_t> voicesOfHintPair(const std::string& feature) {
+    if (feature.size() != 7 || feature.rfind("hint-", 0) != 0) return {};
+    return {static_cast<std::size_t>(feature[5] - '0'), static_cast<std::size_t>(feature[6] - '0')};
+}
+
+// The voices a match spans from its start to its end, by the feature it was found with: both voices of the spine of a
+// pair, none for fb, whose spine is no voice's own, and otherwise the voice searched.
+std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMatch, const std::string& feature) {
+    const std::vector<std::size_t> pair = voicesOfHintPair(feature);
+    if (!pair.empty()) return pair;
+    if (feature == "fb") return {};
+    return {attributeMatch.voice};
+}
+
+// The sections of notes a match is made of, by the feature and the pattern it was found with: the voices it spans,
+// except those in `coveredVoices`, which another match covers, and the voice of a hint-<voice> key at each position
+// that names it.
+std::vector<NoteSection> buildLinkedSections(const AttributeMatch& attributeMatch, const std::string& feature,
+                                             const std::vector<AttributeMap>& pattern,
+                                             const std::vector<std::size_t>& coveredVoices = {}) {
+    std::vector<NoteSection> sections;
+    // The voices the match spans, over the whole match.
+    for (std::size_t voice : voicesSpannedByMatch(attributeMatch, feature)) {
+        if (std::find(coveredVoices.begin(), coveredVoices.end(), voice) != coveredVoices.end()) continue;
+        sections.push_back({feature, voice, humNumToString(attributeMatch.startPosition),
+                            humNumToString(attributeMatch.endPosition), attributeMatch.startLineNumber,
+                            attributeMatch.endLineNumber});
+    }
+    // The voices the keys of a position name, at that position only.
+    for (std::size_t position = 0; position < pattern.size() && position < attributeMatch.positionOnsets.size(); ++position) {
+        const AttributeMatch::PositionOnset& onset = attributeMatch.positionOnsets[position];
+        const auto atPosition = [&](const std::string& key, std::size_t voice) {
+            if (voice == attributeMatch.voice) return;
+            sections.push_back({key, voice, humNumToString(onset.position), humNumToString(onset.position), onset.line,
+                                onset.line});
+        };
+        for (const auto& entry : pattern[position]) {
+            const std::string key = entry.first.substr(!entry.first.empty() && entry.first[0] == '!' ? 1 : 0);
+            // A hint-<voice> key: the other voice it compares the voice searched with.
+            const std::size_t other = otherVoiceOfHintKey(key);
+            if (other != 0) atPosition(key, other);
+        }
+    }
+    return sections;
 }
 
 // A chorale together with the results of searching it, one list for each query. A HumdrumChorale
@@ -141,15 +194,19 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
 
     for (std::size_t voice : resolveVoices(query.voices)) {
         for (auto& m : matcher.findAll(chorale, voice)) {
-            bool alignsWithEverySimultaneousGroup =
-                std::all_of(resolvedGroups.begin(), resolvedGroups.end(), [&](const ResolvedSimultaneousGroup& g) {
-                    return std::any_of(g.positions.begin(), g.positions.end(), [&](const auto& p) {
-                        if (g.checkStart && p.first != m.startPosition) return false;
-                        if (g.checkEnd && p.second != m.endPosition) return false;
-                        return true;
-                    });
-                });
-            if (!alignsWithEverySimultaneousGroup) continue;
+            // Every match of each simultaneousWith entry that lines up with this one.
+            std::vector<std::vector<const AttributeMatch*>> simultaneousMatches;
+            for (const ResolvedSimultaneousGroup& g : resolvedGroups) {
+                std::vector<const AttributeMatch*> lined;
+                for (const AttributeMatch& candidate : g.matches) {
+                    if (g.checkStart && candidate.startPosition != m.startPosition) continue;
+                    if (g.checkEnd && candidate.endPosition != m.endPosition) continue;
+                    lined.push_back(&candidate);
+                }
+                if (lined.empty()) break;
+                simultaneousMatches.push_back(std::move(lined));
+            }
+            if (simultaneousMatches.size() != resolvedGroups.size()) continue;
 
             Result r;
             r.choraleId = chorale.id();
@@ -159,6 +216,28 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
             r.endPosition = humNumToString(m.endPosition);
             r.startLineNumber = m.startLineNumber;
             r.endLineNumber = m.endLineNumber;
+
+            // The sections of every aligned match of each group, by the feature and pattern of the group, noting the
+            // voices a group covers over its whole match.
+            std::vector<std::size_t> coveredBySimultaneous;
+            for (std::size_t group = 0; group < simultaneousMatches.size(); ++group) {
+                const SimultaneousGroup& simultaneousGroup = query.simultaneousWith[group];
+                for (const AttributeMatch* simultaneousMatch : simultaneousMatches[group]) {
+                    for (std::size_t voice : voicesSpannedByMatch(*simultaneousMatch, simultaneousGroup.feature)) {
+                        coveredBySimultaneous.push_back(voice);
+                    }
+                    for (NoteSection& section : buildLinkedSections(*simultaneousMatch, simultaneousGroup.feature, simultaneousGroup.pattern)) {
+                        r.linkedSections.push_back(std::move(section));
+                    }
+                }
+            }
+            // The sections of this match, but none over the whole match in a voice a group covers: the group's section
+            // starts where the voice attacks its note, this match may only hold it.
+            for (NoteSection& section : buildLinkedSections(m, query.feature, query.pattern, coveredBySimultaneous)) {
+                r.linkedSections.push_back(std::move(section));
+            }
+            std::sort(r.linkedSections.begin(), r.linkedSections.end());
+            r.linkedSections.erase(std::unique(r.linkedSections.begin(), r.linkedSections.end()), r.linkedSections.end());
             results.push_back(std::move(r));
 
             if (query.limit && results.size() >= *query.limit) return results;

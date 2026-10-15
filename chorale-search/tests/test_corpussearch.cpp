@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <set>
 
 #include "CorpusSearch.hpp"
 #include "HumdrumChorale.hpp"
@@ -15,6 +16,7 @@ using choralesearch::ChoraleIdRange;
 using choralesearch::CorpusSearch;
 using choralesearch::CountRange;
 using choralesearch::HumdrumChorale;
+using choralesearch::NoteSection;
 using choralesearch::Query;
 using choralesearch::Result;
 using choralesearch::SimultaneousGroup;
@@ -107,6 +109,196 @@ TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
     ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
     CHECK_EQ(ids, (std::vector<std::string>{"chor001", "chor005", "chor006", "chor008", "chor009", "chor029",
                                             "chor039", "chor103"}));
+}
+
+// A result links the sections of notes it is made of, so the page can mark them.
+TEST_CASE(a_result_links_the_section_of_the_voice_searched_and_the_sections_of_its_simultaneous_groups) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query fermatas;
+    fermatas.feature = "kern";
+    fermatas.voices = "soprano";
+    fermatas.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    for (const Result& r : search.runOne(chorale, fermatas)) {
+        REQUIRE(r.linkedSections.size() == 1u);
+        CHECK_EQ(r.linkedSections[0].feature, std::string("kern"));
+        CHECK_EQ(r.linkedSections[0].voice, std::size_t{4});
+        CHECK_EQ(r.linkedSections[0].startLineNumber, r.startLineNumber);
+        CHECK_EQ(r.linkedSections[0].endLineNumber, r.startLineNumber);
+        CHECK_EQ(r.linkedSections[0].startPosition, r.startPosition);
+    }
+
+    // With the bass under it: the note the bass attacks on the same line.
+    SimultaneousGroup bass;
+    bass.feature = "kern";
+    bass.voices = "bass";
+    bass.pattern = {AttributeMap{{"kern", {"*"}}}};
+    fermatas.simultaneousWith = {bass};
+    const auto withBass = search.runOne(chorale, fermatas);
+    REQUIRE(!withBass.empty());
+    for (const Result& r : withBass) {
+        REQUIRE(r.linkedSections.size() == 2u);
+        CHECK_EQ(r.linkedSections[0].voice, std::size_t{1});
+        CHECK_EQ(r.linkedSections[1].voice, std::size_t{4});
+        CHECK_EQ(r.linkedSections[0].startLineNumber, r.startLineNumber);
+        CHECK_EQ(r.linkedSections[1].startLineNumber, r.startLineNumber);
+    }
+}
+
+TEST_CASE(a_result_of_a_pair_spine_or_a_hint_voice_key_links_the_voices_of_the_pair) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query pair;
+    pair.feature = "hint-14";
+    pair.voices = "bass";
+    pair.pattern = {AttributeMap{{"hint-14", {"*"}}}, AttributeMap{{"hint-14", {"*"}}}};
+    const auto found = search.runOne(chorale, pair);
+    REQUIRE(!found.empty());
+    for (const Result& r : found) {
+        std::set<std::size_t> linked;
+        for (const NoteSection& section : r.linkedSections) linked.insert(section.voice);
+        CHECK(linked == (std::set<std::size_t>{1, 4}));
+        // A section of each voice, over the whole match.
+        REQUIRE(r.linkedSections.size() == 2u);
+        for (const NoteSection& section : r.linkedSections) {
+            CHECK_EQ(section.feature, std::string("hint-14"));
+            CHECK_EQ(section.startLineNumber, r.startLineNumber);
+            CHECK_EQ(section.endLineNumber, r.endLineNumber);
+        }
+    }
+
+    // The alto with the tenor: the walked voice and the voice of the key.
+    Query key;
+    key.feature = "kern";
+    key.voices = "alto";
+    key.pattern = {AttributeMap{{"hint-2", {"*"}}}};
+    const auto withTenor = search.runOne(chorale, key);
+    REQUIRE(!withTenor.empty());
+    for (const Result& r : withTenor) {
+        REQUIRE(r.linkedSections.size() == 2u);
+        CHECK_EQ(r.linkedSections[0].voice, std::size_t{2});
+        CHECK_EQ(r.linkedSections[0].feature, std::string("hint-2"));
+        CHECK_EQ(r.linkedSections[1].voice, std::size_t{3});
+        CHECK_EQ(r.linkedSections[1].feature, std::string("kern"));
+    }
+}
+
+// The soprano is linked at the positions that name it, not at the position in between: three notes of the alto, the
+// soprano's octave on the first and the last.
+TEST_CASE(a_hint_voice_key_links_the_other_voice_at_the_positions_that_name_it_only) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query query;
+    query.feature = "kern";
+    query.voices = "alto";
+    query.pattern = {AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}, AttributeMap{{"kern", {"*"}}},
+                     AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(found.size() > 2u);
+    for (const Result& r : found) {
+        std::vector<NoteSection> alto;
+        std::vector<NoteSection> soprano;
+        for (const NoteSection& section : r.linkedSections) (section.voice == 3 ? alto : soprano).push_back(section);
+        REQUIRE(alto.size() == 1u);
+        REQUIRE(soprano.size() == 2u);
+        CHECK_EQ(alto[0].startLineNumber, r.startLineNumber);
+        CHECK_EQ(alto[0].endLineNumber, r.endLineNumber);
+        CHECK_EQ(soprano[0].feature, std::string("hint-4"));
+        CHECK_EQ(soprano[0].startLineNumber, r.startLineNumber);
+        CHECK_EQ(soprano[0].endLineNumber, r.startLineNumber);
+        CHECK_EQ(soprano[1].startLineNumber, r.endLineNumber);
+        CHECK_EQ(soprano[1].endLineNumber, r.endLineNumber);
+    }
+}
+
+// A group links the notes it found by its own rules: both voices of a pair spine, the voice of a hint-<voice> key, and
+// every voice it matched in.
+TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_matched_in) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query fermatas;
+    fermatas.feature = "kern";
+    fermatas.voices = "soprano";
+    fermatas.pattern = {AttributeMap{{"fermata", {"true"}}}};
+
+    SimultaneousGroup pair;
+    pair.feature = "hint-23";
+    pair.voices = "alto";
+    pair.pattern = {AttributeMap{{"hint-23", {"*"}}}};
+    Query withPair = fermatas;
+    withPair.simultaneousWith = {pair};
+    const auto foundWithPair = search.runOne(chorale, withPair);
+    REQUIRE(!foundWithPair.empty());
+    for (const Result& r : foundWithPair) {
+        std::set<std::size_t> linked;
+        for (const NoteSection& section : r.linkedSections) {
+            if (section.feature == "hint-23") linked.insert(section.voice);
+        }
+        CHECK(linked == (std::set<std::size_t>{2, 3}));
+    }
+
+    SimultaneousGroup key;
+    key.feature = "kern";
+    key.voices = "tenor";
+    key.pattern = {AttributeMap{{"hint-1", {"*"}}}};
+    Query withKey = fermatas;
+    withKey.simultaneousWith = {key};
+    const auto foundWithKey = search.runOne(chorale, withKey);
+    REQUIRE(!foundWithKey.empty());
+    for (const Result& r : foundWithKey) {
+        std::set<std::size_t> linked;
+        for (const NoteSection& section : r.linkedSections) linked.insert(section.voice);
+        CHECK(linked == (std::set<std::size_t>{1, 2, 4}));
+    }
+
+    SimultaneousGroup everyVoice;
+    everyVoice.feature = "kern";
+    everyVoice.voices = "all";
+    everyVoice.pattern = {AttributeMap{{"kern", {"*"}}}};
+    Query withEveryVoice = fermatas;
+    withEveryVoice.simultaneousWith = {everyVoice};
+    const auto foundWithEveryVoice = search.runOne(chorale, withEveryVoice);
+    REQUIRE(!foundWithEveryVoice.empty());
+    std::size_t complete = 0;
+    for (const Result& r : foundWithEveryVoice) {
+        std::set<std::size_t> linked;
+        for (const NoteSection& section : r.linkedSections) linked.insert(section.voice);
+        if (linked == std::set<std::size_t>{1, 2, 3, 4}) ++complete;
+    }
+    CHECK(complete > 0u);
+}
+
+// A melodic interval that starts at the note before begins its section at that note, in the voice searched and in a
+// group alike.
+TEST_CASE(a_melodic_interval_from_the_note_before_begins_its_section_at_that_note) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query query;
+    query.feature = "mint";
+    query.voices = "soprano";
+    query.mintStartAtPreviousToken = true;
+    query.pattern = {AttributeMap{{"mint", {"+"}}}};
+    SimultaneousGroup bass;
+    bass.feature = "mint";
+    bass.voices = "bass";
+    bass.pattern = {AttributeMap{{"mint", {"-"}}}};
+    bass.simultaneousAlignment = "end";
+    query.simultaneousWith = {bass};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(!found.empty());
+    for (const Result& r : found) {
+        REQUIRE(r.linkedSections.size() == 2u);
+        for (const NoteSection& section : r.linkedSections) {
+            CHECK(section.startLineNumber < section.endLineNumber);
+            CHECK_EQ(section.endLineNumber, r.endLineNumber);
+            if (section.voice == 4) CHECK_EQ(section.startLineNumber, r.startLineNumber);
+        }
+    }
 }
 
 TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {

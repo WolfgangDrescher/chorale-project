@@ -525,6 +525,19 @@ nlohmann::json resultToJson(const Result& r) {
     j["endPosition"] = r.endPosition;
     j["startLine"] = r.startLineNumber;
     j["endLine"] = r.endLineNumber;
+    if (!r.linkedSections.empty()) {
+        j["linkedSections"] = nlohmann::json::array();
+        for (const NoteSection& section : r.linkedSections) {
+            j["linkedSections"].push_back({
+                {"feature", section.feature},
+                {"voice", section.voice},
+                {"startLine", section.startLineNumber},
+                {"endLine", section.endLineNumber},
+                {"startPosition", section.startPosition},
+                {"endPosition", section.endPosition},
+            });
+        }
+    }
     if (r.queryId) j["queryId"] = *r.queryId;
     return j;
 }

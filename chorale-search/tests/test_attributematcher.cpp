@@ -856,6 +856,22 @@ TEST_CASE(matcher_negated_key_partitions_fb_comparator_matches) {
     CHECK_EQ(positiveMatches.size() + negatedMatches.size(), totalMatches.size());
 }
 
+TEST_CASE(matcher_reports_the_onset_each_position_matched) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}});
+    const auto matches = matcher.findAll(chorale, 4);
+    REQUIRE(!matches.empty());
+    for (const auto& m : matches) {
+        REQUIRE(m.positionOnsets.size() == 3u);
+        CHECK_EQ(m.positionOnsets.front().line, m.startLineNumber);
+        CHECK_EQ(m.positionOnsets.back().line, m.endLineNumber);
+        CHECK(m.positionOnsets.front().position == m.startPosition);
+        CHECK(m.positionOnsets.back().position == m.endPosition);
+        CHECK(m.positionOnsets[0].line < m.positionOnsets[1].line);
+        CHECK(m.positionOnsets[1].line < m.positionOnsets[2].line);
+    }
+}
+
 TEST_CASE(matcher_hint_pair_as_driving_feature_gives_identical_matches_for_every_voice) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher matcher("hint-14", {AttributeMap{}});

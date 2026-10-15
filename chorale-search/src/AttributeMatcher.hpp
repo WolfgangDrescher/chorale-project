@@ -16,6 +16,14 @@ struct AttributeMatch {
     std::size_t endLineNumber;   // same, for the last matched line number
     hum::HumNum startPosition;   // musical position (quarter notes from the start of the piece getDurationFromStart)
     hum::HumNum endPosition;     // same, for the last matched position without the duration of that slice
+    // Where each position of the pattern matched: the line and the musical position of its onset. A position that took
+    // several onsets (durationAllowSplitNotes) has its first one, and several positions that were matched by one onset
+    // (durationAllowMergedNotes) have that one.
+    struct PositionOnset {
+        std::size_t line;
+        hum::HumNum position;
+    };
+    std::vector<PositionOnset> positionOnsets;
 };
 
 // The **mint token for the step from the note `from` to the note `to` ("+M2", "-m3", "P1"), the
