@@ -38,7 +38,6 @@ TEST_CASE(run_one_populates_result_fields_from_a_real_match) {
     const Result& r = results[0];
     CHECK_EQ(r.choraleId, std::string("chor029"));
     CHECK_EQ(r.feature, std::string("kern"));
-    CHECK_EQ(r.voiceLabel, std::string("Soprano"));
     CHECK_EQ(r.voice, std::size_t{4});
     CHECK(r.startLineNumber > 0);
     CHECK_EQ(r.startLineNumber, r.endLineNumber); // single-position pattern

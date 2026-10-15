@@ -21,13 +21,6 @@ const std::array<std::string, 4> kLetters = {"b", "t", "a", "s"};
 
 } // namespace
 
-std::string voiceLabel(std::size_t voice) {
-    if (voice < 1 || voice > 4) return "?";
-    std::string s = kNames[voice - 1];
-    s[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(s[0])));
-    return s;
-}
-
 namespace {
 
 std::vector<std::string> splitComma(const std::string& s) {

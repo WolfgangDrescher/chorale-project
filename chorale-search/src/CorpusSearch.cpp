@@ -154,7 +154,6 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
             Result r;
             r.choraleId = chorale.id();
             r.feature = query.feature;
-            r.voiceLabel = voiceLabel(voice);
             r.voice = m.voice;
             r.startPosition = humNumToString(m.startPosition);
             r.endPosition = humNumToString(m.endPosition);

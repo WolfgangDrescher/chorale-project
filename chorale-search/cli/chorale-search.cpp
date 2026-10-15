@@ -54,7 +54,7 @@ void printTable(const Results& results) {
     if (hasQueryId) std::cout << "\tquery_id";
     std::cout << "\n";
     for (const auto& r : results) {
-        std::cout << r.choraleId << '\t' << r.feature << '\t' << r.voiceLabel << '\t' << r.startLineNumber << '\t'
+        std::cout << r.choraleId << '\t' << r.feature << '\t' << r.voice << '\t' << r.startLineNumber << '\t'
                    << r.endLineNumber << '\t' << r.startPosition << '\t' << r.endPosition;
         if (hasQueryId) std::cout << '\t' << r.queryId.value_or("");
         std::cout << '\n';

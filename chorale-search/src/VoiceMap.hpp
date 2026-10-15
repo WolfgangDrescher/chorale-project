@@ -9,10 +9,6 @@ namespace choralesearch {
 // A chorale has four voices, numbered 1 (bass) to 4 (soprano).
 inline constexpr std::size_t kVoiceCount = 4;
 
-// Human-readable label for a voice, e.g. "Bass".
-// Out-of-range (not 1-4) returns "?".
-std::string voiceLabel(std::size_t voice);
-
 // Resolves a comma-separated selector string into 1-indexed voice
 // numbers. Accepts, case-insensitively:
 //   - "all" / ""    -> every voice (1,2,3,4)

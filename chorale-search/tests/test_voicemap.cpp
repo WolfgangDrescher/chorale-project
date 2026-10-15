@@ -3,19 +3,6 @@
 #include "VoiceMap.hpp"
 
 using choralesearch::resolveVoices;
-using choralesearch::voiceLabel;
-
-TEST_CASE(voice_label_maps_1_to_4) {
-    CHECK_EQ(voiceLabel(1), std::string("Bass"));
-    CHECK_EQ(voiceLabel(2), std::string("Tenor"));
-    CHECK_EQ(voiceLabel(3), std::string("Alto"));
-    CHECK_EQ(voiceLabel(4), std::string("Soprano"));
-}
-
-TEST_CASE(voice_label_out_of_range_is_question_mark) {
-    CHECK_EQ(voiceLabel(0), std::string("?"));
-    CHECK_EQ(voiceLabel(5), std::string("?"));
-}
 
 TEST_CASE(resolve_voices_empty_or_all_returns_every_voice) {
     std::vector<std::size_t> expected = {1, 2, 3, 4};

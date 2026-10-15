@@ -706,7 +706,6 @@ TEST_CASE(result_to_json_round_trips_fields) {
     Result r;
     r.choraleId = "chor029";
     r.feature = "deg";
-    r.voiceLabel = "Soprano";
     r.voice = 4;
     r.startPosition = "4";
     r.endPosition = "5";
@@ -716,7 +715,6 @@ TEST_CASE(result_to_json_round_trips_fields) {
     json j = resultToJson(r);
     CHECK_EQ(j.at("chorale").get<std::string>(), std::string("chor029"));
     CHECK_EQ(j.at("feature").get<std::string>(), std::string("deg"));
-    CHECK_EQ(j.at("voiceLabel").get<std::string>(), std::string("Soprano"));
     CHECK_EQ(j.at("voice").get<std::size_t>(), 4u);
     CHECK_EQ(j.at("startPosition").get<std::string>(), std::string("4"));
     CHECK_EQ(j.at("endPosition").get<std::string>(), std::string("5"));

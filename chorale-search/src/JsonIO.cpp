@@ -520,7 +520,6 @@ nlohmann::json resultToJson(const Result& r) {
     nlohmann::json j;
     j["chorale"] = r.choraleId;
     j["feature"] = r.feature;
-    j["voiceLabel"] = r.voiceLabel;
     j["voice"] = r.voice;
     j["startPosition"] = r.startPosition;
     j["endPosition"] = r.endPosition;
