@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "CorpusSearch.hpp"
+#include "HintPairs.hpp"
 #include "HumdrumUtils.hpp"
 #include "Result.hpp"
 #include "VoiceMap.hpp"
@@ -30,7 +31,8 @@ const std::vector<PerfectInterval>& perfectIntervals() {
     return kinds;
 }
 
-// A query for one kind of finding, and what a match of it says.
+// A query for one kind of finding, and what a match of it says. The voices are those of the query, or 0 and 0 for
+// a query over voice pairs, whose matches say which pair they are of.
 struct FindingQuery {
     Query query;
     const char* type;
@@ -46,6 +48,10 @@ const std::vector<std::pair<const char*, std::string>>& directions() {
     return all;
 }
 
+std::string queryId(const char* type, const char* direction) {
+    return std::string(type) + ":" + direction;
+}
+
 std::string queryId(const char* type, const char* direction, std::size_t lower, std::size_t upper) {
     return std::string(type) + ":" + direction + ":" + std::to_string(lower) + "-" + std::to_string(upper);
 }
@@ -54,7 +60,7 @@ std::string queryId(const char* type, const char* direction, std::size_t lower, 
 // voice, which has to be attacked on the line of the second sonority (a simultaneousWith group that ends there),
 // is reached by a move in the given direction. A rest in between is no sonority, the hint spine has no token on
 // it, so this is also what keeps a move out of a rest from being taken for one between two consecutive sonorities.
-SimultaneousGroup movesInto(std::size_t voice, const std::string& sign, const AttributeMap& moveExtra = {}) {
+SimultaneousGroup movesInto(const std::string& voices, const std::string& sign, const AttributeMap& moveExtra = {}) {
     AttributeMap before;
     before["!kern"] = {"r"};
     AttributeMap move = moveExtra;
@@ -62,39 +68,36 @@ SimultaneousGroup movesInto(std::size_t voice, const std::string& sign, const At
 
     SimultaneousGroup group;
     group.feature = "mint";
-    group.voices = std::to_string(voice);
+    group.voices = voices;
     group.pattern = {before, move};
     group.simultaneousAlignment = "end";
     return group;
 }
 
-// One query for each pair of voices, direction and interval (6 x 2 x 2 = 24), with the id
-// "<check>:<direction>:<lower voice>-<upper voice>". The pair's own hint spine is walked, which has a
-// token on every line where both voices sound, so the two positions are two consecutive sonorities, whether
-// the voices attack together or one of them holds its note into the second sonority. Both of them form the
-// interval; both voices move into the second one the same way, each of them a simultaneousWith group.
+// One query for each direction and interval (2 x 2 = 4), with the id "<check>:<direction>", over all the pairs of
+// voices: the hint spines of the pairs are walked one after the other, "hint-**", and a spine has a token on every
+// line where both voices sound, so the two positions are two consecutive sonorities, whether the voices attack
+// together or one of them holds its note into the second sonority. Both of them form the interval (hint-@pair, the
+// interval of the pair searched); both voices of the pair move into the second one the same way, each of them a
+// simultaneousWith group. The matches say which pair they are of.
 std::vector<FindingQuery> buildParallelQueries() {
+    const std::string pairs = "hint-**";
     std::vector<FindingQuery> queries;
     for (const PerfectInterval& kind : perfectIntervals()) {
         for (const auto& [direction, sign] : directions()) {
-            for (std::size_t lower = 1; lower <= kVoiceCount; ++lower) {
-                for (std::size_t upper = lower + 1; upper <= kVoiceCount; ++upper) {
-                    const std::string pairKey = "hint-" + std::to_string(lower) + std::to_string(upper);
-                    AttributeMap sonority;
-                    sonority[pairKey] = toPatternValues(kind.intervals);
+            AttributeMap sonority;
+            sonority[kPairSearchedKey] = toPatternValues(kind.intervals);
 
-                    Query query;
-                    query.id = queryId(kind.parallelType, direction, lower, upper);
-                    query.feature = pairKey;
-                    query.voices = std::to_string(upper); // the pair has one spine, any voice reads it
-                    query.pattern = {sonority, sonority};
-                    query.hintReduceCompound = true;
-                    query.simultaneousWith.push_back(movesInto(lower, sign));
-                    query.simultaneousWith.push_back(movesInto(upper, sign));
+            Query query;
+            query.id = queryId(kind.parallelType, direction);
+            query.feature = pairs;
+            query.voices = "@lower"; // the pair has one spine, any voice reads it
+            query.pattern = {sonority, sonority};
+            query.hintReduceCompound = true;
+            query.simultaneousWith.push_back(movesInto("@lower", sign));
+            query.simultaneousWith.push_back(movesInto("@upper", sign));
 
-                    queries.push_back({std::move(query), kind.parallelType, "error", direction, lower, upper});
-                }
-            }
+            queries.push_back({std::move(query), kind.parallelType, "error", direction, 0, 0});
         }
     }
     return queries;
@@ -126,8 +129,8 @@ std::vector<FindingQuery> buildHiddenMotionQueries(bool allowStepwiseSoprano) {
             query.voices = std::to_string(kSoprano); // the pair has one spine, any voice reads it
             query.pattern = {before, into};
             query.hintReduceCompound = true;
-            query.simultaneousWith.push_back(movesInto(kBass, sign));
-            query.simultaneousWith.push_back(movesInto(kSoprano, sign, leap));
+            query.simultaneousWith.push_back(movesInto(std::to_string(kBass), sign));
+            query.simultaneousWith.push_back(movesInto(std::to_string(kSoprano), sign, leap));
 
             queries.push_back({std::move(query), kind.hiddenType, "warning", direction, kBass, kSoprano});
         }
@@ -228,6 +231,11 @@ std::vector<Finding> runFindingQueries(const HumdrumChorale& chorale, const std:
             finding.direction = entry.direction;
             finding.lowerVoice = entry.lowerVoice;
             finding.upperVoice = entry.upperVoice;
+            // A query over voice pairs: the pair is the one whose spine the match was found in ("hint-24").
+            if (entry.lowerVoice == 0 && match.feature.size() == 7 && match.feature.rfind("hint-", 0) == 0) {
+                finding.lowerVoice = static_cast<std::size_t>(match.feature[5] - '0');
+                finding.upperVoice = static_cast<std::size_t>(match.feature[6] - '0');
+            }
             finding.startLine = static_cast<int>(match.startLineNumber);
             finding.endLine = static_cast<int>(match.endLineNumber);
             finding.startPosition = match.startPosition;
