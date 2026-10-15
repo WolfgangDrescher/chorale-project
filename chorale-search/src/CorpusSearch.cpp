@@ -95,9 +95,10 @@ std::size_t otherVoiceOfHintKey(const std::string& key) {
     return voiceKey ? static_cast<std::size_t>(bare[5] - '0') : 0;
 }
 
-// The two voices of the spine of a pair ("hint-24": 2 and 4), none for any other feature.
+// The two voices of the spine of a pair ("hint-24": 2 and 4), none for any other feature or a set of pairs ("hint-*4").
 std::vector<std::size_t> voicesOfHintPair(const std::string& feature) {
-    if (feature.size() != 7 || feature.rfind("hint-", 0) != 0) return {};
+    const auto isVoice = [](char c) { return c >= '1' && c <= '4'; };
+    if (feature.size() != 7 || feature.rfind("hint-", 0) != 0 || !isVoice(feature[5]) || !isVoice(feature[6])) return {};
     return {static_cast<std::size_t>(feature[5] - '0'), static_cast<std::size_t>(feature[6] - '0')};
 }
 
@@ -133,8 +134,9 @@ std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMat
 }
 
 // The sections of notes a match is made of, by the feature and the pattern it was found with: the voices it spans,
-// except those in `coveredVoices`, which another match covers, and at each position the voice of a hint-<voice> key
-// and the voices forming the figures of an fb key, with the bass they are figures above.
+// except those in `coveredVoices`, which another match covers, and at each position the voice of a hint-<voice> key,
+// both voices of a hint-<pair> key and the voices forming the figures of an fb key, with the bass they are figures
+// above.
 std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, const AttributeMatch& attributeMatch,
                                              const std::string& feature, const std::vector<AttributeMap>& pattern,
                                              const std::vector<std::size_t>& coveredVoices = {}) {
@@ -159,6 +161,10 @@ std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, cons
             // A hint-<voice> key: the other voice it compares the voice searched with.
             const std::size_t other = otherVoiceOfHintKey(key);
             if (other != 0) atPosition(key, other);
+            // A hint-<pair> key: both voices of the pair, unless the pair drives the match and spans it already.
+            if (key != feature) {
+                for (std::size_t voice : voicesOfHintPair(key)) atPosition(key, voice);
+            }
             // An fb key, not negated: the voices forming its figures above the bass, and the bass.
             if (name == "fb") {
                 std::vector<std::size_t> voices = voicesOfFbFigures(chorale, onset.line, values);

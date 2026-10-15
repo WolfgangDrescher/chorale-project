@@ -363,6 +363,36 @@ TEST_CASE(an_fb_key_of_a_simultaneous_entry_covers_no_voice) {
     }
 }
 
+// A hint-<pair> key links both voices of the pair at the position that names it: the alto's notes, the outer voices
+// an octave apart on the first.
+TEST_CASE(a_hint_pair_key_links_both_voices_of_the_pair_at_the_position_that_names_it) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query query;
+    query.feature = "kern";
+    query.voices = "alto";
+    query.pattern = {AttributeMap{{"kern", {"*"}}, {"hint-14", {"*"}}}, AttributeMap{{"kern", {"*"}}}};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(!found.empty());
+    for (const Result& r : found) {
+        std::set<std::size_t> pairVoices;
+        for (const NoteSection& section : r.linkedSections) {
+            if (section.feature != "hint-14") continue;
+            pairVoices.insert(section.voice);
+            CHECK_EQ(section.startLineNumber, r.startLineNumber);
+            CHECK_EQ(section.endLineNumber, r.startLineNumber);
+        }
+        CHECK(pairVoices == (std::set<std::size_t>{1, 4}));
+    }
+
+    // A set of pairs names no voices.
+    query.pattern[0] = AttributeMap{{"kern", {"*"}}, {"hint-*4", {"*"}}};
+    for (const Result& r : search.runOne(chorale, query)) {
+        for (const NoteSection& section : r.linkedSections) CHECK_EQ(section.voice, std::size_t{3});
+    }
+}
+
 TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
     // findChoraleFiles() sorts, so chor001 < chor005 < chor006 < chor008 < chor009 < chor029.
     // chor001 alone has 6 soprano fermatas, so a limit of 8 must exhaust chor001 and then take
