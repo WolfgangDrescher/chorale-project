@@ -79,6 +79,109 @@ TEST_CASE(parallel_octaves_are_found_between_outer_voices) {
     CHECK_EQ(findings[0].endLine, kFirstRow + 1);
 }
 
+// The chords c-g-c-g and d-a-d-a (bass to soprano, c, g, c' and g') have a fifth or octave between every pair of
+// voices but the tenor and the alto, a fourth: going from one to the other and back are parallels in five pairs.
+// The findings come in the order of the score, then of the voices.
+TEST_CASE(parallels_are_found_in_every_pair_of_voices_going_up_and_down) {
+    const HumdrumChorale chorale = score({
+        "4C\t4G\t4c\t4g",
+        "4D\t4A\t4d\t4a",
+        "4C\t4G\t4c\t4g",
+    });
+    const std::vector<Finding> findings = findParallelMotion(chorale);
+    REQUIRE(findings.size() == 10);
+
+    const char* checks[] = {"parallelFifths", "parallelOctaves", "parallelFifths", "parallelOctaves", "parallelFifths"};
+    const std::size_t lower[] = {1, 1, 1, 2, 3};
+    const std::size_t upper[] = {2, 3, 4, 4, 4};
+    for (std::size_t i = 0; i < findings.size(); ++i) {
+        CHECK_EQ(findings[i].check, std::string(checks[i % 5]));
+        CHECK_EQ(findings[i].lowerVoice, lower[i % 5]);
+        CHECK_EQ(findings[i].upperVoice, upper[i % 5]);
+        CHECK_EQ(findings[i].direction, std::string(i < 5 ? "up" : "down"));
+        CHECK_EQ(findings[i].startLine, kFirstRow + static_cast<int>(i / 5));
+        CHECK_EQ(findings[i].endLine, kFirstRow + static_cast<int>(i / 5) + 1);
+    }
+}
+
+// The same, but the bass is the last to attack the first chord: an eighth after the others, which hold their notes.
+TEST_CASE(parallels_are_found_when_the_bass_attacks_the_first_chord_after_the_other_voices) {
+    const HumdrumChorale chorale = score({
+        "8E\t4G\t4c\t4g",
+        "8C\t.\t.\t.",
+        "4D\t4A\t4d\t4a",
+        "4C\t4G\t4c\t4g",
+    });
+    const std::vector<Finding> findings = findParallelMotion(chorale);
+    REQUIRE(findings.size() == 10);
+
+    // The first chord is on the second row, where the bass reaches its note.
+    for (std::size_t i = 0; i < findings.size(); ++i) {
+        CHECK_EQ(findings[i].direction, std::string(i < 5 ? "up" : "down"));
+        CHECK_EQ(findings[i].startLine, kFirstRow + 1 + static_cast<int>(i / 5));
+        CHECK_EQ(findings[i].endLine, kFirstRow + 2 + static_cast<int>(i / 5));
+    }
+}
+
+// And the other way round: the bass holds its note, the other voices reach the first chord an eighth later.
+TEST_CASE(parallels_are_found_when_the_other_voices_attack_the_first_chord_after_the_bass) {
+    const HumdrumChorale chorale = score({
+        "4C\t8E\t8A\t8b",
+        ".\t8G\t8c\t8g",
+        "4D\t4A\t4d\t4a",
+        "4C\t4G\t4c\t4g",
+    });
+    const std::vector<Finding> findings = findParallelMotion(chorale);
+    REQUIRE(findings.size() == 10);
+
+    for (std::size_t i = 0; i < findings.size(); ++i) {
+        CHECK_EQ(findings[i].direction, std::string(i < 5 ? "up" : "down"));
+        CHECK_EQ(findings[i].startLine, kFirstRow + 1 + static_cast<int>(i / 5));
+        CHECK_EQ(findings[i].endLine, kFirstRow + 2 + static_cast<int>(i / 5));
+    }
+}
+
+TEST_CASE(parallel_octaves_are_found_when_one_voice_holds_its_note_into_the_parallel) {
+    const HumdrumChorale chorale = score({
+        "8D\t4f\t4c\t4a",
+        "8AA\t.\t.\t.",   // the bass reaches an octave of the held soprano note: oblique
+        "4GG\t4f\t4c\t4g", // and both go down from there, though the bass attacked its note earlier
+    });
+    const std::vector<Finding> findings = findParallelMotion(chorale);
+    REQUIRE(findings.size() == 1);
+    CHECK_EQ(findings[0].check, std::string("parallelOctaves"));
+    CHECK_EQ(findings[0].direction, std::string("down"));
+    CHECK_EQ(findings[0].lowerVoice, std::size_t{1});
+    CHECK_EQ(findings[0].upperVoice, std::size_t{4});
+    CHECK_EQ(findings[0].startLine, kFirstRow + 1);
+    CHECK_EQ(findings[0].endLine, kFirstRow + 2);
+}
+
+// A measure for each variant of a parallel: the 6 pairs of voices, fifths and octaves, up and down, and the
+// first sonority of the parallel attacked by both voices together, by the upper voice first (a quarter, the
+// lower voice an eighth later) or by the lower voice first. A measure has four beats: a chord without a
+// perfect interval, the first sonority, the second one and the chord again. Only the two voices of the pair
+// move, the others stay on the chord, so each measure has the one parallel of its case.
+TEST_CASE(a_rest_between_two_sonorities_is_no_parallel_and_no_hidden_motion) {
+    const HumdrumChorale octaves = score({
+        "4C\t4g\t4e\t4c",
+        "4D\t4g\t4f\t4d",
+        "4r\t4r\t4r\t4r",
+        "4E\t4g\t4f\t4e",
+        "4F\t4g\t4f\t4f",
+    });
+    // The octaves of the first two rows and of the last two are parallels, the move out of the rest is none.
+    CHECK_EQ(findParallelMotion(octaves).size(), std::size_t{2});
+
+    const HumdrumChorale hidden = score({
+        "4C\t4g\t4e\t4c",
+        "4r\t4r\t4r\t4r",
+        "4D\t4g\t4f\t4a",
+    });
+    CHECK_EQ(findHiddenMotion(hidden).size(), std::size_t{0});
+    CHECK_EQ(findParallelMotion(hidden).size(), std::size_t{0});
+}
+
 TEST_CASE(oblique_and_contrary_motion_and_a_diminished_fifth_are_no_parallels) {
     const HumdrumChorale chorale = score({
         "4C\t4g\t4e\t4cc",

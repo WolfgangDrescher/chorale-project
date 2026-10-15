@@ -50,7 +50,7 @@ void printUsage(const char* argv0) {
 }
 
 // A finding as the page draws it: the two voices (1 is the bass), and the line each of the two
-// sonorities is attacked on -- the same line in both voices.
+// sonorities is on.
 nlohmann::json findingToJson(const Finding& finding) {
     return {
         {"check", finding.check},

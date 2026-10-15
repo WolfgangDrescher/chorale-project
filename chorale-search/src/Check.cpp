@@ -61,34 +61,47 @@ std::vector<AttributeMap> movePattern(const std::string& sign, const AttributeMa
     return {first, second};
 }
 
+// The move of a voice into the second sonority of a finding: its note is not a rest, and the next onset of the
+// voice, which has to be attacked on the line of the second sonority (a simultaneousWith group that ends there),
+// is reached by a move in the given direction. A rest in between is no sonority, the hint spine has no token on
+// it, so this is also what keeps a move out of a rest from being taken for one between two consecutive sonorities.
+SimultaneousGroup movesInto(std::size_t voice, const std::string& sign, const AttributeMap& moveExtra = {}) {
+    AttributeMap before;
+    before["!kern"] = {"r"};
+    AttributeMap move = moveExtra;
+    move["mint"] = {sign};
+
+    SimultaneousGroup group;
+    group.feature = "mint";
+    group.voices = std::to_string(voice);
+    group.pattern = {before, move};
+    group.simultaneousAlignment = "end";
+    return group;
+}
+
 // One query for each pair of voices, direction and interval (6 x 2 x 2 = 24), with the id
-// "<check>:<direction>:<lower voice>-<upper voice>". The upper voice is walked by its melodic
-// intervals and has to form the interval to the lower one; the lower voice is a simultaneousWith
-// group, so it attacks the same notes and moves the same way.
+// "<check>:<direction>:<lower voice>-<upper voice>". The pair's own hint spine is walked, which has a
+// token on every line where both voices sound, so the two positions are two consecutive sonorities, whether
+// the voices attack together or one of them holds its note into the second sonority. Both of them form the
+// interval; both voices move into the second one the same way, each of them a simultaneousWith group.
 std::vector<FindingQuery> buildParallelQueries() {
     std::vector<FindingQuery> queries;
     for (const PerfectInterval& kind : perfectIntervals()) {
         for (const auto& [direction, sign] : directions()) {
             for (std::size_t lower = 1; lower <= kVoiceCount; ++lower) {
                 for (std::size_t upper = lower + 1; upper <= kVoiceCount; ++upper) {
-                    // The interval to the lower voice, from the walked upper voice's point of view.
-                    const std::string intervalKey = "hint-" + std::to_string(lower);
-                    AttributeMap interval;
-                    interval[intervalKey] = toPatternValues(kind.intervals);
+                    const std::string pairKey = "hint-" + std::to_string(lower) + std::to_string(upper);
+                    AttributeMap sonority;
+                    sonority[pairKey] = toPatternValues(kind.intervals);
 
                     Query query;
                     query.id = queryId(kind.parallelType, direction, lower, upper);
-                    query.feature = "mint";
-                    query.voices = std::to_string(upper);
-                    query.pattern = movePattern(sign, interval, interval);
+                    query.feature = pairKey;
+                    query.voices = std::to_string(upper); // the pair has one spine, any voice reads it
+                    query.pattern = {sonority, sonority};
                     query.hintReduceCompound = true;
-                    query.simultaneousAlignment = "start-end";
-
-                    SimultaneousGroup lowerVoice;
-                    lowerVoice.feature = "mint";
-                    lowerVoice.voices = std::to_string(lower);
-                    lowerVoice.pattern = movePattern(sign, {}, {});
-                    query.simultaneousWith.push_back(std::move(lowerVoice));
+                    query.simultaneousWith.push_back(movesInto(lower, sign));
+                    query.simultaneousWith.push_back(movesInto(upper, sign));
 
                     queries.push_back({std::move(query), kind.parallelType, "error", direction, lower, upper});
                 }

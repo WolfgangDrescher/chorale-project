@@ -29,17 +29,18 @@ struct Finding {
     std::size_t lowerVoice = 0;
     std::size_t upperVoice = 0;
 
-    // Where it is: the two sonorities of a parallel (their intervals are attacked on the same
-    // line in both voices), or the one line of a note out of its range, which is both the start
-    // and the end. The lines are those of the file the chorale was loaded from.
+    // Where it is: the two sonorities of a parallel (the second one is where both voices have moved),
+    // or the one line of a note out of its range, which is both the start and the end. The lines are
+    // those of the file the chorale was loaded from.
     int startLine = 0;
     int endLine = 0;
     std::string startPosition;
     std::string endPosition;
 };
 
-// The parallel fifths and octaves between any two voices, upwards and downwards: both voices attack
-// the same two notes, move the same way and form the same perfect interval each time. A twelfth
+// The parallel fifths and octaves between any two voices, upwards and downwards: from one sonority of
+// the two voices to the next, both move the same way and form the same perfect interval each time. A
+// voice may still hold the note it attacked before, so the voices need not attack together. A twelfth
 // counts as a fifth and a unison as an octave. Found with the search's own queries.
 std::vector<Finding> findParallelMotion(const HumdrumChorale& chorale);
 
