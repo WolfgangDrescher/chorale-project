@@ -9,6 +9,7 @@
 
 #include "AttributeMatcher.hpp"
 #include "FileDispatcher.hpp"
+#include "HintPairs.hpp"
 #include "HumdrumChorale.hpp"
 #include "HumdrumUtils.hpp"
 #include "VoiceMap.hpp"
@@ -85,6 +86,60 @@ std::vector<fs::path> filesWithMatchingId(std::vector<fs::path> files, const std
                                }),
                 files.end());
     return files;
+}
+
+// Whether the chorale has what drives a query: the spine of `feature`, or for a set of voice pairs ("hint-**")
+// the spine of one of its pairs.
+bool hasDrivingFeature(const HumdrumChorale& chorale, const std::string& feature) {
+    if (!isHintPairWildcardKey(feature)) return chorale.hasFeature(feature);
+    const std::vector<std::string> pairs = expandHintPairKey(feature);
+    return std::any_of(pairs.begin(), pairs.end(), [&](const std::string& pair) { return chorale.hasFeature(pair); });
+}
+
+// `text` with every `from` in it replaced by `to`.
+std::string replaceAll(std::string text, const std::string& from, const std::string& to) {
+    for (std::size_t at = text.find(from); at != std::string::npos; at = text.find(from, at + to.size())) {
+        text.replace(at, from.size(), to);
+    }
+    return text;
+}
+
+// The voices of a pair ("hint-14": 1 and 4) in place of "@lower" and "@upper".
+std::string voicesOfPair(const std::string& voices, const std::string& pair) {
+    return replaceAll(replaceAll(voices, "@lower", pair.substr(5, 1)), "@upper", pair.substr(6, 1));
+}
+
+// A pattern with the pair in place of hint-@pair, the interval of the pair being searched, also when negated.
+std::vector<AttributeMap> patternOfPair(const std::vector<AttributeMap>& pattern, const std::string& pair) {
+    std::vector<AttributeMap> pairPattern;
+    for (const AttributeMap& position : pattern) {
+        AttributeMap pairPosition;
+        for (const auto& [key, values] : position) {
+            const bool negated = !key.empty() && key[0] == '!';
+            pairPosition[isPairSearchedKey(key) ? (negated ? "!" : "") + pair : key] = values;
+        }
+        pairPattern.push_back(std::move(pairPosition));
+    }
+    return pairPattern;
+}
+
+// The query for one pair of the voice pairs that drive `query`: driven by the spine of the pair, with the voices of
+// the pair for "@lower" and "@upper" in its voices and in those of its groups. The chorale is already known to
+// pass the filter, and the limit is that of the whole query.
+Query queryOfPair(const Query& query, const std::string& pair) {
+    Query pairQuery = query;
+    pairQuery.feature = pair;
+    // Voices that name neither voice of the pair are all of them (see JsonIO.cpp): the spine of a pair is the same
+    // whichever voice reads it, so it is read once.
+    pairQuery.voices = query.voices.find('@') == std::string::npos ? pair.substr(6, 1) : voicesOfPair(query.voices, pair);
+    pairQuery.pattern = patternOfPair(query.pattern, pair);
+    pairQuery.choraleFilter = ChoraleFilter();
+    pairQuery.limit.reset();
+    for (SimultaneousGroup& group : pairQuery.simultaneousWith) {
+        group.voices = voicesOfPair(group.voices, pair);
+        group.pattern = patternOfPair(group.pattern, pair);
+    }
+    return pairQuery;
 }
 
 // The other voice a hint-<voice> key compares the voice searched with ("hint-2": 2), possibly negated ("!hint-2"),
@@ -213,9 +268,24 @@ void CorpusSearch::reportProgress(std::size_t choralesSearched, std::size_t chor
 
 Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) const {
     Results results;
-    if (!chorale.hasFeature(query.feature)) return results;
+    if (!hasDrivingFeature(chorale, query.feature)) return results;
     if (!query.choraleFilter.matchesId(chorale.id())) return results;
     if (query.choraleFilter.needsChoraleInfo() && !query.choraleFilter.matches(chorale.collectInfo())) return results;
+
+    // A query over voice pairs is a query for each of the pairs, and its results say which pair they are of.
+    if (isHintPairWildcardKey(query.feature)) {
+        for (const std::string& pair : expandHintPairKey(query.feature)) {
+            if (!chorale.hasFeature(pair)) continue;
+            for (Result& result : runOne(chorale, queryOfPair(query, pair))) {
+                results.push_back(std::move(result));
+            }
+        }
+        // In the order of the score, the pairs in the order they were searched at the same place.
+        std::stable_sort(results.begin(), results.end(),
+                         [](const Result& a, const Result& b) { return a.startLineNumber < b.startLineNumber; });
+        if (query.limit && results.size() > *query.limit) results.resize(*query.limit);
+        return results;
+    }
 
     AttributeMatcher matcher(query.feature, query.pattern, matcherOptions(query));
 
@@ -311,7 +381,7 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
                                      std::vector<Results>(queries.size())};
             for (std::size_t i = 0; i < queries.size(); ++i) {
                 const Query& query = queries[i];
-                if (done[i] || !searched.chorale->hasFeature(query.feature)) continue;
+                if (done[i] || !hasDrivingFeature(*searched.chorale, query.feature)) continue;
                 searched.results[i] = runOne(*searched.chorale, query);
                 for (auto& r : searched.results[i]) r.queryId = queryIds[i];
             }
@@ -351,7 +421,7 @@ void CorpusSearch::forEachMatch(const std::vector<Query>& queries, const MatchVi
             SearchedChorale searched{std::make_unique<HumdrumChorale>(files[fileIndex].string(), m_applyAnalysis),
                                      std::vector<Results>(queries.size())};
             for (std::size_t i = 0; i < queries.size(); ++i) {
-                if (!searched.chorale->hasFeature(queries[i].feature)) continue;
+                if (!hasDrivingFeature(*searched.chorale, queries[i].feature)) continue;
                 searched.results[i] = runOne(*searched.chorale, queries[i]);
             }
             return searched;

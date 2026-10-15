@@ -429,6 +429,81 @@ TEST_CASE(result_to_json_includes_query_id_when_set) {
     CHECK_EQ(j.at("queryId").get<std::string>(), std::string("my-id"));
 }
 
+TEST_CASE(query_from_json_accepts_a_set_of_voice_pairs_and_the_voices_of_the_pair) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature": "hint-**", "voices": "@upper",
+        "pattern": [{"hint-@pair": "P5", "hint-*4": "M3"}],
+        "simultaneousWith": [{"feature": "mint", "voices": "@lower", "pattern": [{"mint": "+", "!hint-@pair": "P8"}]}]
+    })"));
+    CHECK_EQ(q.feature, std::string("hint-**"));
+    CHECK_EQ(q.voices, std::string("@upper"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    CHECK_EQ(q.simultaneousWith[0].voices, std::string("@lower"));
+}
+
+TEST_CASE(query_from_json_rejects_the_voices_and_the_interval_of_a_pair_without_a_set_of_voice_pairs) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature": "hint-14", "voices": "@upper", "pattern": [{"hint-14": "P5"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature": "mint", "pattern": [{"mint": "+"}],
+        "simultaneousWith": [{"feature": "mint", "voices": "@lower", "pattern": [{"mint": "+"}]}]
+    })")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature": "hint-14", "pattern": [{"hint-@pair": "P5"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature": "kern", "pattern": [{"kern": "*"}],
+        "simultaneousWith": [{"feature": "kern", "pattern": [{"!hint-@pair": "P5"}]}]
+    })")));
+}
+
+TEST_CASE(query_from_json_accepts_a_set_of_voice_pairs_with_a_pair_only_as_driving_feature) {
+    for (const char* feature : {"hint-**", "hint-1*", "hint-2*", "hint-*2", "hint-*4"}) {
+        Query q = queryFromJson(json::parse(std::string(R"({"feature": ")") + feature + R"(", "voices": "@upper", "pattern": [{"hint-@pair": "P5"}]})"));
+        CHECK_EQ(q.feature, std::string(feature));
+    }
+    // The soprano is never the lower voice of a pair, nor the bass the upper one.
+    for (const char* feature : {"hint-4*", "hint-*1"}) {
+        CHECK_THROWS(queryFromJson(json::parse(std::string(R"({"feature": ")") + feature + R"(", "pattern": [{"hint-@pair": "P5"}]})")));
+    }
+}
+
+TEST_CASE(query_from_json_rejects_a_set_of_voice_pairs_in_a_simultaneous_group) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature": "mint", "pattern": [{"mint": "+"}],
+        "simultaneousWith": [{"feature": "hint-**", "pattern": [{"hint-**": "P5"}]}]
+    })")));
+}
+
+TEST_CASE(query_from_json_reads_a_query_over_voice_pairs_with_all_voices_or_the_voices_of_the_pair_only) {
+    for (const char* voices : {"all", "ALL", "1234", "@upper", "@lower,@upper", " @lower , @upper "}) {
+        CHECK_EQ(queryFromJson(json::parse(std::string(R"({"feature": "hint-**", "voices": ")") + voices +
+                                           R"(", "pattern": [{"hint-@pair": "P5"}]})")).voices,
+                 std::string(voices));
+    }
+    for (const char* voices : {"4", "soprano", "124", "@lower,4"}) {
+        CHECK_THROWS(queryFromJson(json::parse(std::string(R"({"feature": "hint-**", "voices": ")") + voices +
+                                               R"(", "pattern": [{"hint-@pair": "P5"}]})")));
+    }
+    // A group of such a query may read a voice of its own.
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({
+        "feature": "hint-**", "voices": "@upper", "pattern": [{"hint-@pair": "P5"}],
+        "simultaneousWith": [{"feature": "kern", "voices": "bass", "pattern": [{"kern": "*"}]}]
+    })")));
+}
+
+TEST_CASE(query_from_json_rejects_a_position_that_names_the_pair_searched_twice) {
+    // hint-@pair and one of the pairs of the set, also negated, in the query and in a group.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature": "hint-**", "pattern": [{"hint-@pair": "P5", "hint-24": "P8"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature": "hint-*4", "pattern": [{"!hint-@pair": "P5", "!hint-14": "P8"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature": "hint-**", "pattern": [{"hint-@pair": "P5"}],
+        "simultaneousWith": [{"feature": "mint", "voices": "@lower", "pattern": [{"hint-@pair": "P5", "hint-12": "P5"}]}]
+    })")));
+    // Once negated and once not, a pair the set does not have, another set, or the pair in another position, are fine.
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature": "hint-**", "pattern": [{"hint-@pair": "P5", "!hint-24": "P8"}]})")));
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature": "hint-*4", "pattern": [{"hint-@pair": "P5", "hint-12": "P8"}]})")));
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature": "hint-*4", "pattern": [{"hint-@pair": "P5", "hint-*4": "P8"}]})")));
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature": "hint-**", "pattern": [{"hint-@pair": "P5"}, {"hint-24": "P8"}]})")));
+}
+
 TEST_CASE(result_to_json_lists_the_linked_sections_only_when_there_are_some) {
     Result r;
     r.choraleId = "chor029";

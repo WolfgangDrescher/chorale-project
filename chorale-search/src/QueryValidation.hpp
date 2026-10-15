@@ -23,10 +23,15 @@ const std::vector<std::string>& drivingFeatureNames();
 // True if `feature` is one of drivingFeatureNames().
 bool isKnownDrivingFeature(const std::string& feature);
 
+// True if `feature` names a set of voice pairs with at least one pair in it, "hint-**" (every pair), "hint-*4" (the
+// pairs with the soprano above) or "hint-1*" (with the bass below), see expandHintPairKey: each digit is a voice or
+// "*", with at least one "*". A query can be driven by it, it is then searched pair by pair (see Query::feature).
+bool isPairWildcardFeature(const std::string& feature);
+
 // True if `key` is something a pattern position can check: any driving feature,
 // "duration"/"fermata" (read off the underlying kern token rather than being spines of their
 // own), or a hint-<voice>/hint-<pair> relative or wildcard form (e.g. "hint-2", "hint-*4",
-// "hint-1*", "hint-**"). `key` may carry a leading '!' negation (see AttributeMatcher.cpp /
+// "hint-1*", "hint-**"), or "hint-@pair", the pair a query over voice pairs searches. `key` may carry a leading '!' negation (see AttributeMatcher.cpp /
 // docs/patterns#negating-a-feature, e.g. "!deg") -- negation doesn't change which keys are
 // known, only how a match is interpreted, so it's stripped internally before checking.
 bool isKnownPatternKey(const std::string& key);

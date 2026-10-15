@@ -1,4 +1,5 @@
 #include "AttributeMatcher.hpp"
+#include "HintPairs.hpp"
 #include "HumdrumUtils.hpp"
 #include "QueryValidation.hpp"
 #include "VoiceReference.hpp"
@@ -27,36 +28,9 @@ const std::string kMetweightFeature = "metweight";
 // between the beats the meter classifies, which in these chorales is where the diminution sits.
 const std::string kUnclassifiedMetweight = "u";
 
-// The 6 voice-pair suffixes addIntervalPairSpines() (HumdrumChorale.cpp) generates spines
-// for: 1=bass, 2=tenor, 3=alto, 4=soprano, lower voice number first.
-const std::vector<std::string> kHintPairSuffixes = {"12", "13", "14", "23", "24", "34"};
-
 // A concrete pairwise-interval key, e.g. "hint-14" -- exactly "hint-" followed by two characters.
 bool isHintPairKey(const std::string& key) {
     return key.rfind("hint-", 0) == 0 && key.size() == 7;
-}
-
-// A pairwise-interval key that uses "*" for one or both digits, e.g. "hint-*4", "hint-1*",
-// "hint-**", to mean "any pair matching this digit pattern".
-bool isHintPairWildcardKey(const std::string& key) {
-    return isHintPairKey(key) && key.find('*') != std::string::npos;
-}
-
-// Expands a (possibly wildcarded) pairwise-interval key's two-character suffix against the
-// 6 real pairs, e.g. "hint-*4" -> {"hint-14", "hint-24", "hint-34"}. A concrete,
-// non-wildcarded key that happens not to be one of the 6 real pairs (e.g. a typo) simply
-// expands to nothing.
-std::vector<std::string> expandHintPairKey(const std::string& key) {
-    std::string suffix = key.substr(5);
-    std::vector<std::string> matches;
-    for (const std::string& real : kHintPairSuffixes) {
-        bool ok = true;
-        for (std::size_t i = 0; i < 2; ++i) {
-            if (suffix[i] != '*' && suffix[i] != real[i]) { ok = false; break; }
-        }
-        if (ok) matches.push_back("hint-" + real);
-    }
-    return matches;
 }
 
 // Unlike kern/deg/mint, fb (and each hint-<pair> spine) has a single spine per chorale, not

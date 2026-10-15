@@ -109,6 +109,8 @@ struct Query {
     // re-derived per result. Ignored entirely for a single, non-array query.
     std::optional<std::string> id;
 
+    // The driving feature (see drivingFeatureNames()), or a set of voice pairs ("hint-**", "hint-*4"), which is
+    // searched pair by pair, see CorpusSearch::runOne.
     std::string feature;
     std::string voices = "all";
 

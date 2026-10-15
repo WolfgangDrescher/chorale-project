@@ -1,4 +1,5 @@
 #include "JsonIO.hpp"
+#include "HintPairs.hpp"
 #include "QueryValidation.hpp"
 #include "VoiceMap.hpp"
 #include "VoiceReference.hpp"
@@ -7,6 +8,7 @@
 #include <cctype>
 #include <optional>
 #include <regex>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -194,30 +196,93 @@ std::string simultaneousAlignmentFromJson(const nlohmann::json& j, const std::st
     return alignment;
 }
 
+// hint-@pair is the pair a query over voice pairs searches, so only such a query has it, and a position names that pair
+// once only: hint-@pair and one of the pairs of `pairSet` would be the same key for that pair, and one of the two
+// would not be checked. Once negated and once not is two keys.
+void checkPairSearchedKeys(const std::vector<AttributeMap>& pattern, const std::string& pairSet,
+                           const std::string& context) {
+    const std::vector<std::string> pairs = pairSet.empty() ? std::vector<std::string>{} : expandHintPairKey(pairSet);
+    for (std::size_t position = 0; position < pattern.size(); ++position) {
+        for (const bool negated : {false, true}) {
+            std::string pairSearched;
+            std::string onePair;
+            for (const auto& [key, values] : pattern[position]) {
+                if ((!key.empty() && key[0] == '!') != negated) continue;
+                if (isPairSearchedKey(key)) pairSearched = key;
+                if (std::find(pairs.begin(), pairs.end(), key.substr(negated ? 1 : 0)) != pairs.end()) onePair = key;
+            }
+            const std::string where = "'pattern[" + std::to_string(position) + "]' in " + context;
+            if (!pairSearched.empty() && pairSet.empty()) {
+                throw std::invalid_argument(where + " has '" + pairSearched + "', the pair a query over voice pairs "
+                                            "searches, but 'feature' of the query is no set of voice pairs like hint-**");
+            }
+            if (!pairSearched.empty() && !onePair.empty()) {
+                throw std::invalid_argument(where + " can't have both '" + pairSearched + "' and '" + onePair +
+                                            "': while that pair is searched, both are the key '" + onePair + "'");
+            }
+        }
+    }
+}
+
 // Fields shared by Query and SimultaneousGroup, parsed once for both. Assignment works
 // whether target's members are plain values (Query) or std::optional (SimultaneousGroup,
 // nullopt = inherit from the top-level query -- see Query.hpp).
+// `primary` is the query itself, whose 'feature' can also name a set of voice pairs ("hint-**"); `pairSet` is the
+// set of voice pairs the query is driven by, or empty. In such a query, 'voices' of the query and of its
+// simultaneousWith groups may name the voices of the pair being searched, "@lower" and "@upper", and a pattern key
+// may name that pair, "hint-@pair".
 template <typename T>
-void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::string& context) {
+void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::string& context, bool primary,
+                              const std::string& pairSet) {
     if (!j.contains("feature") || !j["feature"].is_string()) {
         throw std::invalid_argument(context + " must contain a string field 'feature'");
     }
     target.feature = j["feature"].get<std::string>();
-    if (!isKnownDrivingFeature(target.feature)) {
+    if (!isKnownDrivingFeature(target.feature) && !(primary && isPairWildcardFeature(target.feature))) {
         const auto& names = drivingFeatureNames();
         std::string joined;
         for (std::size_t i = 0; i < names.size(); ++i) joined += (i ? ", " : "") + names[i];
         throw std::invalid_argument("'feature' in " + context + " must be one of " + joined +
+                                     (primary ? ", or a set of voice pairs like hint-** or hint-*4" : "") +
                                      " (got '" + target.feature + "')");
     }
 
     if (j.contains("voices")) {
         if (!j["voices"].is_string()) throw std::invalid_argument("'voices' in " + context + " must be a string");
         target.voices = j["voices"].get<std::string>();
+        std::string checked = target.voices;
+        for (const auto& [role, voice] : {std::pair<std::string, std::string>{"@lower", "1"}, {"@upper", "4"}}) {
+            if (checked.find(role) == std::string::npos) continue;
+            if (pairSet.empty()) {
+                throw std::invalid_argument("'voices' in " + context + " can only name '" + role +
+                                             "' when 'feature' of the query is a set of voice pairs like hint-**");
+            }
+            for (std::size_t at = checked.find(role); at != std::string::npos; at = checked.find(role, at)) {
+                checked.replace(at, role.size(), voice);
+            }
+        }
+        std::vector<std::size_t> resolved;
         try {
-            resolveVoices(target.voices);
+            resolved = resolveVoices(checked);
         } catch (const std::exception& e) {
             throw std::invalid_argument("'voices' in " + context + " is invalid: " + e.what());
+        }
+        // A query over voice pairs reads each pair once, or as the voices of the pair, never as a voice of its own.
+        if (primary && !pairSet.empty() && checked == target.voices && resolved.size() != kVoiceCount) {
+            throw std::invalid_argument("'voices' in " + context + " of a query over voice pairs must be all voices, "
+                                        "'@lower' or '@upper' (got '" + target.voices + "')");
+        }
+        if (primary && !pairSet.empty() && checked != target.voices) {
+            std::stringstream tokens(target.voices);
+            for (std::string token; std::getline(tokens, token, ',');) {
+                const std::size_t b = token.find_first_not_of(" \t");
+                const std::size_t e = token.find_last_not_of(" \t");
+                token = b == std::string::npos ? "" : token.substr(b, e - b + 1);
+                if (token != "@lower" && token != "@upper") {
+                    throw std::invalid_argument("'voices' in " + context + " of a query over voice pairs can name "
+                                                "'@lower' and '@upper' but no other voice (got '" + target.voices + "')");
+                }
+            }
         }
     }
 
@@ -225,6 +290,7 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         throw std::invalid_argument(context + " must contain a 'pattern' array");
     }
     target.pattern = patternFromJson(j["pattern"]);
+    checkPairSearchedKeys(target.pattern, pairSet, context);
 
     if (j.contains("mintStartAtPreviousToken")) {
         if (!j["mintStartAtPreviousToken"].is_boolean()) {
@@ -293,20 +359,20 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
     }
 }
 
-SimultaneousGroup simultaneousGroupFromJson(const nlohmann::json& j, std::size_t index) {
+SimultaneousGroup simultaneousGroupFromJson(const nlohmann::json& j, std::size_t index, const std::string& pairSet) {
     std::string context = "'simultaneousWith[" + std::to_string(index) + "]'";
     if (!j.is_object()) throw std::invalid_argument(context + " must be an object");
     rejectUnknownKeys(j, isKnownSimultaneousGroupKey, context);
 
     SimultaneousGroup group;
-    parseSearchRequestFields(j, group, context);
+    parseSearchRequestFields(j, group, context, false, pairSet);
     return group;
 }
 
-std::vector<SimultaneousGroup> simultaneousWithFromJson(const nlohmann::json& j) {
+std::vector<SimultaneousGroup> simultaneousWithFromJson(const nlohmann::json& j, const std::string& pairSet) {
     if (!j.is_array()) throw std::invalid_argument("'simultaneousWith' must be an array");
     std::vector<SimultaneousGroup> groups;
-    for (std::size_t i = 0; i < j.size(); ++i) groups.push_back(simultaneousGroupFromJson(j[i], i));
+    for (std::size_t i = 0; i < j.size(); ++i) groups.push_back(simultaneousGroupFromJson(j[i], i, pairSet));
     return groups;
 }
 
@@ -458,7 +524,10 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
     rejectUnknownKeys(j, isKnownQueryKey, context);
 
     Query q;
-    parseSearchRequestFields(j, q, context);
+    // The voices of a query over voice pairs may be named relative to the pair, and so may those of its groups.
+    const bool overPairs = j.contains("feature") && j["feature"].is_string() && isPairWildcardFeature(j["feature"].get<std::string>());
+    const std::string pairSet = overPairs ? j["feature"].get<std::string>() : "";
+    parseSearchRequestFields(j, q, context, true, pairSet);
 
     if (j.contains("id")) {
         if (!j["id"].is_string()) throw std::invalid_argument("'id' in " + context + " must be a string");
@@ -475,7 +544,7 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
     if (j.contains("choraleFilter")) q.choraleFilter = choraleFilterFromJson(j["choraleFilter"], context);
 
     if (j.contains("simultaneousWith")) {
-        q.simultaneousWith = simultaneousWithFromJson(j["simultaneousWith"]);
+        q.simultaneousWith = simultaneousWithFromJson(j["simultaneousWith"], pairSet);
     }
 
     return q;

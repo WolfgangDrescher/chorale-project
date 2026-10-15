@@ -34,7 +34,7 @@ const searchRequestFieldSchemas = {
     voices: {
         type: 'string',
         default: 'all',
-        description: 'Which voices to search: "all", a number 1-4, a name/initial (bass/tenor/alto/soprano, b/t/a/s), a run of digits, or a comma-separated mix.',
+        description: 'Which voices to search: "all", a number 1-4, a name/initial (bass/tenor/alto/soprano, b/t/a/s), a run of digits, or a comma-separated mix. For a query over voice pairs (hint-**), "@lower" and "@upper" are the lower and the upper voice of the pair being searched, and the query itself reads all voices (each pair once) or "@lower" and "@upper" only.',
         suggestSortText: '1',
     },
     pattern: {
@@ -47,7 +47,7 @@ const searchRequestFieldSchemas = {
             minProperties: 1,
             additionalProperties: false,
             patternProperties: {
-                '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]))$': {
+                '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
                     description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. Prefix the key with "!" to negate the whole position.',
                     oneOf: [
                         { type: 'string' },
@@ -58,8 +58,8 @@ const searchRequestFieldSchemas = {
                 },
             },
             propertyNames: {
-                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]))$',
-                description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
+                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
+                description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
             },
         },
     },
@@ -226,6 +226,11 @@ const singleQuerySchema = {
             suggestSortText: '-1',
         },
         ...searchRequestFieldSchemas,
+        feature: {
+            ...searchRequestFieldSchemas.feature,
+            enum: [...searchRequestFieldSchemas.feature.enum, 'hint-**', 'hint-1*', 'hint-2*', 'hint-3*', 'hint-*2', 'hint-*3', 'hint-*4'],
+            description: searchRequestFieldSchemas.feature.description + ' A set of voice pairs, hint-** (every pair) or one with a voice in its place, like hint-*4 (the soprano above another voice) or hint-1* (the bass below another voice), searches the pairs one after the other: hint-@pair in the pattern is the interval of the pair being searched, and every result has its pair as feature, e.g. hint-24.',
+        },
         limit: {
             type: 'integer',
             minimum: 0,

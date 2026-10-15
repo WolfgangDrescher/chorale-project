@@ -111,6 +111,162 @@ TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
                                             "chor039", "chor103"}));
 }
 
+// The parallel fifths downwards of chor008, between every pair of voices: both voices of the pair move down into
+// the interval the pair has again. A query over all voice pairs (hint-**) is the query of each pair, the pair
+// named in the pattern (hint-@pair), in the voices and in the groups, and each result has its pair as feature.
+TEST_CASE(a_query_over_all_voice_pairs_finds_what_a_query_for_each_pair_finds_and_says_which_pair) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CorpusSearch search(chorale.path());
+
+    Query all;
+    all.feature = "hint-**";
+    all.voices = "@upper";
+    all.hintReduceCompound = true;
+    all.pattern = {AttributeMap{{"hint-@pair", {"P5"}}}, AttributeMap{{"hint-@pair", {"P5"}}}};
+    for (const char* voice : {"@lower", "@upper"}) {
+        SimultaneousGroup group;
+        group.feature = "mint";
+        group.voices = voice;
+        group.pattern = {AttributeMap{{"!kern", {"r"}}}, AttributeMap{{"mint", {"-"}}}};
+        group.simultaneousAlignment = "end";
+        all.simultaneousWith.push_back(group);
+    }
+    const auto found = search.runOne(chorale, all);
+    REQUIRE(!found.empty());
+    // The notes of the parallel: a section of each of the two voices of the pair, as its group found it, from the
+    // line it attacked its first note on, which can be before the sonority the match starts in, to the line it
+    // moved on.
+    for (const Result& r : found) {
+        REQUIRE(r.linkedSections.size() == 2u);
+        std::set<std::size_t> voices;
+        for (const NoteSection& section : r.linkedSections) {
+            voices.insert(section.voice);
+            CHECK(section.startLineNumber <= r.startLineNumber);
+            CHECK_EQ(section.endLineNumber, r.endLineNumber);
+        }
+        CHECK(voices == (std::set<std::size_t>{static_cast<std::size_t>(r.feature[5] - '0'),
+                                               static_cast<std::size_t>(r.feature[6] - '0')}));
+    }
+    CHECK(std::is_sorted(found.begin(), found.end(),
+                         [](const Result& a, const Result& b) { return a.startLineNumber < b.startLineNumber; }));
+
+    std::size_t expected = 0;
+    for (const std::string pair : {"12", "13", "14", "23", "24", "34"}) {
+        Query one = all;
+        one.feature = "hint-" + pair;
+        one.voices = pair.substr(1);
+        one.pattern = {AttributeMap{{one.feature, {"P5"}}}, AttributeMap{{one.feature, {"P5"}}}};
+        one.simultaneousWith[0].voices = pair.substr(0, 1);
+        one.simultaneousWith[1].voices = pair.substr(1);
+        const auto expectedForPair = search.runOne(chorale, one);
+        const auto foundForPair = std::count_if(found.begin(), found.end(),
+                                                [&](const Result& r) { return r.feature == one.feature; });
+        CHECK_EQ(static_cast<std::size_t>(foundForPair), expectedForPair.size());
+        expected += expectedForPair.size();
+    }
+    CHECK_EQ(found.size(), expected);
+}
+
+TEST_CASE(a_query_over_a_set_of_voice_pairs_only_searches_the_pairs_of_the_set_and_honours_the_limit) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CorpusSearch search(chorale.path());
+
+    Query withSoprano;
+    withSoprano.feature = "hint-*4";
+    withSoprano.voices = "@upper";
+    withSoprano.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
+    const auto found = search.runOne(chorale, withSoprano);
+    REQUIRE(found.size() > 2u);
+    for (const Result& r : found) {
+        CHECK(r.feature == "hint-14" || r.feature == "hint-24" || r.feature == "hint-34");
+    }
+
+    withSoprano.limit = 2;
+    CHECK_EQ(search.runOne(chorale, withSoprano).size(), std::size_t{2});
+}
+
+// A star stands for any voice in its place, the lower voice of a pair first: hint-2* is the tenor with a voice above
+// (23, 24), hint-*2 with the bass below (12), and a set that has no pair (hint-4*, the soprano below another voice)
+// finds nothing.
+TEST_CASE(a_set_of_voice_pairs_is_the_pairs_whose_lower_and_upper_voice_match_the_digits) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CorpusSearch search(chorale.path());
+
+    for (const auto& [set, pairs] : std::vector<std::pair<std::string, std::set<std::string>>>{
+             {"hint-2*", {"hint-23", "hint-24"}}, {"hint-*2", {"hint-12"}}, {"hint-1*", {"hint-12", "hint-13", "hint-14"}},
+             {"hint-4*", {}}}) {
+        Query query;
+        query.feature = set;
+        query.voices = "@upper";
+        query.pattern = {AttributeMap{{"hint-@pair", {"*"}}}};
+        std::set<std::string> found;
+        for (const Result& r : search.runOne(chorale, query)) found.insert(r.feature);
+        CHECK(found == pairs);
+    }
+}
+
+// The spine of a pair is the same whichever voice reads it: a query over all pairs that names no voice finds each
+// interval once.
+TEST_CASE(a_query_over_all_voice_pairs_that_names_no_voice_finds_each_interval_once) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CorpusSearch search(chorale.path());
+
+    Query upper;
+    upper.feature = "hint-**";
+    upper.voices = "@upper";
+    upper.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
+    Query all = upper;
+    all.voices = "all";
+    const auto expected = search.runOne(chorale, upper);
+    REQUIRE(!expected.empty());
+    CHECK_EQ(search.runOne(chorale, all).size(), expected.size());
+}
+
+// A query over voice pairs that reads all voices reads each pair once, however all voices are written. A set in the
+// pattern stays any of its pairs: a fifth of any pair, wherever the soprano sounds with another voice, is found more
+// often than a fifth of the pair searched.
+TEST_CASE(a_query_over_voice_pairs_reads_each_pair_once_and_keeps_another_set_any_of_its_pairs) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CorpusSearch search(chorale.path());
+
+    Query query;
+    query.feature = "hint-**";
+    query.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
+    const auto once = search.runOne(chorale, query);
+    REQUIRE(!once.empty());
+    for (const char* voices : {"ALL", "", "1234"}) {
+        query.voices = voices;
+        CHECK_EQ(search.runOne(chorale, query).size(), once.size());
+    }
+
+    Query anyPair;
+    anyPair.feature = "hint-*4";
+    anyPair.pattern = {AttributeMap{{"hint-@pair", {"*"}}, {"hint-**", {"P5"}}}};
+    Query ownPair = anyPair;
+    ownPair.pattern = {AttributeMap{{"hint-@pair", {"P5"}}}};
+    CHECK(search.runOne(chorale, anyPair).size() > search.runOne(chorale, ownPair).size());
+}
+
+// Over a corpus, a query over voice pairs keeps to the chorales of its filter and to its limit.
+TEST_CASE(run_searches_the_voice_pairs_of_the_chorales_of_the_filter_up_to_the_limit) {
+    auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    CorpusSearch search(fixturesDir);
+
+    Query query;
+    query.feature = "hint-**";
+    query.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
+    query.choraleFilter.ids = {ChoraleIdRange{"8", 8, 8}};
+    const auto found = search.run(query);
+    REQUIRE(!found.empty());
+    for (const Result& r : found) CHECK_EQ(r.choraleId, std::string("chor008"));
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CHECK_EQ(found.size(), search.runOne(chorale, query).size());
+
+    query.choraleFilter = {};
+    query.limit = 3;
+    CHECK_EQ(search.run(query).size(), std::size_t{3});
+}
+
 // A result links the sections of notes it is made of, so the page can mark them.
 TEST_CASE(a_result_links_the_section_of_the_voice_searched_and_the_sections_of_its_simultaneous_groups) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));

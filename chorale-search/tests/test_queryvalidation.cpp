@@ -7,6 +7,7 @@ using choralesearch::isKnownDrivingFeature;
 using choralesearch::isKnownPatternKey;
 using choralesearch::isKnownQueryKey;
 using choralesearch::isKnownSimultaneousGroupKey;
+using choralesearch::isPairWildcardFeature;
 using choralesearch::intervalSizeInSemitones;
 using choralesearch::isValidIntervalQuality;
 using choralesearch::isValidComparisonValue;
@@ -382,6 +383,32 @@ TEST_CASE(supports_voice_reference_for_kern_and_duration_only) {
     for (const std::string& key : {"deg", "mint", "fb", "metweight", "fermata", "phrase", "hint-2", "hint-14"}) {
         CHECK(!supportsVoiceReference(key));
     }
+}
+
+TEST_CASE(is_pair_wildcard_feature_accepts_the_sets_of_voice_pairs_that_have_a_pair) {
+    for (const std::string feature : {"hint-**", "hint-*4", "hint-1*", "hint-2*", "hint-*2", "hint-3*", "hint-*3"}) {
+        CHECK(isPairWildcardFeature(feature));
+    }
+}
+
+TEST_CASE(is_pair_wildcard_feature_rejects_a_set_without_a_pair_a_concrete_pair_and_every_other_name) {
+    // The soprano is never the lower voice of a pair, nor the bass the upper one, but as a pattern key the set is known.
+    CHECK(!isPairWildcardFeature("hint-4*"));
+    CHECK(!isPairWildcardFeature("hint-*1"));
+    CHECK(isKnownPatternKey("hint-4*"));
+    CHECK(!isPairWildcardFeature("hint-14"));
+    CHECK(!isPairWildcardFeature("hint-2"));
+    CHECK(!isPairWildcardFeature("hint-*5"));
+    CHECK(!isPairWildcardFeature("hint-***"));
+    CHECK(!isPairWildcardFeature("hint-@pair"));
+    CHECK(!isPairWildcardFeature("kern"));
+}
+
+TEST_CASE(is_known_pattern_key_knows_the_interval_of_the_pair_searched) {
+    CHECK(isKnownPatternKey("hint-@pair"));
+    CHECK(isKnownPatternKey("!hint-@pair"));
+    CHECK(isValidPatternValue("hint-@pair", "P5"));
+    CHECK(!isKnownPatternKey("hint-@lower"));
 }
 
 TEST_MAIN()

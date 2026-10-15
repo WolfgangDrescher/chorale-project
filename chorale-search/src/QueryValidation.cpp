@@ -1,4 +1,5 @@
 #include "QueryValidation.hpp"
+#include "HintPairs.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -19,15 +20,9 @@ const std::vector<std::string> kSharedRequestFieldNames = {
     "durationAllowMergedNotes", "metweightSkipUnclassified", "simultaneousAlignment",
 };
 
-// The 6 voice-pair spines addIntervalPairSpines() (HumdrumChorale.cpp) generates -- always the
-// same set for every chorale, never discovered per file.
-const std::vector<std::string> kHintPairFeatureNames = {
-    "hint-12", "hint-13", "hint-14", "hint-23", "hint-24", "hint-34",
-};
-
 std::vector<std::string> buildDrivingFeatureNames() {
     std::vector<std::string> names = {"kern", "deg", "mint", "fb", "metweight"};
-    names.insert(names.end(), kHintPairFeatureNames.begin(), kHintPairFeatureNames.end());
+    names.insert(names.end(), hintPairFeatureNames().begin(), hintPairFeatureNames().end());
     return names;
 }
 
@@ -52,8 +47,8 @@ bool isHintWildcardKey(const std::string& key) {
 }
 
 bool isHintFlavoredKey(const std::string& key) {
-    return isHintRelativeKey(key) || isHintWildcardKey(key) ||
-           std::find(kHintPairFeatureNames.begin(), kHintPairFeatureNames.end(), key) != kHintPairFeatureNames.end();
+    return isHintRelativeKey(key) || isHintWildcardKey(key) || isPairSearchedKey(key) ||
+           std::find(hintPairFeatureNames().begin(), hintPairFeatureNames().end(), key) != hintPairFeatureNames().end();
 }
 
 bool isValidDegValue(const std::string& v) {
@@ -150,10 +145,14 @@ bool isKnownDrivingFeature(const std::string& feature) {
     return std::find(names.begin(), names.end(), feature) != names.end();
 }
 
+bool isPairWildcardFeature(const std::string& feature) {
+    return isHintWildcardKey(feature) && !expandHintPairKey(feature).empty();
+}
+
 bool isKnownPatternKey(const std::string& rawKey) {
     std::string key = stripNegationPrefix(rawKey);
     return isKnownDrivingFeature(key) || key == "duration" || key == "fermata" || key == "phrase" ||
-           isHintRelativeKey(key) || isHintWildcardKey(key);
+           isHintRelativeKey(key) || isHintWildcardKey(key) || isPairSearchedKey(key);
 }
 
 std::optional<int> intervalSizeInSemitones(const std::string& quality, int number) {
