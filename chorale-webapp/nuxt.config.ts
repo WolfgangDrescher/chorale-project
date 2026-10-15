@@ -31,11 +31,17 @@ export default defineNuxtConfig({
         routeRules: {
             '/kern/**': { prerender: false },
         },
-        // The font of the PDF downloads (see server/utils/chorale-pdf.js).
+        // The font of the PDF downloads (see server/utils/chorale-pdf.js). Only the files used there
+        // are bundled, not the whole package (all weights, scripts and formats).
         serverAssets: [
             {
                 baseName: 'fonts',
                 dir: fileURLToPath(new URL('./node_modules/@fontsource/alegreya-sans/files', import.meta.url)),
+                pattern: [
+                    'alegreya-sans-latin-400-normal.woff',
+                    'alegreya-sans-latin-400-italic.woff',
+                    'alegreya-sans-latin-700-normal.woff',
+                ],
             },
         ],
         publicAssets: [
