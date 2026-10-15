@@ -3,11 +3,20 @@ interface NoteGroup {
     color?: string;
 }
 
+// A section in another voice that belongs to a section: drawn as a frame in the color of that section, so that it
+// stands apart from the sections themselves.
+interface LinkedSection {
+    voice: number;
+    startLine: number;
+    endLine: number;
+}
+
 interface Section {
     startLine: number;
     endLine: number;
     label?: Label | string | null;
     voice?: number;
+    linkedSections?: LinkedSection[];
 }
 
 interface SectionGroup {
@@ -183,6 +192,17 @@ export function useResolveHighlightedScoreProps(props: {
         );
     };
 
+    // The linked sections of a section, those of a voice only: a linked section is always in a voice of its own.
+    function resolveLinkedSections(section: Section): LinkedSection[] {
+        return (section.linkedSections ?? [])
+            .filter((linked) => isValidSection(linked) && resolveVoice(linked.voice))
+            .map((linked) => ({
+                voice: linked.voice,
+                startLine: applyLineShift(linked.startLine),
+                endLine: applyLineShift(linked.endLine),
+            }));
+    }
+
     const resolvedSections = computed<SectionGroup[]>(() => {
         const sections = props.sections ?? [];
 
@@ -193,6 +213,7 @@ export function useResolveHighlightedScoreProps(props: {
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label),
                     voice: resolveVoice(s.voice),
+                    linkedSections: resolveLinkedSections(s),
                 }));
             return [
                 {
@@ -211,6 +232,7 @@ export function useResolveHighlightedScoreProps(props: {
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label) ?? null,
                     voice: resolveVoice(s.voice),
+                    linkedSections: resolveLinkedSections(s),
                 }))
                 : [],
             color: group.color || defaultHighlightColors[index % defaultHighlightColors.length],

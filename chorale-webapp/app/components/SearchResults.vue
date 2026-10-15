@@ -41,6 +41,25 @@ function colorForQueryId(queryId) {
     return Number.isInteger(colorIndex) ? defaultHighlightColors[colorIndex % defaultHighlightColors.length] : undefined;
 }
 
+// The lines the voice a result was found in covers: those of the match, and of its own linked sections, which for a
+// parallel reach back to the note it holds into the first sonority.
+function lineRangeOf(item) {
+    const own = (item.linkedSections ?? []).filter(({ voice }) => voice === item.voice);
+    return {
+        startLine: Math.min(item.startLine, ...own.map(({ startLine }) => startLine)),
+        endLine: Math.max(item.endLine, ...own.map(({ endLine }) => endLine)),
+    };
+}
+
+// The sections of notes a result links in other voices than the one it was found in (the other voice of a parallel,
+// the voice of a hint-<voice> key, the voice of a group), each from its start line to its end line.
+function otherSectionsOf(item) {
+    return (item.linkedSections ?? []).filter(({ voice }) => voice !== item.voice);
+}
+
+// A result is a section over the voice it was found in, with the sections it links in other voices, which
+// HighlightedScore draws as frames in the same color. A voice that the pattern names only at some of
+// its positions is marked at those and not in between.
 function sectionsForItems(items) {
     const itemsByQueryId = new Map();
     for (const item of items) {
@@ -48,8 +67,8 @@ function sectionsForItems(items) {
         if (!itemsByQueryId.has(queryId)) itemsByQueryId.set(queryId, []);
         itemsByQueryId.get(queryId).push({
             voice: item.voice,
-            startLine: item.startLine,
-            endLine: item.endLine,
+            ...lineRangeOf(item),
+            linkedSections: otherSectionsOf(item).map(({ voice, startLine, endLine }) => ({ voice, startLine, endLine })),
         });
     }
 

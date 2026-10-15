@@ -305,6 +305,9 @@ onMounted(async () => {
                     </template>
                     <template v-for="(sectionGroup, groupIndex) in resolvedSections" :key="groupIndex">
                         <HighlightedSection v-for="section in sectionGroup.items" :key="`${section.startLine}-${section.endLine}-${section.voice}-${section.label?.value}-${sectionGroup.color}-${sectionGroup.outline}-${sectionGroup.fitBoundingBox}`" :start-line="section.startLine" :end-line="section.endLine" :label="section.label" :voice="section.voice" :color="sectionGroup.color" :outline="sectionGroup.outline" :fit-bounding-box="sectionGroup.fitBoundingBox" :container="scoreContainer" />
+                        <template v-for="section in sectionGroup.items" :key="`linked-${section.startLine}-${section.endLine}-${section.voice}`">
+                            <HighlightedSection v-for="linked in section.linkedSections" :key="`${linked.startLine}-${linked.endLine}-${linked.voice}-${sectionGroup.color}-${sectionGroup.fitBoundingBox}`" :start-line="linked.startLine" :end-line="linked.endLine" :voice="linked.voice" :color="sectionGroup.color" :outline="true" :fit-bounding-box="sectionGroup.fitBoundingBox" :container="scoreContainer" />
+                        </template>
                     </template>
                     <template v-for="(connectionGroup, groupIndex) in connections" :key="`connection-${groupIndex}`">
                         <HighlightedConnection v-for="(connection, index) in connectionGroup.items" :key="`${index}-${connection.from.line}F${connection.from.voice}-${connection.to.line}F${connection.to.voice}-${connectionGroup.color}`" :from="connection.from" :to="connection.to" :color="connectionGroup.color" :width="connectionGroup.width" :container="scoreContainer" />
