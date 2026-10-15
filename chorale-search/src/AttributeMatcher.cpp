@@ -494,6 +494,10 @@ std::string reduceHintInterval(const std::string& value) {
     return quality + std::to_string(reduced);
 }
 
+bool fbFigureMatchesInterval(const std::string& figure, const std::string& interval) {
+    return fbIntervalMatches(figure, reduceHintInterval(interval));
+}
+
 namespace {
 
 // A hint-<pair>/hint-<voice> token is always a single interval, never a chord, so this

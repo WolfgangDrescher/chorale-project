@@ -36,7 +36,8 @@ struct Result : NoteSection {
     std::string choraleId; // e.g. "chor029"
 
     // The sections of notes this match is made of, in the order of the score: the voice searched, the voices of a
-    // hint pair or hint-<voice> key, and the sections of every simultaneousWith match lining up with this one.
+    // hint pair or hint-<voice> key, at an fb key the voices forming its figures above the bass ({"fb": "4"}: the
+    // voice a fourth above it), and the sections of every simultaneousWith match lining up with this one.
     std::vector<NoteSection> linkedSections;
 
     // Which of a combined array of queries produced this result (see

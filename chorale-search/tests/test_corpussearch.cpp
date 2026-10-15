@@ -301,6 +301,68 @@ TEST_CASE(a_melodic_interval_from_the_note_before_begins_its_section_at_that_not
     }
 }
 
+// An fb key links the voices that make its figure, at the position that names it: in chor029 the bass walks
+// 3-4-5-1 into a fermata with a fourth above the 5, which is the alto's g over the D (line 110: D d g a).
+TEST_CASE(an_fb_key_links_the_voices_that_make_its_figure_at_the_position_that_names_it) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query query;
+    query.feature = "kern";
+    query.voices = "bass";
+    query.pattern = {AttributeMap{{"deg", {"3"}}}, AttributeMap{{"deg", {"4"}}},
+                     AttributeMap{{"deg", {"5"}}, {"fb", {"4"}}}, AttributeMap{{"deg", {"1"}}, {"fermata", {"true"}}}};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(!found.empty());
+    bool foundTheAlto = false;
+    for (const Result& r : found) {
+        std::vector<NoteSection> figures;
+        for (const NoteSection& section : r.linkedSections) {
+            if (section.feature == "fb") figures.push_back(section);
+        }
+        REQUIRE(!figures.empty());
+        for (const NoteSection& section : figures) {
+            CHECK(section.voice != 1u);
+            CHECK_EQ(section.startLineNumber, section.endLineNumber);
+            CHECK(section.startLineNumber > r.startLineNumber);
+            CHECK(section.startLineNumber < r.endLineNumber);
+            if (section.voice == 3 && section.startLineNumber == 110) foundTheAlto = true;
+        }
+    }
+    CHECK(foundTheAlto);
+
+    // An fb key that names no figure links nothing.
+    query.pattern[2] = AttributeMap{{"deg", {"5"}}, {"fb", {"*"}}};
+    for (const Result& r : search.runOne(chorale, query)) {
+        for (const NoteSection& section : r.linkedSections) CHECK(section.feature != std::string("fb"));
+    }
+}
+
+// An fb key in a simultaneousWith entry driven by fb links the voices of its figures, but covers none of them: the
+// alto searched keeps its own section where it forms the figure.
+TEST_CASE(an_fb_key_of_a_simultaneous_entry_covers_no_voice) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query query;
+    query.feature = "kern";
+    query.voices = "alto";
+    query.pattern = {AttributeMap{{"kern", {"*"}}}};
+    SimultaneousGroup figures;
+    figures.feature = "fb";
+    figures.voices = "bass";
+    figures.pattern = {AttributeMap{{"fb", {"4"}}}};
+    query.simultaneousWith = {figures};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(!found.empty());
+    for (const Result& r : found) {
+        const bool ownSection = std::any_of(r.linkedSections.begin(), r.linkedSections.end(), [](const NoteSection& s) {
+            return s.voice == 3 && s.feature == "kern";
+        });
+        CHECK(ownSection);
+    }
+}
+
 TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
     // findChoraleFiles() sorts, so chor001 < chor005 < chor006 < chor008 < chor009 < chor029.
     // chor001 alone has 6 soprano fermatas, so a limit of 8 must exhaust chor001 and then take

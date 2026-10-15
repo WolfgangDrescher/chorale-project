@@ -33,6 +33,10 @@ std::string mintIntervalToken(hum::HTp from, hum::HTp to);
 // A hint interval ("M10") folded back within an octave ("M3"); a unison and an octave stay distinct.
 std::string reduceHintInterval(const std::string& value);
 
+// Whether a figure of a figured-bass pattern value ("4", "P4") is the interval of a voice above the bass as its hint
+// spine has it ("P11"): folded within an octave, as the fb spine has it, and of the quality only if the figure names one.
+bool fbFigureMatchesInterval(const std::string& figure, const std::string& interval);
+
 class AttributeMatcher {
 public:
     AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <atomic>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -100,6 +101,28 @@ std::vector<std::size_t> voicesOfHintPair(const std::string& feature) {
     return {static_cast<std::size_t>(feature[5] - '0'), static_cast<std::size_t>(feature[6] - '0')};
 }
 
+// The voices of the figures an fb key asks for, on a line: those above the bass whose interval with it is a figure of
+// one of the values of the key.
+std::vector<std::size_t> voicesOfFbFigures(const HumdrumChorale& chorale, std::size_t line,
+                                           const std::vector<PatternValue>& values) {
+    std::vector<std::size_t> voices;
+    for (std::size_t voice = 2; voice <= chorale.voiceCount(); ++voice) {
+        hum::HTp token = chorale.tokenAtLine("hint-1" + std::to_string(voice), 1, static_cast<int>(line));
+        if (!token) continue;
+        const std::string interval = *token;
+        const bool figured = std::any_of(values.begin(), values.end(), [&](const PatternValue& value) {
+            if (value.hasRelationalOperator()) return false;
+            std::istringstream figures(value.text);
+            for (std::string figure; figures >> figure;) {
+                if (fbFigureMatchesInterval(figure, interval)) return true;
+            }
+            return false;
+        });
+        if (figured) voices.push_back(voice);
+    }
+    return voices;
+}
+
 // The voices a match spans from its start to its end, by the feature it was found with: both voices of the spine of a
 // pair, none for fb, whose spine is no voice's own, and otherwise the voice searched.
 std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMatch, const std::string& feature) {
@@ -110,10 +133,10 @@ std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMat
 }
 
 // The sections of notes a match is made of, by the feature and the pattern it was found with: the voices it spans,
-// except those in `coveredVoices`, which another match covers, and the voice of a hint-<voice> key at each position
-// that names it.
-std::vector<NoteSection> buildLinkedSections(const AttributeMatch& attributeMatch, const std::string& feature,
-                                             const std::vector<AttributeMap>& pattern,
+// except those in `coveredVoices`, which another match covers, and at each position the voice of a hint-<voice> key
+// and the voices forming the figures of an fb key, with the bass they are figures above.
+std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, const AttributeMatch& attributeMatch,
+                                             const std::string& feature, const std::vector<AttributeMap>& pattern,
                                              const std::vector<std::size_t>& coveredVoices = {}) {
     std::vector<NoteSection> sections;
     // The voices the match spans, over the whole match.
@@ -131,11 +154,17 @@ std::vector<NoteSection> buildLinkedSections(const AttributeMatch& attributeMatc
             sections.push_back({key, voice, humNumToString(onset.position), humNumToString(onset.position), onset.line,
                                 onset.line});
         };
-        for (const auto& entry : pattern[position]) {
-            const std::string key = entry.first.substr(!entry.first.empty() && entry.first[0] == '!' ? 1 : 0);
+        for (const auto& [name, values] : pattern[position]) {
+            const std::string key = name.substr(!name.empty() && name[0] == '!' ? 1 : 0);
             // A hint-<voice> key: the other voice it compares the voice searched with.
             const std::size_t other = otherVoiceOfHintKey(key);
             if (other != 0) atPosition(key, other);
+            // An fb key, not negated: the voices forming its figures above the bass, and the bass.
+            if (name == "fb") {
+                std::vector<std::size_t> voices = voicesOfFbFigures(chorale, onset.line, values);
+                if (!voices.empty()) voices.push_back(1);
+                for (std::size_t voice : voices) atPosition(name, voice);
+            }
         }
     }
     return sections;
@@ -226,14 +255,14 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
                     for (std::size_t voice : voicesSpannedByMatch(*simultaneousMatch, simultaneousGroup.feature)) {
                         coveredBySimultaneous.push_back(voice);
                     }
-                    for (NoteSection& section : buildLinkedSections(*simultaneousMatch, simultaneousGroup.feature, simultaneousGroup.pattern)) {
+                    for (NoteSection& section : buildLinkedSections(chorale, *simultaneousMatch, simultaneousGroup.feature, simultaneousGroup.pattern)) {
                         r.linkedSections.push_back(std::move(section));
                     }
                 }
             }
             // The sections of this match, but none over the whole match in a voice a group covers: the group's section
             // starts where the voice attacks its note, this match may only hold it.
-            for (NoteSection& section : buildLinkedSections(m, query.feature, query.pattern, coveredBySimultaneous)) {
+            for (NoteSection& section : buildLinkedSections(chorale, m, query.feature, query.pattern, coveredBySimultaneous)) {
                 r.linkedSections.push_back(std::move(section));
             }
             std::sort(r.linkedSections.begin(), r.linkedSections.end());
