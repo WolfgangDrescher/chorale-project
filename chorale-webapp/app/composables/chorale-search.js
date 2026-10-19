@@ -1,7 +1,8 @@
 export const CHORALES_PER_PAGE = 10;
 
 // The state of one search: the query, its results (grouped by chorale), how they are sorted and
-// paged, and the progress of a running search.
+// paged, and the progress of a running search. The initial query can be a ref, e.g. one kept in
+// local storage, which then holds the query of the search.
 export function useChoraleSearch(initialQuery = '') {
     const searchFetchCompleted = ref(false);
     const results = ref([]);
@@ -10,7 +11,7 @@ export function useChoraleSearch(initialQuery = '') {
     const progress = ref(null);
     const page = ref(1);
     const durationMs = ref(null);
-    const query = ref(initialQuery);
+    const query = toRef(initialQuery);
     // The query the current results are for, once a search has succeeded.
     const searchedQuery = ref(null);
 

@@ -1,4 +1,6 @@
 <script setup>
+import { useLocalStorage } from '@vueuse/core';
+
 const { t } = useI18n();
 
 const localePath = useLocalePath();
@@ -7,7 +9,8 @@ useHead({
     title: t('search'),
 });
 
-const search = useChoraleSearch(`{
+// The query stays in local storage, so it is still there when the page is visited again.
+const storedQuery = useLocalStorage('chorale-search-query', `{
     "feature": "deg",
     "voices": "all",
     "pattern": [
@@ -16,6 +19,8 @@ const search = useChoraleSearch(`{
         { "deg": ["1", "3"] }
     ]
 }`);
+
+const search = useChoraleSearch(storedQuery);
 
 const { query, pending, fetchSearchResults } = search;
 
