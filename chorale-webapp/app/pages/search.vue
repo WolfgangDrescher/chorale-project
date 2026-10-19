@@ -24,6 +24,23 @@ const search = useChoraleSearch(storedQuery);
 
 const { query, pending, fetchSearchResults } = search;
 
+// A query given in the URL (?query=...) replaces the stored one and is searched right away. The
+// parameter is then removed, so a reload keeps later changes to the query. Valid JSON is indented
+// for the editor, anything else is left as it is for the search to report.
+const route = useRoute();
+const router = useRouter();
+
+onMounted(() => {
+    if (typeof route.query.query !== 'string') return;
+    try {
+        query.value = JSON.stringify(JSON.parse(route.query.query), null, 4);
+    } catch {
+        query.value = route.query.query;
+    }
+    router.replace({ query: { ...route.query, query: undefined } });
+    fetchSearchResults();
+});
+
 function onSubmit() {
     fetchSearchResults();
 }
