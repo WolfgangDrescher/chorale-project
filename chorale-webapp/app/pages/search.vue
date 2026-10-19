@@ -25,18 +25,28 @@ const search = useChoraleSearch(storedQuery);
 const { query, pending, fetchSearchResults } = search;
 
 // A query given in the URL (?query=...) replaces the stored one and is searched right away. The
-// parameter is then removed, so a reload keeps later changes to the query. Valid JSON is indented
-// for the editor, anything else is left as it is for the search to report.
+// parameter is then removed, so a reload keeps later changes to the query. It is JSON or, for
+// apps like Keynote that turn %2B back into a + (read as a space), base64url-encoded JSON. Valid
+// JSON is indented for the editor, anything else is left as it is for the search to report.
 const route = useRoute();
 const router = useRouter();
 
+function parseQueryParameter(value) {
+    try {
+        return JSON.parse(value);
+    } catch {}
+    try {
+        const bytes = Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), (c) => c.charCodeAt(0));
+        return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    } catch {
+        return undefined;
+    }
+}
+
 onMounted(() => {
     if (typeof route.query.query !== 'string') return;
-    try {
-        query.value = JSON.stringify(JSON.parse(route.query.query), null, 4);
-    } catch {
-        query.value = route.query.query;
-    }
+    const parsed = parseQueryParameter(route.query.query);
+    query.value = parsed === undefined ? route.query.query : JSON.stringify(parsed, null, 4);
     router.replace({ query: { ...route.query, query: undefined } });
     fetchSearchResults();
 });
