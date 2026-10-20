@@ -6,6 +6,9 @@ export default defineNuxtConfig({
     devtools: { enabled: false },
     modules: ['@nuxt/ui', '@nuxt/content', '@nuxtjs/i18n', '@pinia/nuxt'],
     css: ['~/assets/css/main.css'],
+    content: {
+        experimental: { sqliteConnector: 'native' },
+    },
     i18n: {
         strategy: 'prefix_except_default',
         locales: [
