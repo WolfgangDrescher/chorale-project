@@ -31,6 +31,8 @@ export default defineNuxtConfig({
         preference: 'light',
     },
     nitro: {
+        // The Verovio of the worker alone is about 12 MB.
+        compressPublicAssets: true,
         routeRules: {
             '/kern/**': { prerender: false },
         },
