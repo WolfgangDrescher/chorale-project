@@ -15,8 +15,6 @@
 
 namespace choralesearch {
 
-namespace {
-
 // A typo'd field name (e.g. "hintReduceCompund") would otherwise be silently ignored, quietly
 // falling back to that option's default and making a malformed query look identical to a
 // correct one that simply matched nothing. Rejecting anything outside the known set up front
@@ -28,6 +26,17 @@ void rejectUnknownKeys(const nlohmann::json& j, bool (*isKnown)(const std::strin
         }
     }
 }
+
+void rejectUnknownKeys(const nlohmann::json& j, std::initializer_list<const char*> knownKeys, const std::string& context) {
+    if (!j.is_object()) throw std::invalid_argument(context + " must be an object");
+    for (auto it = j.begin(); it != j.end(); ++it) {
+        if (std::none_of(knownKeys.begin(), knownKeys.end(), [&](const char* known) { return it.key() == known; })) {
+            throw std::invalid_argument(context + " has an unknown field '" + it.key() + "'");
+        }
+    }
+}
+
+namespace {
 
 // Every way a query may spell an order comparison: the name of the constraint, its abbreviation, or
 // the symbol. "equalTo" is not among them, an equal value is the plain string.

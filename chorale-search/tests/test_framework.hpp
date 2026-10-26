@@ -49,13 +49,17 @@ inline std::string shortFileName(const std::string& file) {
     return pos == std::string::npos ? file : file.substr(pos + 1);
 }
 
-// Resolves tests/fixtures/<choraleId>.krn relative to the calling test file
-// (not the test binary's working directory, which varies by how it's
-// invoked -- directly, via ctest, via `make test`, ...). Use the
-// FIXTURE_CHORALE(id) macro below rather than calling this directly, so
-// __FILE__ is always the test file itself.
+// Resolves tests/fixtures relative to the calling test file (not the test
+// binary's working directory, which varies by how it's invoked -- directly,
+// via ctest, via `make test`, ...). Use the FIXTURES_DIR and FIXTURE_CHORALE(id)
+// macros below rather than calling these directly, so __FILE__ is always the
+// test file itself.
+inline std::filesystem::path fixturesDirPath(const char* sourceFile) {
+    return std::filesystem::path(sourceFile).parent_path() / "fixtures";
+}
+
 inline std::string fixtureChoralePath(const char* sourceFile, const std::string& choraleId) {
-    return (std::filesystem::path(sourceFile).parent_path() / "fixtures" / (choraleId + ".krn")).string();
+    return (fixturesDirPath(sourceFile) / (choraleId + ".krn")).string();
 }
 
 // RAII guard that redirects stderr to /dev/null for its scope -- for
@@ -392,7 +396,8 @@ inline int minitestMain(const char* sourceFile) {
     static minitest::Registrar registrar_##name(#name, name);                       \
     static void name()
 
-// Path to tests/fixtures/<id>.krn, e.g. FIXTURE_CHORALE("chor029").
+// Path to tests/fixtures, and to tests/fixtures/<id>.krn, e.g. FIXTURE_CHORALE("chor029").
+#define FIXTURES_DIR minitest::fixturesDirPath(__FILE__)
 #define FIXTURE_CHORALE(id) minitest::fixtureChoralePath(__FILE__, id)
 
 #define CHECK(cond)                                                                 \

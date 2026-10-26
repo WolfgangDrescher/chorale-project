@@ -37,6 +37,10 @@ add_library(chorale_core STATIC
     src/QueryValidation.cpp
     src/ScoreImport.cpp
     src/Segmentation.cpp
+    src/Grouping.cpp
+    src/GroupingExamples.cpp
+    src/GroupingJson.cpp
+    src/GroupMatchQueries.cpp
     src/Check.cpp
     src/SpineAnalysis.cpp
 )
@@ -60,6 +64,9 @@ target_link_libraries(chorale-check PRIVATE chorale_core)
 add_executable(chorale-info cli/chorale-info.cpp)
 target_link_libraries(chorale-info PRIVATE chorale_core)
 
+add_executable(chorale-group cli/chorale-group.cpp)
+target_link_libraries(chorale-group PRIVATE chorale_core)
+
 add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/SpineAnalysis.cpp)
 target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -68,7 +75,7 @@ target_include_directories(chorale-generate PRIVATE
 target_compile_options(chorale-generate PRIVATE -Wall -Wextra)
 target_link_libraries(chorale-generate PRIVATE humlib Threads::Threads)
 
-install(TARGETS chorale-search chorale-segment chorale-check chorale-info RUNTIME DESTINATION bin)
+install(TARGETS chorale-search chorale-segment chorale-check chorale-info chorale-group RUNTIME DESTINATION bin)
 
 option(BUILD_TESTS "Build the minitest test binaries in tests/" ON)
 
@@ -121,6 +128,21 @@ if(BUILD_TESTS)
     target_include_directories(test_scoreimport PRIVATE tests)
     target_link_libraries(test_scoreimport PRIVATE chorale_core)
     add_test(NAME scoreimport COMMAND test_scoreimport)
+
+    add_executable(test_grouping tests/test_grouping.cpp)
+    target_include_directories(test_grouping PRIVATE tests)
+    target_link_libraries(test_grouping PRIVATE chorale_core)
+    add_test(NAME grouping COMMAND test_grouping)
+
+    add_executable(test_groupmatchqueries tests/test_groupmatchqueries.cpp)
+    target_include_directories(test_groupmatchqueries PRIVATE tests)
+    target_link_libraries(test_groupmatchqueries PRIVATE chorale_core)
+    add_test(NAME groupmatchqueries COMMAND test_groupmatchqueries)
+
+    add_executable(test_groupingjson tests/test_groupingjson.cpp)
+    target_include_directories(test_groupingjson PRIVATE tests)
+    target_link_libraries(test_groupingjson PRIVATE chorale_core)
+    add_test(NAME groupingjson COMMAND test_groupingjson)
 
     add_executable(test_check tests/test_check.cpp)
     target_include_directories(test_check PRIVATE tests)
