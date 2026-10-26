@@ -8,5 +8,6 @@
 chorale-search/build
 chorale-search/external
 chorale-webapp/content/chorales
+chorale-webapp/content/analysis-results
 kern
 corpus

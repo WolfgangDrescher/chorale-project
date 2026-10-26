@@ -39,6 +39,13 @@
 #     dependencies first if chorale-webapp/node_modules is missing or older
 #     than its package-lock.json. Never committed
 #
+# make analyses
+#     generate chorale-webapp/content/analysis-results from ./corpus with chorale-group:
+#     one JSON file for each analysis in chorale-webapp/analyses,
+#     the tables the lessons show. Every group is checked against its own query
+#     (--verify), so a table only ever states what its queries find. Never
+#     committed
+#
 # make clean
 #     remove the generated ./kern, ./corpus and chorale-webapp/content/chorales
 #     directories -- only what this Makefile itself produces. The
@@ -68,7 +75,7 @@
 # Single source of truth for "this is a target, not a chorale id". The catch-all
 # rule at the bottom means anything missing from this list would silently be
 # passed to chorale-generate as a chorale id instead.
-TARGETS := all build kern corpus webapp clean clean-build clean-deps distclean fixtures test
+TARGETS := all build kern corpus webapp analyses clean clean-build clean-deps distclean fixtures test
 
 .PHONY: $(TARGETS)
 .DEFAULT_GOAL := all
@@ -78,10 +85,12 @@ CHORALES += $(filter-out $(TARGETS),$(MAKECMDGOALS))
 FIXTURE_CHORALES := chor001 chor005 chor006 chor008 chor009 chor029 chor039 chor103
 
 CHORALE_GENERATE := ./chorale-search/build/chorale-generate
+CHORALE_GROUP := ./chorale-search/build/chorale-group
+ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
 MODULATIONS := annotations/bach-modulations.json
 SOURCE_KERN := bach-370-chorales/kern
 
-all: build corpus kern webapp test
+all: build corpus kern webapp analyses test
 
 build:
 	$(MAKE) -C chorale-search
@@ -130,8 +139,19 @@ chorale-webapp/node_modules: chorale-webapp/package-lock.json
 webapp: kern chorale-webapp/node_modules
 	node chorale-webapp/scripts/extract-chorales.mjs
 
+# Written to a temporary file first, so a failing analysis leaves no table behind.
+analyses: build corpus
+	rm -rf chorale-webapp/content/analysis-results
+	mkdir -p chorale-webapp/content/analysis-results
+	@for analysis in $(ANALYSES); do \
+		out=chorale-webapp/content/analysis-results/$$(basename $$analysis); \
+		echo "$(CHORALE_GROUP) corpus/bach-370-chorales --no-analysis --verify --query-file $$analysis"; \
+		$(CHORALE_GROUP) corpus/bach-370-chorales --no-analysis --verify --query-file $$analysis > $$out.tmp \
+			&& mv $$out.tmp $$out || { rm -f $$out.tmp; exit 1; }; \
+	done
+
 clean:
-	rm -rf kern corpus chorale-webapp/content/chorales
+	rm -rf kern corpus chorale-webapp/content/chorales chorale-webapp/content/analysis-results
 
 clean-build:
 	$(MAKE) -C chorale-search clean

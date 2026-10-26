@@ -1,0 +1,62 @@
+{
+    "query": {
+        "feature": "mint",
+        "voices": "soprano",
+        "metweightSkipUnclassified": true,
+        "durationAllowMergedNotes": true,
+        "durationAllowSplitNotes": true,
+        "pattern": [
+            {
+                "duration": "4"
+            },
+            {
+                "duration": "4"
+            },
+            {
+                "duration": "4"
+            },
+            {
+                "mint": "*",
+                "fermata": true
+            }
+        ]
+    },
+    "groupBy": [
+        {
+            "reads": [
+                {
+                    "feature": "mint",
+                    "positions": [
+                        1,
+                        2,
+                        3
+                    ]
+                },
+                {
+                    "feature": "duration",
+                    "positions": [
+                        0,
+                        1,
+                        2
+                    ]
+                }
+            ],
+            "maxGroupCount": 15
+        },
+        {
+            "reads": [
+                {
+                    "feature": "mint",
+                    "notesOfVoice": "bass",
+                    "mintAllowIntervalComplementation": true
+                }
+            ],
+            "minMatchCount": 3
+        }
+    ],
+    "variants": {
+        "ignoreQuality": {
+            "ignoreQuality": true
+        }
+    }
+}

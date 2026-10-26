@@ -1,0 +1,88 @@
+{
+    "query": {
+        "feature": "kern",
+        "voices": "bass",
+        "hintReduceCompound": true,
+        "pattern": [
+            {
+                "!kern": "r",
+                "hint-14": "*"
+            }
+        ]
+    },
+    "groupBy": [
+        {
+            "reads": [
+                {
+                    "feature": "hint-14"
+                }
+            ]
+        },
+        {
+            "reads": [
+                {
+                    "feature": "metweight"
+                }
+            ]
+        }
+    ],
+    "examples": {
+        "maxCount": 0
+    },
+    "variants": {
+        "ignoreQuality": {
+            "ignoreQuality": true
+        },
+        "phraseStart": {
+            "pattern": [
+                {
+                    "phrase": "start"
+                }
+            ]
+        },
+        "phraseStart+ignoreQuality": {
+            "ignoreQuality": true,
+            "pattern": [
+                {
+                    "phrase": "start"
+                }
+            ]
+        },
+        "phraseMiddle": {
+            "pattern": [
+                {
+                    "!phrase": [
+                        "start",
+                        "end"
+                    ]
+                }
+            ]
+        },
+        "phraseMiddle+ignoreQuality": {
+            "ignoreQuality": true,
+            "pattern": [
+                {
+                    "!phrase": [
+                        "start",
+                        "end"
+                    ]
+                }
+            ]
+        },
+        "phraseEnd": {
+            "pattern": [
+                {
+                    "phrase": "end"
+                }
+            ]
+        },
+        "phraseEnd+ignoreQuality": {
+            "ignoreQuality": true,
+            "pattern": [
+                {
+                    "phrase": "end"
+                }
+            ]
+        }
+    }
+}

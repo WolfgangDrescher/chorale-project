@@ -32,7 +32,8 @@ FROM toolchain AS test
 RUN make -C chorale-search run-tests
 
 
-# ./kern and ./corpus, generated the way `make kern corpus` does.
+# ./kern, ./corpus and the tables of the lessons, generated the way `make kern
+# corpus analyses` does.
 FROM toolchain AS data
 COPY Makefile ./
 COPY annotations annotations
@@ -40,6 +41,9 @@ COPY bach-370-chorales bach-370-chorales
 RUN test -n "$(ls bach-370-chorales/kern/*.krn 2>/dev/null)" \
     || { echo "Error: bach-370-chorales is empty, run 'git submodule update --init'" >&2; exit 1; }
 RUN make kern corpus
+# The tables of the lessons, made from the corpus with chorale-group.
+COPY chorale-webapp/analyses chorale-webapp/analyses
+RUN make analyses
 
 
 # The tools service: the endpoints of the webapp that run the tools, as a Nitro
@@ -79,6 +83,7 @@ FROM node:${NODE}-${DEBIAN}-slim AS webapp-build
 WORKDIR /build/chorale-webapp
 COPY --from=data /build/kern /build/kern
 COPY chorale-webapp ./
+COPY --from=data /build/chorale-webapp/content/analysis-results ./content/analysis-results
 RUN npm ci
 COPY --from=toolchain /build/chorale-search/build/chorale-info /build/chorale-search/build/chorale-info
 RUN node scripts/extract-chorales.mjs \
