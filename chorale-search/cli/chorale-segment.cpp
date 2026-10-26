@@ -82,7 +82,13 @@ void printUsage(const char* argv0) {
         "    --progress            write the progress to stderr, one JSON object per line: the\n"
         "                          stage being worked on, and with --stats one event for every\n"
         "                          chorale file searched\n"
-        "    --help, -h            show this help\n";
+        "    --help, -h            show this help\n"
+        "\n"
+        "Exit codes:\n"
+        "    0  success\n"
+        "    1  error\n"
+        "    2  invalid argument\n"
+        "    3  invalid input\n";
 }
 
 hum::HumNum parseLength(const std::string& value) {

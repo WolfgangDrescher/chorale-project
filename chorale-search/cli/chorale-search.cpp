@@ -45,7 +45,13 @@ void printUsage(const char* argv0) {
         "                          built by chorale-generate --analysis\n"
         "    --progress            write the progress of the search to stderr, one JSON object\n"
         "                          per line, one for every chorale file searched\n"
-        "    --help, -h            show this help\n";
+        "    --help, -h            show this help\n"
+        "\n"
+        "Exit codes:\n"
+        "    0  success\n"
+        "    1  error\n"
+        "    2  invalid argument\n"
+        "    3  invalid query\n";
 }
 
 void printTable(const Results& results) {

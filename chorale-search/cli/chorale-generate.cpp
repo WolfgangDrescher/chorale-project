@@ -84,7 +84,11 @@ void printUsage(const char* argv0) {
         "    --analysis            bake in the analysis spines (**deg, **mint, **metweight,\n"
         "                          **fb, **hint-xy) that chorale-search otherwise derives on\n"
         "                          every run -- pair with its --no-analysis\n"
-        "    --help, -h            show this help\n";
+        "    --help, -h            show this help\n"
+        "\n"
+        "Exit codes:\n"
+        "    0  success\n"
+        "    1  error\n";
 }
 
 } // namespace

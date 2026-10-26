@@ -31,7 +31,12 @@ void printUsage(const char* argv0) {
         "                          recursively)\n"
         "\n"
         "Options:\n"
-        "    --help, -h            show this help\n";
+        "    --help, -h            show this help\n"
+        "\n"
+        "Exit codes:\n"
+        "    0  success\n"
+        "    1  error\n"
+        "    2  invalid argument\n";
 }
 
 nlohmann::json infoToJson(const ChoraleInfo& info) {
