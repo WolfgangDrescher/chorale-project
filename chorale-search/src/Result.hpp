@@ -6,7 +6,18 @@
 #include <string>
 #include <vector>
 
+#include "humlib.h"
+
 namespace choralesearch {
+
+// Where a position of the pattern matched. A position that took several onsets (durationAllowSplitNotes) has
+// its first one, their durations added up; several positions matched by one onset (durationAllowMergedNotes)
+// have that one, the whole duration at the first of them and 0 at the later ones, which attack nothing.
+struct PositionOnset {
+    std::size_t line;
+    hum::HumNum position; // quarter notes from the start of the piece, as startPosition below
+    hum::HumNum duration; // what the position attacks, as the search measured it
+};
 
 // A stretch of the notes of one voice that a result is made of, from one note to another or a single note. A line
 // names the note the voice sounds there, which is not attacked there when the voice holds it from before, so the
@@ -45,6 +56,10 @@ struct Result : NoteSection {
     // otherwise its position in the array. nullopt when this came from a single, non-array
     // query, where there's nothing to disambiguate.
     std::optional<std::string> queryId;
+
+    // Where each position of the pattern matched, for a caller that reads the score at the very notes the
+    // pattern was matched on. Not written to the JSON.
+    std::vector<PositionOnset> positionOnsets;
 };
 
 using Results = std::vector<Result>;

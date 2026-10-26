@@ -18,8 +18,6 @@
 #include <unistd.h>
 #endif
 
-#include "../src/Result.hpp"
-
 namespace minitest {
 
 struct TestCase {

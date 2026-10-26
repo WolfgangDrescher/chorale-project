@@ -205,7 +205,7 @@ std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, cons
     }
     // The voices the keys of a position name, at that position only.
     for (std::size_t position = 0; position < pattern.size() && position < attributeMatch.positionOnsets.size(); ++position) {
-        const AttributeMatch::PositionOnset& onset = attributeMatch.positionOnsets[position];
+        const PositionOnset& onset = attributeMatch.positionOnsets[position];
         const auto atPosition = [&](const std::string& key, std::size_t voice) {
             if (voice == attributeMatch.voice) return;
             sections.push_back({key, voice, humNumToString(onset.position), humNumToString(onset.position), onset.line,
@@ -343,6 +343,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
             }
             std::sort(r.linkedSections.begin(), r.linkedSections.end());
             r.linkedSections.erase(std::unique(r.linkedSections.begin(), r.linkedSections.end()), r.linkedSections.end());
+            r.positionOnsets = std::move(m.positionOnsets);
             results.push_back(std::move(r));
 
             if (query.limit && results.size() >= *query.limit) return results;

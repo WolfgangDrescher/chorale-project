@@ -1082,6 +1082,10 @@ TEST_CASE(matcher_duration_split_continues_the_pattern_after_the_run) {
     REQUIRE(splitMatches.size() == 1u);
     CHECK_EQ(splitMatches[0].startPosition, 0);
     CHECK_EQ(splitMatches[0].endPosition, 2);
+    // The split position sounds as long as both of its quarters.
+    REQUIRE(splitMatches[0].positionOnsets.size() == 2u);
+    CHECK(splitMatches[0].positionOnsets[0].duration == 2);
+    CHECK(splitMatches[0].positionOnsets[1].duration == 1);
 }
 
 TEST_CASE(matcher_duration_split_leaves_a_wildcard_duration_alone) {
@@ -1202,6 +1206,10 @@ TEST_CASE(matcher_duration_merge_matches_positions_written_as_one_longer_note) {
     // The first two positions share the half note, so the match spans two onsets, not three.
     CHECK_EQ(mergedMatches[0].startPosition, 13);
     CHECK_EQ(mergedMatches[0].endPosition, 15);
+    // The half note sounds at the first of its positions; the second attacks nothing.
+    CHECK(mergedMatches[0].positionOnsets[0].duration == 2);
+    CHECK(mergedMatches[0].positionOnsets[1].duration == 0);
+    CHECK(mergedMatches[0].positionOnsets[2].duration == 1);
 }
 
 TEST_CASE(matcher_duration_merge_requires_the_positions_to_add_up_exactly) {

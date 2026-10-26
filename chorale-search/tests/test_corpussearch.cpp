@@ -990,6 +990,24 @@ TEST_CASE(for_each_match_visits_the_same_matches_run_collects_with_their_chorale
     CHECK(queryIdSet);
 }
 
+TEST_CASE(a_result_has_the_onset_of_every_position_of_the_pattern) {
+    CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
+    Query q;
+    q.feature = "deg";
+    q.voices = "soprano";
+    q.pattern = {AttributeMap{{"deg", {"*"}}}, AttributeMap{{"deg", {"*"}}, {"fermata", {"true"}}}};
+
+    const std::vector<Result> results = search.run(q);
+    REQUIRE(!results.empty());
+    for (const Result& result : results) {
+        REQUIRE(result.positionOnsets.size() == 2u);
+        CHECK_EQ(result.positionOnsets[0].line, result.startLineNumber);
+        CHECK(result.positionOnsets[0].line < result.positionOnsets[1].line);
+        CHECK_EQ(result.positionOnsets[1].line, result.endLineNumber);
+        CHECK(result.positionOnsets[1].duration > 0);
+    }
+}
+
 TEST_CASE(for_each_match_visits_one_file_at_a_time_and_in_file_order) {
     // The files are searched side by side, but `visit` is called for one match at a time, files in
     // order, with the chorale the match was found in.
