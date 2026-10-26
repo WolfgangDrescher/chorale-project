@@ -1,5 +1,50 @@
 lessons: Lektionen
 lessonNumber: "Lektion {number}"
+lessonBackToText: Zur Lektion
+lessonQueries: Weitere Queries
+lessonData: Daten explorieren
 showQueryTitle: "Query anzeigen: {title}"
 exerciseNumber: "Aufgabe {number}"
 exerciseOpenScore: "{chorale} im Browser öffnen"
+analysisGroup: Gruppe
+analysisMatches: Treffer
+analysisShare: Anteil
+analysisChorales: Choräle
+analysisOther: Übrige
+analysisTotal: "Alle {matches} Treffer in {count} Chorälen"
+analysisMatchesCount: "{n} Treffer"
+analysisMissing: "Diese Tabelle fehlt noch. Sie entsteht im Projektverzeichnis mit `make analyses`."
+analysisNoQuery: Diese Gruppe lässt sich nicht als Query ausdrücken.
+showGroupQuery: "Query der Gruppe anzeigen: {label}"
+expandGroup: "Gruppen unter {label} anzeigen"
+showGroupExamples: "Notenbeispiele zu {label} anzeigen"
+analysisExampleCaption: "{chorale}, T. {measures}"
+analysisExamplesOf: "Beispiele zu {label}"
+analysisShareOf: "Anteil an {label}"
+analysisMember: Wert
+analysisAllMatches: Alle
+analysisShowAll: "Alle {count} Zeilen anzeigen"
+analysisShowFirst: "Nur die ersten {count} Zeilen anzeigen"
+analysisMoreRows: "eine weitere Zeile in der Tabelle | {count} weitere Zeilen in der Tabelle"
+analysisUnornamented: ohne Figuration
+analysisOrnamented: "figuriert: {voices}"
+ignoreIntervalQualityShort: Ohne Intervallqualität
+analysisVariant:
+    phraseStart: Phrasenanfang
+    phraseMiddle: Phrasenmitte
+    phraseEnd: Phrasenende
+# The categories a read of an analysis puts its values into, by their names in analyses/*.json.
+analysisCategory:
+    perfect: Perfekte Konsonanz
+    imperfect: Imperfekte Konsonanz
+    dissonant: Dissonanz
+metweight:
+    s: Schwere Zählzeit
+    hs: Halbschwere Zählzeit
+    w: Leichte Zählzeit
+    u: Zwischenschlag
+metweightShort:
+    s: Schwer
+    hs: Halbschwer
+    w: Leicht
+    u: Zwischenschlag

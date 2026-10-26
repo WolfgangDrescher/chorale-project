@@ -44,6 +44,27 @@ export default defineContentConfig({
                     }).optional(),
                     scoreFilters: z.array(z.string()).optional(),
                 })).optional(),
+                analyses: z.array(z.object({
+                    name: z.string(),
+                    title: z.string().optional(),
+                    view: z.enum(['bars', 'stacked']).optional(),
+                    colors: z.record(z.string(), z.string()).optional(),
+                    labels: z.array(z.string()).optional(),
+                })).optional(),
+                analysesDescription: z.string().optional(),
+            }),
+        }),
+        analysisResults: defineCollection({
+            type: 'data',
+            source: 'analysis-results/*.json',
+            schema: z.object({
+                matchCount: z.number(),
+                choraleCount: z.number(),
+                query: z.record(z.string(), z.any()),
+                groups: z.array(z.any()),
+                omittedMatchCount: z.number(),
+                groupBy: z.array(z.any()),
+                variants: z.record(z.string(), z.any()).optional(),
             }),
         }),
         docs: defineCollection({

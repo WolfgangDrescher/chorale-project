@@ -1,8 +1,9 @@
 <script setup>
 const { t } = useI18n();
 const localePath = useLocalePath();
+const route = useRoute();
 
-const items = [
+const items = computed(() => [
     {
         label: t('home'),
         to: localePath({name: 'index'}),
@@ -22,12 +23,14 @@ const items = [
     {
         label: t('lessons'),
         to: localePath('/lessons'),
+        // Also on the page of data of a lesson, which is a route of its own.
+        active: route.path.startsWith(localePath('/lessons')),
     },
     {
         label: t('docs'),
         to: localePath('/docs'),
     },
-];
+]);
 </script>
 
 <template>

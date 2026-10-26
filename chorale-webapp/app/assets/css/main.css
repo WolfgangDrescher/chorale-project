@@ -1,9 +1,21 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* The notes in the labels of the analyses (U+1D15D to U+1D161) and nothing else, from Bravura, a font of Verovio,
+   which has the musical symbols of Unicode that few fonts of a system have. Loaded only where a note
+   is shown. */
+@font-face {
+    font-family: 'Bravura';
+    src: url('@fontsource/bravura/files/bravura-latin-400-normal.woff2') format('woff2');
+    unicode-range: U+1D100-1D1FF;
+    size-adjust: 110%;
+    font-display: swap;
+}
+
 @theme {
-    --font-sans: 'Alegreya Sans', sans-serif;
+    --font-sans: 'Bravura', 'Alegreya Sans', sans-serif;
     --font-serif: 'Alegreya',  sans-serif;
+    --font-mono: 'Bravura', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
 @layer utilities {

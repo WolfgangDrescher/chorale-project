@@ -7,11 +7,15 @@ const props = defineProps({
     // Fields of the front matter every entry of the navigation gets besides its title and path:
     // lessonNumber, for the number in front of a lesson.
     navigationFields: { type: Array, default: () => [] },
+    // The page shown, when it is not the one of the route: the data of a lesson is a route below it.
+    path: { type: String, default: null },
+    // The title of the browser tab, when it is not that of the page.
+    title: { type: String, default: null },
 });
 
 const { t } = useI18n();
 const route = useRoute();
-const path = route.path;
+const path = props.path ?? route.path;
 const key = `${props.collection}-${kebabCase(path)}`;
 
 const { data: page } = await useAsyncData(key, () => {
@@ -32,12 +36,13 @@ const { data: navigationData } = await useAsyncData(`${props.collection}-navigat
     return queryCollectionNavigation(props.collection, props.navigationFields);
 });
 
-// A lesson is listed with its number in front of its title.
+// A lesson is listed with its number in front of its title, and stays marked on a route below it.
 function withExactMatch(items) {
     return (items ?? []).map((item) => ({
         ...item,
         title: item.lessonNumber ? `${item.lessonNumber}. ${item.title}` : item.title,
         exact: true,
+        ...(item.path === path ? { active: true } : {}),
         children: item.children ? withExactMatch(item.children) : item.children,
     }));
 }
@@ -59,7 +64,7 @@ provide('openQuery', (id) => {
 });
 
 useSeoMeta({
-    title: page.value.title,
+    title: props.title ?? page.value.title,
     description: page.value.description,
 });
 </script>
