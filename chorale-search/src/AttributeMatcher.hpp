@@ -28,6 +28,23 @@ std::string mintIntervalToken(hum::HTp from, hum::HTp to);
 // A hint interval ("M10") folded back within an octave ("M3"); a unison and an octave stay distinct.
 std::string reduceHintInterval(const std::string& value);
 
+// An interval as a mint token or a pattern value writes it: [direction][quality]number.
+struct IntervalParts {
+    std::string direction; // "+", "-" or empty
+    std::string quality;   // "M", "P", ... or empty
+    std::string number;    // the diatonic number
+};
+
+// Splits a **mint interval ("+M2") into its IntervalParts; nullopt for what is no interval.
+std::optional<IntervalParts> parseMintValue(const std::string& s);
+
+// The complement within the octave in the opposite direction ("-P5" -> "+P4"); nullopt for a value
+// without a simple interval.
+std::optional<std::string> complementMintValue(const std::string& patternValue);
+
+// A **mint interval folded within an octave ("+P12" -> "+P5"); a unison and an octave stay distinct.
+std::string reduceMintValue(const std::string& value);
+
 // Whether a figure of a figured-bass pattern value ("4", "P4") is the interval of a voice above the bass as its hint
 // spine has it ("P11"): folded within an octave, as the fb spine has it, and of the quality only if the figure names one.
 bool fbFigureMatchesInterval(const std::string& figure, const std::string& interval);

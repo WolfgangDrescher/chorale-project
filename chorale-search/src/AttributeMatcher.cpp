@@ -242,16 +242,10 @@ bool kernInList(const std::vector<PatternValue>& allowed, hum::HTp actualTok, bo
     });
 }
 
-// An interval as a mint token or a pattern value writes it: [direction][quality]number.
-struct IntervalParts {
-    std::string direction; // "+", "-" or empty
-    std::string quality;   // "M", "P", ... or empty
-    std::string number;    // the diatonic number
-};
+} // namespace
 
-// Splits a **mint interval token ("+M2", "-m3", ...) into its IntervalParts.
-// Sign, quality, and number each come back empty when the string has none (e.g. a
-// bare "2", or a bare "+"), which mintValueMatches() below treats as "matches any".
+// Sign, quality, and number each come back empty when the string has none (e.g. a bare "2", or a
+// bare "+"), which mintValueMatches() below treats as "matches any".
 std::optional<IntervalParts> parseMintValue(const std::string& s) {
     ValueScanner scan(s);
     std::string direction;
@@ -262,6 +256,8 @@ std::optional<IntervalParts> parseMintValue(const std::string& s) {
     if (!scan.atEnd()) return std::nullopt;
     return IntervalParts{std::move(direction), std::move(quality), std::move(number)};
 }
+
+namespace {
 
 // A pattern value may omit sign, quality, and/or number to match any of them -- "+2"
 // matches "+M2"/"+m2"/..., a bare "2" any sign/quality, a bare "+" any interval at all
@@ -297,12 +293,9 @@ std::string invertMintQuality(const std::string& quality) {
     return inverted;
 }
 
-// The complementary interval of a **mint pattern value: the one filling the rest of the octave
-// in the opposite direction, e.g. "-P5" -> "+P4", "+M2" -> "-m7", "5" -> "4". A value that
-// doesn't pin down a direction keeps that openness -- its complement doesn't either.
-// nullopt when there's nothing to complement: a value without a diatonic number ("+", "M"),
-// a compound interval (a 9th and up -- only simple intervals invert within the octave), or an
-// unparseable literal (mint's bracketed first-note marker, e.g. "[gg]").
+} // namespace
+
+// A value that doesn't pin down a direction keeps that openness -- its complement doesn't either.
 std::optional<std::string> complementMintValue(const std::string& patternValue) {
     auto parsed = parseMintValue(patternValue);
     if (!parsed) return std::nullopt;
@@ -311,6 +304,8 @@ std::optional<std::string> complementMintValue(const std::string& patternValue) 
     std::string complementSign = sign == "+" ? "-" : (sign == "-" ? "+" : "");
     return complementSign + invertMintQuality(quality) + std::to_string(9 - (number[0] - '0'));
 }
+
+namespace {
 
 // True if `patternValue`'s own diatonic number is one the query opted into complementing.
 // It's the number as *written in the pattern* that decides, not the complement's: opting in
@@ -325,8 +320,8 @@ bool mintComplementationAllowedFor(const std::vector<std::string>& allowedNumber
     return containsNumberOrWildcard(allowedNumbers, number);
 }
 
-// A **mint pattern or token with its interval number folded within an octave, sign and quality
-// left as they are ("+P12" -> "+P5"). Anything without a number is returned as it is.
+} // namespace
+
 std::string reduceMintValue(const std::string& value) {
     auto parsed = parseMintValue(value);
     if (!parsed) return value;
@@ -334,6 +329,8 @@ std::string reduceMintValue(const std::string& value) {
     if (number.empty()) return value;
     return sign + reduceHintInterval(quality + number);
 }
+
+namespace {
 
 // The size of an interval, as far as the pattern tells intervals apart. Without a quality in the
 // pattern's value ("6") every interval of that number is as wide as any other, so the steps above

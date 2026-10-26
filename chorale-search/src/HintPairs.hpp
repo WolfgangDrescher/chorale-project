@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -10,6 +13,28 @@ namespace choralesearch {
 inline const std::vector<std::string>& hintPairFeatureNames() {
     static const std::vector<std::string> names = {"hint-12", "hint-13", "hint-14", "hint-23", "hint-24", "hint-34"};
     return names;
+}
+
+// Whether `feature` is the spine of one of the pairs ("hint-14"), not a set of them ("hint-*4").
+inline bool isHintPairFeature(const std::string& feature) {
+    const auto& names = hintPairFeatureNames();
+    return std::find(names.begin(), names.end(), feature) != names.end();
+}
+
+// The two voices of a pair ("hint-24": 2 and 4); none for anything else.
+inline std::vector<std::size_t> voicesOfHintPair(const std::string& feature) {
+    const auto isVoice = [](char c) { return c >= '1' && c <= '4'; };
+    if (feature.size() != 7 || feature.rfind("hint-", 0) != 0 || !isVoice(feature[5]) || !isVoice(feature[6])) return {};
+    return {static_cast<std::size_t>(feature[5] - '0'), static_cast<std::size_t>(feature[6] - '0')};
+}
+
+// The other voice of the pair from `voice`; none where `voice` is not in it.
+inline std::optional<std::size_t> otherVoiceOfHintPair(const std::string& feature, std::size_t voice) {
+    const std::vector<std::size_t> voices = voicesOfHintPair(feature);
+    if (voices.size() != 2) return std::nullopt;
+    if (voice == voices[0]) return voices[1];
+    if (voice == voices[1]) return voices[0];
+    return std::nullopt;
 }
 
 // A pairwise-interval key that uses "*" for one or both digits, e.g. "hint-*4", "hint-1*",
