@@ -233,8 +233,7 @@ struct SearchedChorale {
 
 } // namespace
 
-CorpusSearch::CorpusSearch(fs::path corpusRoot, bool applyAnalysis)
-    : m_corpusRoot(std::move(corpusRoot)), m_applyAnalysis(applyAnalysis) {}
+CorpusSearch::CorpusSearch(fs::path corpusRoot) : m_corpusRoot(std::move(corpusRoot)) {}
 
 std::vector<fs::path> CorpusSearch::findChoraleFiles() const {
     if (!fs::exists(m_corpusRoot)) {
@@ -371,7 +370,7 @@ Results CorpusSearch::run(const std::vector<Query>& queries) const {
         files.size(),
         [&](std::size_t fileIndex) {
             // Parsed once per file, shared by every query.
-            SearchedChorale searched{std::make_unique<HumdrumChorale>(files[fileIndex].string(), m_applyAnalysis),
+            SearchedChorale searched{std::make_unique<HumdrumChorale>(files[fileIndex].string()),
                                      std::vector<Results>(queries.size())};
             for (std::size_t i = 0; i < queries.size(); ++i) {
                 const Query& query = queries[i];
@@ -412,7 +411,7 @@ void CorpusSearch::forEachMatch(const std::vector<Query>& queries, const MatchVi
     FileDispatcher<SearchedChorale>(
         files.size(),
         [&](std::size_t fileIndex) {
-            SearchedChorale searched{std::make_unique<HumdrumChorale>(files[fileIndex].string(), m_applyAnalysis),
+            SearchedChorale searched{std::make_unique<HumdrumChorale>(files[fileIndex].string()),
                                      std::vector<Results>(queries.size())};
             for (std::size_t i = 0; i < queries.size(); ++i) {
                 if (!hasDrivingFeature(*searched.chorale, queries[i].feature)) continue;

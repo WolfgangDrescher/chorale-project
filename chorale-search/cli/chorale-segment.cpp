@@ -76,9 +76,6 @@ void printUsage(const char* argv0) {
         "                          with --stats, also find how often each segment's soprano line\n"
         "                          occurs in the corpus (on the same metric positions) and the five\n"
         "                          most frequent bass lines under those matches (default: false)\n"
-        "    --no-analysis         with --stats: read the analysis spines straight from the\n"
-        "                          corpus instead of deriving them per run -- for a corpus\n"
-        "                          built by chorale-generate --analysis\n"
         "    --progress            write the progress to stderr, one JSON object per line: the\n"
         "                          stage being worked on, and with --stats one event for every\n"
         "                          chorale file searched\n"
@@ -108,13 +105,12 @@ hum::HumNum parseLength(const std::string& value) {
 // topChorales ranking this tool adds -- a segment is looked at one at a time, so where its
 // passage turns up is worth naming.
 std::map<std::string, nlohmann::json> statsForSegments(const std::vector<Segment>& segments,
-                                                        const std::string& corpusDir, bool applyAnalysis,
-                                                        bool reportProgress) {
+                                                        const std::string& corpusDir, bool reportProgress) {
     std::vector<Query> queries;
     queries.reserve(segments.size());
     for (const Segment& segment : segments) queries.push_back(segment.query);
 
-    CorpusSearch search(corpusDir, applyAnalysis);
+    CorpusSearch search(corpusDir);
     if (reportProgress) search.setProgressCallback(choralesearch::progressToStderr());
     const choralesearch::Results results = search.run(queries);
 
@@ -318,7 +314,7 @@ private:
 void addCantusFirmusFindings(const HumdrumChorale& score, const std::vector<Segment>& segments,
                              std::map<std::string, nlohmann::json>& stats,
                              const SegmentationOptions& segmentationOptions, const SegmentQueryOptions& queryOptions,
-                             const std::string& corpusDir, bool applyAnalysis, bool reportProgress) {
+                             const std::string& corpusDir, bool reportProgress) {
     // The segments again as their c.f. alone: the windows are the same, so the ids are too.
     SegmentQueryOptions cantusFirmusOptions = queryOptions;
     cantusFirmusOptions.simultaneousVoices.clear();
@@ -336,7 +332,7 @@ void addCantusFirmusFindings(const HumdrumChorale& score, const std::vector<Segm
 
     BassLineCollector collector(queryOptions, std::move(segmentStartNotes));
     if (reportProgress) choralesearch::reportPhase("collect-bass-lines");
-    CorpusSearch search(corpusDir, applyAnalysis);
+    CorpusSearch search(corpusDir);
     if (reportProgress) search.setProgressCallback(choralesearch::progressToStderr());
     search.forEachMatch(queries, [&](const HumdrumChorale& chorale, const Result& match) { collector.add(chorale, match); });
 
@@ -367,7 +363,6 @@ int main(int argc, char** argv) {
     std::string inputPath;
     bool includeKern = true;
     std::string statsCorpusDir;
-    bool applyAnalysis = true;
     bool progress = false;
     bool bassLines = false;
     SegmentationOptions segmentationOptions;
@@ -406,7 +401,6 @@ int main(int argc, char** argv) {
             }
             else if (arg == "--no-kern") { includeKern = false; }
             else if (arg == "--stats") { statsCorpusDir = next("--stats"); }
-            else if (arg == "--no-analysis") { applyAnalysis = false; }
             else if (arg == "--progress") { progress = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else if (!arg.empty() && arg[0] == '-' && arg != "-") {
@@ -428,12 +422,6 @@ int main(int argc, char** argv) {
 
     if (bassLines && statsCorpusDir.empty()) {
         std::cerr << "Error: --bass-lines requires --stats\n\n";
-        printUsage(argv[0]);
-        return kExitInvalidArgumentError;
-    }
-
-    if (!applyAnalysis && statsCorpusDir.empty()) {
-        std::cerr << "Error: --no-analysis requires --stats\n\n";
         printUsage(argv[0]);
         return kExitInvalidArgumentError;
     }
@@ -465,7 +453,7 @@ int main(int argc, char** argv) {
         const std::string& layout = score.layout;
         const std::string& inputFormat = score.inputFormat;
 
-        // Building the chorale derives its analysis spines (**deg, **mint, **metweight, ...),
+        // Building the chorale computes its spines (**deg, **mint, **metweight, ...),
         // which is where most of the time before the search goes, so it is a phase of its own.
         if (progress) choralesearch::reportPhase("analyze-score");
         std::istringstream contents(kern);
@@ -483,10 +471,10 @@ int main(int argc, char** argv) {
         std::map<std::string, nlohmann::json> stats;
         if (!statsCorpusDir.empty()) {
             if (progress) choralesearch::reportPhase("search-corpus");
-            stats = statsForSegments(segments, statsCorpusDir, applyAnalysis, progress);
+            stats = statsForSegments(segments, statsCorpusDir, progress);
             if (bassLines) {
                 addCantusFirmusFindings(chorale, segments, stats, segmentationOptions, queryOptions, statsCorpusDir,
-                                        applyAnalysis, progress);
+                                        progress);
             }
         }
 

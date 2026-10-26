@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <sstream>
+#include <string>
 
+#include "ComputedSpines.hpp"
 #include "HumdrumChorale.hpp"
 
 using choralesearch::HumdrumChorale;
@@ -40,7 +42,7 @@ TEST_CASE(constructor_throws_on_a_missing_file) {
     CHECK_THROWS(HumdrumChorale("/nonexistent/path/to/chorale.krn"));
 }
 
-TEST_CASE(available_features_lists_kern_and_the_derived_analysis_spines) {
+TEST_CASE(available_features_lists_kern_and_the_computed_spines) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     auto features = chorale.availableFeatures();
     // std::map-backed storage, so this comes back key-sorted rather than in
@@ -220,6 +222,41 @@ TEST_CASE(collect_info_decodes_the_html_entities_of_a_title_and_reads_a_church_m
     CHECK_EQ(*dorian.key, std::string("f"));
     CHECK_EQ(*dorian.mode, std::string("dorian"));
     CHECK_EQ(dorian.phraseCount, std::size_t{9});
+}
+
+TEST_CASE(the_computed_spines_are_added_in_the_order_the_corpus_has_them) {
+    hum::HumdrumFile infile;
+    infile.read(FIXTURE_CHORALE("chor029"));
+    choralesearch::addComputedSpines(infile);
+    std::stringstream text;
+    text << infile;
+    CHECK(text.str().find(std::string(choralesearch::kExclusiveInterpretationsWithComputedSpines) + "\n") !=
+          std::string::npos);
+}
+
+TEST_CASE(a_chorale_with_the_computed_spines_is_read_as_it_is) {
+    hum::HumdrumFile infile;
+    infile.read(FIXTURE_CHORALE("chor029"));
+    choralesearch::addComputedSpines(infile);
+    std::stringstream contents;
+    contents << infile;
+    HumdrumChorale chorale(contents, "chor029");
+    CHECK_EQ(chorale.voiceCount(), std::size_t{4});
+    CHECK(chorale.spine("mint", 4) != nullptr);
+    CHECK(chorale.spine("mint", 5) == nullptr);
+}
+
+TEST_CASE(a_chorale_with_only_some_of_the_computed_spines_is_rejected) {
+    hum::HumdrumFile infile;
+    infile.read(FIXTURE_CHORALE("chor029"));
+    choralesearch::addComputedSpines(infile);
+    std::stringstream text;
+    text << infile;
+    std::string partial = text.str();
+    partial.replace(partial.find("**hint-34"), 9, "**dynam");
+    std::istringstream contents(partial);
+    minitest::SilenceStderr silence;
+    CHECK_THROWS(HumdrumChorale(contents, "chor029"));
 }
 
 TEST_MAIN()

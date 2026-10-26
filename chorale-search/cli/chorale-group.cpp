@@ -42,9 +42,6 @@ void printUsage(const char* argv0) {
         "                          the group query from a file, or '-' for stdin\n"
         "    --verify              run the query of every group and fail when it finds another\n"
         "                          number of matches than the group counts\n"
-        "    --no-groupQuery         read the groupQuery spines (**deg, **mint, ...) straight from\n"
-        "                          the corpus instead of deriving them per run -- for a corpus\n"
-        "                          built by chorale-generate --groupQuery\n"
         "    --progress            write the progress of the search to stderr, one JSON object\n"
         "                          per line, one for every chorale file searched\n"
         "    --help, -h            show this help\n"
@@ -70,7 +67,6 @@ int main(int argc, char** argv) {
     std::string queryString;
     bool haveQueryString = false;
     bool verify = false;
-    bool applyAnalysis = true;
     bool progress = false;
 
     for (int i = 2; i < argc; ++i) {
@@ -83,7 +79,6 @@ int main(int argc, char** argv) {
             if (arg == "--query-file") { queryFile = next("--query-file"); }
             else if (arg == "--query") { queryString = next("--query"); haveQueryString = true; }
             else if (arg == "--verify") { verify = true; }
-            else if (arg == "--no-groupQuery") { applyAnalysis = false; }
             else if (arg == "--progress") { progress = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else {
@@ -120,7 +115,7 @@ int main(int argc, char** argv) {
         }
         const GroupQuery groupQuery = choralesearch::groupQueryFromJson(j);
 
-        CorpusSearch search(corpusDir, applyAnalysis);
+        CorpusSearch search(corpusDir);
         if (progress) search.setProgressCallback(choralesearch::progressToStderr());
         // The group query, then each of its variants.
         std::vector<std::pair<std::string, GroupQuery>> runs = {{"", groupQuery}};

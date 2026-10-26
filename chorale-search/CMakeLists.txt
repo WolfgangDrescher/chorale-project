@@ -42,7 +42,7 @@ add_library(chorale_core STATIC
     src/GroupingJson.cpp
     src/GroupMatchQueries.cpp
     src/Check.cpp
-    src/SpineAnalysis.cpp
+    src/ComputedSpines.cpp
 )
 target_include_directories(chorale_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -67,7 +67,7 @@ target_link_libraries(chorale-info PRIVATE chorale_core)
 add_executable(chorale-group cli/chorale-group.cpp)
 target_link_libraries(chorale-group PRIVATE chorale_core)
 
-add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/SpineAnalysis.cpp)
+add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/ComputedSpines.cpp)
 target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include

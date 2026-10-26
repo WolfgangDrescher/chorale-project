@@ -13,7 +13,7 @@
 #     generate ./kern (bach-370-chorales scores with modulations) from
 #     annotations/bach-modulations.json -- never committed, always derived.
 #     This is the corpus the webapp serves to Verovio for rendering, so it
-#     carries no analysis spines. Only generated again if the sources, the
+#     carries no computed spines. Only generated again if the sources, the
 #     annotations or chorale-generate changed since the last time (./kern/.generated
 #     records when that was), so a make that has nothing to do takes no time.
 #
@@ -24,10 +24,10 @@
 #     same, via variable instead of extra args
 #
 # make corpus
-#     generate ./corpus -- same scores as ./kern, plus the analysis spines
-#     (**deg, **mint, **metweight, **fb, **hint-xy) baked in. This is what
-#     chorale-search --no-analysis reads, which is what makes a full-corpus
-#     search take under a second instead of ~36s. Also never committed.
+#     generate ./corpus -- same scores as ./kern, plus the computed spines
+#     (**deg, **mint, **metweight, **fb, **hint-xy) baked in. The tools read
+#     them as they are instead of computing them, which is what makes a
+#     full-corpus search take under a second instead of ~36s. Also never committed.
 #     Takes chorale ids the same way `make kern` does, and like it is only
 #     generated again if something changed (./corpus/.generated).
 #
@@ -117,7 +117,7 @@ kern: build
 corpus: build
 	$(CHORALE_GENERATE) $(SOURCE_KERN) corpus/bach-370-chorales \
 		--modulations $(MODULATIONS) \
-		--analysis \
+		--add-computed-spines \
 		$(CHORALES)
 endif
 
@@ -129,7 +129,7 @@ kern/.generated: $(CHORALE_INPUTS)
 corpus/.generated: $(CHORALE_INPUTS)
 	$(CHORALE_GENERATE) $(SOURCE_KERN) corpus/bach-370-chorales \
 		--modulations $(MODULATIONS) \
-		--analysis
+		--add-computed-spines
 	@touch $@
 
 chorale-webapp/node_modules: chorale-webapp/package-lock.json
@@ -145,8 +145,8 @@ analyses: build corpus
 	mkdir -p chorale-webapp/content/analysis-results
 	@for analysis in $(ANALYSES); do \
 		out=chorale-webapp/content/analysis-results/$$(basename $$analysis); \
-		echo "$(CHORALE_GROUP) corpus/bach-370-chorales --no-analysis --verify --query-file $$analysis"; \
-		$(CHORALE_GROUP) corpus/bach-370-chorales --no-analysis --verify --query-file $$analysis > $$out.tmp \
+		echo "$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $$analysis"; \
+		$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $$analysis > $$out.tmp \
 			&& mv $$out.tmp $$out || { rm -f $$out.tmp; exit 1; }; \
 	done
 

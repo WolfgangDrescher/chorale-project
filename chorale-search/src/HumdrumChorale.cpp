@@ -4,36 +4,38 @@
 #include <filesystem>
 #include <stdexcept>
 
-#include "SpineAnalysis.hpp"
+#include "ComputedSpines.hpp"
 
 namespace fs = std::filesystem;
 
 namespace choralesearch {
 
-HumdrumChorale::HumdrumChorale(const std::string& path, bool applyAnalysis) : m_path(path) {
+HumdrumChorale::HumdrumChorale(const std::string& path, bool withComputedSpines) : m_path(path) {
     m_id = fs::path(path).stem().string();
 
     if (!m_infile.read(path)) {
         throw std::runtime_error("Could not parse Humdrum file: " + path);
     }
 
-    prepare(applyAnalysis);
+    prepare(withComputedSpines);
 }
 
-HumdrumChorale::HumdrumChorale(std::istream& contents, const std::string& id, bool applyAnalysis) : m_id(id) {
+HumdrumChorale::HumdrumChorale(std::istream& contents, const std::string& id, bool withComputedSpines) : m_id(id) {
     if (!m_infile.read(contents)) {
         throw std::runtime_error("Could not parse Humdrum data: " + id);
     }
 
-    prepare(applyAnalysis);
+    prepare(withComputedSpines);
 }
 
-void HumdrumChorale::prepare(bool applyAnalysis) {
-    // Apply analysis spines such as **deg and **mint so every chorale has them
-    // available before search runs -- unless the corpus was generated with them
-    // already baked in (see chorale-generate), in which case redoing the work
-    // would cost ~90ms per file for nothing.
-    if (applyAnalysis) applySpineAnalysisTools(m_infile);
+void HumdrumChorale::prepare(bool withComputedSpines) {
+    if (withComputedSpines) {
+        try {
+            addComputedSpinesWhereMissing(m_infile);
+        } catch (const std::runtime_error& e) {
+            throw std::runtime_error(m_id + ": " + e.what());
+        }
+    }
 
     int maxTrack = m_infile.getMaxTrack();
     for (int track = 1; track <= maxTrack; ++track) {

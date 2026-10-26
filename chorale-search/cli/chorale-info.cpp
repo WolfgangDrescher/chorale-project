@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 
     try {
         nlohmann::json infos = nlohmann::json::array();
-        // The info needs no analysis spines, so the scores are read as they are.
+        // The info needs no computed spines, so the scores are read as they are.
         for (const fs::path& file : findScores(inputs)) {
             infos.push_back(infoToJson(HumdrumChorale(file.string(), false).collectInfo()));
         }

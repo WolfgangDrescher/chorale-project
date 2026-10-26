@@ -11,7 +11,7 @@
 
 #include "FileDispatcher.hpp"
 #include "Modulations.hpp"
-#include "SpineAnalysis.hpp"
+#include "ComputedSpines.hpp"
 #include "humlib.h"
 
 using choralesearch::Modulation;
@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
 namespace {
 
 void processChorale(const std::string& choraleId, const std::vector<Modulation>& mods, const fs::path& sourceDir,
-                     const fs::path& outDir, bool applyAnalysis) {
+                     const fs::path& outDir, bool withComputedSpines) {
     fs::path sourcePath = sourceDir / (choraleId + ".krn");
     hum::HumdrumFile infile;
     if (!infile.read(sourcePath.string())) {
@@ -30,9 +30,9 @@ void processChorale(const std::string& choraleId, const std::vector<Modulation>&
 
     choralesearch::applyModulations(infile, choraleId, mods);
 
-    // After the modulations, so the analysis sees the modulated score: **deg is spelled
-    // relative to the key in effect, so a key designation added above changes the degrees.
-    if (applyAnalysis) choralesearch::applySpineAnalysisTools(infile);
+    // After the modulations, so the spines are computed from the modulated score: **deg is
+    // spelled relative to the key in effect, so a key designation added above changes the degrees.
+    if (withComputedSpines) choralesearch::addComputedSpines(infile);
 
     // Remove instrument tandem interpretations (*ICvox, *Ibass, *I" names, *I' abbreviations)
     // Backwards, since deleteLine shifts everything after it.
@@ -81,9 +81,10 @@ void printUsage(const char* argv0) {
         "    --modulations FILE    add the key designations annotated in FILE (a JSON object\n"
         "                          keyed by chorale id); chorales it doesn't mention are\n"
         "                          written out unchanged\n"
-        "    --analysis            bake in the analysis spines (**deg, **mint, **metweight,\n"
-        "                          **fb, **hint-xy) that chorale-search otherwise derives on\n"
-        "                          every run -- pair with its --no-analysis\n"
+        "    --add-computed-spines\n"
+        "                          add the spines computed from the **kern spines (**deg,\n"
+        "                          **mint, **metweight, **fb, **hint-xy), which the other\n"
+        "                          tools otherwise compute every time they read a chorale\n"
         "    --help, -h            show this help\n"
         "\n"
         "Exit codes:\n"
@@ -106,7 +107,7 @@ int main(int argc, char** argv) {
     fs::path sourceDir = argv[1];
     fs::path outDir = argv[2];
     fs::path modulationsPath;
-    bool applyAnalysis = false;
+    bool withComputedSpines = false;
     std::vector<std::string> requestedIds;
 
     for (int i = 3; i < argc; ++i) {
@@ -117,8 +118,8 @@ int main(int argc, char** argv) {
                 return 1;
             }
             modulationsPath = argv[++i];
-        } else if (arg == "--analysis") {
-            applyAnalysis = true;
+        } else if (arg == "--add-computed-spines") {
+            withComputedSpines = true;
         } else if (arg == "--help" || arg == "-h") {
             printUsage(argv[0]);
             return 0;
@@ -166,7 +167,7 @@ int main(int argc, char** argv) {
             [&](std::size_t i) {
                 auto it = modulations.find(choraleIds[i]);
                 processChorale(choraleIds[i], it == modulations.end() ? std::vector<Modulation>{} : it->second,
-                                sourceDir, outDir, applyAnalysis);
+                                sourceDir, outDir, withComputedSpines);
                 return choraleIds[i];
             },
             [&](std::size_t, std::string&) {
@@ -176,7 +177,7 @@ int main(int argc, char** argv) {
 
         // One line instead of one per chorale. The directory tells kern from corpus.
         std::cout << "✅ Generated " << generated << (generated == 1 ? " chorale" : " chorales") << " in "
-                  << outDir.string() << (applyAnalysis ? " (with analysis)" : "") << "\n";
+                  << outDir.string() << (withComputedSpines ? " (with computed spines)" : "") << "\n";
     } catch (const nlohmann::json::exception& e) {
         std::cerr << "Error: invalid JSON in modulations file: " << e.what() << "\n";
         return 1;

@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
     try {
         const choralesearch::PreparedScore score = choralesearch::prepareScore(input, progress);
 
-        // Building the chorale derives its analysis spines (**mint, **hint-xy, ...) the queries
+        // Building the chorale computes its spines (**mint, **hint-xy, ...) the queries
         // read, so it is a phase of its own.
         if (progress) choralesearch::reportPhase("analyze-score");
         std::istringstream contents(score.kern);

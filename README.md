@@ -3,7 +3,7 @@
 The **Chorale Project** brings together a search engine, a score-based web
 application, and annotations for the 370 four-part chorales of Johann Sebastian
 Bach. The scores are read from Craig Sapp's Humdrum edition, enriched with
-modulation annotations and analysis spines (scale degrees, melodic intervals,
+modulation annotations and computed spines (scale degrees, melodic intervals,
 metric weights, figured bass), and can be searched with structured pattern
 queries. The web application renders the chorales with Verovio and exposes the
 search, the segmentation of a score into queryable patterns, and a check for
@@ -30,7 +30,7 @@ part-writing errors such as parallel fifths and octaves.
 | `chorale-webapp/`    | Nuxt application.                                                                                                                               |
 | `chorale-tools/`     | Build setup of the tools service for Docker, see [Docker](#docker).                                                                             |
 | `kern/`              | Generated. Scores with modulations, served to Verovio for rendering. Not committed.                                                             |
-| `corpus/`            | Generated. Same scores plus analysis spines, read by the search. Not committed.                                                                 |
+| `corpus/`            | Generated. Same scores plus computed spines, read by the search. Not committed.                                                                 |
 
 
 ## Requirements
@@ -74,7 +74,7 @@ call them yourself:
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `make build`   | Download the pinned C++ libraries and build the `chorale-search` binaries into `chorale-search/build/`.                          |
 | `make kern`    | Generate `kern/` (scores with modulations) from `annotations/bach-modulations.json`. Needs `build`.                              |
-| `make corpus`  | Generate `corpus/` (same scores plus analysis spines). Needed by the search and the segment endpoints. Needs `build`.            |
+| `make corpus`  | Generate `corpus/` (same scores plus computed spines). Needed by the search and the segment endpoints. Needs `build`.            |
 | `make webapp`  | Install the npm dependencies and generate `chorale-webapp/content/chorales/` (one YAML file per chorale). Needs `kern`.          |
 | `make test`    | Run the `chorale-search` test suite.                                                                                             |
 | `make fixtures`| Regenerate the committed test fixtures in `chorale-search/tests/fixtures/`. Not part of `make`, see below.                      |

@@ -40,9 +40,6 @@ void printUsage(const char* argv0) {
         "    --compact-output      write JSON (--format json or --stats) on a single line,\n"
         "                          without indentation, to keep the output as small as\n"
         "                          possible for a program reading it\n"
-        "    --no-analysis         read the analysis spines (**deg, **mint, ...) straight from\n"
-        "                          the corpus instead of deriving them per run -- for a corpus\n"
-        "                          built by chorale-generate --analysis\n"
         "    --progress            write the progress of the search to stderr, one JSON object\n"
         "                          per line, one for every chorale file searched\n"
         "    --help, -h            show this help\n"
@@ -140,7 +137,6 @@ int main(int argc, char** argv) {
     bool haveQueryString = false;
     std::string format = "table";
     bool groupByChorale = false;
-    bool applyAnalysis = true;
     bool stats = false;
     bool progress = false;
     bool compactOutput = false;
@@ -158,7 +154,6 @@ int main(int argc, char** argv) {
             else if (arg == "--group-by-chorale") { groupByChorale = true; }
             else if (arg == "--stats") { stats = true; }
             else if (arg == "--compact-output") { compactOutput = true; }
-            else if (arg == "--no-analysis") { applyAnalysis = false; }
             else if (arg == "--progress") { progress = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else {
@@ -212,7 +207,7 @@ int main(int argc, char** argv) {
             if (!f.is_open()) throw std::runtime_error("Could not open query file: " + queryFile);
             j = nlohmann::json::parse(f, nullptr, true, /*ignore_comments=*/true);
         }
-        CorpusSearch search(corpusDir, applyAnalysis);
+        CorpusSearch search(corpusDir);
         if (progress) search.setProgressCallback(choralesearch::progressToStderr());
         Results results;
         if (j.is_array()) {

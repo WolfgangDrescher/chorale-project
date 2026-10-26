@@ -1,10 +1,11 @@
-#include "SpineAnalysis.hpp"
+#include "ComputedSpines.hpp"
 
 #include <mutex>
 #include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -24,7 +25,7 @@ void verifyLineCount(const hum::HumdrumFile& infile, int expectedLineCount, cons
 
 } // namespace
 
-void applySpineAnalysisTools(hum::HumdrumFile& infile) {
+void addComputedSpines(hum::HumdrumFile& infile) {
     const int lineCount = infile.getLineCount();
 
     // Tool_deg keeps its settings in static members that every run writes (and the run itself reads),
@@ -90,6 +91,21 @@ void applySpineAnalysisTools(hum::HumdrumFile& infile) {
             verifyLineCount(infile, lineCount, toolName.str());
         }
     }
+}
+
+void addComputedSpinesWhereMissing(hum::HumdrumFile& infile) {
+    for (int i = 0; i < infile.getLineCount(); ++i) {
+        if (!infile[i].isExclusiveInterpretation()) continue;
+        if (std::string_view(infile[i]) == kExclusiveInterpretationsWithComputedSpines) return;
+        for (int j = 0; j < infile[i].getTokenCount(); ++j) {
+            if (*infile[i].token(j) != "**kern") {
+                throw std::runtime_error("The score has a spine other than **kern (" + *infile[i].token(j) +
+                                         ") but not all the computed spines in the order they are computed in");
+            }
+        }
+        break;
+    }
+    addComputedSpines(infile);
 }
 
 } // namespace choralesearch

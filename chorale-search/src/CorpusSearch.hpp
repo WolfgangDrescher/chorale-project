@@ -35,10 +35,8 @@ using MatchVisitor = std::function<void(const HumdrumChorale&, const Result&)>;
 // events and the order `forEachMatch` visits in are those of a search file by file.
 class CorpusSearch {
 public:
-    // `applyAnalysis` false skips deriving the analysis spines while loading each chorale,
-    // for a corpus that already carries them (see chorale-generate --analysis). It is by far
-    // the dominant cost of a search, so a generated corpus searches in a fraction of the time.
-    explicit CorpusSearch(std::filesystem::path corpusRoot, bool applyAnalysis = true);
+    // A corpus with the computed spines (make corpus) searches far faster, see HumdrumChorale.
+    explicit CorpusSearch(std::filesystem::path corpusRoot);
 
     // Called after every chorale file a run has gone through, for the progress of a long run.
     // The library reports and leaves it to the caller what to do with it.
@@ -64,7 +62,6 @@ public:
 
 private:
     std::filesystem::path m_corpusRoot;
-    bool m_applyAnalysis;
     ProgressCallback m_onProgress;
     std::vector<std::filesystem::path> findChoraleFiles() const;
     void reportProgress(std::size_t choralesSearched, std::size_t choralesTotal, const std::string& choraleId,

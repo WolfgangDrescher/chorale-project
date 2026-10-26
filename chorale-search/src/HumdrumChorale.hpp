@@ -12,14 +12,12 @@ namespace choralesearch {
 
 class HumdrumChorale {
 public:
-    // `applyAnalysis` false means the file is expected to carry the analysis spines already
-    // (a corpus built by chorale-generate --analysis); the spines are then read straight from
-    // the file instead of being derived on load.
-    explicit HumdrumChorale(const std::string& path, bool applyAnalysis = true);
+    // Adds the computed spines where the file lacks them; with `withComputedSpines` false reads it as is.
+    explicit HumdrumChorale(const std::string& path, bool withComputedSpines = true);
 
     // The same, for a score that only exists as text -- an upload, or another tool's output.
     // `id` stands in for what would otherwise be derived from the file name.
-    HumdrumChorale(std::istream& contents, const std::string& id, bool applyAnalysis = true);
+    HumdrumChorale(std::istream& contents, const std::string& id, bool withComputedSpines = true);
 
     const std::string& id() const { return m_id; }
     const std::string& path() const { return m_path; }
@@ -46,9 +44,9 @@ public:
     hum::HTp tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const;
 
 private:
-    // What both constructors do once the file is parsed: derive the analysis spines, then note
+    // What both constructors do once the file is parsed: add the computed spines, then note
     // down which spine answers to which feature name.
-    void prepare(bool applyAnalysis);
+    void prepare(bool withComputedSpines);
 
     std::string m_path;
     std::string m_id;

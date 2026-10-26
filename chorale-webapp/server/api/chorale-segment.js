@@ -1,6 +1,6 @@
 const CHORALE_SEGMENT_BIN = '../chorale-search/build/chorale-segment';
 
-// Generated corpus (`make corpus`) with the analysis spines already in it.
+// Generated corpus (`make corpus`) with the computed spines already in it.
 const CORPUS_DIR = '../corpus/bach-370-chorales';
 
 const MAX_SCORE_BYTES = 2 * 1024 * 1024;
@@ -76,7 +76,6 @@ export default defineEventHandler(async (event) => {
                 '-',
                 '--length', String(length),
                 '--stats', CORPUS_DIR,
-                '--no-analysis',
             ];
             args.push('--mint-ignore-quality', String(ignoreIntervalQuality));
             args.push('--mint-allow-interval-complementation', String(allowIntervalComplementation));

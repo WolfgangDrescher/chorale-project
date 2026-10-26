@@ -15,8 +15,8 @@ bool isKnownSimultaneousGroupKey(const std::string& key);
 // meaningful on the top-level query, not inside a nested simultaneousWith group).
 bool isKnownQueryKey(const std::string& key);
 
-// The only spines the analysis ever generates (see SpineAnalysis.cpp's
-// applySpineAnalysisTools) -- the only features that can drive a search. Always the same set,
+// The only spines ever computed (see kExclusiveInterpretationsWithComputedSpines in
+// ComputedSpines.hpp) -- the only features that can drive a search. Always the same set,
 // never discovered per file, so this can be checked up front against untrusted query JSON.
 const std::vector<std::string>& drivingFeatureNames();
 

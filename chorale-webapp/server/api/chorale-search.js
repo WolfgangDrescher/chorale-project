@@ -1,7 +1,7 @@
 const CHORALE_SEARCH_BIN = '../chorale-search/build/chorale-search';
 
-// The generated corpus (`make corpus`), carries the analysis spines already,
-// which is what --no-analysis below relies on. Deriving them per request costs
+// The generated corpus (`make corpus`) carries the computed spines already, so
+// chorale-search reads them as they are. Computing them per request costs
 // ~90ms per chorale and would blow the tool timeout on the full corpus.
 const CORPUS_DIR = '../corpus/bach-370-chorales';
 
@@ -23,7 +23,6 @@ export default defineEventHandler(async (event) => {
                 '--query', JSON.stringify(body),
                 '--format', 'json',
                 '--group-by-chorale',
-                '--no-analysis',
                 '--compact-output',
             ];
             if (onEvent) args.push('--progress');
