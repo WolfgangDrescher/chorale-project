@@ -24,6 +24,7 @@ export default defineEventHandler(async (event) => {
                 '--format', 'json',
                 '--group-by-chorale',
                 '--no-analysis',
+                '--compact-output',
             ];
             if (onEvent) args.push('--progress');
 

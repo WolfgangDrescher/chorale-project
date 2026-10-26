@@ -2,9 +2,9 @@ import { spawn } from 'node:child_process';
 
 const DEFAULT_TIMEOUT = 10_000;
 
-// A broad query over the full corpus blows past any small cap -- matching every note is
-// ~16 MB of JSON -- so what a tool may print is limited here.
-const MAX_STDOUT_BYTES = 5 * 1024 * 1024;
+// The most a tool may print, above the largest answer of the corpus: every note of every voice
+// with the interval to another voice is about 27 MB of compact JSON.
+const MAX_STDOUT_BYTES = 32 * 1024 * 1024;
 
 // The shape of every error below: an HTTP status, and a `name` spelled out rather than read
 // off the constructor, which a production build is free to rename.

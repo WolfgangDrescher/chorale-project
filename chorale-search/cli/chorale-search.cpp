@@ -37,6 +37,9 @@ void printUsage(const char* argv0) {
         "    --stats               output aggregated statistics about the matches as JSON\n"
         "                          (total matches, chorales hit, per-query breakdown)\n"
         "                          instead of the matches themselves\n"
+        "    --compact-output      write JSON (--format json or --stats) on a single line,\n"
+        "                          without indentation, to keep the output as small as\n"
+        "                          possible for a program reading it\n"
         "    --no-analysis         read the analysis spines (**deg, **mint, ...) straight from\n"
         "                          the corpus instead of deriving them per run -- for a corpus\n"
         "                          built by chorale-generate --analysis\n"
@@ -62,16 +65,21 @@ void printTable(const Results& results) {
     std::cerr << results.size() << " match(es)\n";
 }
 
-void printJson(const Results& results, bool groupByChorale) {
+// Indented with tabs for a reader, or on a single line with --compact-output.
+std::string dumpJson(const nlohmann::json& j, bool compact) {
+    return compact ? j.dump() : j.dump(1, '\t');
+}
+
+void printJson(const Results& results, bool groupByChorale, bool compact) {
     nlohmann::json j = groupByChorale ? choralesearch::resultsGroupedByChoraleToJson(results)
                                        : choralesearch::resultsToJson(results);
-    std::cout << j.dump(1, '\t') << '\n';
+    std::cout << dumpJson(j, compact) << '\n';
     std::cerr << results.size() << " match(es)\n";
 }
 
 // How the matches are spread, not where they are: what a caller wants when a query's results
 // are only ever counted -- e.g. one segment query of many, judged by how common its passage is.
-void printStats(const Results& results) {
+void printStats(const Results& results, bool compact) {
     std::set<std::string> chorales;
     std::map<std::string, std::size_t> matchesPerChorale;
     for (const Result& r : results) {
@@ -108,7 +116,7 @@ void printStats(const Results& results) {
         j["byQuery"] = std::move(queries);
     }
 
-    std::cout << j.dump(1, '\t') << '\n';
+    std::cout << dumpJson(j, compact) << '\n';
     std::cerr << results.size() << " match(es)\n";
 }
 
@@ -129,6 +137,7 @@ int main(int argc, char** argv) {
     bool applyAnalysis = true;
     bool stats = false;
     bool progress = false;
+    bool compactOutput = false;
 
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
@@ -142,6 +151,7 @@ int main(int argc, char** argv) {
             else if (arg == "--format") { format = next("--format"); }
             else if (arg == "--group-by-chorale") { groupByChorale = true; }
             else if (arg == "--stats") { stats = true; }
+            else if (arg == "--compact-output") { compactOutput = true; }
             else if (arg == "--no-analysis") { applyAnalysis = false; }
             else if (arg == "--progress") { progress = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
@@ -176,6 +186,11 @@ int main(int argc, char** argv) {
         printUsage(argv[0]);
         return kExitInvalidArgumentError;
     }
+    if (compactOutput && format != "json" && !stats) {
+        std::cerr << "Error: --compact-output requires JSON output (--format json or --stats)\n\n";
+        printUsage(argv[0]);
+        return kExitInvalidArgumentError;
+    }
     if (stats && groupByChorale) {
         std::cerr << "Error: --stats and --group-by-chorale are mutually exclusive\n\n";
         printUsage(argv[0]);
@@ -203,9 +218,9 @@ int main(int argc, char** argv) {
         }
 
         if (stats) {
-            printStats(results); // stats are always JSON
+            printStats(results, compactOutput); // stats are always JSON
         } else if (format == "json") {
-            printJson(results, groupByChorale);
+            printJson(results, groupByChorale, compactOutput);
         } else {
             printTable(results);
         }

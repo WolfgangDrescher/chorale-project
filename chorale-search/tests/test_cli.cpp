@@ -217,6 +217,30 @@ TEST_CASE(cli_stats_breaks_a_query_array_down_by_query_id) {
     CHECK_EQ(parsed.at("byQuery")[1].at("queryId").get<std::string>(), std::string("1"));
 }
 
+TEST_CASE(cli_compact_output_writes_the_same_json_on_a_single_line) {
+    auto queryFile = writeTempQueryFile(R"({"feature":"kern","voices":"soprano","pattern":[{"fermata":true}]})");
+    auto indented = runCli({fixturesDir(), "--query-file", queryFile, "--format", "json", "--group-by-chorale"});
+    auto compact = runCli({fixturesDir(), "--query-file", queryFile, "--format", "json", "--group-by-chorale", "--compact-output"});
+    REQUIRE(indented.exitCode == 0);
+    REQUIRE(compact.exitCode == 0);
+    CHECK_EQ(std::count(compact.stdOut.begin(), compact.stdOut.end(), '\n'), std::ptrdiff_t{1});
+    CHECK(compact.stdOut.size() < indented.stdOut.size());
+    CHECK(nlohmann::json::parse(compact.stdOut) == nlohmann::json::parse(indented.stdOut));
+}
+
+TEST_CASE(cli_compact_output_applies_to_stats) {
+    auto queryFile = writeTempQueryFile(R"({"feature":"kern","voices":"soprano","pattern":[{"fermata":true}]})");
+    auto result = runCli({fixturesDir(), "--query-file", queryFile, "--stats", "--compact-output"});
+    REQUIRE(result.exitCode == 0);
+    CHECK_EQ(std::count(result.stdOut.begin(), result.stdOut.end(), '\n'), std::ptrdiff_t{1});
+    CHECK_EQ(nlohmann::json::parse(result.stdOut).at("matches").get<std::size_t>(), std::size_t{51});
+}
+
+TEST_CASE(cli_compact_output_without_json_output_is_rejected) {
+    auto result = runCli({fixturesDir(), "--query", "{}", "--compact-output"}); // the default format is the table
+    CHECK(result.exitCode != 0);
+}
+
 TEST_CASE(cli_stats_and_group_by_chorale_are_mutually_exclusive) {
     auto result = runCli({fixturesDir(), "--query", "{}", "--stats", "--group-by-chorale", "--format", "json"});
     CHECK(result.exitCode != 0);
