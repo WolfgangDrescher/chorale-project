@@ -796,7 +796,9 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
 
     bool matched;
     if (isWildcard(allowed)) {
-        matched = true;
+        // Any value, but a value: a pair's spine has no token where the other voice rests.
+        const bool otherSpine = isKnownDrivingFeature(key) && key != m_drivingFeature;
+        matched = !otherSpine || lookupToken(chorale, effectiveVoice(key, voice), lineNumber, key) != nullptr;
     } else if (isHintPairWildcardKey(key)) {
         // "hint-*4"/"hint-1*"/"hint-**": true if ANY pair matching the digit pattern
         // currently satisfies the value, e.g. "is any voice a 10th above the soprano

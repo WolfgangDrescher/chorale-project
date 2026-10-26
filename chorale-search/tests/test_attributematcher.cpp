@@ -1005,6 +1005,28 @@ TEST_CASE(matcher_hint_reduce_compound_folds_a_compound_mint_interval_to_within_
     CHECK_EQ(fifthReduced.findAll(chorale, 1).size(), std::size_t{1});
 }
 
+TEST_CASE(matcher_wildcard_on_another_feature_asks_for_a_value) {
+    // The soprano rests against the first bass note and sounds against the second.
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "2C\t2G\t2e\t2r\n"
+        "2D\t2A\t2f\t2dd\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "wildcard-test");
+    auto sounding = AttributeMatcher("kern", {AttributeMap{{"hint-14", {"*"}}}}).findAll(chorale, 1);
+    REQUIRE(sounding.size() == 1u);
+    CHECK_EQ(sounding[0].startPosition, 2);
+    auto resting = AttributeMatcher("kern", {AttributeMap{{"!hint-14", {"*"}}}}).findAll(chorale, 1);
+    REQUIRE(resting.size() == 1u);
+    CHECK_EQ(resting[0].startPosition, 0);
+    // A feature every note has a value of keeps matching every note.
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"deg", {"*"}}}}).findAll(chorale, 1).size(), std::size_t{2});
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"*"}}}}).findAll(chorale, 1).size(), std::size_t{2});
+}
+
 TEST_CASE(matcher_negated_key_partitions_hint_comparator_matches) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher total("hint-14", {AttributeMap{}});
