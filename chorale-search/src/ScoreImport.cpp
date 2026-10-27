@@ -134,6 +134,7 @@ void requireSimultaneousFermatas(const std::string& kern) {
 } // namespace
 
 bool looksLikeMusicXml(const std::string& input) {
+    if (input.rfind("PK\x03\x04", 0) == 0) return true; // turned down by musicXmlToKern()
     const std::size_t start = input.find_first_not_of(" \t\r\n\xEF\xBB\xBF"); // skips a BOM too
     return start != std::string::npos && input[start] == '<';
 }

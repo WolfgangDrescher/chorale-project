@@ -21,7 +21,8 @@ struct PreparedScore {
 PreparedScore prepareScore(const std::string& input, bool reportProgress = false);
 
 // Whether an uploaded score's text is MusicXML rather than **kern -- decided by the content
-// (an XML document starts with '<'), never by a file name, which an upload doesn't have.
+// (an XML document starts with '<', a compressed .mxl archive with the ZIP signature), never by
+// a file name, which an upload doesn't have.
 bool looksLikeMusicXml(const std::string& input);
 
 // The MusicXML text as **kern, via humlib's musicxml2hum. What comes out mirrors the input's

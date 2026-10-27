@@ -188,4 +188,13 @@ TEST_CASE(prepare_leaves_the_silent_voices_of_a_two_voice_setting_out) {
     })));
 }
 
+TEST_CASE(prepare_names_a_compressed_musicxml_upload) {
+    try {
+        prepareScore(std::string("PK\x03\x04", 4) + "META-INF/container.xml");
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("compressed MusicXML (.mxl)") != std::string::npos);
+    }
+}
+
 TEST_MAIN()
