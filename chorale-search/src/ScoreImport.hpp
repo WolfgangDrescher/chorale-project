@@ -16,7 +16,8 @@ struct PreparedScore {
 // converted, a two-staff score split into four voices. With `reportProgress` the stages are
 // reported as phase events on stderr (see ProgressReport.hpp).
 //
-// Throws std::invalid_argument when the score can't be used.
+// Throws std::invalid_argument when the score can't be used, e.g. when not all voices hold the
+// soprano's fermatas.
 PreparedScore prepareScore(const std::string& input, bool reportProgress = false);
 
 // Whether an uploaded score's text is MusicXML rather than **kern -- decided by the content
