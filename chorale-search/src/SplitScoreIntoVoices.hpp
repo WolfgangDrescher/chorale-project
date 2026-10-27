@@ -17,7 +17,7 @@ namespace choralesearch {
 // A staff that never sounds two notes at once (no chord, no second layer that plays) carries a
 // lone voice, however it is written -- a layer of rests next to the melody included. That voice
 // is the bass of the lower staff or the soprano of the upper one, and the staff's other voice
-// rests: a one-bar rest at each bar's first line, null tokens after it. Tenor and alto are
+// rests: a one-measure rest at each measure's first line, null tokens after it. Tenor and alto are
 // never filled with a copy of the outer voices. A pair of lone-voice staves thus ends up as
 // the same bass-and-soprano setting a four-staff score with silent inner staves does.
 //

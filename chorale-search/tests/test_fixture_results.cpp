@@ -629,7 +629,7 @@ TEST_CASE(mint_dotted_quarter_plus_repeated_eighth_merged_into_a_half_note) {
 }
 
 TEST_CASE(kern_cadence_needing_a_split_run_and_a_merged_run_in_the_same_match) {
-    // chor103's alto walks into the bar-4 fermata as: a a | g g | c, where the score writes
+    // chor103's alto walks into the fermata in measure 4 as: a a | g g | c, where the score writes
     // the two a's out as repeated quarters but the two g's as a single half note. One pattern
     // spelling both pairs out therefore needs each option for a different position of itself:
     //
@@ -672,10 +672,10 @@ TEST_CASE(kern_cadence_needing_a_split_run_and_a_merged_run_in_the_same_match) {
 }
 
 TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note) {
-    // chor005's soprano walks into the bar-4 fermata as 8a 8g 4a 4g;: a half note's worth of
-    // a decorated by a lower neighbour on the offbeat, then the step down to the fermata. The
-    // plain skeleton of that -- a quarter, its repetition, the step down -- only reaches it
-    // once the neighbour stops counting as a note of its own.
+    // chor005's soprano walks into the fermata in measure 4 as 8a 8g 4a 4g;: a half note's
+    // worth of a decorated by a lower neighbour on the offbeat, then the step down to the
+    // fermata. The plain skeleton of that -- a quarter, its repetition, the step down -- only
+    // reaches it once the neighbour stops counting as a note of its own.
     Query q;
     q.feature = "kern";
     q.pattern = {
@@ -696,9 +696,9 @@ TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note) {
 }
 
 TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note_asked_for_as_one_half_note) {
-    // The same bar of chor005, asked for as the half note it really is instead of as two
+    // The same measure of chor005, asked for as the half note it really is instead of as two
     // quarters. That needs both options at once: skipping the neighbour is what makes the two
-    // written a's adjacent, and only then can a split run sum them into a half note. Bar 17's
+    // written a's adjacent, and only then can a split run sum them into a half note. Measure 17's
     // soprano writes that half note out for real (position 65) and is found either way.
     Query q;
     q.feature = "kern";
@@ -723,7 +723,7 @@ TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note_asked_for_as_one_half_note
 }
 
 TEST_CASE(kern_cadence_ornamented_by_an_anticipation) {
-    // chor008's soprano reaches both of its bar-4 and bar-6 fermatas through an anticipation:
+    // chor008's soprano reaches its fermatas in measures 4 and 6 through an anticipation:
     // 4.b- 8a- 2a-; and 4.g 8f 2f;, where the offbeat eighth is already the fermata note,
     // taking its time from the note before it. Skipping it hands that time back, which turns
     // the dotted quarter into the half note the phrase is really made of.
@@ -747,8 +747,8 @@ TEST_CASE(kern_cadence_ornamented_by_an_anticipation) {
 }
 
 TEST_CASE(kern_cadence_ornamented_by_a_leap_away_and_back) {
-    // A deg 4 5 1 bass cadence, written out twice in chor006: bar 8 plainly (position 27), and
-    // bar 6 diminished into 4 2 5 1 (position 21), where an offbeat eighth drops a third away
+    // A deg 4 5 1 bass cadence, written out twice in chor006: measure 8 plainly (position 27), and
+    // measure 6 diminished into 4 2 5 1 (position 21), where an offbeat eighth drops a third away
     // from the 4 and leaps a fourth back up to the 5. The step from 4 to 5 the skeleton asks
     // for is only there once that eighth is out of the way -- the spine's own **mint reads the
     // fourth out of the ornament instead.

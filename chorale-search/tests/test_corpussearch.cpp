@@ -924,8 +924,8 @@ TEST_CASE(simultaneous_with_group_can_override_metweight_skip_unclassified) {
     SimultaneousGroup group;
     group.feature = "kern";
     group.voices = "4";
-    // The soprano's bar-4 cadence with its offbeat neighbour note folded away, so the two a's
-    // it decorates are adjacent -- see test_fixture_results.cpp.
+    // The soprano's cadence in measure 4 with its offbeat neighbour note folded away, so the
+    // two a's it decorates are adjacent -- see test_fixture_results.cpp.
     group.pattern = {AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
                       AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
                       AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}};

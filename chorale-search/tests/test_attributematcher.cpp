@@ -1038,7 +1038,7 @@ TEST_CASE(matcher_negated_key_as_a_cross_referenced_constraint) {
 TEST_CASE(matcher_duration_split_matches_a_note_written_as_repeated_shorter_notes) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     // The alto opens on a quarter d (pickup) that is re-attacked as another quarter d in
-    // bar 1 -- a half note's worth of d, but never written as one.
+    // measure 1 -- a half note's worth of d, but never written as one.
     AttributeMap position{{"kern", {"d"}}, {"duration", {"2"}}};
     MatcherOptions splitOptions;
     splitOptions.durationAllowSplitNotes = true;
@@ -1058,7 +1058,7 @@ TEST_CASE(matcher_duration_split_matches_a_note_written_as_repeated_shorter_note
 TEST_CASE(matcher_duration_split_requires_the_onsets_to_be_the_same_note) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     // Two quarters also add up to a half note when they're different notes (the alto's
-    // d-e in bar 1) -- that isn't one logical note and must not match.
+    // d-e in measure 1) -- that isn't one logical note and must not match.
     MatcherOptions splitOptions;
     splitOptions.durationAllowSplitNotes = true;
     AttributeMatcher withSplits("kern", {AttributeMap{{"duration", {"2"}}}}, splitOptions);
@@ -1188,7 +1188,7 @@ TEST_CASE(matcher_duration_split_keeps_every_plain_match_it_had_without_the_opti
 
 TEST_CASE(matcher_duration_merge_matches_positions_written_as_one_longer_note) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
-    // Bar 4's soprano is a half note a followed by the fermata g -- what the other three
+    // Measure 4's soprano is a half note a followed by the fermata g -- what the other three
     // voices spell out as a, a, g. Asked for as three quarters, only merging finds it.
     std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
@@ -1247,7 +1247,7 @@ TEST_CASE(matcher_duration_merge_leaves_a_wildcard_duration_alone) {
 TEST_CASE(matcher_duration_merge_checks_every_other_key_against_the_merged_onset) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
     // Both positions of the run describe the same single onset, so a fermata asked for by
-    // either of them is the one that onset carries -- bar 4's half note has none.
+    // either of them is the one that onset carries -- measure 4's half note has none.
     MatcherOptions mergeOptions;
     mergeOptions.durationAllowMergedNotes = true;
     std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
@@ -1417,8 +1417,8 @@ TEST_CASE(matcher_duration_merge_keeps_every_plain_match_it_had_without_the_opti
 TEST_CASE(matcher_duration_merge_and_split_can_be_combined) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
     // The two options describe opposite mismatches between pattern and score, so switching
-    // both on keeps each of them working. In the soprano, bar 4's half note a answers a
-    // pattern of two quarters (merged), and bar 5's repeated quarter cc answers a pattern of
+    // both on keeps each of them working. In the soprano, measure 4's half note a answers a
+    // pattern of two quarters (merged), and measure 5's repeated quarter cc answers a pattern of
     // one half note (split).
     MatcherOptions bothOptions;
     bothOptions.durationAllowSplitNotes = true;
@@ -1440,9 +1440,9 @@ TEST_CASE(matcher_duration_merge_and_split_can_be_combined) {
 
 TEST_CASE(matcher_metweight_skip_takes_ornamental_onsets_out_of_the_walk) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
-    // The soprano's bar 4 is 8a 8g 4a 4g; -- the offbeat g is a lower neighbour, unclassified
+    // The soprano's measure 4 is 8a 8g 4a 4g; -- the offbeat g is a lower neighbour, unclassified
     // by **metweight. Skipped, it is no onset of its own any more, so the note right after
-    // bar 4's downbeat is the second a rather than that g.
+    // measure 4's downbeat is the second a rather than that g.
     MatcherOptions skipOptions;
     skipOptions.metweightSkipUnclassified = true;
 
@@ -1463,7 +1463,7 @@ TEST_CASE(matcher_metweight_skip_takes_ornamental_onsets_out_of_the_walk) {
 
 TEST_CASE(matcher_metweight_skip_hands_the_ornaments_duration_to_the_note_it_decorates) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
-    // The soprano's bar 4 is 4.b- 8a- 2a-; -- the offbeat a- anticipates the fermata note and
+    // The soprano's measure 4 is 4.b- 8a- 2a-; -- the offbeat a- anticipates the fermata note and
     // takes its time from the b- in front of it. With the ornament gone that b- is what it
     // musically is, a half note, for "duration" and for a "kern" value's own rhythm alike.
     MatcherOptions skipOptions;
@@ -1481,9 +1481,9 @@ TEST_CASE(matcher_metweight_skip_hands_the_ornaments_duration_to_the_note_it_dec
 
 TEST_CASE(matcher_metweight_skip_measures_mint_across_the_skipped_ornament) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
-    // Bar 3's last beat is 8cc 8b, bar 4 opens on 8a: **mint writes -M2 into that a, measured
-    // from the passing b. With the b skipped the step is the one the phrase actually makes,
-    // cc down to a -- a minor third.
+    // Measure 3's last beat is 8cc 8b, measure 4 opens on 8a: **mint writes -M2 into that a,
+    // measured from the passing b. With the b skipped the step is the one the phrase actually
+    // makes, cc down to a -- a minor third.
     MatcherOptions skipOptions;
     skipOptions.metweightSkipUnclassified = true;
     auto startsAt13 = [](const auto& m) { return m.startPosition == 13; };
@@ -1496,7 +1496,7 @@ TEST_CASE(matcher_metweight_skip_measures_mint_across_the_skipped_ornament) {
     CHECK(!std::any_of(written.begin(), written.end(), startsAt13));
     CHECK(std::any_of(across.begin(), across.end(), startsAt13));
 
-    // Only the interval into the note *after* an ornament is recomputed. Bar 4's second a
+    // Only the interval into the note *after* an ornament is recomputed. Measure 4's second a
     // follows the skipped neighbour g, so it reads as the repetition it is (P1) rather than
     // as the +M2 the spine wrote; the fermata g after it has no ornament in front of it and
     // keeps the spine's own -M2.
@@ -1511,7 +1511,7 @@ TEST_CASE(matcher_metweight_skip_measures_mint_across_the_skipped_ornament) {
 
 TEST_CASE(matcher_metweight_skip_never_skips_a_rest_or_a_voices_first_onset) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
-    // **metweight calls every rest unclassified wherever it falls, and chor006's bar 5 is a
+    // **metweight calls every rest unclassified wherever it falls, and chor006's measure 5 is a
     // quarter rest in all four voices -- skipping those would silently swallow the rest and
     // hand its time to the note before it.
     MatcherOptions skipOptions;
@@ -1556,7 +1556,7 @@ TEST_CASE(matcher_metweight_skip_keeps_an_ornament_free_voice_exactly_as_it_was)
 
 TEST_CASE(matcher_metweight_skip_lets_a_split_run_close_over_an_ornament) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
-    // Bar 4's soprano a is a half note's worth of a, written 8a 8g 4a with a neighbour note in
+    // Measure 4's soprano a is a half note's worth of a, written 8a 8g 4a with a neighbour note in
     // the middle. Skipping the neighbour makes the two a's adjacent, which is what lets a split
     // run join them -- neither option finds it alone.
     AttributeMap halfNoteA{{"kern", {"a"}}, {"duration", {"2"}}};

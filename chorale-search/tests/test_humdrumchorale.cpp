@@ -74,7 +74,7 @@ TEST_CASE(spine_returns_null_for_an_out_of_range_voice) {
 
 TEST_CASE(spine_voice_order_matches_bass_tenor_alto_soprano_columns) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // The downbeat of bar 1, the chorale's first full onset, with a different pitch in every
+    // The downbeat of measure 1, the chorale's first full onset, with a different pitch in every
     // column: 4G(bass) 4B(tenor) 4d(alto) 4g(soprano).
     const int line = dataLineAtPosition(chorale.spine("kern", 1), 0);
     REQUIRE(line > 0);
@@ -91,7 +91,7 @@ TEST_CASE(spine_voice_order_matches_bass_tenor_alto_soprano_columns) {
 
 TEST_CASE(token_at_line_returns_null_for_a_null_token) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // The second half of beat 4 in bar 1, where the tenor moves and the bass does not: the
+    // The second half of beat 4 in measure 1, where the tenor moves and the bass does not: the
     // bass column is "." there, still sounding its previous note, so it has no onset and must
     // not be read as a match. The line is looked up through the tenor, the voice that moves.
     const int line = dataLineAtPosition(chorale.spine("kern", 2), hum::HumNum(7, 2));
@@ -105,7 +105,7 @@ TEST_CASE(token_at_line_returns_null_for_a_null_token) {
 
 TEST_CASE(token_at_line_returns_null_for_a_non_data_line) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    // The barline opening bar 1 ("=1-") stands at the same position as the first onset and is
+    // The barline opening measure 1 ("=1-") stands at the same position as the first onset and is
     // not a data line.
     const int line = barlineAtPosition(chorale.spine("kern", 1), 0);
     REQUIRE(line > 0);

@@ -145,8 +145,8 @@ std::string loneVoiceOnDataLine(const std::vector<hum::HTp>& tokens) {
     return result;
 }
 
-// The silent voice of a lone-voice staff: one rest for the rest of the bar where a bar begins
-// (the way a MusicXML export writes a whole-bar rest), null tokens for the other lines.
+// The silent voice of a lone-voice staff: one rest for the rest of the measure where a measure
+// begins (the way a MusicXML export writes a whole-measure rest), null tokens for the other lines.
 std::string silentVoiceOnDataLine(hum::HumdrumLine& line, bool& barBegins) {
     if (!barBegins) return ".";
     barBegins = false;
