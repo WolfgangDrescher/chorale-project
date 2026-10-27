@@ -31,7 +31,7 @@ bool looksLikeMusicXml(const std::string& input) {
 
 std::string musicXmlToKern(const std::string& input) {
     if (input.rfind("PK\x03\x04", 0) == 0) {
-        throw std::invalid_argument("compressed MusicXML (.mxl) is not supported -- export uncompressed MusicXML");
+        throw std::invalid_argument("compressed MusicXML (.mxl) is not supported, export it uncompressed");
     }
     hum::Tool_musicxml2hum converter;
     std::stringstream out;

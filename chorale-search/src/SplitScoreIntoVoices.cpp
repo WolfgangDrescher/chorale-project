@@ -108,8 +108,8 @@ std::pair<std::string, std::string> voicesOnDataLine(const std::vector<hum::HTp>
         const std::string upper = *tokens[staff.upperLayer];
         const std::string lower = *tokens[1 - staff.upperLayer];
         if (upper.find(' ') != std::string::npos || lower.find(' ') != std::string::npos) {
-            throw std::invalid_argument("a chord inside a two-voice staff layer (line " + std::to_string(lineNumber) +
-                                         ") -- that is more than two voices on one staff");
+            throw std::invalid_argument("a chord in a two-voice staff (line " + std::to_string(lineNumber) +
+                                         ") puts more than two voices on one staff");
         }
         return {lower, upper};
     }
@@ -126,7 +126,7 @@ std::pair<std::string, std::string> voicesOnDataLine(const std::vector<hum::HTp>
         return {notes[firstIsLower ? 0 : 1], notes[firstIsLower ? 1 : 0]};
     }
     throw std::invalid_argument("a chord with more than two notes (line " + std::to_string(lineNumber) +
-                                 ") -- not a four-voice setting");
+                                 ") puts more than two voices on one staff");
 }
 
 // What a lone-voice staff says on one data line: the layer that plays a note, else one that
