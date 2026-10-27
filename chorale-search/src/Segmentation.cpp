@@ -64,7 +64,7 @@ std::vector<Onset> onsetsBetween(const HumdrumChorale& chorale, const std::strin
         hum::HumNum position = t->getDurationFromStart();
         if (position < from) continue;
         if (position >= until) break;
-        onsets.push_back(Onset{t, soundingDuration(t), std::nullopt});
+        onsets.push_back(Onset{t, t->getTiedDuration(), std::nullopt});
     }
     return onsets;
 }

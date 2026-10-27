@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <stdexcept>
 
-#include "HumdrumUtils.hpp"
 #include "SpineAnalysis.hpp"
 
 namespace fs = std::filesystem;
@@ -77,7 +76,7 @@ std::vector<hum::HumNum> HumdrumChorale::phraseEndings() const {
         if (!start) continue;
         for (hum::HTp t = start->getNextToken(); t; t = t->getNextToken()) {
             if (!t->getOwner()->isData() || t->isNull() || t->isSecondaryTiedNote() || !t->hasFermata()) continue;
-            fermataNotes.emplace_back(t->getDurationFromStart(), t->getDurationFromStart() + soundingDuration(t));
+            fermataNotes.emplace_back(t->getDurationFromStart(), t->getDurationFromStart() + t->getTiedDuration());
         }
     }
     std::sort(fermataNotes.begin(), fermataNotes.end());

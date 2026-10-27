@@ -592,7 +592,7 @@ bool mintReAttackInList(const std::vector<PatternValue>& allowed,
 bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, bool ignoreOctave) {
     // Every value below has had its rhythm component dropped one way or another, so the
     // duration handed on is never actually consulted.
-    hum::HumNum duration = soundingDuration(tok);
+    hum::HumNum duration = tok->getTiedDuration();
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
         if (value.isVoiceReference()) return false; // judged against the other voice, see voiceReferenceInList()
         // A comparison is of the pitch, which a re-attack has: the merged note's.
@@ -652,7 +652,7 @@ bool voiceReferenceInList(const HumdrumChorale& chorale, std::size_t voice, cons
                 hum::HTp start = note;
                 while (start && start->isSecondaryTiedNote()) start = start->getPreviousNNDT();
                 if (!start) return false;
-                return evaluateComparison(entry.comparisonOperator, walkedDuration, soundingDuration(start));
+                return evaluateComparison(entry.comparisonOperator, walkedDuration, start->getTiedDuration());
             }
             std::string pitch = kernToPitch(std::string(*note));
             if (pitch.empty() || pitch == "r") return false;
@@ -744,7 +744,7 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
     onsets.reserve(tokens.size());
 
     if (!m_options.metweightSkipUnclassified) {
-        for (hum::HTp tok : tokens) onsets.push_back(Onset{tok, soundingDuration(tok), std::nullopt});
+        for (hum::HTp tok : tokens) onsets.push_back(Onset{tok, tok->getTiedDuration(), std::nullopt});
         return onsets;
     }
 
@@ -769,12 +769,12 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
                            std::string(*metweightTok) == kUnclassifiedMetweight;
 
         if (ornamental) {
-            onsets.back().duration += soundingDuration(tok);
+            onsets.back().duration += tok->getTiedDuration();
             skippedSincePreviousOnset = true;
             continue;
         }
 
-        Onset onset{tok, soundingDuration(tok), std::nullopt};
+        Onset onset{tok, tok->getTiedDuration(), std::nullopt};
         if (skippedSincePreviousOnset && lastSoundingNote && isSoundingNote) {
             std::string interval = mintIntervalToken(lastSoundingNote, kernTok);
             if (!interval.empty()) onset.mint = interval;
@@ -952,7 +952,7 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
                                 : lookupToken(chorale, voice, tok->getLineNumber(), kKernFeature);
         if (!kernTok) return std::nullopt;
         matched = kernReAttackInList(allowed, kernTok, m_options.kernIgnoreOctave) ||
-                  voiceReferenceInList(chorale, voice, kKernFeature, allowed, tok, kernTok, soundingDuration(kernTok),
+                  voiceReferenceInList(chorale, voice, kKernFeature, allowed, tok, kernTok, kernTok->getTiedDuration(),
                                        m_options.kernIgnoreOctave);
     }
     return negate ? !matched : matched;
