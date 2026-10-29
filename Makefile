@@ -43,8 +43,9 @@
 #     generate chorale-webapp/content/analysis-results from ./corpus with chorale-group:
 #     one JSON file for each analysis in chorale-webapp/analyses,
 #     the tables the lessons show. Every group is checked against its own query
-#     (--verify), so a table only ever states what its queries find. Never
-#     committed
+#     (--verify), so a table only ever states what its queries find. A table is
+#     generated again only if its analysis, the corpus or chorale-group is newer;
+#     `make -j analyses` generates them side by side. Never committed
 #
 # make clean
 #     remove the generated ./kern, ./corpus and chorale-webapp/content/chorales
@@ -87,6 +88,7 @@ FIXTURE_CHORALES := chor001 chor005 chor006 chor008 chor009 chor029 chor039 chor
 CHORALE_GENERATE := ./chorale-search/build/chorale-generate
 CHORALE_GROUP := ./chorale-search/build/chorale-group
 ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
+ANALYSIS_RESULTS := $(patsubst chorale-webapp/analyses/%.json,chorale-webapp/content/analysis-results/%.json,$(ANALYSES))
 MODULATIONS := annotations/bach-modulations.json
 SOURCE_KERN := bach-370-chorales/kern
 
@@ -98,6 +100,7 @@ build:
 # chorale-generate is one of the tools that `build` makes. Saying so lets what is generated depend on
 # that file, so it is generated again if `build` changed it, and only then.
 $(CHORALE_GENERATE): build ;
+$(CHORALE_GROUP): build ;
 
 # Everything the generated chorales are made of. The marker files record when they were generated
 # last, so that generating them again is left out if none of this is newer.
@@ -139,16 +142,12 @@ chorale-webapp/node_modules: chorale-webapp/package-lock.json
 webapp: kern chorale-webapp/node_modules
 	node chorale-webapp/scripts/extract-chorales.mjs
 
+analyses: $(ANALYSIS_RESULTS)
+
 # Written to a temporary file first, so a failing analysis leaves no table behind.
-analyses: build corpus
-	rm -rf chorale-webapp/content/analysis-results
-	mkdir -p chorale-webapp/content/analysis-results
-	@for analysis in $(ANALYSES); do \
-		out=chorale-webapp/content/analysis-results/$$(basename $$analysis); \
-		echo "$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $$analysis"; \
-		$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $$analysis > $$out.tmp \
-			&& mv $$out.tmp $$out || { rm -f $$out.tmp; exit 1; }; \
-	done
+chorale-webapp/content/analysis-results/%.json: chorale-webapp/analyses/%.json corpus/.generated $(CHORALE_GROUP)
+	@mkdir -p $(@D)
+	$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $< > $@.tmp && mv $@.tmp $@ || { rm -f $@.tmp; exit 1; }
 
 clean:
 	rm -rf kern corpus chorale-webapp/content/chorales chorale-webapp/content/analysis-results
