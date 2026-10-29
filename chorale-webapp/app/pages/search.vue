@@ -9,16 +9,32 @@ useHead({
     title: t('search'),
 });
 
-// The query stays in local storage, so it is still there when the page is visited again.
-const storedQuery = useLocalStorage('chorale-search-query', `{
-    "feature": "deg",
-    "voices": "all",
+// The query the page starts with, which the button of the example query brings back.
+const DEMO_QUERY = `{
+    "feature": "mint",
+    "voices": "soprano",
     "pattern": [
-        { "deg": "3" },
-        { "deg": "2" },
-        { "deg": ["1", "3"] }
-    ]
-}`);
+        { "mint": "*" },
+        { "mint": "-M2", "metweight": ["s", "hs"] },
+        { "mint": "-M2", "fermata": true }
+    ],
+    "simultaneousWith": [
+        {
+            "feature": "mint",
+            "voices": "bass",
+            "pattern": [
+                { "fb": "4" },
+                { "mint": ["-P5", "+P4"] }
+            ]
+        }
+    ],
+    "metweightSkipUnclassified": true,
+    "simultaneousAlignment": "end",
+    "limit": 100
+}`;
+
+// The query stays in local storage, so it is still there when the page is visited again.
+const storedQuery = useLocalStorage('chorale-search-query', DEMO_QUERY);
 
 const search = useChoraleSearch(storedQuery);
 
@@ -44,6 +60,8 @@ function parseQueryParameter(value) {
 }
 
 onMounted(() => {
+    // An emptied editor starts over with the demo query.
+    if (!query.value.trim()) query.value = DEMO_QUERY;
     if (typeof route.query.query !== 'string') return;
     const parsed = parseQueryParameter(route.query.query);
     query.value = parsed === undefined ? route.query.query : JSON.stringify(parsed, null, 4);
@@ -56,17 +74,7 @@ function onSubmit() {
 }
 
 function applyDemoQuery() {
-    query.value = `{
-    "feature": "kern",
-    "voices": "1234",
-    "pattern": [
-        { "deg": "3", "duration": "4" },
-        { "deg": "2", "duration": "4" },
-        { "deg": ["1", "3"], "duration": "*", "fermata": true }
-    ],
-    "fbCompareExactChord": false,
-    "limit": 100
-}`;
+    query.value = DEMO_QUERY;
 }
 </script>
 
