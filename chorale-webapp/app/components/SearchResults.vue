@@ -8,8 +8,11 @@ const props = defineProps({
     search: { type: Object, required: true },
 });
 
+const localePath = useLocalePath();
+
 const {
     searchFetchCompleted,
+    chorales,
     choraleEntries,
     totalMatches,
     pagedChoraleEntries,
@@ -77,6 +80,16 @@ function sectionsForItems(items) {
         color: colorForQueryId(queryId),
     }));
 }
+
+// The page of the chorale, with the matches to highlight there: "4:12-15~1:12-14,4:30-31" is a
+// voice and its lines for each section, joined with "~" to the sections it links in other voices
+// (see pages/chorale/[id].vue).
+function choraleLink(choraleId, items) {
+    const text = ({ voice, startLine, endLine }) => `${voice}:${startLine}-${endLine}`;
+    const sections = sectionsForItems(items).flatMap(({ items: sectionItems }) => sectionItems);
+    const matches = sections.map((section) => [section, ...section.linkedSections].map(text).join('~')).join(',');
+    return { path: localePath(`/chorale/${choraleId}`), query: { matches } };
+}
 </script>
 
 <template>
@@ -139,7 +152,13 @@ function sectionsForItems(items) {
                 <UCard v-for="([choraleId, items]) in pagedChoraleEntries" :key="choraleId">
                     <template #header>
                         <div class="flex items-center justify-between gap-4">
-                            <span>{{ choraleId }}</span>
+                            <div class="flex flex-wrap items-baseline gap-x-2">
+                                <NuxtLink :to="choraleLink(choraleId, items)" class="flex flex-wrap items-baseline gap-x-2 hover:text-primary">
+                                    <span class="font-semibold">{{ choraleId }}</span>
+                                    <span v-if="chorales?.[choraleId]?.title">{{ chorales[choraleId].title }}</span>
+                                </NuxtLink>
+                                <span v-if="chorales?.[choraleId]?.bwv" class="text-sm text-muted">{{ chorales[choraleId].bwv }}</span>
+                            </div>
                             <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
                         </div>
                     </template>

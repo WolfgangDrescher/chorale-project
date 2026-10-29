@@ -35,6 +35,18 @@ if (filters.length) {
     for (const filter of filters) scoreOptions[filter] = true;
 }
 
+// A link from the search results highlights its matches: ?matches=4:12-15~1:12-14,4:30-31 is a
+// voice and its lines for each section, joined with "~" to the sections it links in other voices,
+// which are drawn as frames (see SearchResults.vue).
+function sectionOf(text) {
+    const [, voice, startLine, endLine] = text.match(/^(\d+):(\d+)-(\d+)$/) ?? [];
+    return voice ? { voice: Number(voice), startLine: Number(startLine), endLine: Number(endLine) } : null;
+}
+const matches = String(useRoute().query.matches ?? '').split(',').flatMap((match) => {
+    const [section, ...linkedSections] = match.split('~').map(sectionOf);
+    return section ? [{ ...section, linkedSections: linkedSections.filter(Boolean) }] : [];
+});
+
 const { copy, copied } = useClipboard();
 
 // The downloads of a chorale, or of a worksheet with only the cantus firmus written out: as a PDF to print or as MEI for notation programs.
@@ -273,6 +285,8 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                     pageMarginBottom: 50,
                 }"
                 :filters="scoreOptions.humdrumFilters"
+                :sections="matches"
+                :scroll-to-first-section="matches.length > 0"
             />
         </div>
     </UContainer>

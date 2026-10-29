@@ -15,10 +15,11 @@ export function useChoraleSearch(initialQuery = '', { sortBy: initialSortBy = 'i
     // The query the current results are for, once a search has succeeded.
     const searchedQuery = ref(null);
 
-    // The length of each chorale in quarter notes, from the metadata extract-chorales.mjs wrote.
-    const { data: durations } = useAsyncData('chorale-durations', async () => {
-        const chorales = await queryCollection('chorales').select('choraleId', 'duration').all();
-        return Object.fromEntries(chorales.map(({ choraleId, duration }) => [choraleId, duration]));
+    // Each chorale by its id: its title and BWV number for the results, and its length in quarter
+    // notes for their density, from the metadata extract-chorales.mjs wrote.
+    const { data: chorales } = useAsyncData('chorales-by-id', async () => {
+        const entries = await queryCollection('chorales').select('choraleId', 'title', 'bwv', 'duration').all();
+        return Object.fromEntries(entries.map((chorale) => [chorale.choraleId, chorale]));
     });
 
     // The order of the chorales: by their id (ascending is the natural one), by how many matches
@@ -40,7 +41,8 @@ export function useChoraleSearch(initialQuery = '', { sortBy: initialSortBy = 'i
         const direction = sortDescending.value ? -1 : 1;
         const byId = ([a], [b]) => a.localeCompare(b, undefined, { numeric: true });
         const byMatches = ([, a], [, b]) => a.length - b.length;
-        const density = ([choraleId, items]) => (durations.value?.[choraleId] ? items.length / durations.value[choraleId] : 0);
+        const duration = (choraleId) => chorales.value?.[choraleId]?.duration;
+        const density = ([choraleId, items]) => (duration(choraleId) ? items.length / duration(choraleId) : 0);
         const byDensity = (a, b) => density(a) - density(b);
         const comparators = { id: byId, matches: byMatches, density: byDensity };
         const compare = comparators[sortBy.value];
@@ -85,6 +87,7 @@ export function useChoraleSearch(initialQuery = '', { sortBy: initialSortBy = 'i
 
     return {
         searchFetchCompleted,
+        chorales,
         choraleEntries,
         totalMatches,
         pagedChoraleEntries,
