@@ -158,7 +158,7 @@ MatchReading readMatch(const FoundMatch& match, const GroupQuery& groupQuery, co
     }
     reading.notes = match.notes;
     // Only where examples are shown, as it walks the score.
-    if (groupQuery.examples.maxCount > 0) reading.example = exampleOf(match, voicesReadInOwnRhythm);
+    if (groupQuery.examples.maxCount != 0) reading.example = exampleOf(match, voicesReadInOwnRhythm);
     return reading;
 }
 
@@ -304,7 +304,8 @@ void addMembers(Group& group, const GroupQuery& groupQuery, const Matches& match
         return;
     }
     group.examples.clear();
-    for (std::size_t i = 0; i < members.size() && group.examples.size() < groupQuery.examples.maxCount; ++i) {
+    const std::size_t shown = groupQuery.examples.maxCountFor(members.size());
+    for (std::size_t i = 0; i < shown; ++i) {
         group.examples.push_back(preferredExampleOf(*members[i]));
         group.examples.back().groupLabel = group.members[i].label;
     }
@@ -329,8 +330,8 @@ void addGroupsBelow(Group& group, const GroupQuery& groupQuery, const Matches& m
         if (groupBelow.examples.empty()) continue;
         group.examples.push_back(groupBelow.examples.front());
         group.examples.back().groupLabel = groupBelow.label;
-        if (group.examples.size() == groupQuery.examples.maxCount) break;
     }
+    group.examples.resize(groupQuery.examples.maxCountFor(group.examples.size()));
 }
 
 // The group of `matches`, which share the values of the levels down to `level` (0 for the root),

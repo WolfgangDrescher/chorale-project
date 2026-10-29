@@ -270,7 +270,6 @@ TEST_CASE(a_group_shows_the_unornamented_example_first_then_one_for_each_set_of_
     const Group root = choralesearch::groupMatchesInCorpus(search, groupQuery);
     for (const Group& group : root.groups) {
         REQUIRE(!group.examples.empty());
-        CHECK(group.examples.size() <= 5);
         std::set<std::vector<std::size_t>> ornamentations;
         std::set<std::pair<std::string, std::size_t>> passages;
         std::size_t ornamentedVoices = 0;
@@ -282,6 +281,24 @@ TEST_CASE(a_group_shows_the_unornamented_example_first_then_one_for_each_set_of_
                 CHECK(ornamentedVoices <= example.ornamentedVoices.size());
                 ornamentedVoices = example.ornamentedVoices.size();
             }
+        }
+    }
+}
+
+TEST_CASE(without_max_count_a_group_shows_one_example_for_each_group_or_member_below) {
+    CorpusSearch search(FIXTURES_DIR);
+    const Group root = choralesearch::groupMatchesInCorpus(search, cadenceGroupQuery());
+    REQUIRE(root.groups.size() > 5u);
+    CHECK_EQ(root.examples.size(), root.groups.size());
+    for (const Group& group : root.groups) {
+        if (!group.groups.empty()) {
+            CHECK_EQ(group.examples.size(), group.groups.size());
+        } else if (!group.members.empty()) {
+            CHECK_EQ(group.examples.size(), group.members.size());
+        } else {
+            // One for each set of ornamented voices, no further chorales.
+            std::set<std::vector<std::size_t>> ornamentations;
+            for (const auto& example : group.examples) CHECK(ornamentations.insert(example.ornamentedVoices).second);
         }
     }
 }

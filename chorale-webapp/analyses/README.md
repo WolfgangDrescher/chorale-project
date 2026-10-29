@@ -90,10 +90,10 @@ without the notes it holds.
 
 | Key        | Values              | What it is |
 | ---------- | ------------------- | ---------- |
-| `maxCount` | a number, default 5 | How many examples each group shows; 0 for none. |
+| `maxCount` | a number | How many examples each group shows at most; 0 for none. Without it, a group shows one example for each group or member below it, and a group with neither the unornamented match and one for each set of ornamented voices. |
 
-The examples of a group are the first match of each set of ornamented voices, the unornamented first, then the first
-match of further chorales; a chorale at most once. An ornament is a note on an unclassified metric position (`u` in
+The examples of a group are the first match of each set of ornamented voices, the unornamented first, then, up to
+`maxCount`, the first match of further chorales; a chorale at most once. An ornament is a note on an unclassified metric position (`u` in
 `**metweight`), which a search with `metweightSkipUnclassified` leaves out. Only the voice searched and the voices of
 `notesOfVoice` are looked at.
 

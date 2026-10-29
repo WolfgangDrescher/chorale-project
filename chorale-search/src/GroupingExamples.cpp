@@ -57,10 +57,10 @@ std::vector<GroupExample> chooseExamples(const std::vector<const MatchReading*>&
     std::vector<GroupExample> examples;
     for (const auto& [ornamentedVoices, example] : firstPerOrnamentedVoices) examples.push_back(example);
     std::stable_sort(examples.begin(), examples.end(), isLessOrnamented);
-    if (examples.size() > settings.maxCount) examples.resize(settings.maxCount);
-    // Then the first passage of each further chorale.
+    examples.resize(settings.maxCountFor(examples.size()));
+    if (!settings.maxCount) return examples; // further chorales only fill up to a maxCount
     for (const MatchReading* match : matches) {
-        if (examples.size() == settings.maxCount) break;
+        if (examples.size() == *settings.maxCount) break;
         if (!showsChorale(examples, match->example.choraleId)) examples.push_back(match->example);
     }
     return examples;

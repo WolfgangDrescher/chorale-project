@@ -119,7 +119,7 @@ GroupingLevel groupingLevelFromJson(const nlohmann::json& j, std::size_t positio
     return level;
 }
 
-// {"maxCount": 5}
+// {"maxCount": 5}, or {} for one example for each group or member below
 ExampleSettings exampleSettingsFromJson(const nlohmann::json& j, const std::string& context) {
     rejectUnknownKeys(j, {"maxCount"}, context);
     ExampleSettings settings;

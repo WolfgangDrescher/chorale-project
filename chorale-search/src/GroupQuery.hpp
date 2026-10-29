@@ -70,10 +70,14 @@ struct GroupQueryVariant {
     nlohmann::json pattern = nlohmann::json::array();
 };
 
-// How many examples each group shows, 0 for none: the unornamented passage first, then one for
-// each set of ornamented voices, then passages of further chorales.
+// How many examples each group shows. With maxCount up to that many, 0 for none; without it, one
+// for each group or member below it, and for a group with neither the unornamented passage and one
+// for each set of ornamented voices.
 struct ExampleSettings {
-    std::size_t maxCount = 5;
+    std::optional<std::size_t> maxCount;
+
+    // How many examples a group shows of the `candidateCount` it could show.
+    std::size_t maxCountFor(std::size_t candidateCount) const { return maxCount ? std::min(*maxCount, candidateCount) : candidateCount; }
 };
 
 // A query and how its matches are grouped.

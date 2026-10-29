@@ -12,7 +12,7 @@ namespace choralesearch {
 GroupExample exampleOf(const FoundMatch& match, const std::set<std::size_t>& voicesReadInOwnRhythm);
 
 // The examples of a group: the unornamented passage first, then one for each set of ornamented
-// voices, then passages of further chorales; a chorale at most once.
+// voices, then, up to maxCount, passages of further chorales; a chorale at most once.
 std::vector<GroupExample> chooseExamples(const std::vector<const MatchReading*>& matches, const ExampleSettings& settings);
 
 // The example of `matches` ornamented in the fewest voices, the first found of them.
