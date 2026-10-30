@@ -28,7 +28,7 @@ const columns = computed(() => [
 </script>
 
 <template>
-    <UFooter class="bg-pattern">
+    <UFooter class="bg-pattern" :ui="{ container: 'hidden' }">
         <template #top>
             <UContainer>
                 <UFooterColumns :columns="columns" :ui="{
