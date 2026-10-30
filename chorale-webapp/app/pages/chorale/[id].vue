@@ -13,8 +13,11 @@ if (!chorale.value) {
     });
 }
 
+// "12. Ach Gott und Herr", or the ID when the chorale has no title.
+const heading = computed(() => chorale.value.title ? [chorale.value.number, chorale.value.title].filter(Boolean).join('. ') : id);
+
 useHead({
-    title: computed(() => chorale.value.title ? `${chorale.value.title} (${id})` : id),
+    title: computed(() => chorale.value.title ? `${heading.value} (${id})` : id),
 });
 
 const { data: surroundData } = await useAsyncData(`chorales/${id}/surround`, () => {
@@ -194,7 +197,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                     <UBadge color="neutral" size="sm" variant="outline" class="font-mono cursor-pointer select-none w-[11ch] inline-flex items-center justify-center text-center" :label="copied ? $t('copied') : id" @click="copy(id)" />
                 </div>
                 <Heading>
-                    {{ chorale.title ?? id }}
+                    {{ heading }}
                     <div class="text-base font-normal">
                         {{ [chorale.composer, chorale.bwv, keyName, chorale.meter].filter(Boolean).join(' · ') }}
                     </div>
