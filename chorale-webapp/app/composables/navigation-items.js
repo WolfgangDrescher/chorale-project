@@ -3,6 +3,11 @@ export function useNavigationItems() {
     const localePath = useLocalePath();
     const route = useRoute();
 
+    // Whether the current page is the one at path or below it. The link of an item is active on its own
+    // only on a page whose route record it matches, which the page of a chorale or the data of a lesson,
+    // records of their own beside the index, is not.
+    const isAt = (path) => route.path === path || route.path.startsWith(`${path}/`);
+
     return computed(() => [
         {
             label: t('home'),
@@ -11,6 +16,7 @@ export function useNavigationItems() {
         {
             label: t('chorales'),
             to: localePath({ name: 'chorale' }),
+            active: isAt(localePath({ name: 'chorale' })),
         },
         {
             label: t('choraleAnalysis'),
@@ -23,8 +29,7 @@ export function useNavigationItems() {
         {
             label: t('lessons'),
             to: localePath('/lessons'),
-            // Also on the page of data of a lesson, which is a route of its own.
-            active: route.path.startsWith(localePath('/lessons')),
+            active: isAt(localePath('/lessons')),
         },
         {
             label: t('docs'),
