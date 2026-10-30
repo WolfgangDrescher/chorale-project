@@ -1,38 +1,7 @@
 <script setup>
-const { t } = useI18n();
-const localePath = useLocalePath();
-const route = useRoute();
-
-const items = computed(() => [
-    {
-        label: t('home'),
-        to: localePath({name: 'index'}),
-    },
-    {
-        label: t('chorales'),
-        to: localePath({name: 'chorale'}),
-    },
-    {
-        label: t('choraleAnalysis'),
-        to: localePath({name: 'chorale-analysis'}),
-    },
-    {
-        label: t('search'),
-        to: localePath({name: 'search'}),
-    },
-    {
-        label: t('lessons'),
-        to: localePath('/lessons'),
-        // Also on the page of data of a lesson, which is a route of its own.
-        active: route.path.startsWith(localePath('/lessons')),
-    },
-    {
-        label: t('docs'),
-        to: localePath('/docs'),
-    },
-]);
+const items = useNavigationItems();
 </script>
 
 <template>
-    <UNavigationMenu :items="items" class="border-b border-gray-200 dark:border-gray-800 px-2"/>
+    <UNavigationMenu :items="items" class="hidden md:flex border-b border-gray-200 dark:border-gray-800 px-2" />
 </template>

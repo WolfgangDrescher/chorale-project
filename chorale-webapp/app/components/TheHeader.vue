@@ -30,6 +30,7 @@ const { t } = useI18n();
                     square
                     :ui="{ label: 'hidden', base: 'text-white hover:text-black' }"
                 />
+                <TheMobileNavigation />
             </div>
         </div>
     </header>
