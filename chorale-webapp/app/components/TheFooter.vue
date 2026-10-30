@@ -5,7 +5,7 @@ const { t } = useI18n();
 
 const columns = [
     {
-        label: t('pages'),
+        label: t('navigation'),
         children: [
             {
                 label: t('home'),
@@ -34,7 +34,7 @@ const columns = [
         ],
     },
     {
-        label: t('sitemap'),
+        label: t('project'),
         children: [
             {
                 label: t('legalNotice'),
