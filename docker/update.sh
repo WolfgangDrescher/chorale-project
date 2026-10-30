@@ -194,7 +194,14 @@ main() {
         docker compose pull
         docker compose up -d --wait
     fi
-    echo "CHORALE_VERSION=$CHORALE_VERSION" > .env
+    # The version line is replaced where it is, the settings of the server
+    # around it stay.
+    if grep -q '^CHORALE_VERSION=' .env 2> /dev/null; then
+        sed -i "s|^CHORALE_VERSION=.*|CHORALE_VERSION=$CHORALE_VERSION|" .env
+    else
+        [ ! -s .env ] || [ -z "$(tail -c 1 .env)" ] || echo >> .env
+        echo "CHORALE_VERSION=$CHORALE_VERSION" >> .env
+    fi
     docker image prune --force > /dev/null
 
     echo "Now running: $(describe "$target")"
