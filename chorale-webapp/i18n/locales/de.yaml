@@ -1,4 +1,7 @@
 home: Startseite
+intro: Das Chorale Project ist eine digitale Plattform zum Studium der 370 vierstimmigen Choräle von Johann Sebastian Bach. Eine Pattern-Suche auf Grundlage von Humdrum und humlib findet melodische, harmonische und rhythmische Wendungen im gesamten Korpus. Die Partituren werden mit Verovio direkt im Browser dargestellt, jeder Treffer lässt sich dort prüfen und nachvollziehen. Die Lektionen vermitteln den Choralsatz anhand von Beispielen aus dem Korpus und belegen jede Beobachtung mit einer Suche, die sich direkt ausführen lässt.
+workInProgress: Diese Website ist noch im Aufbau.
+workInProgressDescription: Inhalte und Funktionen kommen laufend dazu und können sich noch ändern.
 legalNotice: Impressum
 pages: Seiten
 sitemap: Sitemap
