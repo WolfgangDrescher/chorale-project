@@ -1,5 +1,6 @@
 <script setup>
 const localePath = useLocalePath();
+const { t } = useI18n();
 </script>
 
 <template>
@@ -14,6 +15,12 @@ const localePath = useLocalePath();
                 </div>
             </div>
             <div class="flex gap-2 justify-end items-center">
+                <UContentSearchButton
+                    :label="t('search')"
+                    :collapsed="false"
+                    variant="ghost"
+                    :ui="{ base: 'text-white hover:text-black', label: 'hidden md:inline', trailing: 'hidden md:flex' }"
+                />
                 <UButton
                     icon="i-simple-icons-github"
                     to="https://github.com/WolfgangDrescher/chorale-project"
