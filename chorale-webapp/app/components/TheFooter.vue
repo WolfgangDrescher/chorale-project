@@ -3,35 +3,12 @@ const localePath = useLocalePath();
 
 const { t } = useI18n();
 
-const columns = [
+const navigationItems = useNavigationItems();
+
+const columns = computed(() => [
     {
         label: t('navigation'),
-        children: [
-            {
-                label: t('home'),
-                to: localePath('index'),
-            },
-            {
-                label: t('chorales'),
-                to: localePath('chorale'),
-            },
-            {
-                label: t('choraleAnalysis'),
-                to: localePath('chorale-analysis'),
-            },
-            {
-                label: t('search'),
-                to: localePath('search'),
-            },
-            {
-                label: t('lessons'),
-                to: localePath('/lessons'),
-            },
-            {
-                label: t('docs'),
-                to: localePath('/docs'),
-            },
-        ],
+        children: navigationItems.value,
     },
     {
         label: t('project'),
@@ -47,7 +24,7 @@ const columns = [
             },
         ],
     },
-];
+]);
 </script>
 
 <template>
