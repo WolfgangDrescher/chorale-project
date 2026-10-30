@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
     devtools: { enabled: false },
-    modules: ['@nuxt/ui', '@nuxt/content', '@nuxtjs/i18n', '@pinia/nuxt'],
+    modules: ['@nuxt/ui', '@nuxt/content', '@nuxtjs/i18n', '@pinia/nuxt', '@nuxtjs/plausible'],
     css: ['~/assets/css/main.css'],
     content: {
         experimental: { sqliteConnector: 'native' },
@@ -29,6 +29,12 @@ export default defineNuxtConfig({
     },
     colorMode: {
         preference: 'light',
+    },
+    // Plausible is off until the container switches it on, see compose.yaml. The empty host
+    // replaces the default plausible.io, so nothing ever goes to a foreign instance.
+    plausible: {
+        enabled: false,
+        apiHost: '',
     },
     nitro: {
         // The Verovio of the worker alone is about 12 MB.

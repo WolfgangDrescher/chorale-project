@@ -32,6 +32,10 @@ services:
             # this: 503). In development no extra service is needed, the
             # endpoints run chorale-search/build directly.
             CHORALE_TOOLS_URL: http://tools:4000
+            # Usage tracking: set PLAUSIBLE_HOST in .env to the Plausible
+            # instance, with the hostname of the webapp registered there.
+            NUXT_PUBLIC_PLAUSIBLE_ENABLED: ${PLAUSIBLE_HOST:+true}
+            NUXT_PUBLIC_PLAUSIBLE_API_HOST: ${PLAUSIBLE_HOST:-}
         ports:
             - '127.0.0.1:3000:3000'
         depends_on:
