@@ -12,12 +12,24 @@ const columns = [
                 to: localePath('index'),
             },
             {
+                label: t('chorales'),
+                to: localePath('chorale'),
+            },
+            {
                 label: t('choraleAnalysis'),
                 to: localePath('chorale-analysis'),
             },
             {
                 label: t('search'),
                 to: localePath('search'),
+            },
+            {
+                label: t('lessons'),
+                to: localePath('/lessons'),
+            },
+            {
+                label: t('docs'),
+                to: localePath('/docs'),
             },
         ],
     },
@@ -27,6 +39,11 @@ const columns = [
             {
                 label: t('legalNotice'),
                 to: localePath('legal-notice'),
+            },
+            {
+                label: t('github'),
+                to: 'https://github.com/WolfgangDrescher/chorale-project',
+                target: '_blank',
             },
         ],
     },
