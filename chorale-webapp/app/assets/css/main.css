@@ -1,6 +1,20 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/* The text font, in the weights the app uses: regular (with its italic), medium, bold and extrabold.
+   Semibold has no cut of its own and falls back to bold. The browser fetches a latin-ext file only
+   for a character outside the basic Latin range. */
+@import "@fontsource/alegreya-sans/latin-400.css";
+@import "@fontsource/alegreya-sans/latin-400-italic.css";
+@import "@fontsource/alegreya-sans/latin-500.css";
+@import "@fontsource/alegreya-sans/latin-700.css";
+@import "@fontsource/alegreya-sans/latin-800.css";
+@import "@fontsource/alegreya-sans/latin-ext-400.css";
+@import "@fontsource/alegreya-sans/latin-ext-400-italic.css";
+@import "@fontsource/alegreya-sans/latin-ext-500.css";
+@import "@fontsource/alegreya-sans/latin-ext-700.css";
+@import "@fontsource/alegreya-sans/latin-ext-800.css";
+
 /* The notes in the labels of the analyses (U+1D15D to U+1D161) and nothing else, from Bravura, a font of Verovio,
    which has the musical symbols of Unicode that few fonts of a system have. Loaded only where a note
    is shown. */
