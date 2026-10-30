@@ -115,12 +115,8 @@ const SWITCH_OPTIONS = CHECK_OPTIONS.filter((option) => option.type === 'switch'
 
 const DEMO_CHORALE_ID = 'chor029';
 
-// The chorale the demo button analyzes, picked from the corpus' chorales.
 const demoChoraleId = ref(DEMO_CHORALE_ID);
 const { data: demoChoraleIds } = useLazyFetch('/api/chorales', { default: () => [] });
-
-// The demo score is a development aid, not part of the page.
-const isDev = import.meta.dev;
 
 function useSegmentAnalysis() {
     const options = reactive(
@@ -498,7 +494,7 @@ function onSubmit() {
 
                 <div class="flex gap-2">
                     <UButton type="submit" :loading="pending" :disabled="!file || !!fileError">{{ $t('submit') }}</UButton>
-                    <UFieldGroup v-if="isDev && !file">
+                    <UFieldGroup v-if="!file">
                         <USelectMenu
                             v-model="demoChoraleId"
                             :items="demoChoraleIds"

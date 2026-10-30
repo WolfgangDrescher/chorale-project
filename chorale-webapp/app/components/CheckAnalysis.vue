@@ -119,9 +119,6 @@ async function analyze() {
     run(await file.value.text());
 }
 
-// The chorale the demo button checks, picked from the corpus' chorales. The demo is a development
-// aid, not part of the page.
-const isDev = import.meta.dev;
 const DEMO_CHORALE_ID = 'chor029';
 const demoChoraleId = ref(DEMO_CHORALE_ID);
 const { data: demoChoraleIds } = useLazyFetch('/api/chorales', { default: () => [] });
@@ -274,7 +271,7 @@ function onNoteClick({ line, voice }) {
 
                 <div class="flex gap-2">
                     <UButton type="submit" :loading="pending" :disabled="!file || !!fileError">{{ $t('submit') }}</UButton>
-                    <UFieldGroup v-if="isDev && !file">
+                    <UFieldGroup v-if="!file">
                         <USelectMenu
                             v-model="demoChoraleId"
                             :items="demoChoraleIds"
