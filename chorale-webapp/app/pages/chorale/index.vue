@@ -15,8 +15,9 @@ const PAGE_SIZE = 20;
 watch(filter, () => (page.value = 1));
 
 const chorales = computed(() => {
-    const needle = filter.value.trim().toLowerCase();
+    const listFilter = parseChoraleListFilter(filter.value);
     return (allChorales.value ?? [])
+        .filter((item) => matchesChoraleListFilter(item, listFilter))
         .map((item) => ({
             choraleId: item.choraleId,
             number: item.number,
@@ -24,9 +25,7 @@ const chorales = computed(() => {
             title: item.title,
             key: [item.key, item.mode].filter(Boolean).join(' '),
             meter: item.meter,
-        }))
-        .filter((item) => !needle || [item.choraleId, item.bwv, item.title, item.key, item.meter]
-            .some((value) => value?.toLowerCase().includes(needle)));
+        }));
 });
 
 const pagedChorales = computed(() => chorales.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
