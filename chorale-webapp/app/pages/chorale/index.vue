@@ -14,10 +14,23 @@ const PAGE_SIZE = 20;
 
 watch(filter, () => (page.value = 1));
 
+const listFilter = computed(() => parseChoraleListFilter(filter.value));
+
+// What the filter was understood as, so it is clear why a chorale is or is not listed.
+const listFilterBadges = computed(() => {
+    const { meters, key, modes, words } = listFilter.value;
+    return [
+        ...meters.map((meter) => ({ label: t('meter'), value: meter })),
+        ...(key ? [{ label: t('key'), value: [key.key.toUpperCase(), key.mode].filter(Boolean).join(' ') }] : []),
+        ...modes.map((mode) => ({ label: t('mode'), value: mode })),
+        // The words are looked for one by one, which the commas between them show.
+        ...(words.length ? [{ label: t('text'), value: words.join(', ') }] : []),
+    ];
+});
+
 const chorales = computed(() => {
-    const listFilter = parseChoraleListFilter(filter.value);
     return (allChorales.value ?? [])
-        .filter((item) => matchesChoraleListFilter(item, listFilter))
+        .filter((item) => matchesChoraleListFilter(item, listFilter.value))
         .map((item) => ({
             choraleId: item.choraleId,
             number: item.number,
@@ -54,9 +67,16 @@ const columns = [
         </div>
 
         <template v-else>
-            <div class="flex items-center gap-4 mb-4">
+            <div class="flex items-center gap-4 mb-2">
                 <UInput v-model="filter" icon="lucide:search" :placeholder="$t('filterChorales')" class="w-full max-w-sm" />
                 <div class="text-sm text-gray-500">{{ $t('choraleCount', { count: chorales.length }, chorales.length) }}</div>
+            </div>
+
+            <div class="flex flex-wrap gap-1 min-h-6 mb-4">
+                <UBadge v-for="(badge, index) in listFilterBadges" :key="index" color="neutral" variant="subtle">
+                    <span class="text-dimmed">{{ badge.label }}</span>
+                    {{ badge.value }}
+                </UBadge>
             </div>
 
             <UTable :data="pagedChorales" :columns="columns">
