@@ -217,7 +217,7 @@ bool isValidPatternValue(const std::string& rawKey, const std::string& value) {
     if (key == "kern") return true; // any string is legitimate -- see kern.md's literal fallback
     if (key == "deg") return isValidDegValue(value);
     if (key == "fermata") return isValidFermataValue(value);
-    if (key == "phrase") return value == "start" || value == "end";
+    if (key == "phrase") return value == "start" || value == "end" || value == "choraleStart" || value == "choraleEnd";
     if (key == "metweight") return isValidMetweightValue(value);
     if (key == "mint") return isValidMintValue(value);
     if (key == "fb") return isValidFbValue(value);

@@ -173,10 +173,15 @@ TEST_CASE(is_valid_pattern_value_for_deg_accepts_the_documented_grammar) {
     }
 }
 
-TEST_CASE(is_valid_pattern_value_for_phrase_accepts_only_start_or_end) {
+TEST_CASE(is_valid_pattern_value_for_phrase_accepts_only_the_starts_and_ends_of_phrases_and_the_chorale) {
     CHECK(isValidPatternValue("phrase", "start"));
     CHECK(isValidPatternValue("phrase", "end"));
+    CHECK(isValidPatternValue("phrase", "choraleStart"));
+    CHECK(isValidPatternValue("phrase", "choraleEnd"));
     CHECK(isValidPatternValue("!phrase", "start"));
+    CHECK(isValidPatternValue("!phrase", "choraleEnd"));
+    CHECK(!isValidPatternValue("phrase", "chorale"));
+    CHECK(!isValidPatternValue("phrase", "choralestart"));
     CHECK(!isValidPatternValue("phrase", "middle"));
     CHECK(!isValidPatternValue("phrase", "true"));
     CHECK(!isValidPatternValue("phrase", ""));

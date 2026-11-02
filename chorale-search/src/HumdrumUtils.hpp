@@ -24,6 +24,28 @@ inline bool startsPhrase(hum::HTp note) {
     return true;
 }
 
+// Whether the note opens the chorale: it is the first sounding note of the voice, rests before it looked
+// through. A rest never does.
+inline bool startsChorale(hum::HTp note) {
+    if (note->isRest()) return false;
+    for (hum::HTp previous = note->getPreviousToken(); previous; previous = previous->getPreviousToken()) {
+        if (!previous->getOwner()->isData() || previous->isNull() || previous->isSecondaryTiedNote()) continue;
+        if (!previous->isRest()) return false;
+    }
+    return true;
+}
+
+// Whether the note closes the chorale: it is the last sounding note of the voice, rests after it and the
+// continuation of its own tie looked through. A rest never does.
+inline bool endsChorale(hum::HTp note) {
+    if (note->isRest()) return false;
+    for (hum::HTp next = note->getNextToken(); next; next = next->getNextToken()) {
+        if (!next->getOwner()->isData() || next->isNull() || next->isSecondaryTiedNote()) continue;
+        if (!next->isRest()) return false;
+    }
+    return true;
+}
+
 // A musical position (quarter notes from the start of the piece) as text, e.g. "35+1/2" for a
 // position halfway through the 36th quarter. Positions are fractions, so they're carried around
 // as strings rather than lossily flattened into a double.

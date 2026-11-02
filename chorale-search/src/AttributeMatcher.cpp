@@ -518,11 +518,30 @@ bool metweightInList(const std::vector<PatternValue>& allowed, const std::string
                         [&](const PatternValue& v) { return metweightValueMatches(v.text, actual); });
 }
 
-// Whether a "phrase" pattern value ("start"/"end") fits a note that does or doesn't open a phrase
-// and does or doesn't end one. A middle note has neither role: it's asked for as "!phrase".
-bool phraseInList(const std::vector<PatternValue>& allowed, bool starts, bool ends) {
+// What a note is to the phrases and to the chorale: whether it opens a phrase, ends one, and whether
+// it is the first or the last sounding note of the whole chorale.
+struct PhraseRoles {
+    bool startsPhrase = false;
+    bool endsPhrase = false;
+    bool startsChorale = false;
+    bool endsChorale = false;
+};
+
+// The roles of a note on its own: a written note starts where `first` does and ends where `last` does,
+// which is the same token unless the note is split into several onsets.
+PhraseRoles notePhraseRoles(hum::HTp first, hum::HTp last) {
+    return {startsPhrase(first), last->hasFermata(), startsChorale(first), endsChorale(last)};
+}
+
+// Whether a "phrase" pattern value ("start"/"end", or "choraleStart"/"choraleEnd" for the first and the
+// last note of the chorale) fits a note with these roles. A middle note has none of them: it's asked for
+// as "!phrase".
+bool phraseInList(const std::vector<PatternValue>& allowed, const PhraseRoles& roles) {
     for (const PatternValue& value : allowed) {
-        if ((value.text == "start" && starts) || (value.text == "end" && ends)) return true;
+        if ((value.text == "start" && roles.startsPhrase) || (value.text == "end" && roles.endsPhrase) ||
+            (value.text == "choraleStart" && roles.startsChorale) || (value.text == "choraleEnd" && roles.endsChorale)) {
+            return true;
+        }
     }
     return false;
 }
@@ -820,7 +839,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
     } else if (key == kPhraseKey) {
         hum::HTp noteTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
         if (!noteTok) return std::nullopt;
-        matched = phraseInList(allowed, startsPhrase(noteTok), noteTok->hasFermata());
+        matched = phraseInList(allowed, notePhraseRoles(noteTok, noteTok));
     } else {
         std::string actual;
         hum::HTp kernTok = nullptr;
@@ -910,7 +929,7 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
                     hum::HTp first = lookupToken(chorale, voice, onsets[onsetIndex].token->getLineNumber(), kKernFeature);
                     hum::HTp last = lookupToken(chorale, voice, onset.token->getLineNumber(), kKernFeature);
                     if (!first || !last) return std::nullopt;
-                    bool matched = isWildcard(allowed) || phraseInList(allowed, startsPhrase(first), last->hasFermata());
+                    bool matched = isWildcard(allowed) || phraseInList(allowed, notePhraseRoles(first, last));
                     if (matched == isNegatedKey(rawKey)) return std::nullopt;
                 } else if (key == kDurationKey && isNegatedKey(rawKey)) {
                     // A negated duration is judged against the summed duration too, so
@@ -939,12 +958,15 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
     } else if (key == kMintFeature) {
         matched = mintReAttackInList(allowed, m_options.mintAllowIntervalComplementation);
     } else if (key == kPhraseKey) {
-        // A re-attack inside a note can't open a phrase, and closes one only with the note.
+        // A re-attack inside a note can't open a phrase or the chorale, and closes either only with the note.
         hum::HTp noteTok = m_drivingFeature == kKernFeature
                                ? tok
                                : lookupToken(chorale, voice, tok->getLineNumber(), kKernFeature);
         if (!noteTok) return std::nullopt;
-        matched = phraseInList(allowed, false, noteTok->hasFermata());
+        PhraseRoles roles;
+        roles.endsPhrase = noteTok->hasFermata();
+        roles.endsChorale = endsChorale(noteTok);
+        matched = phraseInList(allowed, roles);
     } else {
         hum::HTp kernTok = m_drivingFeature == kKernFeature
                                 ? tok

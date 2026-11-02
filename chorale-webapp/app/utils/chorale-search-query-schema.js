@@ -22,6 +22,24 @@ const comparisonSchema = {
     },
 };
 
+// The values of the "phrase" pattern key, so the editor suggests them. "*" is the wildcard every key accepts.
+const phraseValueSchema = {
+    type: 'string',
+    enum: ['start', 'end', 'choraleStart', 'choraleEnd', '*'],
+    enumDescriptions: [
+        'The note opens a phrase: the first sounding note of the voice or the first one after a fermata.',
+        'The note ends a phrase: it carries a fermata.',
+        'The note opens the chorale: the first sounding note of the voice.',
+        'The note ends the chorale: the last sounding note of the voice.',
+        'Any note.',
+    ],
+};
+
+const phrasePatternSchema = {
+    description: 'Whether the note opens or ends a phrase ("start", "end") or the whole chorale ("choraleStart", "choraleEnd"). An OR-list of these or a single one; "!phrase" asks for a note that is none of them.',
+    oneOf: [phraseValueSchema, { type: 'array', items: phraseValueSchema, minItems: 1 }],
+};
+
 // Fields shared by the top-level query and each simultaneousWith entry, defined once so
 // both schemas below stay in sync.
 const searchRequestFieldSchemas = {
@@ -46,6 +64,10 @@ const searchRequestFieldSchemas = {
             type: 'object',
             minProperties: 1,
             additionalProperties: false,
+            properties: {
+                phrase: phrasePatternSchema,
+                '!phrase': phrasePatternSchema,
+            },
             patternProperties: {
                 '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
                     description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. Prefix the key with "!" to negate the whole position.',
