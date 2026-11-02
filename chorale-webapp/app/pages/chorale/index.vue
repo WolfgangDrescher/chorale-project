@@ -69,7 +69,7 @@ const columns = [
         <template v-else>
             <div class="flex items-center gap-4 mb-2">
                 <UInput v-model="filter" icon="lucide:search" :placeholder="$t('filterChorales')" class="w-full max-w-sm" />
-                <div class="text-sm text-gray-500">{{ $t('choraleCount', { count: chorales.length }, chorales.length) }}</div>
+                <div class="shrink-0 whitespace-nowrap text-sm text-gray-500">{{ $t('choraleCount', { count: chorales.length }, chorales.length) }}</div>
             </div>
 
             <div class="flex flex-wrap gap-1 min-h-6 mb-4">
