@@ -67,6 +67,22 @@ export default defineContentConfig({
                 variants: z.record(z.string(), z.any()).optional(),
             }),
         }),
+        changelog: defineCollection({
+            type: 'page',
+            source: 'changelog/*.md',
+            schema: z.object({
+                date: z.date(),
+                lastCommit: z.string().optional(),
+                commitCount: z.number().optional(),
+                changes: z.array(z.object({
+                    type: z.enum(['feature', 'improvement', 'fix']),
+                    text: z.string(),
+                    to: z.string().optional(),
+                    commits: z.array(z.string()).optional(),
+                    github: z.array(z.string().regex(/^([\w.-]+\/[\w.-]+)?#\d+$/)).optional(),
+                })).optional(),
+            }),
+        }),
         docs: defineCollection({
             type: 'page',
             source: 'docs/**/*.md',

@@ -18,6 +18,10 @@ const columns = computed(() => [
                 to: localePath('legal-notice'),
             },
             {
+                label: t('changelog'),
+                to: localePath('changelog'),
+            },
+            {
                 label: t('github'),
                 to: 'https://github.com/WolfgangDrescher/chorale-project',
                 target: '_blank',
