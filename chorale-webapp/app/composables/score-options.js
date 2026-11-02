@@ -11,6 +11,9 @@ function createDefaultScoreOptions() {
         hideMiddleVoices: false,
         extractCantusFirmus: false,
         hideNonCantusFirmusVoices: false,
+        // The key the score is transposed to, as **kern spells its tonic (e.g. "e-" or "f#"), or
+        // null for the key it is written in. The mode stays as it is.
+        transposeKey: null,
         verovioScale: 40,
         showHorizontalViewMode: false,
     };
@@ -20,9 +23,11 @@ export const useScoreOptions = defineStore('score_options', {
     state: () => createDefaultScoreOptions(),
     getters: {
         // The Humdrum filters the score can be shown through, by the name of the option that
-        // toggles them. A filter with a higher priority is applied first, so voices are
-        // extracted before the remaining spines are analyzed.
+        // toggles them. A filter with a higher priority is applied first, so the score is
+        // transposed and its voices are extracted before the remaining spines are analyzed. The
+        // command of an option with a value (not true or false) is made from the state.
         humdrumFilterDefinitions: () => ({
+            transposeKey: { command: (state) => `transpose -k ${state.transposeKey}`, priority: 3 },
             showMeter: { command: 'meter -f' },
             satb2gs: { command: 'satb2gs', priority: 1 },
             intervallsatz: { command: 'fb -icatm', priority: -1 },
@@ -36,16 +41,19 @@ export const useScoreOptions = defineStore('score_options', {
                 priority: 2,
             },
         }),
-        humdrumFilterMap() {
+        humdrumFilterMap(state) {
             return Object.fromEntries(
-                Object.entries(this.humdrumFilterDefinitions).map(([key, { command }]) => [key, command]),
+                Object.entries(this.humdrumFilterDefinitions).map(([key, { command }]) => [
+                    key,
+                    typeof command === 'function' ? command(state) : command,
+                ]),
             );
         },
         humdrumFilters(state) {
             return Object.entries(this.humdrumFilterDefinitions)
                 .filter(([key]) => state[key])
                 .sort(([, a], [, b]) => (b.priority ?? 0) - (a.priority ?? 0))
-                .map(([, { command }]) => command);
+                .map(([key]) => this.humdrumFilterMap[key]);
         },
         verovioOptions: (state) => ({
             scale: state.verovioScale,

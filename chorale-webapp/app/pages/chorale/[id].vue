@@ -31,8 +31,9 @@ const { githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator()
 const scoreOptions = useScoreOptions();
 
 // A link can open the score with its filters set, as an exercise of a lesson does:
-// ?filters=hideMiddleVoices,intervallsatz turns those on and every other filter off.
-const filters = String(useRoute().query.filters ?? '').split(',').filter((filter) => filter in scoreOptions.humdrumFilterDefinitions);
+// ?filters=hideMiddleVoices,intervallsatz turns those on and every other filter off. A filter
+// with a value, like the transposition, cannot be turned on like that.
+const filters = String(useRoute().query.filters ?? '').split(',').filter((filter) => filter in scoreOptions.humdrumFilterDefinitions && typeof scoreOptions[filter] === 'boolean');
 if (filters.length) {
     scoreOptions.resetHumdrumFilters();
     for (const filter of filters) scoreOptions[filter] = true;
@@ -224,7 +225,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
 
             <div class="flex flex-col md:flex-row items-center gap-4">
                 <div>
-                    <ScoreOptionsPalette />
+                    <ScoreOptionsPalette :chorale="chorale" />
                 </div>
                 <div class="shrink-0 flex gap-2 ml-auto md:order-2">
                     <UButton :to="githubScoreUrlGenerator(chorale.choraleId)" target="_blank">

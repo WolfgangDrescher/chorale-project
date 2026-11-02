@@ -163,6 +163,9 @@ scaleDegree: Skalenstufen anzeigen
 hideMiddleVoices: Mittelstimmen ausblenden
 extractCantusFirmus: Cantus firmus isolieren
 hideNonCantusFirmusVoices: Alle Stimmen ausser Cantus firmus ausblenden
+transposeKey: Transponieren
+searchKey: Tonart suchen
+originalKey: Originaltonart
 chorales: Choräle
 id: ID
 title: Titel

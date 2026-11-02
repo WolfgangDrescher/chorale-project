@@ -1,6 +1,12 @@
 <script setup>
 const open = defineModel('open', { type: Boolean });
 
+const props = defineProps({
+    // The chorale of the score (an item of the chorales collection), which the options can depend
+    // on, e.g. the keys it can be transposed to.
+    chorale: { type: Object, default: null },
+});
+
 onMounted(() => {
     const handler = (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
@@ -21,67 +27,66 @@ const scoreOptions = useScoreOptions();
 
 const showOnlyActive = ref(false);
 
+// The submenus of the filters with a value, by the name of their option: the values to choose
+// from (null for the default), how the chosen value is named in the item of the filter, and the
+// name of the parameter that stands for the value in the command.
+const humdrumFilterSubmenus = {
+    transposeKey: useTransposeKeySubmenu(() => props.chorale),
+};
+
+// The command of a filter with the given value of its option.
+function humdrumFilterCommand(option, value) {
+    return scoreOptions.humdrumFilterDefinitions[option].command({ ...scoreOptions.$state, [option]: value });
+}
+
+// The item of a Humdrum filter. A filter without a value is turned on and off. The value of the
+// other filters is chosen in a submenu, its search field filters the values by their labels. The
+// palette keeps the items of a submenu it navigated to, so whether an item is checked is read
+// from the store when the template asks.
+function humdrumFilterItem(option) {
+    const submenu = humdrumFilterSubmenus[option]?.value;
+    const item = {
+        label: t(option),
+        indicator: 'checkbox',
+        checked: () => !!scoreOptions[option],
+    };
+    if (!submenu) {
+        return {
+            ...item,
+            cmd: scoreOptions.humdrumFilterMap[option],
+            onSelect: () => (scoreOptions[option] = !scoreOptions[option]),
+        };
+    }
+    return {
+        ...item,
+        cmd: scoreOptions[option] ? scoreOptions.humdrumFilterMap[option] : humdrumFilterCommand(option, `{${submenu.parameter}}`),
+        suffix: scoreOptions[option] ? submenu.valueLabel(scoreOptions[option]) : undefined,
+        placeholder: submenu.placeholder,
+        uncheck: () => (scoreOptions[option] = null),
+        children: submenu.values.map(({ value, ...child }) => ({
+            ...child,
+            cmd: value === null ? undefined : humdrumFilterCommand(option, value),
+            indicator: 'radio',
+            checked: () => scoreOptions[option] === value,
+            onSelect: () => (scoreOptions[option] = value),
+        })),
+    };
+}
+
+// A click on the checkbox of a checked filter with a submenu turns it off; it does not open the
+// submenu, as a click on the rest of the row does.
+function onCheckboxClick(event, item) {
+    if (!item.uncheck || !item.checked()) return;
+    event.stopPropagation();
+    item.uncheck();
+}
+
 const groups = computed(() => {
     const allGroups = [
         {
             id: 'humdrum-filters',
             label: t('humdrumFilters'),
-            items: [
-                {
-                    label: t('showMeter'),
-                    cmd: scoreOptions.humdrumFilterMap.showMeter,
-                    onSelect: () => (scoreOptions.showMeter = !scoreOptions.showMeter),
-                    active: scoreOptions.showMeter,
-                },
-                {
-                    label: t('satb2gs'),
-                    cmd: scoreOptions.humdrumFilterMap.satb2gs,
-                    onSelect: () => (scoreOptions.satb2gs = !scoreOptions.satb2gs),
-                    active: scoreOptions.satb2gs,
-                },
-                {
-                    label: t('intervallsatz'),
-                    cmd: scoreOptions.humdrumFilterMap.intervallsatz,
-                    onSelect: () => (scoreOptions.intervallsatz = !scoreOptions.intervallsatz),
-                    active: scoreOptions.intervallsatz,
-                },
-                {
-                    label: t('extendedFiguredbass'),
-                    cmd: scoreOptions.humdrumFilterMap.extendedFiguredbass,
-                    onSelect: () => (scoreOptions.extendedFiguredbass = !scoreOptions.extendedFiguredbass),
-                    active: scoreOptions.extendedFiguredbass,
-                },
-                {
-                    label: t('bassScaleDegree'),
-                    cmd: scoreOptions.humdrumFilterMap.bassScaleDegree,
-                    onSelect: () => (scoreOptions.bassScaleDegree = !scoreOptions.bassScaleDegree),
-                    active: scoreOptions.bassScaleDegree,
-                },
-                {
-                    label: t('scaleDegree'),
-                    cmd: scoreOptions.humdrumFilterMap.scaleDegree,
-                    onSelect: () => (scoreOptions.scaleDegree = !scoreOptions.scaleDegree),
-                    active: scoreOptions.scaleDegree,
-                },
-                {
-                    label: t('hideMiddleVoices'),
-                    cmd: scoreOptions.humdrumFilterMap.hideMiddleVoices,
-                    onSelect: () => (scoreOptions.hideMiddleVoices = !scoreOptions.hideMiddleVoices),
-                    active: scoreOptions.hideMiddleVoices,
-                },
-                {
-                    label: t('extractCantusFirmus'),
-                    cmd: scoreOptions.humdrumFilterMap.extractCantusFirmus,
-                    onSelect: () => (scoreOptions.extractCantusFirmus = !scoreOptions.extractCantusFirmus),
-                    active: scoreOptions.extractCantusFirmus,
-                },
-                {
-                    label: t('hideNonCantusFirmusVoices'),
-                    cmd: scoreOptions.humdrumFilterMap.hideNonCantusFirmusVoices,
-                    onSelect: () => (scoreOptions.hideNonCantusFirmusVoices = !scoreOptions.hideNonCantusFirmusVoices),
-                    active: scoreOptions.hideNonCantusFirmusVoices,
-                },
-            ],
+            items: Object.keys(scoreOptions.humdrumFilterDefinitions).map(humdrumFilterItem),
         },
         {
             id: 'verovio',
@@ -108,8 +113,8 @@ const groups = computed(() => {
                 {
                     label: t('showHorizontalViewMode'),
                     onSelect: () => (scoreOptions.showHorizontalViewMode = !scoreOptions.showHorizontalViewMode),
-                    active: scoreOptions.showHorizontalViewMode,
-                    showCheckbox: true,
+                    indicator: 'checkbox',
+                    checked: () => scoreOptions.showHorizontalViewMode,
                     kbd: 'H',
                 },
             ],
@@ -138,7 +143,7 @@ const groups = computed(() => {
     if (showOnlyActive.value) {
         return allGroups.map(g => ({
             ...g,
-            items: g.items.filter(item => item.active),
+            items: g.items.filter(item => item.checked?.()),
         })).filter(g => g.items.length > 0);
     }
 
@@ -167,15 +172,22 @@ const groups = computed(() => {
             <UCommandPalette
                 :placeholder="$t('searchCommandsAndScoreOptions')"
                 :groups="groups"
+                :ui="{ itemTrailingIcon: 'hidden' }"
             >
                 <template #item-leading="{ item }">
-                    <UCheckbox v-if="item.group === 'humdrum-filters' || item.showCheckbox" v-model="item.active" />
+                    <span v-if="item.indicator === 'radio'" class="size-4 shrink-0 rounded-full ring ring-inset ring-accented overflow-hidden">
+                        <span v-if="item.checked()" class="flex items-center justify-center size-full bg-primary after:size-1.5 after:bg-default after:rounded-full" />
+                    </span>
+                    <span v-else-if="item.indicator === 'checkbox'" class="flex" @click="onCheckboxClick($event, item)">
+                        <UCheckbox :model-value="item.checked()" />
+                    </span>
                 </template>
                 <template #item-trailing="{ item }">
                     <div v-if="item.cmd" class="font-mono text-[0.55rem] text-gray-500 translate-y-1">{{ item.cmd }}</div>
                     <template v-if="item.kbd">
                         <UKbd v-for="kbd in Array.isArray(item.kbd) ? item.kbd : [item.kbd]" :key="kbd" :value="kbd" size="sm" class="font-mono translate-y-0.5" />
                     </template>
+                    <UIcon v-if="item.children?.length" name="i-lucide-chevron-right" class="size-5 shrink-0" />
                 </template>
                 <template #footer>
                     <UCheckbox v-model="showOnlyActive" size="xs" :label="$t('showOnlyActiveFilters')" />
