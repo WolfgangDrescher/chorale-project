@@ -143,25 +143,41 @@ std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const 
     return values;
 }
 
+// `name` locates the errors: "'pattern[...]" or "'everyPosition".
+AttributeMap positionFromJson(const nlohmann::json& posJson, const std::string& name) {
+    AttributeMap pos;
+    for (auto it = posJson.begin(); it != posJson.end(); ++it) {
+        const std::string& rawKey = it.key();
+        // isKnownPatternKey/isValidPatternValue both accept a "!"-negated key directly (see
+        // docs/patterns#negating-a-feature) -- negation doesn't change what's known or valid.
+        if (!isKnownPatternKey(rawKey)) {
+            throw std::invalid_argument(name + "' has an unknown key '" + rawKey + "'");
+        }
+        pos[rawKey] = attributeValueFromJson(it.value(), rawKey, name + "[" + rawKey + "]'");
+    }
+    return pos;
+}
+
 std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
     if (!j.is_array()) throw std::invalid_argument("'pattern' must be an array");
     std::vector<AttributeMap> result;
     for (const auto& posJson : j) {
         if (!posJson.is_object()) throw std::invalid_argument("'pattern' entries must be objects");
-        AttributeMap pos;
-        for (auto it = posJson.begin(); it != posJson.end(); ++it) {
-            const std::string& rawKey = it.key();
-            // isKnownPatternKey/isValidPatternValue both accept a "!"-negated key directly (see
-            // docs/patterns#negating-a-feature) -- negation doesn't change what's known or valid.
-            if (!isKnownPatternKey(rawKey)) {
-                throw std::invalid_argument("'pattern' has an unknown key '" + rawKey + "'");
-            }
-            pos[rawKey] = attributeValueFromJson(it.value(), rawKey, "'pattern[...][" + rawKey + "]'");
-        }
-        result.push_back(std::move(pos));
+        result.push_back(positionFromJson(posJson, "'pattern[...]"));
     }
     if (result.empty()) throw std::invalid_argument("'pattern' must not be empty");
     return result;
+}
+
+// A position keeps its own value of a key, negated or not.
+void applyEveryPosition(std::vector<AttributeMap>& pattern, const AttributeMap& everyPosition) {
+    for (AttributeMap& position : pattern) {
+        for (const auto& [rawKey, values] : everyPosition) {
+            const std::string key = rawKey.size() > 1 && rawKey[0] == '!' ? rawKey.substr(1) : rawKey;
+            if (position.count(key) || position.count("!" + key)) continue;
+            position[rawKey] = values;
+        }
+    }
 }
 
 // The diatonic numbers "mintAllowIntervalComplementation" opts in: a single value or an array
@@ -299,6 +315,12 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         throw std::invalid_argument(context + " must contain a 'pattern' array");
     }
     target.pattern = patternFromJson(j["pattern"]);
+    if (j.contains("everyPosition")) {
+        if (!j["everyPosition"].is_object()) {
+            throw std::invalid_argument("'everyPosition' in " + context + " must be an object");
+        }
+        applyEveryPosition(target.pattern, positionFromJson(j["everyPosition"], "'everyPosition"));
+    }
     checkPairSearchedKeys(target.pattern, pairSet, context);
 
     if (j.contains("mintStartAtPreviousToken")) {

@@ -86,6 +86,7 @@ struct MatcherOptions {
 struct SimultaneousGroup {
     std::string feature;
     std::string voices = "all";
+    // With its own "everyPosition" applied, not the query's.
     std::vector<AttributeMap> pattern;
 
     // nullopt means "inherit the top-level Query's own value of the same name" -- these
@@ -114,6 +115,7 @@ struct Query {
     std::string feature;
     std::string voices = "all";
 
+    // With "everyPosition" applied.
     std::vector<AttributeMap> pattern;
 
     // Which chorales are searched at all. The default filter lets every chorale in. See ChoraleFilter.hpp.

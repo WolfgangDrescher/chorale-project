@@ -16,7 +16,7 @@ namespace {
 // parseSearchRequestFields). "id", "limit", "choraleFilter" and "simultaneousWith" are Query-only additions on
 // top of this, handled by isKnownQueryKey below.
 const std::vector<std::string> kSharedRequestFieldNames = {
-    "feature", "voices", "pattern", "mintStartAtPreviousToken", "mintAllowIntervalComplementation",
+    "feature", "voices", "pattern", "everyPosition", "mintStartAtPreviousToken", "mintAllowIntervalComplementation",
     "fbCompareExactChord", "kernIgnoreOctave", "hintReduceCompound", "durationAllowSplitNotes",
     "durationAllowMergedNotes", "metweightSkipUnclassified", "simultaneousAlignment",
 };

@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "CorpusSearch.hpp"
+#include "JsonIO.hpp"
 #include "Query.hpp"
 
 using choralesearch::AttributeMap;
@@ -803,6 +804,23 @@ TEST_CASE(kern_soprano_fermata_in_the_major_dominant) {
     CHECK_RESULT(results[1], "chor009", 4, "7", "7");
     CHECK_RESULT(results[2], "chor009", 4, "39", "39");
     CHECK_RESULT(results[3], "chor029", 4, "7", "7");
+}
+
+TEST_CASE(deg_soprano_2_1_onto_a_fermata_in_a_minor_key_from_every_position) {
+    Query q = choralesearch::queryFromJson(nlohmann::json::parse(R"({
+        "feature": "deg",
+        "voices": "soprano",
+        "everyPosition": { "mode": "minor" },
+        "pattern": [{ "deg": "2" }, { "deg": "1", "phrase": "end" }]
+    })"));
+
+    CorpusSearch search(FIXTURES_DIR);
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 3u);
+    CHECK_RESULT(results[0], "chor009", 4, "22", "23");
+    CHECK_RESULT(results[1], "chor039", 4, "21+1/2", "22");
+    CHECK_RESULT(results[2], "chor039", 4, "45+1/2", "46");
 }
 
 TEST_MAIN()

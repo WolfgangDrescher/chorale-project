@@ -37,6 +37,47 @@ TEST_CASE(query_from_json_reads_the_key_a_note_is_in) {
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"mode","pattern":[{"mode":"minor"}]})")));
 }
 
+TEST_CASE(query_from_json_adds_every_position_to_each_position_without_the_key) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature": "deg",
+        "everyPosition": { "mode": "minor", "fermata": false },
+        "pattern": [{ "deg": "2" }, { "deg": "1", "fermata": true }, { "deg": "5", "!mode": "minor" }]
+    })"));
+    REQUIRE(q.pattern.size() == 3u);
+    CHECK_EQ(q.pattern[0].at("mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[0].at("fermata"), (std::vector<PatternValue>{"false"}));
+    CHECK_EQ(q.pattern[1].at("mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[1].at("fermata"), (std::vector<PatternValue>{"true"})); // the position's own value
+    CHECK(!q.pattern[2].count("mode")); // "!mode" is the same key
+    CHECK_EQ(q.pattern[2].at("!mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[2].size(), std::size_t{3});
+}
+
+TEST_CASE(query_from_json_applies_every_position_of_a_group_to_the_group_only) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature": "deg",
+        "everyPosition": { "mode": "major" },
+        "pattern": [{ "deg": "1" }],
+        "simultaneousWith": [{ "feature": "deg", "voices": "bass", "everyPosition": { "keyDeg": "5" }, "pattern": [{ "deg": "1" }] }]
+    })"));
+    CHECK_EQ(q.pattern[0].at("mode"), (std::vector<PatternValue>{"major"}));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    CHECK_EQ(q.simultaneousWith[0].pattern[0].at("keyDeg"), (std::vector<PatternValue>{"5"}));
+    CHECK(!q.simultaneousWith[0].pattern[0].count("mode"));
+}
+
+TEST_CASE(query_from_json_rejects_an_every_position_it_cannot_read) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1"}],"everyPosition":[{"mode":"minor"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1"}],"everyPosition":{"tonality":"minor"}})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1"}],"everyPosition":{"mode":"blues"}})")));
+    try {
+        queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1"}],"everyPosition":{"key":"H"}})"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'everyPosition[key]'") != std::string::npos);
+    }
+}
+
 TEST_CASE(query_from_json_reads_voices_and_limit) {
     Query q = queryFromJson(json::parse(R"({"feature":"mint","voices":"1234","pattern":[{"mint":"+2"}],"limit":5})"));
     CHECK_EQ(q.voices, std::string("1234"));

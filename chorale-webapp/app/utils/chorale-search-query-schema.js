@@ -76,6 +76,38 @@ const keyDegPatternSchema = {
     oneOf: [keyDegValueSchema, { type: 'array', items: keyDegValueSchema, minItems: 1 }],
 };
 
+// One position of a pattern, and the keys of everyPosition.
+const patternPositionSchema = {
+    type: 'object',
+    minProperties: 1,
+    additionalProperties: false,
+    properties: {
+        phrase: phrasePatternSchema,
+        '!phrase': phrasePatternSchema,
+        mode: modePatternSchema,
+        '!mode': modePatternSchema,
+        key: keyPatternSchema,
+        '!key': keyPatternSchema,
+        keyDeg: keyDegPatternSchema,
+        '!keyDeg': keyDegPatternSchema,
+    },
+    patternProperties: {
+        '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
+            description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. Prefix the key with "!" to negate the whole position.',
+            oneOf: [
+                { type: 'string' },
+                { type: 'boolean' },
+                comparisonSchema,
+                { type: 'array', items: { oneOf: [{ type: 'string' }, comparisonSchema] }, minItems: 1 },
+            ],
+        },
+    },
+    propertyNames: {
+        pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
+        description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
+    },
+};
+
 // Fields shared by the top-level query and each simultaneousWith entry, defined once so
 // both schemas below stay in sync.
 const searchRequestFieldSchemas = {
@@ -96,36 +128,13 @@ const searchRequestFieldSchemas = {
         minItems: 1,
         description: 'The sequence of positions to search for, one object per position.',
         suggestSortText: '2',
-        items: {
-            type: 'object',
-            minProperties: 1,
-            additionalProperties: false,
-            properties: {
-                phrase: phrasePatternSchema,
-                '!phrase': phrasePatternSchema,
-                mode: modePatternSchema,
-                '!mode': modePatternSchema,
-                key: keyPatternSchema,
-                '!key': keyPatternSchema,
-                keyDeg: keyDegPatternSchema,
-                '!keyDeg': keyDegPatternSchema,
-            },
-            patternProperties: {
-                '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
-                    description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. Prefix the key with "!" to negate the whole position.',
-                    oneOf: [
-                        { type: 'string' },
-                        { type: 'boolean' },
-                        comparisonSchema,
-                        { type: 'array', items: { oneOf: [{ type: 'string' }, comparisonSchema] }, minItems: 1 },
-                    ],
-                },
-            },
-            propertyNames: {
-                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
-                description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
-            },
-        },
+        items: patternPositionSchema,
+    },
+    everyPosition: {
+        ...patternPositionSchema,
+        minProperties: 0,
+        description: 'Features every position of the pattern checks, as if they were written in each one. A position that checks the same feature itself, negated or not, keeps its own value.',
+        suggestSortText: '2.5',
     },
     mintStartAtPreviousToken: {
         type: 'boolean',
