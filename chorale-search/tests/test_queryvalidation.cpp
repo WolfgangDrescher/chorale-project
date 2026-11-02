@@ -103,6 +103,31 @@ TEST_CASE(is_known_pattern_key_accepts_phrase_but_it_cannot_drive_a_search) {
     CHECK(!isKnownPatternKey("phraseStart"));
 }
 
+TEST_CASE(is_known_pattern_key_accepts_the_key_a_note_is_in) {
+    for (const char* key : {"mode", "!mode", "key", "!key", "keyDeg", "!keyDeg"}) CHECK(isKnownPatternKey(key));
+    CHECK(!isKnownDrivingFeature("mode"));
+    CHECK(!isKnownPatternKey("keydeg"));
+}
+
+TEST_CASE(is_valid_pattern_value_knows_the_modes_keys_and_key_degrees) {
+    CHECK(isValidPatternValue("mode", "minor"));
+    CHECK(isValidPatternValue("mode", "Phrygian"));
+    CHECK(isValidPatternValue("mode", "aeolian"));
+    CHECK(!isValidPatternValue("mode", "blues"));
+    CHECK(isValidPatternValue("key", "G"));
+    CHECK(isValidPatternValue("key", "f#"));
+    CHECK(isValidPatternValue("!key", "B-"));
+    CHECK(!isValidPatternValue("key", "H"));
+    CHECK(!isValidPatternValue("key", "G major"));
+    CHECK(isValidPatternValue("keyDeg", "5"));
+    CHECK(isValidPatternValue("keyDeg", "3-"));
+    CHECK(isValidPatternValue("keyDeg", "4+"));
+    CHECK(isValidPatternValue("keyDeg", "-"));
+    CHECK(!isValidPatternValue("keyDeg", "r"));
+    CHECK(!isValidPatternValue("keyDeg", "8"));
+    CHECK(!isValidPatternValue("keyDeg", "V"));
+}
+
 TEST_CASE(is_known_pattern_key_accepts_hint_voice_relative_forms) {
     CHECK(isKnownPatternKey("hint-1"));
     CHECK(isKnownPatternKey("hint-2"));

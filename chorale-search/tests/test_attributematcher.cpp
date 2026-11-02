@@ -1732,6 +1732,65 @@ TEST_CASE(matcher_metweight_skip_lets_a_split_run_close_over_an_ornament) {
     CHECK(std::any_of(matches.begin(), matches.end(), startsAt13));
 }
 
+namespace {
+
+// One note in each key, the score starting in G major: G major, E minor, F dorian, B-flat major.
+HumdrumChorale choraleInFourKeys() {
+    std::istringstream score("**kern\n*G:\n4g\n*e:\n4e\n*f:dor\n4f\n*B-:\n4b-\n*-\n");
+    return HumdrumChorale(score, "keys", false);
+}
+
+std::vector<std::string> notesMatching(const HumdrumChorale& chorale, const AttributeMap& position) {
+    std::vector<std::string> notes;
+    for (const auto& m : AttributeMatcher("kern", {position}).findAll(chorale, 1)) {
+        notes.push_back(std::string(*chorale.tokenAtLine("kern", 1, static_cast<int>(m.startLineNumber))));
+    }
+    return notes;
+}
+
+} // namespace
+
+TEST_CASE(matcher_mode_is_matched_as_the_score_writes_it) {
+    HumdrumChorale chorale = choraleInFourKeys();
+    using Notes = std::vector<std::string>;
+    CHECK_EQ(notesMatching(chorale, {{"mode", {"minor"}}}), (Notes{"4e"}));
+    CHECK_EQ(notesMatching(chorale, {{"mode", {"Aeolian"}}}), (Notes{"4e"}));
+    CHECK_EQ(notesMatching(chorale, {{"mode", {"major"}}}), (Notes{"4g", "4b-"}));
+    CHECK_EQ(notesMatching(chorale, {{"mode", {"dorian"}}}), (Notes{"4f"}));
+    CHECK_EQ(notesMatching(chorale, {{"mode", {"minor", "dorian"}}}), (Notes{"4e", "4f"}));
+    CHECK_EQ(notesMatching(chorale, {{"mode", {"phrygian"}}}), Notes{});
+    CHECK_EQ(notesMatching(chorale, {{"!mode", {"minor"}}}), (Notes{"4g", "4f", "4b-"}));
+    CHECK_EQ(notesMatching(chorale, {{"mode", {"*"}}}), (Notes{"4g", "4e", "4f", "4b-"}));
+}
+
+TEST_CASE(matcher_key_is_matched_as_the_score_writes_it) {
+    HumdrumChorale chorale = choraleInFourKeys();
+    using Notes = std::vector<std::string>;
+    CHECK_EQ(notesMatching(chorale, {{"key", {"e"}}}), (Notes{"4e"}));
+    CHECK_EQ(notesMatching(chorale, {{"key", {"E"}}}), Notes{});
+    CHECK_EQ(notesMatching(chorale, {{"key", {"G", "B-"}}}), (Notes{"4g", "4b-"}));
+    CHECK_EQ(notesMatching(chorale, {{"!key", {"G"}}}), (Notes{"4e", "4f", "4b-"}));
+}
+
+TEST_CASE(matcher_key_deg_is_the_degree_of_the_key_in_the_key_of_the_first_note) {
+    HumdrumChorale chorale = choraleInFourKeys();
+    using Notes = std::vector<std::string>;
+    CHECK_EQ(notesMatching(chorale, {{"keyDeg", {"1"}}}), (Notes{"4g"}));
+    CHECK_EQ(notesMatching(chorale, {{"keyDeg", {"6"}}}), (Notes{"4e"}));
+    CHECK_EQ(notesMatching(chorale, {{"keyDeg", {"7-"}}}), (Notes{"4f"}));
+    CHECK_EQ(notesMatching(chorale, {{"keyDeg", {"3-"}}}), (Notes{"4b-"}));
+    CHECK_EQ(notesMatching(chorale, {{"keyDeg", {"-"}}}), (Notes{"4f", "4b-"})); // an alteration alone, as in deg
+    CHECK_EQ(notesMatching(chorale, {{"keyDeg", {"-"}}, {"mode", {"major"}}}), (Notes{"4b-"}));
+}
+
+TEST_CASE(matcher_mode_fails_a_score_without_key_designation) {
+    std::istringstream score("**kern\n*M4/4\n=1\n4c\n4d\n*-\n");
+    HumdrumChorale chorale(score, "nokey", false);
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"*"}}}}).findAll(chorale, 1).size(), std::size_t{2});
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"mode", {"major"}}}}).findAll(chorale, 1).empty());
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"!mode", {"major"}}}}).findAll(chorale, 1).empty());
+}
+
 TEST_MAIN()
 
 

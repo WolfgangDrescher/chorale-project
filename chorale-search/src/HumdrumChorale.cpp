@@ -45,6 +45,30 @@ void HumdrumChorale::prepare(bool withComputedSpines) {
         if (type.rfind("**", 0) == 0) type = type.substr(2);
         m_spinesByFeature[type].push_back(start);
     }
+
+    // All voices share the key designations, so the first one is read.
+    // keyDeg is reckoned from the key of the first note, below a church mode of the source.
+    std::optional<KeyContext> current;
+    std::optional<KeyContext> starting;
+    bool beforeFirstNote = true;
+    const int kernTrack = spine("kern", 1) ? spine("kern", 1)->getTrack() : -1;
+    m_keyContextByLine.assign(m_infile.getLineCount(), std::nullopt);
+    for (int i = 0; i < m_infile.getLineCount(); ++i) {
+        if (m_infile[i].isInterpretation()) {
+            for (int field = 0; field < m_infile[i].getFieldCount(); ++field) {
+                hum::HTp token = m_infile[i].token(field);
+                if (token->getTrack() != kernTrack) continue;
+                if (std::optional<KeyContext> designated = keyContextFromDesignation(*token)) {
+                    if (beforeFirstNote) starting = designated;
+                    designated->keyDeg = keyScaleDegree(designated->key, starting->key, starting->mode);
+                    current = designated;
+                }
+                break;
+            }
+        }
+        if (m_infile[i].isData()) beforeFirstNote = false;
+        m_keyContextByLine[i] = current;
+    }
 }
 
 std::vector<std::string> HumdrumChorale::availableFeatures() const {
@@ -130,6 +154,12 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
 
     info.phraseCount = phraseEndings().size();
     return info;
+}
+
+const KeyContext* HumdrumChorale::keyContextAtLine(int lineNumber) const {
+    if (lineNumber < 1 || lineNumber > static_cast<int>(m_keyContextByLine.size())) return nullptr;
+    const std::optional<KeyContext>& context = m_keyContextByLine[lineNumber - 1];
+    return context ? &*context : nullptr;
 }
 
 hum::HTp HumdrumChorale::tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {

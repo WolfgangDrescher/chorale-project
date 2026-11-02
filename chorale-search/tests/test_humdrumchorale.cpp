@@ -3,11 +3,14 @@
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "ComputedSpines.hpp"
 #include "HumdrumChorale.hpp"
 
 using choralesearch::HumdrumChorale;
+using choralesearch::KeyContext;
+using choralesearch::keyScaleDegree;
 
 namespace {
 
@@ -266,6 +269,81 @@ TEST_CASE(a_chorale_with_only_some_of_the_computed_spines_is_rejected) {
     std::istringstream contents(partial);
     minitest::SilenceStderr silence;
     CHECK_THROWS(HumdrumChorale(contents, "chor029"));
+}
+
+TEST_CASE(key_scale_degree_is_the_degree_of_the_tonic_in_the_starting_key) {
+    CHECK_EQ(keyScaleDegree("G", "G", "major"), std::string("1"));
+    CHECK_EQ(keyScaleDegree("D", "G", "major"), std::string("5"));
+    CHECK_EQ(keyScaleDegree("C", "G", "major"), std::string("4"));
+    CHECK_EQ(keyScaleDegree("e", "G", "major"), std::string("6"));
+    CHECK_EQ(keyScaleDegree("f#", "G", "major"), std::string("7"));
+    CHECK_EQ(keyScaleDegree("B-", "G", "major"), std::string("3-"));
+    CHECK_EQ(keyScaleDegree("f#", "F", "major"), std::string("1+"));
+    CHECK_EQ(keyScaleDegree("G-", "F", "major"), std::string("2-"));
+    // In minor the scale is the natural one, as **deg has it.
+    CHECK_EQ(keyScaleDegree("C", "a", "minor"), std::string("3"));
+    CHECK_EQ(keyScaleDegree("E", "a", "minor"), std::string("5"));
+    CHECK_EQ(keyScaleDegree("d", "a", "minor"), std::string("4"));
+    CHECK_EQ(keyScaleDegree("D", "e", "minor"), std::string("7"));
+    CHECK_EQ(keyScaleDegree("C#", "a", "minor"), std::string("3+"));
+    // The church modes have scales of their own.
+    CHECK_EQ(keyScaleDegree("E-", "g", "dorian"), std::string("6-"));
+    CHECK_EQ(keyScaleDegree("F", "e", "phrygian"), std::string("2"));
+    CHECK_EQ(keyScaleDegree("F", "G", "mixolydian"), std::string("7"));
+    CHECK_EQ(keyScaleDegree("D", "e", "dorian"), std::string("7"));
+    CHECK_EQ(keyScaleDegree("c#", "e", "dorian"), std::string("6"));
+    CHECK_EQ(keyScaleDegree("F", "B-", "lydian"), std::string("5"));
+    CHECK_EQ(keyScaleDegree("E-", "B-", "lydian"), std::string("4-"));
+    // The letters decide the degree, so enharmonic tonics are told apart.
+    CHECK_EQ(keyScaleDegree("G-", "F", "major"), std::string("2-"));
+    CHECK_EQ(keyScaleDegree("f#", "F", "major"), std::string("1+"));
+    CHECK_EQ(keyScaleDegree("B#", "C", "major"), std::string("7+"));
+    CHECK_EQ(keyScaleDegree("C-", "C", "major"), std::string("1-"));
+    CHECK_EQ(keyScaleDegree("A--", "G", "major"), std::string("2--"));
+}
+
+TEST_CASE(key_context_is_the_last_key_designation_above_the_line) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor039"));
+    std::vector<std::string> keys; // key and scale degree, each time a data line is in another key
+    std::string designated;
+    for (hum::HTp token = chorale.spine("kern", 1); token; token = token->getNextToken()) {
+        if (token->isKeyDesignation()) designated = token->substr(1, token->find(':') - 1);
+        if (!token->isData()) continue;
+        const KeyContext* context = chorale.keyContextAtLine(token->getLineNumber());
+        REQUIRE(context);
+        CHECK_EQ(context->key, designated);
+        const std::string entry = context->key + " " + context->mode + " " + context->keyDeg;
+        if (keys.empty() || keys.back() != entry) keys.push_back(entry);
+    }
+    CHECK_EQ(keys, (std::vector<std::string>{"e minor 1", "G major 3", "e minor 1", "b minor 5", "G major 3",
+                                              "D major 7", "e minor 1"}));
+}
+
+TEST_CASE(key_context_reads_the_mode_of_the_key_designation) {
+    std::istringstream score("**kern\n*f:dor\n4f\n*-\n");
+    HumdrumChorale chorale(score, "dorian", false);
+    const KeyContext* context = chorale.keyContextAtLine(3);
+    REQUIRE(context);
+    CHECK_EQ(context->key, std::string("f"));
+    CHECK_EQ(context->mode, std::string("dorian"));
+    CHECK_EQ(context->keyDeg, std::string("1"));
+}
+
+TEST_CASE(key_deg_is_reckoned_from_the_key_of_the_first_note) {
+    std::istringstream score("**kern\n*e:phr\n*a:\n4a\n*E:\n4e\n*-\n");
+    HumdrumChorale chorale(score, "phrygian", false);
+    std::vector<std::string> keyDegs;
+    for (hum::HTp token = chorale.spine("kern", 1); token; token = token->getNextToken()) {
+        if (token->isData()) keyDegs.push_back(chorale.keyContextAtLine(token->getLineNumber())->keyDeg);
+    }
+    CHECK_EQ(keyDegs, (std::vector<std::string>{"1", "5"}));
+}
+
+TEST_CASE(key_context_is_null_above_the_first_key_designation_and_out_of_range) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor039"));
+    CHECK(chorale.keyContextAtLine(1) == nullptr);
+    CHECK(chorale.keyContextAtLine(0) == nullptr);
+    CHECK(chorale.keyContextAtLine(100000) == nullptr);
 }
 
 TEST_MAIN()

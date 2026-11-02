@@ -775,4 +775,34 @@ TEST_CASE(kern_cadence_ornamented_by_a_leap_away_and_back) {
     CHECK_RESULT(results[1], "chor006", 1, "27", "29");
 }
 
+TEST_CASE(deg_major_third_onto_a_fermata_in_a_minor_key) {
+    // The Picardy third that ends chor039.
+    Query q;
+    q.feature = "deg";
+    q.pattern = {AttributeMap{{"deg", {"3+"}}, {"mode", {"minor"}}, {"phrase", {"end"}}}};
+    q.voices = "all";
+
+    CorpusSearch search(FIXTURES_DIR);
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 1u);
+    CHECK_RESULT(results[0], "chor039", 2, "46", "46");
+}
+
+TEST_CASE(kern_soprano_fermata_in_the_major_dominant) {
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"phrase", {"end"}}, {"keyDeg", {"5"}}, {"mode", {"major"}}}};
+    q.voices = "soprano";
+
+    CorpusSearch search(FIXTURES_DIR);
+    auto results = search.run(q);
+
+    REQUIRE(results.size() == 4u);
+    CHECK_RESULT(results[0], "chor006", 4, "23", "23");
+    CHECK_RESULT(results[1], "chor009", 4, "7", "7");
+    CHECK_RESULT(results[2], "chor009", 4, "39", "39");
+    CHECK_RESULT(results[3], "chor029", 4, "7", "7");
+}
+
 TEST_MAIN()

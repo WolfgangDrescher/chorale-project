@@ -25,6 +25,18 @@ TEST_CASE(query_from_json_parses_minimal_query) {
     CHECK(!q.mintStartAtPreviousToken); // default when omitted
 }
 
+TEST_CASE(query_from_json_reads_the_key_a_note_is_in) {
+    Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"3+","mode":"minor","!key":["e","b"],"keyDeg":"5"}]})"));
+    CHECK_EQ(q.pattern[0].at("mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[0].at("!key"), (std::vector<PatternValue>{"e", "b"}));
+    CHECK_EQ(q.pattern[0].at("keyDeg"), (std::vector<PatternValue>{"5"}));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"mode":"blues"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"key":"H"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"keyDeg":"r"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"keyDeg":{"operator":"gt","value":"3"}}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"mode","pattern":[{"mode":"minor"}]})")));
+}
+
 TEST_CASE(query_from_json_reads_voices_and_limit) {
     Query q = queryFromJson(json::parse(R"({"feature":"mint","voices":"1234","pattern":[{"mint":"+2"}],"limit":5})"));
     CHECK_EQ(q.voices, std::string("1234"));

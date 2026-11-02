@@ -1,4 +1,5 @@
 #include "AttributeMatcher.hpp"
+#include "ChoraleInfo.hpp"
 #include "HintPairs.hpp"
 #include "HumdrumUtils.hpp"
 #include "QueryValidation.hpp"
@@ -19,6 +20,9 @@ namespace {
 const std::string kDurationKey = "duration";
 const std::string kFermataKey = "fermata";
 const std::string kPhraseKey = "phrase";
+const std::string kModeKey = "mode";
+const std::string kKeyKey = "key";
+const std::string kKeyDegKey = "keyDeg";
 const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
 const std::string kDegFeature = "deg";
@@ -585,6 +589,18 @@ bool phraseInList(const std::vector<PatternValue>& allowed, const PhraseRoles& r
     return false;
 }
 
+// mode and key literally, keyDeg as a deg value.
+bool keyContextInList(const std::string& key, const std::vector<PatternValue>& allowed, const KeyContext& context) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
+        if (key == kModeKey) {
+            const std::optional<std::string> mode = normalizeModeName(value.text);
+            return mode == context.mode;
+        }
+        if (key == kKeyKey) return value.text == context.key;
+        return degValueMatches(value.text, context.keyDeg);
+    });
+}
+
 hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineNumber, const std::string& feature) {
     return chorale.tokenAtLine(feature, voice, lineNumber);
 }
@@ -880,6 +896,10 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         hum::HTp noteTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
         if (!noteTok) return std::nullopt;
         matched = phraseInList(allowed, notePhraseRoles(noteTok, noteTok));
+    } else if (key == kModeKey || key == kKeyKey || key == kKeyDegKey) {
+        const KeyContext* context = chorale.keyContextAtLine(lineNumber);
+        if (!context) return std::nullopt;
+        matched = keyContextInList(key, allowed, *context);
     } else {
         std::string actual;
         hum::HTp kernTok = nullptr;

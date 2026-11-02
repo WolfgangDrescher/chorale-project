@@ -1,4 +1,5 @@
 #include "QueryValidation.hpp"
+#include "ChoraleInfo.hpp"
 #include "HintPairs.hpp"
 
 #include <algorithm>
@@ -53,6 +54,11 @@ bool isHintFlavoredKey(const std::string& key) {
 
 bool isValidDegValue(const std::string& v) {
     static const std::regex re(R"(^([1-7][+-]*|\++|-+|r)$)");
+    return std::regex_match(v, re);
+}
+
+bool isValidKeyValue(const std::string& v) {
+    static const std::regex re(R"(^[a-gA-G][#-]*$)");
     return std::regex_match(v, re);
 }
 
@@ -152,6 +158,7 @@ bool isPairWildcardFeature(const std::string& feature) {
 bool isKnownPatternKey(const std::string& rawKey) {
     std::string key = stripNegationPrefix(rawKey);
     return isKnownDrivingFeature(key) || key == "duration" || key == "fermata" || key == "phrase" ||
+           key == "mode" || key == "key" || key == "keyDeg" ||
            isHintRelativeKey(key) || isHintWildcardKey(key) || isPairSearchedKey(key);
 }
 
@@ -218,6 +225,9 @@ bool isValidPatternValue(const std::string& rawKey, const std::string& value) {
     if (key == "deg") return isValidDegValue(value);
     if (key == "fermata") return isValidFermataValue(value);
     if (key == "phrase") return value == "start" || value == "end" || value == "choraleStart" || value == "choraleEnd";
+    if (key == "mode") return normalizeModeName(value).has_value();
+    if (key == "key") return isValidKeyValue(value);
+    if (key == "keyDeg") return value != "r" && isValidDegValue(value);
     if (key == "metweight") return isValidMetweightValue(value);
     if (key == "mint") return isValidMintValue(value);
     if (key == "fb") return isValidFbValue(value);

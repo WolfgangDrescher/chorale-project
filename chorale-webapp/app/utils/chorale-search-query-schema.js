@@ -40,6 +40,42 @@ const phrasePatternSchema = {
     oneOf: [phraseValueSchema, { type: 'array', items: phraseValueSchema, minItems: 1 }],
 };
 
+const modeValueSchema = {
+    type: 'string',
+    enum: ['minor', 'major', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian', 'ionian', 'aeolian', '*'],
+    enumDescriptions: [
+        'A minor key.',
+        'A major key.',
+        'A dorian key.',
+        'A phrygian key.',
+        'A lydian key.',
+        'A mixolydian key.',
+        'A locrian key.',
+        'The same as major.',
+        'The same as minor.',
+        'Any key.',
+    ],
+};
+
+const modePatternSchema = {
+    description: 'The mode of the local key. An OR-list of modes or a single one; "!mode" asks for a note in none of them.',
+    oneOf: [modeValueSchema, { type: 'array', items: modeValueSchema, minItems: 1 }],
+};
+
+const keyValueSchema = { type: 'string', pattern: '^([a-gA-G][#-]*|\\*)$' };
+
+const keyPatternSchema = {
+    description: 'The local key as the score writes it: "E-" is E-flat major, "f#" is F-sharp minor. An OR-list of keys or a single one.',
+    oneOf: [keyValueSchema, { type: 'array', items: keyValueSchema, minItems: 1 }],
+};
+
+const keyDegValueSchema = { type: 'string', pattern: '^([1-7][+-]*|\\++|-+|\\*)$' };
+
+const keyDegPatternSchema = {
+    description: 'The scale degree of the local key in relation to the starting key, written like a deg value: "5" is the key of the fifth degree, A major in a chorale in D major. An OR-list of degrees or a single one.',
+    oneOf: [keyDegValueSchema, { type: 'array', items: keyDegValueSchema, minItems: 1 }],
+};
+
 // Fields shared by the top-level query and each simultaneousWith entry, defined once so
 // both schemas below stay in sync.
 const searchRequestFieldSchemas = {
@@ -67,9 +103,15 @@ const searchRequestFieldSchemas = {
             properties: {
                 phrase: phrasePatternSchema,
                 '!phrase': phrasePatternSchema,
+                mode: modePatternSchema,
+                '!mode': modePatternSchema,
+                key: keyPatternSchema,
+                '!key': keyPatternSchema,
+                keyDeg: keyDegPatternSchema,
+                '!keyDeg': keyDegPatternSchema,
             },
             patternProperties: {
-                '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
+                '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
                     description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. Prefix the key with "!" to negate the whole position.',
                     oneOf: [
                         { type: 'string' },
@@ -80,7 +122,7 @@ const searchRequestFieldSchemas = {
                 },
             },
             propertyNames: {
-                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
+                pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
                 description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
             },
         },

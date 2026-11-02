@@ -2,10 +2,12 @@
 
 #include <istream>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "ChoraleInfo.hpp"
+#include "KeyContext.hpp"
 #include "humlib.h"
 
 namespace choralesearch {
@@ -43,6 +45,10 @@ public:
     // token). It goes straight to the line, so asking it of every onset of a corpus stays cheap.
     hum::HTp tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const;
 
+    // The key of the last key designation above `lineNumber` (1-indexed), nullptr before the first. keyDeg is
+    // reckoned from the key of the first note.
+    const KeyContext* keyContextAtLine(int lineNumber) const;
+
 private:
     // What both constructors do once the file is parsed: add the computed spines, then note
     // down which spine answers to which feature name.
@@ -52,6 +58,7 @@ private:
     std::string m_id;
     hum::HumdrumFile m_infile;
     std::map<std::string, std::vector<hum::HTp>> m_spinesByFeature;
+    std::vector<std::optional<KeyContext>> m_keyContextByLine;
 };
 
 } // namespace choralesearch
