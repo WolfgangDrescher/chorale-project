@@ -20,6 +20,8 @@ const defaultSettings = () => ({
     reverb: 20,
     // From the lowest voice on the left to the highest on the right, as at a keyboard.
     spreadVoices: false,
+    // The stops drawn on the organ, see ORGAN_STOPS.
+    organStops: [8],
 });
 
 // Shared by all players, so that a score of the search results sounds like the chorale it links
@@ -28,8 +30,29 @@ export const useScorePlayerSettings = defineStore('score_player_settings', () =>
     const settings = useLocalStorage('chorale-player-settings', defaultSettings(), { mergeDefaults: true });
     // An instrument stored by an earlier version of the player that this one does not have.
     if (!SCORE_PLAYER_INSTRUMENTS.some(({ id }) => id === settings.value.instrument)) settings.value.instrument = defaultSettings().instrument;
+    // Likewise the stops of the organ; at least one stays drawn.
+    settings.value.organStops = (Array.isArray(settings.value.organStops) ? settings.value.organStops : []).filter((stop) => stop in ORGAN_STOPS);
+    if (!settings.value.organStops.length) settings.value.organStops = defaultSettings().organStops;
     return Object.fromEntries(Object.entries(toRefs(settings.value)).map(([key, value]) => [key, skipHydrate(value)]));
 });
+
+// The stops of the organ by their pitch in feet: the sample of the organ played that many semitones
+// away (8' as written, 16' an octave lower, 4' and 2' one and two octaves higher), at that share of
+// the velocity of the note, so the 8' carries and the others color it.
+export const ORGAN_STOPS = {
+    16: { transposition: -12, level: 0.8 },
+    8: { transposition: 0, level: 1 },
+    4: { transposition: 12, level: 0.7 },
+    2: { transposition: 24, level: 0.5 },
+};
+
+// The layers each note is played in: one, or one per stop drawn on the organ. A single stop sounds
+// at full level.
+function layersPerNote({ instrument, organStops }) {
+    if (instrument !== 'church_organ') return [ORGAN_STOPS[8]];
+    if (organStops.length === 1) return [{ ...ORGAN_STOPS[organStops[0]], level: 1 }];
+    return organStops.map((stop) => ORGAN_STOPS[stop]);
+}
 
 // Notes are handed to the audio clock this far ahead, so the slowed timers of a background tab keep up.
 const LOOKAHEAD_SECONDS = 3;
@@ -278,6 +301,7 @@ export function useScorePlayer() {
         const scoreTimeAt = (audioTime) => clock.scoreTime + (audioTime - clock.audioTime) * 1000 * clock.rate;
         const audioTimeAt = (scoreTime) => clock.audioTime + (scoreTime - clock.scoreTime) / 1000 / clock.rate;
 
+        const layers = layersPerNote(settings);
         // The notes handed to the audio clock, with their index, which is also their stopId.
         const scheduled = [];
         let next = 0;
@@ -290,13 +314,15 @@ export function useScorePlayer() {
                 const start = Math.max(note.start, from);
                 const audioTime = audioTimeAt(start);
                 scheduled.push({ index: next, audioTime });
-                instruments[note.voice].start({
-                    note: note.pitch,
-                    velocity: note.velocity,
-                    time: audioTime,
-                    duration: (end - start) / 1000 / clock.rate,
-                    stopId: next,
-                });
+                for (const { transposition, level } of layers) {
+                    instruments[note.voice].start({
+                        note: note.pitch + transposition,
+                        velocity: Math.round(note.velocity * level),
+                        time: audioTime,
+                        duration: (end - start) / 1000 / clock.rate,
+                        stopId: next,
+                    });
+                }
             }
         }
 
@@ -383,7 +409,7 @@ export function useScorePlayer() {
     watch(() => settings.tempo, (tempo) => session?.setTempo?.(tempo));
     watch(() => settings.volume, (volume) => audio?.then(({ master }) => (master.gain.value = gainOf(volume))));
     watch(() => settings.reverb, (reverb) => setReverb(reverb / 100));
-    watch(() => [settings.instrument, settings.spreadVoices], () => {
+    watch(() => [settings.instrument, settings.spreadVoices, settings.organStops.join()], () => {
         if (player.isPlaying && !player.isLoading) play();
     });
 
