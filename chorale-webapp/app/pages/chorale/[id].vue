@@ -1,6 +1,4 @@
 <script setup>
-import { useClipboard } from '@vueuse/core';
-
 const localePath = useLocalePath();
 const { params: { id } } = useRoute();
 
@@ -50,8 +48,6 @@ const matches = String(useRoute().query.matches ?? '').split(',').flatMap((match
     const [section, ...linkedSections] = match.split('~').map(sectionOf);
     return section ? [{ ...section, linkedSections: linkedSections.filter(Boolean) }] : [];
 });
-
-const { copy, copied } = useClipboard();
 
 // The downloads of a chorale, or of a worksheet with only the cantus firmus written out: as a PDF to print or as MEI for notation programs.
 function useChoraleExport() {
@@ -197,9 +193,6 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
     <UContainer>
         <div class="flex flex-col gap-8">
             <div>
-                <div class="mb-3">
-                    <UBadge color="neutral" size="sm" variant="outline" class="font-mono cursor-pointer select-none w-[11ch] inline-flex items-center justify-center text-center" :label="copied ? $t('copied') : id" @click="copy(id)" />
-                </div>
                 <Heading>
                     {{ heading }}
                     <div class="text-base font-normal">
