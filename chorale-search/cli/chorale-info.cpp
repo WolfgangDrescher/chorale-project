@@ -1,12 +1,16 @@
 #include <algorithm>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
 #include "HumdrumChorale.hpp"
+#include "LinePositions.hpp"
 
 namespace fs = std::filesystem;
 
@@ -31,6 +35,8 @@ void printUsage(const char* argv0) {
         "                          recursively)\n"
         "\n"
         "Options:\n"
+        "    --positions-dir DIR   write DIR/<id>.json per score, with the position (\"measure/beat\")\n"
+        "                          of every data line and of every key change, and print nothing\n"
         "    --help, -h            show this help\n"
         "\n"
         "Exit codes:\n"
@@ -48,6 +54,16 @@ nlohmann::json keyToJson(const choralesearch::KeyContext& key) {
     };
 }
 
+nlohmann::json keyChangeToJson(const choralesearch::KeyChange& change) {
+    return {
+        {"line", change.line},
+        {"key", change.keyContext.key},
+        {"mode", change.keyContext.mode},
+        {"keyDeg", change.keyContext.keyDeg},
+        {"signature", change.signature},
+    };
+}
+
 nlohmann::json infoToJson(const ChoraleInfo& info) {
     nlohmann::json j = {
         {"id", info.id},
@@ -61,14 +77,21 @@ nlohmann::json infoToJson(const ChoraleInfo& info) {
     if (info.mode) j["mode"] = *info.mode;
     if (info.cantusFirmus) j["cantusFirmus"] = keyToJson(*info.cantusFirmus);
     j["modulations"] = nlohmann::json::array();
+    for (const choralesearch::KeyChange& change : info.keyChanges) j["modulations"].push_back(keyChangeToJson(change));
+    return j;
+}
+
+nlohmann::json positionsToJson(const ChoraleInfo& info, hum::HumdrumFile& infile) {
+    nlohmann::json j = {{"positions", nlohmann::json::object()}, {"modulations", nlohmann::json::array()}};
+    std::map<int, std::string> positionOfLine;
+    for (const choralesearch::LinePosition& position : choralesearch::linePositions(infile)) {
+        positionOfLine[position.line] = position.position;
+        j["positions"][std::to_string(position.line)] = position.position;
+    }
     for (const choralesearch::KeyChange& change : info.keyChanges) {
-        j["modulations"].push_back({
-            {"line", change.line},
-            {"key", change.keyContext.key},
-            {"mode", change.keyContext.mode},
-            {"keyDeg", change.keyContext.keyDeg},
-            {"signature", change.signature},
-        });
+        nlohmann::json modulation = keyChangeToJson(change);
+        modulation["position"] = positionOfLine[change.line];
+        j["modulations"].push_back(modulation);
     }
     return j;
 }
@@ -90,13 +113,32 @@ std::vector<fs::path> findScores(const std::vector<std::string>& inputs) {
     return files;
 }
 
+// The info needs no computed spines, so the scores are read as they are.
+void printInfos(const std::vector<fs::path>& files) {
+    nlohmann::json infos = nlohmann::json::array();
+    for (const fs::path& file : files) infos.push_back(infoToJson(HumdrumChorale(file.string(), false).collectInfo()));
+    std::cout << infos.dump(1, '\t') << '\n';
+}
+
+void writePositions(const std::vector<fs::path>& files, const fs::path& dir) {
+    fs::create_directories(dir);
+    for (const fs::path& file : files) {
+        hum::HumdrumFile infile;
+        if (!infile.read(file.string())) throw std::runtime_error("could not read " + file.string());
+        const ChoraleInfo info = HumdrumChorale(file.string(), false).collectInfo();
+        std::ofstream(dir / (info.id + ".json")) << positionsToJson(info, infile).dump(1, '\t') << '\n';
+    }
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
     std::vector<std::string> inputs;
+    std::optional<fs::path> positionsDir;
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
         if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
+        if (arg == "--positions-dir" && i + 1 < argc) { positionsDir = argv[++i]; continue; }
         if (!arg.empty() && arg[0] == '-') {
             std::cerr << "Unknown option: " << arg << "\n";
             printUsage(argv[0]);
@@ -110,12 +152,9 @@ int main(int argc, char** argv) {
     }
 
     try {
-        nlohmann::json infos = nlohmann::json::array();
-        // The info needs no computed spines, so the scores are read as they are.
-        for (const fs::path& file : findScores(inputs)) {
-            infos.push_back(infoToJson(HumdrumChorale(file.string(), false).collectInfo()));
-        }
-        std::cout << infos.dump(1, '\t') << '\n';
+        const std::vector<fs::path> files = findScores(inputs);
+        if (positionsDir) writePositions(files, *positionsDir);
+        else printInfos(files);
     } catch (const std::invalid_argument& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return kExitInvalidArgumentError;

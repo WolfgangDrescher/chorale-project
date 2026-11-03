@@ -32,7 +32,7 @@ FROM toolchain AS test
 RUN make -C chorale-search run-tests
 
 
-# ./kern, ./corpus and the tables of the lessons, generated the way `make kern
+# ./kern, ./positions, ./corpus and the tables of the lessons, generated the way `make kern
 # corpus analyses` does.
 FROM toolchain AS data
 COPY Makefile ./
@@ -82,6 +82,7 @@ CMD ["node", ".output/server/index.mjs"]
 FROM node:${NODE}-${DEBIAN}-slim AS webapp-build
 WORKDIR /build/chorale-webapp
 COPY --from=data /build/kern /build/kern
+COPY --from=data /build/positions /build/positions
 COPY chorale-webapp ./
 COPY --from=data /build/chorale-webapp/content/analysis-results ./content/analysis-results
 RUN npm ci

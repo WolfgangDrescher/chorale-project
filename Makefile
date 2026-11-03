@@ -16,6 +16,8 @@
 #     carries no computed spines. Only generated again if the sources, the
 #     annotations or chorale-generate changed since the last time (./kern/.generated
 #     records when that was), so a make that has nothing to do takes no time.
+#     ./positions gets the position of every line of each score with it, for
+#     the annotation of modulations in the webapp.
 #
 # make kern chor001 chor009
 #     generate ./kern for only the given chorales
@@ -87,6 +89,7 @@ FIXTURE_CHORALES := chor001 chor005 chor006 chor008 chor009 chor029 chor039 chor
 
 CHORALE_GENERATE := ./chorale-search/build/chorale-generate
 CHORALE_GROUP := ./chorale-search/build/chorale-group
+CHORALE_INFO := ./chorale-search/build/chorale-info
 ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
 ANALYSIS_RESULTS := $(patsubst chorale-webapp/analyses/%.json,chorale-webapp/content/analysis-results/%.json,$(ANALYSES))
 MODULATIONS := annotations/bach-modulations.json
@@ -102,10 +105,11 @@ build:
 # that file, so it is generated again if `build` changed it, and only then.
 $(CHORALE_GENERATE): build ;
 $(CHORALE_GROUP): build ;
+$(CHORALE_INFO): build ;
 
 # Everything the generated chorales are made of. The marker files record when they were generated
 # last, so that generating them again is left out if none of this is newer.
-CHORALE_INPUTS := $(wildcard $(SOURCE_KERN)/*.krn) $(MODULATIONS) $(LYRICS) $(CHORALE_GENERATE)
+CHORALE_INPUTS := $(wildcard $(SOURCE_KERN)/*.krn) $(MODULATIONS) $(LYRICS) $(CHORALE_GENERATE) $(CHORALE_INFO)
 
 # Without chorale ids the whole of it is generated, if something changed. With ids it is generated
 # for just those, which leaves the marker alone, since the rest is not up to date because of it.
@@ -118,6 +122,7 @@ kern: build
 		--modulations $(MODULATIONS) \
 		--lyrics $(LYRICS) \
 		$(CHORALES)
+	$(CHORALE_INFO) --positions-dir positions/bach-370-chorales $(CHORALES:%=kern/bach-370-chorales/%.krn)
 
 corpus: build
 	$(CHORALE_GENERATE) $(SOURCE_KERN) corpus/bach-370-chorales \
@@ -131,6 +136,7 @@ kern/.generated: $(CHORALE_INPUTS)
 	$(CHORALE_GENERATE) $(SOURCE_KERN) kern/bach-370-chorales \
 		--modulations $(MODULATIONS) \
 		--lyrics $(LYRICS)
+	$(CHORALE_INFO) --positions-dir positions/bach-370-chorales kern/bach-370-chorales
 	@touch $@
 
 corpus/.generated: $(CHORALE_INPUTS)
@@ -155,7 +161,7 @@ chorale-webapp/content/analysis-results/%.json: chorale-webapp/analyses/%.json c
 	$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $< > $@.tmp && mv $@.tmp $@ || { rm -f $@.tmp; exit 1; }
 
 clean:
-	rm -rf kern corpus chorale-webapp/content/chorales chorale-webapp/content/analysis-results
+	rm -rf kern positions corpus chorale-webapp/content/chorales chorale-webapp/content/analysis-results
 
 clean-build:
 	$(MAKE) -C chorale-search clean

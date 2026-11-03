@@ -45,6 +45,7 @@ add_library(chorale_core STATIC
     src/GroupMatchQueries.cpp
     src/Check.cpp
     src/ComputedSpines.cpp
+    src/LinePositions.cpp
 )
 target_include_directories(chorale_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -69,7 +70,7 @@ target_link_libraries(chorale-info PRIVATE chorale_core)
 add_executable(chorale-group cli/chorale-group.cpp)
 target_link_libraries(chorale-group PRIVATE chorale_core)
 
-add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/LyricsSpines.cpp src/ComputedSpines.cpp)
+add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/LyricsSpines.cpp src/ComputedSpines.cpp src/LinePositions.cpp)
 target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
@@ -102,7 +103,7 @@ if(BUILD_TESTS)
     target_link_libraries(test_choralefilter PRIVATE humlib)
     add_test(NAME choralefilter COMMAND test_choralefilter)
 
-    add_executable(test_modulations tests/test_modulations.cpp src/Modulations.cpp)
+    add_executable(test_modulations tests/test_modulations.cpp src/Modulations.cpp src/LinePositions.cpp)
     target_include_directories(test_modulations PRIVATE src tests external/json/single_include)
     target_link_libraries(test_modulations PRIVATE humlib)
     add_test(NAME modulations COMMAND test_modulations)
@@ -120,6 +121,11 @@ if(BUILD_TESTS)
     target_include_directories(test_choralelyrics PRIVATE tests)
     target_link_libraries(test_choralelyrics PRIVATE chorale_core)
     add_test(NAME choralelyrics COMMAND test_choralelyrics)
+
+    add_executable(test_linepositions tests/test_linepositions.cpp)
+    target_include_directories(test_linepositions PRIVATE tests)
+    target_link_libraries(test_linepositions PRIVATE chorale_core)
+    add_test(NAME linepositions COMMAND test_linepositions)
 
     add_executable(test_humdrumchorale tests/test_humdrumchorale.cpp)
     target_include_directories(test_humdrumchorale PRIVATE tests)

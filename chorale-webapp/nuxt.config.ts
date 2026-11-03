@@ -50,6 +50,7 @@ export default defineNuxtConfig({
         compressPublicAssets: true,
         routeRules: {
             '/kern/**': { prerender: false },
+            '/positions/**': { prerender: false },
         },
         // The font of the PDF downloads (see server/utils/chorale-pdf.js). Only the files used there
         // are bundled, not the whole package (all weights, scripts and formats).
@@ -68,6 +69,11 @@ export default defineNuxtConfig({
             {
                 baseURL: 'kern/bach-370-chorales',
                 dir: fileURLToPath(new URL('../kern/bach-370-chorales', import.meta.url)),
+                maxAge: 3600,
+            },
+            {
+                baseURL: 'positions/bach-370-chorales',
+                dir: fileURLToPath(new URL('../positions/bach-370-chorales', import.meta.url)),
                 maxAge: 3600,
             },
         ],

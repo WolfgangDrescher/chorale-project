@@ -1,5 +1,7 @@
 #include "Modulations.hpp"
 
+#include "LinePositions.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <set>
@@ -12,17 +14,10 @@ namespace choralesearch {
 
 namespace {
 
-hum::HumNum parseDecimal(const std::string& s) {
-    auto dot = s.find('.');
-    if (dot == std::string::npos) {
-        return hum::HumNum(std::stoi(s));
-    }
-    std::string intPart = s.substr(0, dot);
-    std::string fracPart = s.substr(dot + 1);
-    int denom = 1;
-    for (std::size_t i = 0; i < fracPart.size(); ++i) denom *= 10;
-    int numer = (intPart.empty() ? 0 : std::stoi(intPart)) * denom + std::stoi(fracPart);
-    return hum::HumNum(numer, denom);
+// A beat as the annotations write it: "3", or "3+1/2" with the part of a beat as a fraction.
+hum::HumNum parseBeat(const std::string& text) {
+    const std::size_t plus = text.find('+');
+    return hum::HumNum(text) + (plus == std::string::npos ? hum::HumNum(0) : hum::HumNum(text.substr(plus + 1)));
 }
 
 Modulation parseModulation(const std::string& pos, const std::string& key) {
@@ -33,7 +28,7 @@ Modulation parseModulation(const std::string& pos, const std::string& key) {
     Modulation mod;
     mod.pos = pos;
     mod.measure = std::stoi(pos.substr(0, slash));
-    mod.beat = parseDecimal(pos.substr(slash + 1));
+    mod.beat = parseBeat(pos.substr(slash + 1));
     mod.key = key;
     return mod;
 }
@@ -73,27 +68,12 @@ bool hasChurchMode(hum::HumdrumLine& line) {
     return false;
 }
 
-// The time of the data line at the position. The beat is counted from the last numbered barline,
-// so the pickup after a repeat sign (an unnumbered barline like "=:|!") has the beats after the
-// measure before it, as it is written: "7/3" for the quarter before measure 8 in 3/4. humlib's
-// getBeat() would label it (7, 1), which the first beat of measure 7 has too.
+// The time of the first data line at the position, see LinePositions.hpp for how it is counted.
 hum::HumNum findTimestamp(hum::HumdrumFile& infile, int measure, hum::HumNum beat) {
-    int currentMeasure = -1;
-    hum::HumNum quarters = 0;
-    for (int i = 0; i < infile.getLineCount(); ++i) {
-        if (infile[i].isBarline()) {
-            int number = infile.getMeasureNumber(i);
-            if (number >= 0) {
-                currentMeasure = number;
-                quarters = 0;
-            }
-            continue;
+    for (const LinePosition& position : linePositions(infile)) {
+        if (position.measure == measure && position.beat == beat) {
+            return infile[position.line - 1].getDurationFromStart();
         }
-        if (!infile[i].isData()) continue;
-        if (currentMeasure == measure && quarters + 1 == beat) {
-            return infile[i].getDurationFromStart();
-        }
-        quarters += infile[i].getDuration();
     }
     return hum::HumNum(-1);
 }

@@ -11,7 +11,7 @@ namespace choralesearch {
 
 // One annotated key change: from `pos` onward the piece is in `key`.
 struct Modulation {
-    std::string pos; // "measure/beat", e.g. "10/3.5"
+    std::string pos; // "measure/beat", e.g. "10/3+1/2"
     int measure = 0;
     hum::HumNum beat;
     std::string key;
