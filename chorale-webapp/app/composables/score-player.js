@@ -186,6 +186,7 @@ export function useScorePlayer() {
         toggle,
         stop,
         seek,
+        goTo,
         toSeconds,
     });
 
@@ -365,6 +366,13 @@ export function useScorePlayer() {
         if (!callVerovioMethod) return;
         const performance = await currentPerformance();
         if (performance) player.soundingIds = idsSoundingAt(performance, time);
+    }
+
+    // Goes to the first time the element with the given id sounds, e.g. a note.
+    async function goTo(id) {
+        if (!callVerovioMethod) return;
+        const sounding = (await currentPerformance())?.soundings.find((sounding) => sounding.id === id);
+        if (sounding) seek(sounding.start);
     }
 
     function toSeconds(time) {
