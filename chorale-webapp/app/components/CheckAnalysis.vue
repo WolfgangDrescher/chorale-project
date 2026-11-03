@@ -221,6 +221,8 @@ defineShortcuts({
     arrowright: () => props.active && goToFinding(position.value + 1),
 });
 
+const player = useScorePlayer();
+
 // A clicked note selects the first finding that has it among its notes.
 function onNoteClick({ line, voice }) {
     const index = findings.value.findIndex(
@@ -321,7 +323,9 @@ function onNoteClick({ line, voice }) {
 
             <div class="flex flex-col gap-4">
                 <UCard>
-                    <HighlightedScore
+                    <ScorePlayerControls :player="player" class="mb-2" />
+                    <PlayableHighlightedScore
+                        :player="player"
                         :score-data="result.kern"
                         :horizontal="true"
                         :verovio-options="{

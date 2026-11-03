@@ -441,6 +441,8 @@ function goToSegment(n) {
     position.value = Math.min(Math.max(n, 1), segments.value.length);
 }
 
+const player = useScorePlayer();
+
 // A clicked note selects the segment starting on its line. A note that opens no segment (an
 // unclassified one, say) takes the latest segment that started before it.
 function onNoteClick({ line }) {
@@ -557,7 +559,9 @@ function onSubmit() {
 
                 <div class="flex flex-col gap-4">
                     <UCard>
-                        <HighlightedScore
+                        <ScorePlayerControls :player="player" class="mb-2" />
+                        <PlayableHighlightedScore
+                            :player="player"
                             :score-data="result.kern"
                             :horizontal="true"
                             :verovio-options="{

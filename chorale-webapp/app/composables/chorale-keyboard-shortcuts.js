@@ -2,7 +2,8 @@ import { onKeyStroke } from '@vueuse/core';
 
 function ignoreIfInput() {
     const el = document.activeElement;
-    return el && (['input', 'textarea'].includes(el.tagName.toLowerCase()) || el.isContentEditable);
+    // A slider takes the arrow keys itself.
+    return el && (['input', 'textarea'].includes(el.tagName.toLowerCase()) || el.isContentEditable || !!el.closest('[role="slider"]'));
 }
 
 export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale } = {}) {

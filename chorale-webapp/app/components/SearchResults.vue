@@ -81,6 +81,34 @@ function sectionsForItems(items) {
     }));
 }
 
+// A player for each chorale of the page, each in a scope of its own that ends when its chorale
+// leaves the page.
+const playerScopes = new Map();
+const players = shallowRef(new Map());
+watch(pagedChoraleEntries, (entries) => {
+    const choraleIds = entries.map(([choraleId]) => choraleId);
+    for (const [choraleId, scope] of playerScopes) {
+        if (!choraleIds.includes(choraleId)) {
+            scope.stop();
+            playerScopes.delete(choraleId);
+        }
+    }
+    players.value = new Map(choraleIds.map((choraleId) => {
+        if (!playerScopes.has(choraleId)) playerScopes.set(choraleId, effectScope());
+        return [choraleId, playerScopes.get(choraleId).run(useScorePlayer)];
+    }));
+}, { immediate: true });
+onScopeDispose(() => {
+    for (const scope of playerScopes.values()) scope.stop();
+});
+
+// The space bar pauses the chorale that sounds, or else plays the last one played or the first
+// of the page.
+useScorePlayerKeyboardShortcuts(() => {
+    const first = players.value.values().next().value;
+    if (first) toggleLastScorePlayer(first);
+});
+
 // The page of the chorale, with the matches to highlight there: "4:12-15~1:12-14,4:30-31" is a
 // voice and its lines for each section, joined with "~" to the sections it links in other voices
 // (see pages/chorale/[id].vue).
@@ -124,6 +152,7 @@ function choraleLink(choraleId, items) {
                     </template>
                 </i18n-t>
                 <div class="flex items-center gap-2">
+                    <ScorePlayerSettings variant="outline" size="xs" />
                     <UFieldGroup>
                         <USelect
                             v-model="sortBy"
@@ -159,10 +188,14 @@ function choraleLink(choraleId, items) {
                                 </NuxtLink>
                                 <span v-if="chorales?.[choraleId]?.bwv" class="text-sm text-muted">{{ chorales[choraleId].bwv }}</span>
                             </div>
-                            <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
+                            <div class="flex items-center gap-2">
+                                <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
+                                <ScorePlayerControls :player="players.get(choraleId)" compact />
+                            </div>
                         </div>
                     </template>
-                    <HighlightedScore
+                    <PlayableHighlightedScore
+                        :player="players.get(choraleId)"
                         :horizontal="true"
                         :piece-id="choraleId"
                         :verovio-options="{

@@ -200,3 +200,17 @@ choraleCount: "ein Choral | {count} Choräle"
 key: Tonart
 mode: Modus
 text: Text
+playerPlay: Abspielen
+playerPause: Pause
+playerPosition: Position in der Partitur
+playerSettings: Klang und Tempo
+playerInstrument: Klang
+playerTempo: Tempo
+playerVolume: Lautstärke
+playerReverb: Hall
+playerSpreadVoices: Stimmen im Raum verteilen
+playerSpreadVoicesDescription: Bass links, Sopran rechts
+playerInstrumentChurchOrgan: Orgel
+playerInstrumentChoirAahs: Chor (Aah)
+playerInstrumentVoiceOohs: Chor (Ooh)
+playerInstrumentGrandPiano: Piano

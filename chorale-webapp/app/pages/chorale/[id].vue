@@ -186,6 +186,9 @@ const {
 
 useChoraleKeyboardShortcuts({ prevChorale, nextChorale });
 
+const player = useScorePlayer();
+useScorePlayerKeyboardShortcuts(player.toggle);
+
 // The key as the score writes it, e.g. "G major" or "f# minor".
 const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Boolean).join(' '));
 </script>
@@ -224,8 +227,9 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
             </div>
 
             <div class="flex flex-col md:flex-row items-center gap-4">
-                <div>
+                <div class="flex flex-wrap items-center gap-4">
                     <ScoreOptionsPalette :chorale="chorale" />
+                    <ScorePlayerControls :player="player" />
                 </div>
                 <div class="shrink-0 flex gap-2 ml-auto md:order-2">
                     <UButton :to="githubScoreUrlGenerator(chorale.choraleId)" target="_blank">
@@ -276,7 +280,8 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 </div>
             </div>
 
-            <HighlightedScore
+            <PlayableHighlightedScore
+                :player="player"
                 :piece-id="chorale.choraleId"
                 :horizontal="scoreOptions.showHorizontalViewMode"
                 :verovio-options="{
