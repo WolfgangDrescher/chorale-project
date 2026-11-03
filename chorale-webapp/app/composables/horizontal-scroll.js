@@ -47,9 +47,9 @@ export function useHorizontalScroll() {
         if (!el) return;
 
         const elRect = el.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
+        const wrapperRect = scrollWrapper.getBoundingClientRect();
 
-        const targetScrollLeft = scrollWrapper.scrollLeft + elRect.left - containerRect.left - scrollWrapper.clientWidth / 2 + elRect.width / 2;
+        const targetScrollLeft = scrollWrapper.scrollLeft + elRect.left - wrapperRect.left - scrollWrapper.clientWidth / 2 + elRect.width / 2;
 
         if (smooth) {
             smoothScrollTo(scrollWrapper, targetScrollLeft);
