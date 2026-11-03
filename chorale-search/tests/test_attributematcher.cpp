@@ -190,6 +190,78 @@ TEST_CASE(matcher_kern_rest_value_never_overlaps_a_pitch_value) {
     }
 }
 
+// The lines of every match, to compare what two matchers find.
+std::vector<int> matchedLines(const AttributeMatcher& matcher, const HumdrumChorale& chorale, std::size_t voice) {
+    std::vector<int> lines;
+    for (const auto& m : matcher.findAll(chorale, voice)) lines.push_back(m.startLineNumber);
+    return lines;
+}
+
+TEST_CASE(matcher_kern_accidental_alone_matches_every_pitch_letter_spelled_with_it) {
+    // chor009 is in G major and modulates, so it has sharps on several letters; chor008 (f dorian)
+    // has flats on several letters. An accidental alone finds the same notes as every pitch
+    // letter spelled with it, in any register.
+    MatcherOptions ignoreOctave;
+    ignoreOctave.kernIgnoreOctave = true;
+    struct Case { const char* chorale; std::string accidental; };
+    for (const Case& c : {Case{"chor009", "#"}, Case{"chor008", "-"}}) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(c.chorale));
+        std::vector<PatternValue> spelled;
+        for (const char* letter : {"C", "D", "E", "F", "G", "A", "B"}) spelled.push_back(letter + c.accidental);
+        AttributeMatcher accidentalAlone("kern", {AttributeMap{{"kern", {c.accidental}}}});
+        AttributeMatcher everyLetter("kern", {AttributeMap{{"kern", spelled}}}, ignoreOctave);
+        for (std::size_t voice = 1; voice <= 4; ++voice) {
+            auto lines = matchedLines(accidentalAlone, chorale, voice);
+            CHECK(!lines.empty());
+            CHECK(lines == matchedLines(everyLetter, chorale, voice));
+        }
+    }
+}
+
+TEST_CASE(matcher_kern_accidental_alone_tells_a_double_sharp_from_a_sharp) {
+    // Measures 12 and 13 of chor278 (E major): the alto has f## on line 10, the bass F## on line 13.
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*k[f#c#g#d#]\t*k[f#c#g#d#]\t*k[f#c#g#d#]\t*k[f#c#g#d#]\n"
+        "*E:\t*E:\t*E:\t*E:\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=12\t=12\t=12\t=12\n"
+        "2E;\t2G#;\t2B;\t2e;\n"
+        "4C#\t8c#L\t4g#\t4ee\n"
+        ".\t8BJ\t.\t.\n"
+        "4D#\t4A#\t4f##\t4dd#\n"
+        "=13\t=13\t=13\t=13\n"
+        "8E#L\t4G#\t4g#\t4cc#\n"
+        "8F##J\t.\t.\t.\n"
+        "4G#\t4d#\t8g#L\t4b\n"
+        ".\t.\t8f#XJ\t.\n"
+        "8C#L\t4c#\t4enX\t4a\n"
+        "8D#J\t.\t.\t.\n"
+        "4E\t4B\t4e\t4g#\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "chor278-excerpt");
+    auto lines = [&](const std::string& value, std::size_t voice) {
+        return matchedLines(AttributeMatcher("kern", {AttributeMap{{"kern", {value}}}}), chorale, voice);
+    };
+    CHECK(lines("##", 1) == std::vector<int>{13});
+    CHECK(lines("##", 3) == std::vector<int>{10});
+    CHECK(lines("##", 2).empty());
+    CHECK(lines("##", 4).empty());
+    // A double sharp is no sharp, and the other way round.
+    CHECK(lines("#", 1) == (std::vector<int>{8, 10, 12, 14, 16, 17}));
+    CHECK(lines("#", 3) == (std::vector<int>{8, 12, 14, 15}));
+    // Rhythm and fermata combine with an accidental alone the way they do with a pitch.
+    CHECK(lines("8##", 1) == std::vector<int>{13});
+    CHECK(lines("4##", 1).empty());
+    CHECK(lines("#;", 2) == std::vector<int>{7});
+    CHECK(lines("#;", 1).empty());
+    // A natural alters nothing, and a mixed run alters nothing as a whole: neither is an
+    // accidental to search for, so both fall back to the literal comparison and find nothing.
+    CHECK(lines("n", 3).empty());
+    CHECK(lines("#-", 3).empty());
+}
+
 TEST_CASE(matcher_kern_fermata_only_value_does_not_match_a_rest) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
     // Fermatas fall on real notes in this piece (lines 30, 41, 58, 68); the "4r"/"4ry"

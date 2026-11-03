@@ -171,17 +171,27 @@ private:
     std::size_t m_position = 0;
 };
 
+// Whether `text` is one character repeated ("#", "##", "--"). An accidental mixed of both
+// directions ("#-") alters nothing as a whole, so it is none to search for.
+bool isOneCharacterRepeated(const std::string& text) {
+    return !text.empty() && text.find_first_not_of(text.front()) == std::string::npos;
+}
+
 // A **kern pattern value taken apart: rhythm, pitch-or-rest and fermata, each of them left out
-// (empty, false) when the value does not state it.
+// (empty, false) when the value does not state it. `accid` is an accidental standing alone, on no
+// pitch letter, counted like hum::Convert::kernToAccidentalCount(): 1 for "#", -2 for "--". A
+// pitch carries its own accidental in `pitch` ("f#"), so `accid` is left out there: not stated on
+// its own, which is not the same as no accidental.
 struct KernValue {
     std::string rhythm;
     std::string pitch;
+    std::optional<int> accid;
     bool fermata;
 };
 
-// Splits a **kern pattern value into rhythm, pitch-or-rest, and/or fermata (";") --
-// any subset, in any combination; an omitted component is a wildcard, not "absent"
-// (no ";" doesn't mean "no fermata"). nullopt for anything else -- falls back to literal.
+// Splits a **kern pattern value into rhythm, pitch-or-rest or an accidental alone, and/or
+// fermata (";") -- any subset, in any combination; an omitted component is a wildcard, not
+// "absent" (no ";" doesn't mean "no fermata"). nullopt for anything else -- falls back to literal.
 std::optional<KernValue> parseKernValue(const std::string& patternValue) {
     ValueScanner scan(patternValue);
     std::string rhythm = scan.digits();
@@ -191,11 +201,18 @@ std::optional<KernValue> parseKernValue(const std::string& patternValue) {
     if (!pitch.empty()) pitch += scan.anyOf("#n-");
     else if (scan.accept('r')) pitch = "r";
 
+    std::optional<int> accid;
+    if (pitch.empty()) {
+        std::string accidental = scan.anyOf("#-");
+        if (!accidental.empty() && !isOneCharacterRepeated(accidental)) return std::nullopt;
+        if (!accidental.empty()) accid = hum::Convert::kernToAccidentalCount(accidental);
+    }
+
     bool fermata = scan.accept(';');
     if (!scan.atEnd()) return std::nullopt;
-    if (rhythm.empty() && pitch.empty() && !fermata) return std::nullopt; // e.g. "" -- nothing to match on
+    if (rhythm.empty() && pitch.empty() && !accid && !fermata) return std::nullopt; // e.g. "" -- nothing to match on
 
-    return KernValue{std::move(rhythm), std::move(pitch), fermata};
+    return KernValue{std::move(rhythm), std::move(pitch), accid, fermata};
 }
 
 // A **kern pattern value independently checks rhythm, pitch-or-rest, and/or fermata,
@@ -210,8 +227,14 @@ bool kernValueMatches(const std::string& patternValue, hum::HTp actualTok, bool 
     auto parsed = parseKernValue(patternValue);
     if (!parsed) return patternValue == actual;
 
-    const auto& [rhythm, pitch, fermata] = *parsed;
+    const auto& [rhythm, pitch, accid, fermata] = *parsed;
     if (!rhythm.empty() && rhythm != hum::Convert::durationToRecip(duration)) return false;
+    if (accid) {
+        // An accidental alone: any pitch letter, in any register, altered by exactly as much.
+        std::string actualPitch = kernToPitch(actual);
+        if (actualPitch.empty() || actualPitch == "r") return false;
+        if (hum::Convert::kernToAccidentalCount(actualPitch) != *accid) return false;
+    }
     if (!pitch.empty()) {
         std::string actualPitch = kernToPitch(actual);
         bool pitchMatches = ignoreOctave ? hum::Convert::kernToBase40PC(pitch) == hum::Convert::kernToBase40PC(actualPitch)
@@ -616,9 +639,10 @@ bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, 
         const std::string& v = value.text;
         auto parsed = parseKernValue(v);
         if (!parsed) return kernValueMatches(v, tok, ignoreOctave, duration); // literal markup -- no rhythm to drop
-        const auto& [rhythm, pitch, fermata] = *parsed;
+        const auto& [rhythm, pitch, accid, fermata] = *parsed;
         if (rhythm.empty()) return kernValueMatches(v, tok, ignoreOctave, duration);
-        std::string withoutRhythm = pitch + (fermata ? ";" : "");
+        std::string accidental = accid ? std::string(std::abs(*accid), *accid > 0 ? '#' : '-') : "";
+        std::string withoutRhythm = pitch + accidental + (fermata ? ";" : "");
         if (withoutRhythm.empty()) return true; // a rhythm and nothing else -- nothing left to judge
         return kernValueMatches(withoutRhythm, tok, ignoreOctave, duration);
     });
