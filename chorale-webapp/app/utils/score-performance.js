@@ -1,10 +1,11 @@
 // The score as Verovio plays it, in milliseconds of its own tempo: the notes by voice (the highest
 // first), the soundings (see soundingsOf), the number of voices, the tempo in quarter notes per
-// minute and the duration.
+// minute and the duration, with a breath after each fermata.
 export async function loadScorePerformance(callVerovioMethod) {
-    const [midiBase64, timemap, { Midi }] = await Promise.all([
+    const [midiBase64, timemap, mei, { Midi }] = await Promise.all([
         callVerovioMethod('renderToMIDI'),
         callVerovioMethod('renderToTimemap', { includeMeasures: false, includeRests: true }),
+        callVerovioMethod('getMEI'),
         import('@tonejs/midi'),
     ]);
 
@@ -21,13 +22,13 @@ export async function loadScorePerformance(callVerovioMethod) {
         })))
         .sort((a, b) => a.start - b.start);
 
-    return {
+    return holdFermatas({
         notes,
         soundings: soundingsOf(timemap),
         voiceCount: tracks.length,
         tempo: midi.header.tempos[0]?.bpm ?? 120,
         duration: Math.max(0, ...notes.map(({ end }) => end)),
-    };
+    }, fermataNoteIds(mei));
 }
 
 // A sounding is one time an element of the drawn score sounds, a note or a rest, from the time it
@@ -48,6 +49,48 @@ function soundingsOf(timemap) {
         }
     }
     return soundings;
+}
+
+function fermataNoteIds(mei) {
+    return new Set(Array.from(mei.matchAll(/<fermata\b[^>]*\bstartid="#([^"]+)"/g), (match) => match[1]));
+}
+
+// A note with a fermata sounds as long as it is written; before the music goes on, a breath of a
+// sixteenth is put in. In quarter notes, so it follows the tempo.
+const FERMATA_BREATH = 0.25;
+
+// The ends of the fermatas are read off the timemap, the notes off the MIDI, and the two do not
+// agree to the millisecond: Verovio ends a note of the MIDI about 5 ms before the timemap does, so
+// that repeated notes stay apart. Times this close are taken as the same moment, e.g. the end of a
+// fermata and the end of the notes that end with it.
+const SAME_TIME_MS = 20;
+
+// Puts a breath after every fermata the music goes on right after, in all voices at once: the
+// notes that end with the fermata sound until the breath, those that begin after it begin after.
+function holdFermatas(performance, fermataIds) {
+    const breath = FERMATA_BREATH * 60000 / performance.tempo;
+    const goesOnAt = (time) => performance.notes.some(({ start }) => Math.abs(start - time) < SAME_TIME_MS);
+
+    // Where the fermatas end, merged where they overlap.
+    const ends = [];
+    const fermatas = performance.soundings.filter(({ id, end }) => fermataIds.has(id) && end < Infinity);
+    for (const { start, end } of fermatas.sort((a, b) => a.start - b.start)) {
+        if (ends.length && start <= ends.at(-1)) ends[ends.length - 1] = Math.max(ends.at(-1), end);
+        else ends.push(end);
+    }
+    const breaths = ends.filter(goesOnAt);
+    if (!breaths.length) return performance;
+
+    const shiftStart = (time) => time + breath * breaths.filter((end) => end <= time + SAME_TIME_MS).length;
+    const shiftEnd = (time) => time + breath * breaths.filter((end) => end < time - SAME_TIME_MS).length;
+
+    return {
+        ...performance,
+        notes: performance.notes.map((note) => ({ ...note, start: shiftStart(note.start), end: shiftEnd(note.end) })),
+        // The notes of the fermata are marked through the breath, until the music goes on.
+        soundings: performance.soundings.map((sounding) => ({ ...sounding, start: shiftStart(sounding.start), end: shiftStart(sounding.end) })),
+        duration: shiftEnd(performance.duration),
+    };
 }
 
 // The ids of the elements that sound at a time of the performance.
