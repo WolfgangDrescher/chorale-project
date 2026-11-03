@@ -21,6 +21,7 @@ const std::string kFermataKey = "fermata";
 const std::string kPhraseKey = "phrase";
 const std::string kKernFeature = "kern";
 const std::string kMintFeature = "mint";
+const std::string kDegFeature = "deg";
 const std::string kFbFeature = "fb";
 const std::string kMetweightFeature = "metweight";
 
@@ -171,8 +172,8 @@ private:
     std::size_t m_position = 0;
 };
 
-// Whether `text` is one character repeated ("#", "##", "--"). An accidental mixed of both
-// directions ("#-") alters nothing as a whole, so it is none to search for.
+// Whether `text` is one character repeated ("#", "##", "--", "+"). An accidental or alteration
+// mixed of both directions ("#-", "+-") alters nothing as a whole, so it is none to search for.
 bool isOneCharacterRepeated(const std::string& text) {
     return !text.empty() && text.find_first_not_of(text.front()) == std::string::npos;
 }
@@ -541,6 +542,21 @@ bool metweightInList(const std::vector<PatternValue>& allowed, const std::string
                         [&](const PatternValue& v) { return metweightValueMatches(v.text, actual); });
 }
 
+// A **deg pattern value is a scale degree ("4+", "7", "r") compared literally, or an alteration
+// alone ("+", "--"): every degree raised or lowered by exactly as much against the local key, the
+// way Tool_deg reckons it (in minor against the natural minor scale, so a leading tone is "7+").
+bool degValueMatches(const std::string& patternValue, const std::string& actual) {
+    bool alterationAlone = isOneCharacterRepeated(patternValue) && (patternValue.front() == '+' || patternValue.front() == '-');
+    if (!alterationAlone) return patternValue == actual;
+    if (actual.empty() || actual.front() < '1' || actual.front() > '7') return false; // a rest has no degree
+    return actual.substr(1) == patternValue;
+}
+
+bool degInList(const std::vector<PatternValue>& allowed, const std::string& actual) {
+    return std::any_of(allowed.begin(), allowed.end(),
+                        [&](const PatternValue& v) { return degValueMatches(v.text, actual); });
+}
+
 // What a note is to the phrases and to the chorale: whether it opens a phrase, ends one, and whether
 // it is the first or the last sounding note of the whole chorale.
 struct PhraseRoles {
@@ -898,6 +914,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
                       voiceReferenceInList(chorale, voice, key, allowed, tok, nullptr, onset.duration, m_options.kernIgnoreOctave);
         }
         else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
+        else if (key == kDegFeature) matched = degInList(allowed, actual);
         else matched = inList(allowed, actual);
     }
     return negate ? !matched : matched;

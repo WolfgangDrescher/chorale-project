@@ -168,7 +168,7 @@ TEST_CASE(is_valid_pattern_value_for_kern_accepts_any_string) {
 }
 
 TEST_CASE(is_valid_pattern_value_for_deg_accepts_the_documented_grammar) {
-    for (const std::string& v : {"1", "7", "4+", "6-", "4++", "7--", "r"}) {
+    for (const std::string& v : {"1", "7", "4+", "6-", "4++", "7--", "r", "+", "-", "++", "--"}) {
         CHECK(isValidPatternValue("deg", v));
     }
 }
@@ -192,6 +192,9 @@ TEST_CASE(is_valid_pattern_value_for_deg_rejects_out_of_range_or_garbage) {
     CHECK(!isValidPatternValue("deg", "8"));
     CHECK(!isValidPatternValue("deg", "nope"));
     CHECK(!isValidPatternValue("deg", ""));
+    // An alteration alone goes one way: raised and lowered at once is no alteration.
+    CHECK(!isValidPatternValue("deg", "+-"));
+    CHECK(!isValidPatternValue("deg", "-+"));
 }
 
 TEST_CASE(is_valid_pattern_value_for_fermata_accepts_only_true_or_false) {

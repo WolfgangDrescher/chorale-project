@@ -52,7 +52,7 @@ bool isHintFlavoredKey(const std::string& key) {
 }
 
 bool isValidDegValue(const std::string& v) {
-    static const std::regex re(R"(^([1-7][+-]*|r)$)");
+    static const std::regex re(R"(^([1-7][+-]*|\++|-+|r)$)");
     return std::regex_match(v, re);
 }
 

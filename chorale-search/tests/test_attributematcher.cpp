@@ -262,6 +262,59 @@ TEST_CASE(matcher_kern_accidental_alone_tells_a_double_sharp_from_a_sharp) {
     CHECK(lines("#-", 3).empty());
 }
 
+TEST_CASE(matcher_deg_alteration_alone_matches_every_degree_altered_by_as_much) {
+    // chor009 modulates between G, D, a and e and so has raised degrees; chor008 (f dorian) has
+    // lowered ones. An alteration alone finds the same notes as every degree with it.
+    struct Case { const char* chorale; std::string alteration; };
+    for (const Case& c : {Case{"chor009", "+"}, Case{"chor008", "-"}}) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(c.chorale));
+        std::vector<PatternValue> altered;
+        for (const char* degree : {"1", "2", "3", "4", "5", "6", "7"}) altered.push_back(degree + c.alteration);
+        AttributeMatcher alterationAlone("deg", {AttributeMap{{"deg", {c.alteration}}}});
+        AttributeMatcher everyDegree("deg", {AttributeMap{{"deg", altered}}});
+        bool foundAny = false;
+        for (std::size_t voice = 1; voice <= 4; ++voice) {
+            auto lines = matchedLines(alterationAlone, chorale, voice);
+            foundAny = foundAny || !lines.empty();
+            CHECK(lines == matchedLines(everyDegree, chorale, voice));
+        }
+        CHECK(foundAny);
+    }
+}
+
+TEST_CASE(matcher_deg_raised_alone_finds_raised_sevenths_but_no_doubly_raised_degree) {
+    // chor009 modulates to a and e minor, whose leading tones are raised 7ths against the natural
+    // minor scale Tool_deg reckons by: "+" finds them, and a single "+" no "++".
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    AttributeMatcher raised("deg", {AttributeMap{{"deg", {"+"}}}});
+    AttributeMatcher raisedSeventh("deg", {AttributeMap{{"deg", {"7+"}}}});
+    AttributeMatcher doublyRaised("deg", {AttributeMap{{"deg", {"++"}}}});
+    bool foundLeadingTone = false;
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto raisedLines = matchedLines(raised, chorale, voice);
+        for (int line : matchedLines(raisedSeventh, chorale, voice)) {
+            foundLeadingTone = true;
+            CHECK(std::find(raisedLines.begin(), raisedLines.end(), line) != raisedLines.end());
+        }
+        for (int line : matchedLines(doublyRaised, chorale, voice)) {
+            CHECK(std::find(raisedLines.begin(), raisedLines.end(), line) == raisedLines.end());
+        }
+    }
+    CHECK(foundLeadingTone);
+}
+
+TEST_CASE(matcher_deg_alteration_alone_does_not_match_a_rest) {
+    // chor006 has a full-measure rest at position 15 in every voice.
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    for (const std::string& alteration : {"+", "-"}) {
+        for (std::size_t voice = 1; voice <= 4; ++voice) {
+            for (const auto& m : AttributeMatcher("deg", {AttributeMap{{"deg", {alteration}}}}).findAll(chorale, voice)) {
+                CHECK(m.startPosition != 15);
+            }
+        }
+    }
+}
+
 TEST_CASE(matcher_kern_fermata_only_value_does_not_match_a_rest) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
     // Fermatas fall on real notes in this piece (lines 30, 41, 58, 68); the "4r"/"4ry"
