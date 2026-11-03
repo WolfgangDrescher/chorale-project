@@ -42,14 +42,15 @@ export function useHorizontalScroll() {
         requestAnimationFrame(step);
     }
 
-    async function scrollElementIntoView(selector, container, scrollWrapper, smooth = true) {
+    // `align` is where the element lands in the wrapper, from 0 (at its left edge) to 1 (at its right).
+    async function scrollElementIntoView(selector, container, scrollWrapper, smooth = true, align = 0.5) {
         const el = await waitForElement(selector, container, 500);
         if (!el) return;
 
         const elRect = el.getBoundingClientRect();
         const wrapperRect = scrollWrapper.getBoundingClientRect();
 
-        const targetScrollLeft = scrollWrapper.scrollLeft + elRect.left - wrapperRect.left - scrollWrapper.clientWidth / 2 + elRect.width / 2;
+        const targetScrollLeft = scrollWrapper.scrollLeft + elRect.left - wrapperRect.left - (scrollWrapper.clientWidth - elRect.width) * align;
 
         if (smooth) {
             smoothScrollTo(scrollWrapper, targetScrollLeft);

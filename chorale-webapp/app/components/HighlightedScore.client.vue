@@ -16,14 +16,19 @@ const props = defineProps<{
     filters?: Array<string>,
     horizontal?: Boolean,
     scrollToFirstSection?: Boolean,
-    // In the horizontal view: the line of a note to keep in view, scrolled to again whenever
-    // it changes. Wins over scrollToFirstSection.
+    // The line of a note to keep in view: scrolled to whenever it changes and is out of view, in
+    // the horizontal view the score, otherwise the page. Wins over scrollToFirstSection.
     scrollToLine?: Number,
+    // Shows the notes and rests as clickable, for a noteClick that does something.
+    clickableNotes?: Boolean,
 }>();
 
 const emit = defineEmits<{
-    // A click on (or near) a note: its element id, and the line and voice read off it.
+    // A click on (or near) a note or a rest: its element id, and the line and voice read off it.
     noteClick: [note: { id: string, line: number, voice: number }],
+    // Whenever the score is loaded into Verovio, also again with other filters: the function that
+    // calls a method of the toolkit it is loaded into, e.g. to render it to MIDI.
+    scoreLoaded: [event: { callVerovioMethod: (method: string, ...args: unknown[]) => Promise<unknown> }],
 }>();
 
 defineOptions({ inheritAttrs: false });
@@ -45,6 +50,8 @@ const verovioCanvasAttrs = computed(() => {
         options: {
             // The horizontal view has no pages to orient by, so every measure gets its number.
             ...(props.horizontal && { mnumInterval: 1 }),
+            // Repeats are not played.
+            expandNever: true,
             ...props.verovioOptions,
             svgBoundingBoxes: true,
             // svgViewBox: true,
@@ -78,6 +85,9 @@ function backgroundBehind(elem) {
     return '#fff';
 }
 
+// The fade on the right edge of the sticky system start of the horizontal view, in pixels.
+const STICKY_FADE_WIDTH = 28;
+
 // In the horizontal view the system start (labels, brace, clef, key and time signature) stays at
 // the left edge while the score scrolls: a clone of just those parts, on an opaque background so
 // the notes scrolling underneath do not show through. It sits above the markers (up to z-30).
@@ -85,7 +95,6 @@ function useStickySystemStart({ scoreContainer, wrapperElem, horizontal }) {
     const PADDING = 8;
     // A fade on its right edge hints that the score continues to its left; it is only shown
     // together with the copy, so it does not mark the true start of the piece.
-    const FADE_WIDTH = 28;
 
     const elem = useTemplateRef('stickySystemStartElem');
     const style = reactive({ width: '0px', height: '0px', backgroundColor: '#fff' });
@@ -97,7 +106,7 @@ function useStickySystemStart({ scoreContainer, wrapperElem, horizontal }) {
 
     const fadeStyle = computed(() => ({
         left: '100%',
-        width: `${FADE_WIDTH}px`,
+        width: `${STICKY_FADE_WIDTH}px`,
         height: style.height,
         backgroundImage: `linear-gradient(to right, ${style.backgroundColor}, transparent)`,
         opacity: visible.value ? 1 : 0,
@@ -177,13 +186,13 @@ const {
     containsPoint: stickySystemStartContainsPoint,
 } = useStickySystemStart({ scoreContainer, wrapperElem, horizontal: () => props.horizontal });
 
-// How far from a notehead, in pixels, a click still counts as a click on it.
+// How far from a notehead or a rest, in pixels, a click still counts as a click on it.
 const NOTE_CLICK_PADDING = 10;
 
 function noteAtPoint(x: number, y: number) {
     let nearest: Element | null = null;
     let nearestDistance = Infinity;
-    for (const note of scoreContainer.value?.querySelectorAll('g.note:not(.bounding-box)') ?? []) {
+    for (const note of scoreContainer.value?.querySelectorAll('g.note:not(.bounding-box), g.rest:not(.bounding-box), g.mRest:not(.bounding-box)') ?? []) {
         const rect = (note.querySelector('.notehead') ?? note).getBoundingClientRect();
         const dx = Math.max(rect.left - x, 0, x - rect.right);
         const dy = Math.max(rect.top - y, 0, y - rect.bottom);
@@ -203,18 +212,41 @@ function onClick(event: MouseEvent) {
     // The system start covers the scrolled score, so a click on it is not a click on a note below.
     if (stickySystemStartContainsPoint(event.clientX, event.clientY)) return;
     const note = noteAtPoint(event.clientX, event.clientY);
-    const match = note?.id.match(/^note-L(\d+)F(\d+)/);
-    if (!note || !match) return;
-    emit('noteClick', { id: note.id, line: Number(match[1]), voice: Number(match[2]) });
+    const parsed = note && lineAndVoiceOf(note.id);
+    if (!parsed) return;
+    emit('noteClick', { id: note.id, ...parsed });
 }
 
+// In the horizontal view, the note of the line is scrolled to once it nears the right edge or is
+// out of view, and as far as it goes: to right after the system start and its fade. Otherwise the
+// page is scrolled once the line moves on to a system that is cut off, into the upper quarter;
+// within a system the view is left alone, so the reader can scroll away.
+let scrolledToSystem: Element | null = null;
+
 async function scrollToLineNumber(line: number) {
-    if (!props.horizontal || !scoreContainer.value || !wrapperElem.value) return;
-    await scrollElementIntoView(`g[id^="note-L${line}F"]`, scoreContainer.value, wrapperElem.value, true);
+    const selector = `g[id^="note-L${line}F"]`;
+    const note = scoreContainer.value?.querySelector(selector);
+    if (!note) return;
+    if (props.horizontal) {
+        if (!wrapperElem.value) return;
+        const rect = note.getBoundingClientRect();
+        const wrapperRect = wrapperElem.value.getBoundingClientRect();
+        const left = (parseFloat(stickySystemStartStyle.width) || 0) + STICKY_FADE_WIDTH + 4;
+        if (rect.left >= wrapperRect.left + left && rect.right <= wrapperRect.right - 24) return;
+        await scrollElementIntoView(selector, scoreContainer.value, wrapperElem.value, true, left / wrapperElem.value.clientWidth);
+    } else {
+        const system = note.closest('g.system') ?? note;
+        if (system === scrolledToSystem) return;
+        scrolledToSystem = system;
+        const rect = system.getBoundingClientRect();
+        if (rect.top >= 0 && rect.bottom <= window.innerHeight) return;
+        window.scrollBy({ top: rect.top - Math.min(window.innerHeight / 4, Math.max(window.innerHeight - rect.height, 0)), behavior: 'smooth' });
+    }
 }
 
 watch(() => props.scrollToLine, (line) => {
     if (line) scrollToLineNumber(line);
+    else scrolledToSystem = null;
 });
 
 async function onScoreIsReady() {
@@ -292,7 +324,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="relative" :class="horizontal && 'overflow-x-auto'" ref="wrapperElem" :key="horizontal ? 'horizontal' : 'vertical'" @click="onClick" @scroll.passive="onScroll">
+    <div class="relative" :class="[horizontal && 'overflow-x-auto', clickableNotes && '[&_g.note]:cursor-pointer [&_g.rest]:cursor-pointer [&_g.mRest]:cursor-pointer']" ref="wrapperElem" :key="horizontal ? 'horizontal' : 'vertical'" @click="onClick" @scroll.passive="onScroll">
         <div class="relative" :class="horizontal && 'w-max min-w-full'">
             <div v-if="horizontal" class="sticky left-0 z-40 h-0" :style="{ width: stickySystemStartStyle.width }">
                 <div ref="stickySystemStartElem" class="overflow-hidden transition-opacity duration-150" :class="!stickySystemStartVisible && 'opacity-0'" :style="stickySystemStartStyle" />
@@ -315,10 +347,11 @@ onMounted(async () => {
                     <template v-for="(lineGroup, groupIndex) in resolvedLines" :key="groupIndex">
                         <HighlightedSection v-for="line in lineGroup.items" :key="`${line.lineNumber}-${line.label?.value}-${lineGroup.color}`" :start-line="line.lineNumber" :end-line="line.lineNumber" :label="line.label" :color="lineGroup.color" :container="scoreContainer" />
                     </template>
+                    <slot name="markers" :container="scoreContainer" />
                 </template>
             </div>
             <div ref="scoreContainer" class="verovio-canvas-container">
-                <VerovioCanvas v-if="verovioCanvasAttrs.data" ref="verovioCanvas" v-bind="{ ...$attrs, ...verovioCanvasAttrs }" @score-is-ready="onScoreIsReady" />
+                <VerovioCanvas v-if="verovioCanvasAttrs.data" ref="verovioCanvas" v-bind="{ ...$attrs, ...verovioCanvasAttrs }" @score-is-ready="onScoreIsReady" @score-loaded="emit('scoreLoaded', $event)" />
             </div>
         </div>
     </div>
