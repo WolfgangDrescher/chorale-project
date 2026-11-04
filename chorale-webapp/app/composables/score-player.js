@@ -60,6 +60,9 @@ const SCHEDULE_INTERVAL_MS = 500;
 // A note is cut this much short, at most by a tenth, so a repeated note is heard again.
 const ARTICULATION_GAP_MS = 40;
 
+// Attacks this close to the position are taken as the one it is at, not as the next or the previous.
+const SAME_ATTACK_MS = 5;
+
 // Made and started on the first play, within the click, as browsers require for sound.
 let audioContext = null;
 let audio = null;
@@ -221,6 +224,7 @@ export function useScorePlayer() {
         stop,
         seek,
         goTo,
+        step,
         toSeconds,
         makeCurrent,
     });
@@ -417,6 +421,20 @@ export function useScorePlayer() {
 
     function makeCurrent() {
         currentPlayer = player;
+    }
+
+    // Goes to the next (1) or previous (-1) sonority and returns the line attacked there, or null at
+    // either end of the score.
+    async function step(direction) {
+        if (!callVerovioMethod) return null;
+        const performance = await currentPerformance();
+        if (!performance) return null;
+        const starts = [...new Set(performance.soundings.map(({ start }) => start))].sort((a, b) => (a - b) * direction);
+        const sounding = Math.max(...starts.filter((start) => start <= player.position + SAME_ATTACK_MS));
+        const target = starts.find((start) => (start - sounding) * direction > SAME_ATTACK_MS);
+        if (target === undefined) return null;
+        seek(target);
+        return Math.max(...performance.soundings.filter(({ start }) => start === target).map(({ id }) => lineAndVoiceOf(id)?.line ?? 0));
     }
 
     function toSeconds(time) {
