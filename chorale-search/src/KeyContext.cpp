@@ -31,6 +31,16 @@ std::string keyScaleDegree(const std::string& tonic, const std::string& referenc
     return text;
 }
 
+int keySignature(const std::string& key, const std::string& mode) {
+    static const std::array<int, 7> kFifthsOfLetter = {0, 2, 4, -1, 1, 3, 5}; // C D E F G A B
+    static const std::map<std::string, int> kFifthsFromMajor = {
+        {"major", 0}, {"minor", -3}, {"dorian", -2}, {"phrygian", -4}, {"lydian", 1}, {"mixolydian", -1}, {"locrian", -5},
+    };
+    return kFifthsOfLetter.at(hum::Convert::kernToDiatonicPC(key))
+        + 7 * hum::Convert::kernToAccidentalCount(key)
+        + kFifthsFromMajor.at(mode);
+}
+
 std::optional<KeyContext> keyContextFromDesignation(const std::string& token) {
     static const std::regex designationRe(R"(^\*([a-gA-G][#-]*):([a-z]*)$)");
     std::smatch m;

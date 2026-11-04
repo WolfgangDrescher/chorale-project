@@ -96,6 +96,7 @@ for (const file of files) {
         meter: info?.meters?.[0] ?? null,
         // The length in quarter notes, which the search results are ranked by.
         duration: info?.duration ?? null,
+        modulations: info?.modulations ?? null,
     };
 
     // Missing values are left out instead of written as null, so the collection schema can mark

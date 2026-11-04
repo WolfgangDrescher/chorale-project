@@ -23,8 +23,8 @@ void printUsage(const char* argv0) {
         "Usage: " << argv0 << " INPUT...\n"
         "\n"
         "Prints what each score states about itself as a whole -- the titles, the meters, the key it\n"
-        "starts in, the number of measures and phrases, and its length in quarter notes -- as a JSON\n"
-        "array with one object per chorale, in the order of their ids.\n"
+        "starts in and the keys it changes to, the number of measures and phrases, and its length in\n"
+        "quarter notes -- as a JSON array with one object per chorale, in the order of their ids.\n"
         "\n"
         "Arguments:\n"
         "    INPUT...              Humdrum **kern files, or directories that hold some (searched\n"
@@ -51,6 +51,16 @@ nlohmann::json infoToJson(const ChoraleInfo& info) {
     if (info.key) j["key"] = *info.key;
     if (info.mode) j["mode"] = *info.mode;
     if (info.cantusFirmusMode) j["cantusFirmusMode"] = *info.cantusFirmusMode;
+    j["modulations"] = nlohmann::json::array();
+    for (const choralesearch::KeyChange& change : info.keyChanges) {
+        j["modulations"].push_back({
+            {"line", change.line},
+            {"key", change.keyContext.key},
+            {"mode", change.keyContext.mode},
+            {"keyDeg", change.keyContext.keyDeg},
+            {"signature", change.signature},
+        });
+    }
     return j;
 }
 

@@ -131,8 +131,19 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
 
     // Every voice states the meters and the keys, so the first one speaks for the score.
     bool beforeFirstNote = true;
+    std::optional<KeyChange> pendingKeyChange;
     for (hum::HTp token = spine("kern", 1); token; token = token->getNextToken()) {
-        if (token->isData()) beforeFirstNote = false;
+        if (token->isData()) {
+            beforeFirstNote = false;
+            if (pendingKeyChange) {
+                pendingKeyChange->line = token->getLineNumber();
+                info.keyChanges.push_back(*pendingKeyChange);
+                pendingKeyChange.reset();
+            }
+        }
+        if (const std::optional<KeyContext> key = keyContextFromDesignation(*token)) {
+            pendingKeyChange = KeyChange{0, *key, keySignature(key->key, key->mode)};
+        }
         if (token->isTimeSignature()) {
             const std::string meter = token->substr(2);
             if (std::find(info.meters.begin(), info.meters.end(), meter) == info.meters.end()) {
@@ -151,6 +162,11 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
     if (!measureNumbers.empty()) info.measureCount = std::max(0, *std::max_element(measureNumbers.begin(), measureNumbers.end()));
 
     info.duration = file.getScoreDuration().getFloat();
+
+    for (KeyChange& change : info.keyChanges) {
+        const KeyContext& first = info.keyChanges.front().keyContext;
+        change.keyContext.keyDeg = keyScaleDegree(change.keyContext.key, first.key, first.mode);
+    }
 
     info.phraseCount = phraseEndings().size();
     return info;

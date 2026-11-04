@@ -5,7 +5,17 @@
 #include <string>
 #include <vector>
 
+#include "KeyContext.hpp"
+
 namespace choralesearch {
+
+// A key designation and the first data line after it, where it takes effect. keyDeg is that of the
+// first key.
+struct KeyChange {
+    int line = 0;
+    KeyContext keyContext;
+    int signature = 0;
+};
 
 // What a ChoraleFilter asks about a chorale: the facts a score states about
 // itself as a whole, as opposed to anything a pattern finds in it.
@@ -37,6 +47,9 @@ struct ChoraleInfo {
     // The mode of the first key designation: the source's mode of the cantus firmus, which may be a church mode
     // above the annotated key of the first note.
     std::optional<std::string> cantusFirmusMode;
+
+    // Of key designations in a row only the last counts, e.g. *a: below the source's *e:phr.
+    std::vector<KeyChange> keyChanges;
 };
 
 // The number in a chorale's id: 29 for "chor029". The digits at the end count; nullopt where the id has none.

@@ -18,6 +18,13 @@ export default defineContentConfig({
                 cantusFirmusMode: z.enum(['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']).optional(),
                 meter: z.string().optional(),
                 duration: z.number().optional(),
+                modulations: z.array(z.object({
+                    line: z.number(),
+                    key: z.string(),
+                    mode: z.enum(['major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian']),
+                    keyDeg: z.string(),
+                    signature: z.number(),
+                })).optional(),
             }),
         }),
         lessons: defineCollection({

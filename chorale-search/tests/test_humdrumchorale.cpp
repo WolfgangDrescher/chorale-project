@@ -200,6 +200,25 @@ TEST_CASE(collect_info_reads_the_key_of_the_first_note_below_the_church_mode_of_
     CHECK_EQ(*info.cantusFirmusMode, std::string("phrygian"));
 }
 
+TEST_CASE(collect_info_reads_the_key_changes_with_the_line_they_take_effect_on) {
+    std::istringstream score("**kern\n*e:phr\n*a:\n4e\n=1\n*C:\n4c\n*g:dor\n4g\n*-\n");
+    const std::vector<choralesearch::KeyChange> changes = HumdrumChorale(score, "keys", false).collectInfo().keyChanges;
+    REQUIRE(changes.size() == 3u);
+    CHECK_EQ(changes[0].line, 4);
+    CHECK_EQ(changes[0].keyContext.key, std::string("a"));
+    CHECK_EQ(changes[0].keyContext.mode, std::string("minor"));
+    CHECK_EQ(changes[0].keyContext.keyDeg, std::string("1"));
+    CHECK_EQ(changes[0].signature, 0);
+    CHECK_EQ(changes[1].line, 7);
+    CHECK_EQ(changes[1].keyContext.key, std::string("C"));
+    CHECK_EQ(changes[1].keyContext.keyDeg, std::string("3"));
+    CHECK_EQ(changes[2].line, 9);
+    CHECK_EQ(changes[2].keyContext.key, std::string("g"));
+    CHECK_EQ(changes[2].keyContext.mode, std::string("dorian"));
+    CHECK_EQ(changes[2].keyContext.keyDeg, std::string("7"));
+    CHECK_EQ(changes[2].signature, -1);
+}
+
 TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
     std::istringstream score("**kern\n4c\n4d\n*-\n");
     choralesearch::ChoraleInfo info = HumdrumChorale(score, "bare", false).collectInfo();
