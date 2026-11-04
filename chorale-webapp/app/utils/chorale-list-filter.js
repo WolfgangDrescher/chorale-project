@@ -1,6 +1,7 @@
 // Turns the filter of the chorale list into conditions: a meter like `3/4`, a key with or
-// without its mode like `G major` or `f# min`, a mode on its own like `dorian`, and the
-// words that are left, which are looked for in the id, the BWV number and the title.
+// without its mode like `G major` or `f# min`, a mode on its own like `dorian`, which is also
+// looked for in the mode of the cantus firmus, and the words that are left, which are looked
+// for in the id, the BWV number and the title.
 
 const MODES = ['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian'];
 
@@ -44,6 +45,6 @@ export function matchesChoraleListFilter(chorale, filter) {
 
     return filter.meters.every((meter) => chorale.meter === meter)
         && (!filter.key || (key === filter.key.key && (!filter.key.mode || chorale.mode === filter.key.mode)))
-        && filter.modes.every((mode) => chorale.mode === mode)
+        && filter.modes.every((mode) => chorale.mode === mode || chorale.cantusFirmusMode === mode)
         && filter.words.every((word) => text.includes(word));
 }

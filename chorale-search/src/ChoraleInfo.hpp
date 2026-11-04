@@ -29,10 +29,14 @@ struct ChoraleInfo {
     // The number of phrases, which the fermatas delimit (see HumdrumChorale::phraseEndings).
     std::size_t phraseCount = 0;
 
-    // The key the score starts in, as the score writes it ("G", "e", "B-", "f#"), and its mode in the
-    // canonical spelling of normalizeModeName().
+    // The key of the first note, as the score writes it ("G", "e", "B-"), and its mode as normalizeModeName()
+    // spells it.
     std::optional<std::string> key;
     std::optional<std::string> mode;
+
+    // The mode of the first key designation: the source's mode of the cantus firmus, which may be a church mode
+    // above the annotated key of the first note.
+    std::optional<std::string> cantusFirmusMode;
 };
 
 // The number in a chorale's id: 29 for "chor029". The digits at the end count; nullopt where the id has none.

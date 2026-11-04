@@ -228,6 +228,21 @@ TEST_CASE(key_and_mode_are_those_the_chorale_starts_in) {
     CHECK(!filterOf(R"({"startMode":"major"})").matches(info));
 }
 
+TEST_CASE(cantus_firmus_mode_is_the_mode_the_source_states) {
+    ChoraleInfo info = someChorale();
+    info.key = "a";
+    info.mode = "minor";
+    info.cantusFirmusMode = "phrygian";
+    CHECK(filterOf(R"({"cantusFirmusMode":"phrygian"})").matches(info));
+    CHECK(!filterOf(R"({"cantusFirmusMode":"minor"})").matches(info));
+    CHECK(filterOf(R"({"startMode":"minor","cantusFirmusMode":["dorian","phrygian"]})").matches(info));
+    CHECK(!filterOf(R"({"startMode":"phrygian"})").matches(info));
+    CHECK_THROWS(filterOf(R"({"cantusFirmusMode":"blues"})"));
+
+    info.cantusFirmusMode.reset();
+    CHECK(!filterOf(R"({"cantusFirmusMode":"phrygian"})").matches(info));
+}
+
 TEST_CASE(every_filter_that_is_set_has_to_hold) {
     ChoraleInfo info = someChorale();
     CHECK(filterOf(R"({"ids":"20-30","startMode":"major","meter":"4/4","measureCount":{"min":10}})").matches(info));
@@ -272,7 +287,7 @@ TEST_CASE(filter_survives_a_trip_through_json) {
     ChoraleFilter filter = filterOf(R"({
         "ids": [1, "chor005-chor020"], "excludeIds": "9", "title": ["Herz"],
         "meter": ["4/4", "3/4"], "measureCount": {"min": 8, "max": 16}, "phraseCount": 6,
-        "startKey": ["e"], "startMode": ["ionian", "Phrygian"]
+        "startKey": ["e"], "startMode": ["ionian", "Phrygian"], "cantusFirmusMode": "dorian"
     })");
     ChoraleFilter again = choraleFilterFromJson(choraleFilterToJson(filter), "Query JSON");
     CHECK(filter == again);

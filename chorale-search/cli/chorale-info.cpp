@@ -50,6 +50,7 @@ nlohmann::json infoToJson(const ChoraleInfo& info) {
     };
     if (info.key) j["key"] = *info.key;
     if (info.mode) j["mode"] = *info.mode;
+    if (info.cantusFirmusMode) j["cantusFirmusMode"] = *info.cantusFirmusMode;
     return j;
 }
 

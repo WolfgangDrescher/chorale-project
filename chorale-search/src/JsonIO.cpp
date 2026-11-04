@@ -521,6 +521,7 @@ CountRange countRangeFromJson(const nlohmann::json& j, const std::string& field,
 bool isKnownChoraleFilterField(const std::string& key) {
     static const std::vector<std::string> known = {
         "ids", "excludeIds", "title", "meter", "measureCount", "phraseCount", "startKey", "startMode",
+        "cantusFirmusMode",
     };
     return std::find(known.begin(), known.end(), key) != known.end();
 }
@@ -576,6 +577,9 @@ ChoraleFilter choraleFilterFromJson(const nlohmann::json& j, const std::string& 
     if (j.contains("phraseCount")) filter.phraseCount = countRangeFromJson(j["phraseCount"], "phraseCount", context);
     if (j.contains("startKey")) filter.startKey = listFromJson<std::string>(j["startKey"], "startKey", context, keyFromJson);
     if (j.contains("startMode")) filter.startMode = listFromJson<std::string>(j["startMode"], "startMode", context, modeFromJson);
+    if (j.contains("cantusFirmusMode")) {
+        filter.cantusFirmusMode = listFromJson<std::string>(j["cantusFirmusMode"], "cantusFirmusMode", context, modeFromJson);
+    }
     return filter;
 }
 

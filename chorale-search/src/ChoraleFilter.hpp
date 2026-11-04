@@ -50,9 +50,11 @@ struct ChoraleFilter {
     std::optional<CountRange> measureCount;
     std::optional<CountRange> phraseCount;
 
-    // The key ("G", "e", "B-") and the mode (see normalizeModeName) the chorale starts in.
+    // The key ("G", "e", "B-") and the mode (see normalizeModeName) of the first note.
     std::vector<std::string> startKey;
     std::vector<std::string> startMode;
+    // See ChoraleInfo::cantusFirmusMode.
+    std::vector<std::string> cantusFirmusMode;
 
     bool empty() const {
         return ids.empty() && excludeIds.empty() && !needsChoraleInfo();
@@ -61,7 +63,8 @@ struct ChoraleFilter {
     // Whether anything beyond the id lists is asked, i.e. whether a ChoraleInfo has to be read from the
     // score to answer. The id lists can be judged from the file name alone.
     bool needsChoraleInfo() const {
-        return !title.empty() || !meter.empty() || measureCount || phraseCount || !startKey.empty() || !startMode.empty();
+        return !title.empty() || !meter.empty() || measureCount || phraseCount || !startKey.empty() || !startMode.empty() ||
+               !cantusFirmusMode.empty();
     }
 
     // Whether a chorale with this id passes the id lists.
@@ -73,7 +76,7 @@ struct ChoraleFilter {
     bool operator==(const ChoraleFilter& other) const {
         return ids == other.ids && excludeIds == other.excludeIds && title == other.title &&
                meter == other.meter && measureCount == other.measureCount && phraseCount == other.phraseCount &&
-               startKey == other.startKey && startMode == other.startMode;
+               startKey == other.startKey && startMode == other.startMode && cantusFirmusMode == other.cantusFirmusMode;
     }
 };
 
@@ -101,6 +104,7 @@ inline nlohmann::json choraleFilterToJson(const ChoraleFilter& filter) {
     if (filter.phraseCount) j["phraseCount"] = countRangeToJson(*filter.phraseCount);
     if (!filter.startKey.empty()) j["startKey"] = filter.startKey;
     if (!filter.startMode.empty()) j["startMode"] = filter.startMode;
+    if (!filter.cantusFirmusMode.empty()) j["cantusFirmusMode"] = filter.cantusFirmusMode;
     return j;
 }
 

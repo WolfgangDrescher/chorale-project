@@ -189,6 +189,14 @@ TEST_CASE(collect_info_reads_the_meters_the_key_and_the_measures_off_a_small_sco
     CHECK_EQ(info.duration, 3.0); // three quarter notes
 }
 
+TEST_CASE(collect_info_reads_the_key_of_the_first_note_below_the_church_mode_of_the_source) {
+    std::istringstream score("**kern\n*e:phr\n*a:\n4e\n*C:\n4c\n*-\n");
+    choralesearch::ChoraleInfo info = HumdrumChorale(score, "phrygian", false).collectInfo();
+    CHECK_EQ(*info.key, std::string("a"));
+    CHECK_EQ(*info.mode, std::string("minor"));
+    CHECK_EQ(*info.cantusFirmusMode, std::string("phrygian"));
+}
+
 TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
     std::istringstream score("**kern\n4c\n4d\n*-\n");
     choralesearch::ChoraleInfo info = HumdrumChorale(score, "bare", false).collectInfo();
@@ -196,6 +204,7 @@ TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
     CHECK(info.meters.empty());
     CHECK(!info.key.has_value());
     CHECK(!info.mode.has_value());
+    CHECK(!info.cantusFirmusMode.has_value());
     CHECK_EQ(info.measureCount, std::size_t{0});
     CHECK_EQ(info.duration, 2.0);
     CHECK_EQ(info.phraseCount, std::size_t{0});

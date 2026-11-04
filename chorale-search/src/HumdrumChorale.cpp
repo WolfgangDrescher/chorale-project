@@ -106,16 +106,19 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
     }
 
     // Every voice states the meters and the keys, so the first one speaks for the score.
+    bool beforeFirstNote = true;
     for (hum::HTp token = spine("kern", 1); token; token = token->getNextToken()) {
+        if (token->isData()) beforeFirstNote = false;
         if (token->isTimeSignature()) {
             const std::string meter = token->substr(2);
             if (std::find(info.meters.begin(), info.meters.end(), meter) == info.meters.end()) {
                 info.meters.push_back(meter);
             }
-        } else if (!info.key && token->isKeyDesignation()) {
+        } else if (beforeFirstNote && token->isKeyDesignation()) {
             const std::size_t colon = token->find(':');
             info.key = token->substr(1, colon - 1);
             info.mode = modeFromKeyDesignation(*info.key, token->substr(colon + 1));
+            if (!info.cantusFirmusMode) info.cantusFirmusMode = info.mode;
         }
     }
 

@@ -227,10 +227,14 @@ const choraleFilterSchema = {
         meter: stringsSchema({ type: 'string', pattern: '^\\d+/\\d+$' }, 'A meter the chorale is in at some point, e.g. "4/4".'),
         measureCount: countSchema('The number of measures, a pickup not counted: a number or { "min": 8, "max": 16 }.'),
         phraseCount: countSchema('The number of phrases, which the fermatas delimit: a number or { "min": 4 }.'),
-        startKey: stringsSchema({ type: 'string', pattern: '^[a-gA-G][#-]*$' }, 'The key the chorale starts in, not one it modulates to later. The key is written as in the score: "G" is G major, "e" is E minor, "B-" is B-flat major.'),
+        startKey: stringsSchema({ type: 'string', pattern: '^[a-gA-G][#-]*$' }, 'The key of the first note of the chorale, not one it modulates to later. The key is written as in the score: "G" is G major, "e" is E minor, "B-" is B-flat major.'),
         startMode: stringsSchema(
             { type: 'string', enum: ['major', 'minor', 'ionian', 'aeolian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian'] },
-            'The mode the chorale starts in, not one it modulates to later. ionian is interpreted as major and aeolian as minor.',
+            'The mode of the first note of the chorale, not one it modulates to later. ionian is interpreted as major and aeolian as minor.',
+        ),
+        cantusFirmusMode: stringsSchema(
+            { type: 'string', enum: ['major', 'minor', 'ionian', 'aeolian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian'] },
+            'The mode of the cantus firmus as the source edition gives it. It can differ from startMode, the mode of the first note.',
         ),
     },
 };
