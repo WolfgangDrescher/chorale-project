@@ -48,18 +48,40 @@ function withLessonNumbers(items) {
     }));
 }
 
+const choraleItems = computed(() => chorales.value.map((chorale) => ({
+    label: chorale.title ? [chorale.number, chorale.title].filter(Boolean).join('. ') : chorale.choraleId,
+    suffix: [chorale.choraleId, chorale.bwv].filter(Boolean).join(' · '),
+    icon: 'lucide:music',
+    to: localePath({ name: 'chorale-id', params: { id: chorale.choraleId } }),
+    choraleNumber: chorale.number,
+})));
+
+// Chorales matching a rule come first, in the order of the rules, even if Fuse left them out:
+// Fuse ranks `chor096` above `chor009` for `9`.
+const choralePriorities = [
+    (term, item) => /^\d+$/.test(term) && item.choraleNumber === parseInt(term, 10),
+];
+
+function withPrioritiesFirst(searchTerm, items) {
+    const term = searchTerm.trim();
+    const rank = (item) => {
+        const index = choralePriorities.findIndex((isPriority) => isPriority(term, item));
+        return index === -1 ? choralePriorities.length : index;
+    };
+    const missing = choraleItems.value.filter((item) => rank(item) < choralePriorities.length && !items.some((hit) => hit.to === item.to));
+    return [...items, ...missing]
+        .map((item) => ({ item, rank: rank(item) }))
+        .sort((a, b) => a.rank - b.rank)
+        .map(({ item }) => item);
+}
+
 const groups = computed(() => [
     {
         id: 'chorales',
         label: t('chorales'),
-        items: chorales.value.map((chorale) => ({
-            label: chorale.title ? [chorale.number, chorale.title].filter(Boolean).join('. ') : chorale.choraleId,
-            suffix: [chorale.choraleId, chorale.bwv].filter(Boolean).join(' · '),
-            icon: 'lucide:music',
-            to: localePath({ name: 'chorale-id', params: { id: chorale.choraleId } }),
-        })),
+        items: choraleItems.value,
         // All 370 chorales would fill the palette before anything is typed.
-        postFilter: (searchTerm, items) => (searchTerm ? items : []),
+        postFilter: (searchTerm, items) => (searchTerm ? withPrioritiesFirst(searchTerm, items) : []),
     },
 ]);
 </script>
