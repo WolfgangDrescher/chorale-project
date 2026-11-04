@@ -100,6 +100,11 @@ if(BUILD_TESTS)
     target_link_libraries(test_choralefilter PRIVATE humlib)
     add_test(NAME choralefilter COMMAND test_choralefilter)
 
+    add_executable(test_modulations tests/test_modulations.cpp src/Modulations.cpp)
+    target_include_directories(test_modulations PRIVATE src tests external/json/single_include)
+    target_link_libraries(test_modulations PRIVATE humlib)
+    add_test(NAME modulations COMMAND test_modulations)
+
     add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp)
     target_include_directories(test_queryvalidation PRIVATE src tests)
     add_test(NAME queryvalidation COMMAND test_queryvalidation)

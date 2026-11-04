@@ -62,6 +62,17 @@ void setKeyOnLine(hum::HLp line, const std::set<int>& tracks, const std::string&
     line->createLineFromTokens();
 }
 
+// Whether a key designation line labels a mode (*e:phr, *g:dor), not just major or minor by case.
+bool hasChurchMode(hum::HumdrumLine& line) {
+    for (int i = 0; i < line.getFieldCount(); ++i) {
+        hum::HTp token = line.token(i);
+        if (!token->isKeyDesignation()) continue;
+        const std::string label = token->substr(token->find(':') + 1);
+        return !label.empty() && label != "ion" && label != "aeo";
+    }
+    return false;
+}
+
 hum::HumNum findTimestamp(hum::HumdrumFile& infile, int measure, hum::HumNum beat) {
     std::vector<int> measureNumbers = infile.getMeasureNumbers();
     for (int i = 0; i < infile.getLineCount(); ++i) {
@@ -76,9 +87,8 @@ hum::HumNum findTimestamp(hum::HumdrumFile& infile, int measure, hum::HumNum bea
     return hum::HumNum(-1);
 }
 
-// Applies the piece's starting key: replaces the key designation that
-// (normally) already follows the key signature (*k[...]), or inserts one if
-// none is present yet.
+// Applies the piece's starting key below the key signature (*k[...]). A key designation of the source with a church
+// mode (*e:phr) is kept as the mode of the cantus firmus, any other is replaced.
 void applyInitialModulation(hum::HumdrumFile& infile, const std::set<int>& tracks, const std::string& choraleId, const Modulation& mod) {
     int keySigIndex = -1;
     for (int i = 0; i < infile.getLineCount(); ++i) {
@@ -94,7 +104,12 @@ void applyInitialModulation(hum::HumdrumFile& infile, const std::set<int>& track
 
     int nextIndex = keySigIndex + 1;
     if (nextIndex < infile.getLineCount() && infile[nextIndex].isKeyDesignation()) {
-        setKeyOnLine(&infile[nextIndex], tracks, mod.key);
+        if (hasChurchMode(infile[nextIndex])) {
+            hum::HLp newLine = infile.insertNullInterpretationLineAboveIndex(nextIndex + 1);
+            setKeyOnLine(newLine, tracks, mod.key);
+        } else {
+            setKeyOnLine(&infile[nextIndex], tracks, mod.key);
+        }
     } else {
         hum::HLp newLine = infile.insertNullInterpretationLineAboveIndex(nextIndex);
         setKeyOnLine(newLine, tracks, mod.key);
