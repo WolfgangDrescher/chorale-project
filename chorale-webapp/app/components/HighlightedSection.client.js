@@ -348,8 +348,12 @@ export default {
                 'hover:z-2'
             ];
 
+            // The label of a single line is centered on its marker, so the labels of neighbouring
+            // lines stay apart; the label of a section starts where it starts.
+            const isLine = props.startLine === props.endLine;
             const style = {
-                left: firstMarker.props.style.left,
+                left: isLine ? `calc(${firstMarker.props.style.left} + ${firstMarker.props.style.width} / 2)` : firstMarker.props.style.left,
+                transform: isLine ? 'translateX(-50%)' : undefined,
                 borderColor: props.color,
             };
 
