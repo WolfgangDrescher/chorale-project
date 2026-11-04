@@ -405,7 +405,7 @@ const activeCantusFirmus = computed(() => activeStats.value?.cantusFirmus ?? nul
 const BASS_AND_SOPRANO = '1,4';
 
 function bassLineFilters(example) {
-    const filters = [`myank --lines ${example.startLine}-${example.endLine}`, `extract -f ${BASS_AND_SOPRANO}`];
+    const filters = [`myank --lines ${example.startLine}-${example.endLine}`, `extract -k ${BASS_AND_SOPRANO}`];
     if (example.transpose) filters.push(`transpose -t ${example.transpose}`);
     return filters;
 }

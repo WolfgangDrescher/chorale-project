@@ -37,8 +37,9 @@ const scoreOptionsStore = (createDefaults) => ({
             extendedFiguredbass: { command: 'fb -acon3' },
             bassScaleDegree: { command: 'deg --circle -k 1' },
             scaleDegree: { command: 'deg --circle' },
-            hideMiddleVoices: { command: 'extract -f 1,$', priority: 2 },
-            extractCantusFirmus: { command: 'extract -f $', priority: 2 },
+            // -k counts only **kern spines, so $ is the soprano and not its **text.
+            hideMiddleVoices: { command: 'extract -k 1,$', priority: 2 },
+            extractCantusFirmus: { command: 'extract -k $', priority: 2 },
             hideNonCantusFirmusVoices: {
                 command: 'shed -s 1-3 -e "s/.*/$0yy/D s/.*//L s/^[^I].*//I"',
                 priority: 2,

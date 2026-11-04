@@ -5,7 +5,7 @@ import createVerovioModule from 'verovio/wasm-hum';
 
 // What a download can hold of a chorale:
 //   layout   score (the voices on staves of their own) or piano (a piano system)
-//   content  the cantus firmus (the top voice, and so the last spine of the **kern file) alone,
+//   content  the cantus firmus (the top voice, and so the last **kern spine of the file) alone,
 //            with the other voices left empty, or the whole chorale
 //   voices   all four, or two: the cantus firmus and the bass
 export const CHORALE_EXPORT_LAYOUTS = ['score', 'piano'];
@@ -26,6 +26,12 @@ const NOTE_TOKEN = /^[\[\(\{_]*(\d+(?:%\d+)?\.*)(?=.*[a-gA-G])/;
 
 function isDataLine(line) {
     return line !== '' && !/^[!*=]/.test(line);
+}
+
+// The chorales don't split their spines, so a voice has the same field on every line.
+function kernFieldIndices(lines) {
+    const exclusive = lines.find((line) => line.startsWith('**'))?.split('\t') ?? [];
+    return exclusive.flatMap((spine, index) => (spine === '**kern' ? [index] : []));
 }
 
 // The duration of a **kern token in quarter notes (0 for a grace note).
@@ -54,6 +60,7 @@ function quartersToToken(quarters) {
 // that every voice has the fermata at the same place. Resolves with a Map from the index of a
 // line to the rest that begins on it, for each measure that can be laid out like that.
 function planRests(lines) {
+    const cantusFirmus = kernFieldIndices(lines).at(-1);
     const plans = new Map();
     let meterQuarters = 4;
     let measure = [];
@@ -101,7 +108,7 @@ function planRests(lines) {
         if (meter) meterQuarters = 4 * Number(meter[1]) / Number(meter[2]);
         const tokens = line.split('\t');
         if (line.startsWith('=')) finishMeasure();
-        else if (isDataLine(line)) measure.push({ index, token: tokens.at(-1) });
+        else if (isDataLine(line)) measure.push({ index, token: tokens[cantusFirmus] });
     });
     finishMeasure();
 
@@ -113,16 +120,17 @@ function planRests(lines) {
 export function restOtherVoices(kern) {
     const lines = kern.split('\n');
     const plans = planRests(lines);
+    const voices = kernFieldIndices(lines);
+    const cantusFirmus = voices.at(-1);
 
     return lines.map((line, lineIndex) => {
         if (!isDataLine(line)) return line;
 
         const tokens = line.split('\t');
-        const lastIndex = tokens.length - 1;
         const plan = plans.get(lineIndex);
 
         return tokens.map((token, index) => {
-            if (index === lastIndex) return token;
+            if (index === cantusFirmus || !voices.includes(index)) return token;
             if (plan) return plan.get(lineIndex) ?? '.';
             const note = token.match(NOTE_TOKEN);
             return note ? `${note[1]}r${token.includes(';') ? ';' : ''}` : token;
@@ -134,8 +142,9 @@ export function restOtherVoices(kern) {
 const OUTER_VOICES = 'extract -k 1,$';
 
 // The stems of the cantus firmus point up, which is what it needs as the upper voice of a piano
-// system. Not those of its rests, which have none.
-const STEMS_UP = 'shed -s $ -e "s#$#/#D" -E r';
+// system. Not those of its rests, which have none. The other voices are rests here, so -k can
+// name all voices.
+const STEMS_UP = 'shed -k -e "s#$#/#D" -E r';
 
 // What a PDF shows of the voices that are not written out: nothing. Their notes are removed and a
 // hidden rest as long as the measure stays, so that they do not widen the measures of the cantus

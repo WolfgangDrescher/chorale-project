@@ -12,7 +12,7 @@ const props = defineProps({
 // The Humdrum filters, in the order the score options apply them: the lines and the voices first.
 const filters = computed(() => [
     props.lines && `myank -l ${props.lines}`,
-    props.outerVoices && 'extract -f 1,$',
+    props.outerVoices && 'extract -k 1,$',
     props.intervals && 'fb -icatm',
 ].filter(Boolean));
 </script>
