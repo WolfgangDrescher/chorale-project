@@ -49,7 +49,8 @@ void setKeyOnLine(hum::HLp line, const std::set<int>& tracks, const std::string&
     for (int i = 0; i < line->getFieldCount(); ++i) {
         hum::HTp token = line->token(i);
         if (tracks.count(token->getTrack())) {
-            token->setText("*" + key + ":");
+            // A key with a mode ("g:dor") already has its colon.
+            token->setText(key.find(':') == std::string::npos ? "*" + key + ":" : "*" + key);
         }
     }
     // HumdrumLine caches its full text (it is itself a std::string, rebuilt

@@ -2,6 +2,11 @@ import { onKeyStroke, useDebounceFn, useTimeoutFn } from '@vueuse/core';
 
 const REPOSITORY_URL = 'https://github.com/WolfgangDrescher/chorale-project';
 
+// A key as the annotations write it: the tonic as **kern spells it, upper case for major and lower
+// case for minor, and a mode as Humdrum abbreviates it, if any ("G", "e", "B-", "g:dor", "G:mix").
+const KEY_PATTERN = /^[A-Ga-g][#-]*(:(ion|dor|phr|lyd|mix|aeo|loc))?$/;
+const MODE_LABELS = { dorian: 'dor', phrygian: 'phr', lydian: 'lyd', mixolydian: 'mix', locrian: 'loc' };
+
 // The key changes as markers of a HighlightedScore (its lines prop): a line each, labeled with
 // the key, "?" for one not named yet.
 export function modulationMarkers(modulations) {
@@ -90,7 +95,7 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
             return;
         }
         if (!positions) {
-            annotator.entries = (await loadScore()).map(({ line, key }) => ({ line, key }));
+            annotator.entries = (await loadScore()).map(({ line, key, mode }) => ({ line, key: MODE_LABELS[mode] ? `${key}:${MODE_LABELS[mode]}` : key }));
             saved.value = JSON.stringify(annotations.value);
         }
         // Frames the sonority at the position, so the keys have a place to act on.
@@ -138,7 +143,7 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
     function commitInput() {
         // The English names: B for H.
         const key = (annotator.input?.trim() ?? '').replace(/^h/, 'b').replace(/^H/, 'B');
-        if (/^[A-Ga-g][#-]*$/.test(key)) setEntry(annotator.inputLine, key);
+        if (KEY_PATTERN.test(key)) setEntry(annotator.inputLine, key);
         closeInput();
     }
 

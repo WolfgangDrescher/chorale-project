@@ -14,7 +14,7 @@ struct Modulation {
     std::string pos; // "measure/beat", e.g. "10/3+1/2"
     int measure = 0;
     hum::HumNum beat;
-    std::string key;
+    std::string key; // "G", "e", "B-", or with a mode as Humdrum abbreviates it: "g:dor"
 };
 
 // Reads an annotation file -- a JSON object keyed by chorale id, each holding [position, key]
