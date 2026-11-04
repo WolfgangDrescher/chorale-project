@@ -5,6 +5,9 @@ const props = defineProps({
     // The chorale of the score (an item of the chorales collection), which the options can depend
     // on, e.g. the keys it can be transposed to.
     chorale: { type: Object, default: null },
+    // The store of the options, e.g. the one of the search results.
+    scoreOptions: { type: Object, default: null },
+    size: { type: String, default: 'md' },
 });
 
 onMounted(() => {
@@ -23,7 +26,7 @@ onMounted(() => {
 
 const { t } = useI18n();
 
-const scoreOptions = useScoreOptions();
+const scoreOptions = props.scoreOptions ?? useScoreOptions();
 
 const showOnlyActive = ref(false);
 
@@ -86,7 +89,10 @@ const groups = computed(() => {
         {
             id: 'humdrum-filters',
             label: t('humdrumFilters'),
-            items: Object.keys(scoreOptions.humdrumFilterDefinitions).map(humdrumFilterItem),
+            // Without a chorale there is no key to transpose from.
+            items: Object.keys(scoreOptions.humdrumFilterDefinitions)
+                .filter((option) => props.chorale || option !== 'transposeKey')
+                .map(humdrumFilterItem),
         },
         {
             id: 'verovio',
@@ -156,6 +162,7 @@ const groups = computed(() => {
         <UChip :text="scoreOptions.countTotal" :show="scoreOptions.countTotal > 0" size="3xl">
             <UButton
                 :label="$t('scoreCommandPalette')"
+                :size="size"
                 variant="soft"
                 icon="i-lucide-terminal"
             >

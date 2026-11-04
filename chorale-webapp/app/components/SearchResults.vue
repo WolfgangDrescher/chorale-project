@@ -10,6 +10,9 @@ const props = defineProps({
 
 const localePath = useLocalePath();
 
+const scoreOptions = useSearchScoreOptions();
+useChoraleKeyboardShortcuts({ scoreOptions });
+
 const {
     searchFetchCompleted,
     chorales,
@@ -151,7 +154,8 @@ function choraleLink(choraleId, items) {
                         <span v-if="durationMs !== null" class="text-dimmed tabular-nums">({{ $t('searchDuration', { duration: formatDuration(durationMs) }) }})</span>
                     </template>
                 </i18n-t>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <ScoreOptionsPalette :score-options="scoreOptions" size="xs" />
                     <ScorePlayerSettings variant="outline" size="xs" />
                     <UFieldGroup>
                         <USelect
@@ -196,14 +200,15 @@ function choraleLink(choraleId, items) {
                     </template>
                     <PlayableHighlightedScore
                         :player="players.get(choraleId)"
-                        :horizontal="true"
+                        :horizontal="scoreOptions.showHorizontalViewMode"
                         :piece-id="choraleId"
                         :verovio-options="{
-                            scale: 35,
+                            ...scoreOptions.verovioOptions,
                             pageMarginLeft: 42,
                         }"
+                        :filters="scoreOptions.humdrumFilters"
                         :sections="sectionsForItems(items)"
-                        :scroll-to-first-section="true"
+                        :scroll-to-first-section="scoreOptions.showHorizontalViewMode"
                     />
                 </UCard>
             </div>

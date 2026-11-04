@@ -19,8 +19,10 @@ function createDefaultScoreOptions() {
     };
 }
 
-export const useScoreOptions = defineStore('score_options', {
-    state: () => createDefaultScoreOptions(),
+// The score options of a store with its own defaults, so the search results do not share the
+// options of the page of a chorale.
+const scoreOptionsStore = (createDefaults) => ({
+    state: () => createDefaults(),
     getters: {
         // The Humdrum filters the score can be shown through, by the name of the option that
         // toggles them. A filter with a higher priority is applied first, so the score is
@@ -63,7 +65,7 @@ export const useScoreOptions = defineStore('score_options', {
         },
         countOthers(state) {
             return [
-                state.showHorizontalViewMode,
+                state.showHorizontalViewMode !== createDefaults().showHorizontalViewMode,
             ].filter(Boolean).length;
         },
         countTotal() {
@@ -73,7 +75,7 @@ export const useScoreOptions = defineStore('score_options', {
 
     actions: {
         reset() {
-            this.$patch(createDefaultScoreOptions());
+            this.$patch(createDefaults());
         },
         zoomIn() {
             this.verovioScale = Math.min(this.verovioScale + 5, 100);
@@ -82,22 +84,31 @@ export const useScoreOptions = defineStore('score_options', {
             this.verovioScale = Math.max(this.verovioScale - 5, 20);
         },
         resetZoom() {
-            this.verovioScale = createDefaultScoreOptions().verovioScale;
+            this.verovioScale = createDefaults().verovioScale;
         },
         resetHumdrumFilters() {
-            const defaults = createDefaultScoreOptions();
+            const defaults = createDefaults();
             for (const key of Object.keys(this.humdrumFilterDefinitions)) {
                 this[key] = defaults[key];
             }
         },
         resetVerovio() {
-            const defaults = createDefaultScoreOptions();
+            const defaults = createDefaults();
             this.verovioScale = defaults.verovioScale;
             this.showHorizontalViewMode = defaults.showHorizontalViewMode;
         },
     },
 });
 
+export const useScoreOptions = defineStore('score_options', scoreOptionsStore(createDefaultScoreOptions));
+
+export const useSearchScoreOptions = defineStore('search_score_options', scoreOptionsStore(() => ({
+    ...createDefaultScoreOptions(),
+    verovioScale: 35,
+    showHorizontalViewMode: true,
+})));
+
 if (import.meta.hot) {
     import.meta.hot.accept(acceptHMRUpdate(useScoreOptions, import.meta.hot));
+    import.meta.hot.accept(acceptHMRUpdate(useSearchScoreOptions, import.meta.hot));
 }

@@ -6,9 +6,8 @@ function ignoreIfInput() {
     return el && (['input', 'textarea'].includes(el.tagName.toLowerCase()) || el.isContentEditable || !!el.closest('[role="slider"]'));
 }
 
-export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale } = {}) {
+export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, scoreOptions = useScoreOptions() } = {}) {
     const route = useRoute();
-    const scoreOptions = useScoreOptions();
     const localePath = useLocalePath();
 
     const prev = computed(() => unref(prevChorale));
