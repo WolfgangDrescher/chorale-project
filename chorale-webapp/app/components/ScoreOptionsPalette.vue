@@ -37,9 +37,10 @@ const humdrumFilterSubmenus = {
     transposeKey: useTransposeKeySubmenu(() => props.chorale),
 };
 
-// The command of a filter with the given value of its option.
+// Not given the whole state: the groups would change with every option, and the palette then
+// highlights its first item instead of the clicked one.
 function humdrumFilterCommand(option, value) {
-    return scoreOptions.humdrumFilterDefinitions[option].command({ ...scoreOptions.$state, [option]: value });
+    return scoreOptions.humdrumFilterDefinitions[option].command({ [option]: value });
 }
 
 // The item of a Humdrum filter. A filter without a value is turned on and off. The value of the
