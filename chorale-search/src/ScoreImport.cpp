@@ -58,6 +58,15 @@ void addMissingMeasureNumbers(hum::HumdrumFile& infile) {
     if (!barnum.getAllText().empty()) infile.readString(barnum.getAllText());
 }
 
+// Drops **text and other spines the tools don't read. The lines stay the same.
+void removeNonKernSpines(hum::HumdrumFile& infile) {
+    if (kernTracks(infile).size() == static_cast<std::size_t>(infile.getMaxTrack())) return;
+    hum::Tool_extract extract;
+    extract.process("--process-removes-this-argv -i kern");
+    extract.run(infile);
+    infile.readString(extract.getAllText());
+}
+
 // A note with a fermata: where it is attacked, where it stops sounding and in which measure it starts.
 struct FermataNote {
     hum::HumNum start;
@@ -187,11 +196,14 @@ PreparedScore prepareScore(const std::string& input, bool reportProgress) {
     if (!infile.readString(kernText)) {
         throw std::invalid_argument("could not parse the score as Humdrum **kern");
     }
+    removeNonKernSpines(infile);
 
     const std::size_t voices = kernTracks(infile).size();
     if (voices == 4) {
         score.layout = "satb";
-        score.kern = kernText;
+        std::ostringstream text;
+        text << infile;
+        score.kern = text.str();
     } else if (voices == 2) {
         score.layout = "grand-staff";
         if (reportProgress) reportPhase("split-score-into-voices");

@@ -32,6 +32,22 @@ TEST_CASE(prepare_accepts_a_fermata_in_every_voice) {
     })));
 }
 
+TEST_CASE(prepare_leaves_out_the_text_of_the_voices) {
+    const std::string kern = prepareScore(lines({
+        "**kern\t**kern\t**kern\t**kern\t**text",
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\t*",
+        "=1\t=1\t=1\t=1\t=1",
+        "4G\t4d\t4g\t4b\tGott,",
+        "4C\t4e\t4g\t4cc\tdu",
+        "2G;\t2d;\t2g;\t2b;\tHerr",
+        "==\t==\t==\t==\t==",
+        "*-\t*-\t*-\t*-\t*-",
+    })).kern;
+    CHECK(kern.find("**text") == std::string::npos);
+    CHECK(kern.find("Gott") == std::string::npos);
+    CHECK(kern.find("2G;\t2d;\t2g;\t2b;\n") != std::string::npos);
+}
+
 TEST_CASE(prepare_rejects_fermatas_missing_in_some_voices) {
     // A MusicXML export with the fermata on the upper layer of each staff only.
     CHECK_THROWS(prepareScore(lines({
