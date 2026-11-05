@@ -128,6 +128,14 @@ def align(source, candidate):
     return best
 
 
+def remove_stanza_numbers(verses):
+    """chorale-generate numbers the stanzas itself: "1. An" becomes "An"."""
+    for verse in verses:
+        first = next((i for i, s in enumerate(verse) if s), None)
+        if first is not None:
+            verse[first] = re.sub(r'^\d+\.\s+', '', verse[first])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('source_dir', help='the bach-370-chorales kern directory')
@@ -175,6 +183,7 @@ def main():
         paired = set(pairs.values())
         lost = sum(len(lyrics) for j, (_, lyrics) in enumerate(attacks) if j not in paired)
         print(f'{chorale_id}\t{sct}\t{name}\t{ratio:.3f}\t{lost} syllable(s) without a note', file=sys.stderr)
+        remove_stanza_numbers(verses)
         result[chorale_id] = {'source': f'music21 corpus/bach/{name}', 'verses': verses}
 
     # One line per verse keeps the diffs short.

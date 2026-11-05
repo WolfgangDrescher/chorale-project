@@ -30,9 +30,9 @@
     "chor005": {
         "source": "music21 corpus/bach/bwv267.mxl",
         "verses": [
-            ["1. An", "Was-", "-ser-", null, "-flüs-", null, "-sen", "Ba-", null, "-by-", "-lon,", "da", "sa-", "-ssen", "wir", "mit", null, "Schmer-", null, null, "-zen,", "Wir", "hing-", "-en", "auf", null, "mit", "schwe-", "-rem", "Muth", "die", null, "Har-", "-fen", "und", "die", "Or-", "-geln", "gut", "an", null, "ih-", "-re", "Bäum'", null, "der", "Wei-", "-den,", "die", "drin-", "-nen", "sind", "in", "ih-", "-rem", "Land;", "da", "muss-", "-ten", "wir", "viel", null, "Schmach", "und", "Schand'", "täg-", "-lich", "von", "ih-", null, null, "-nen", null, "lei-", null, null, null, "-den."],
+            ["An", "Was-", "-ser-", null, "-flüs-", null, "-sen", "Ba-", null, "-by-", "-lon,", "da", "sa-", "-ssen", "wir", "mit", null, "Schmer-", null, null, "-zen,", "Wir", "hing-", "-en", "auf", null, "mit", "schwe-", "-rem", "Muth", "die", null, "Har-", "-fen", "und", "die", "Or-", "-geln", "gut", "an", null, "ih-", "-re", "Bäum'", null, "der", "Wei-", "-den,", "die", "drin-", "-nen", "sind", "in", "ih-", "-rem", "Land;", "da", "muss-", "-ten", "wir", "viel", null, "Schmach", "und", "Schand'", "täg-", "-lich", "von", "ih-", null, null, "-nen", null, "lei-", null, null, null, "-den."],
             ["als", "wir", "ge-", null, "-dach-", null, "-ten", "an", null, "Zi-", "-on,", "da", "wein-", "-ten", "wir", "von", null, "Her-", null, null, "-zen.", "Es", "geht", "da-", "-hin,", null, "wird", "matt", "und", "krank,", "er-", null, "-giebt", "sich", "auf", "die", "Wür-", "-ge-", "-bank,", "ver-", null, "-zeiht", "sich", "al-", null, "-ler", "Freu-", "-den;", "es", "nim-", "-met", "an", "Schmach,", "Hohn", "und", "Spott,", "Angst,", "Wun-", "-den,", "Strie-", "-men,", null, "Kreuz", "und", "Tod,", "und", "spricht:", "Ich", "will", null, null, "gern", null, "lei-", null, null, null, "-den."],
-            ["2. Ein", "Lämm-", "-lein", null, "geht", null, "und", "trägt", null, "die", "Schuld", "der", "Welt", "und", "ih-", "-rer", null, "Kin-", null, null, "-der;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Ein", "Lämm-", "-lein", null, "geht", null, "und", "trägt", null, "die", "Schuld", "der", "Welt", "und", "ih-", "-rer", null, "Kin-", null, null, "-der;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["es", "geht", "und", null, "bü-", null, "-sset", "in", null, "Ge-", "-duld", "die", "Sün-", "-den", "al-", "-ler", null, "Sün-", null, null, "-der.", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -52,9 +52,9 @@
     "chor009": {
         "source": "music21 corpus/bach/bwv248.12-2.mxl",
         "verses": [
-            ["1. Er-", "-mun-", "-tre", "dich", null, "mein", "schwa-", "-cher", "Geist,", "und", "tra-", "-ge", "gross'", "Ver-", "-lan-", "-gen,", "Dies", "ist", "die", "Nacht,", "da-", "-rin", null, "es", "kam,", "und", "mensch-", "-lich", "We-", null, "-sen", "an", "sich", "nahm,", "da-", "-durch", "die", "Welt", "mit", "Treu-", "-en", "als", "sei-", "-ne", "Bräut", "zu", null, "frei-", "-en."],
+            ["Er-", "-mun-", "-tre", "dich", null, "mein", "schwa-", "-cher", "Geist,", "und", "tra-", "-ge", "gross'", "Ver-", "-lan-", "-gen,", "Dies", "ist", "die", "Nacht,", "da-", "-rin", null, "es", "kam,", "und", "mensch-", "-lich", "We-", null, "-sen", "an", "sich", "nahm,", "da-", "-durch", "die", "Welt", "mit", "Treu-", "-en", "als", "sei-", "-ne", "Bräut", "zu", null, "frei-", "-en."],
             ["ein", "klei-", "-nes", "Kind,", null, "das", "Va-", "-ter", "heisst,", "mit", "Freu-", "-den", "zu", "em-", "-pfan-", "-gen:", "wie", "soll", "ich", "dei-", "-nen", "gro-", null, "-ssen", "Sieg,", "den", "du", "durch", "ei-", null, "nen", "schwe-", "-ren", "krieg", "er-", "-wor-", "-ben", "hast,", "recht", "prei-", "-sen,", "und", "dir", "g'nug", "Ehr'", "er-", null, "-wei-", "-sen?"],
-            ["2. Du", "Le-", "-bens-", "-fürst,", null, "Herr", "Je-", "-su", "Christ,", "der", "du", "bist", "auf-", "-ge-", "-nom-", "-men", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Du", "Le-", "-bens-", "-fürst,", null, "Herr", "Je-", "-su", "Christ,", "der", "du", "bist", "auf-", "-ge-", "-nom-", "-men", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["gen", "Him-", "-mel,", "da", null, "dein", "Va-", "-ter", "ist", "und", "die", "Ge-", "-mein'", "der", "From-", "-men:", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -401,9 +401,9 @@
     "chor064": {
         "source": "music21 corpus/bach/bwv194.6.mxl",
         "verses": [
-            ["1. Freu'", "dich", "sehr,", "o", "mei-", "-ne", "See-", "-le", "und", "ver-", "-giss", "all", "Noth", "und", "Qual,", "Sei-", "-ne", "Freud'", "-lich-", null, null, "-keit", "sollst", "du", "seh'n", "in", "E-", "-wig-", "-keit,", "mit", null, "den", "Eng-", "-eln", "ju-", "-bi-", "-lie-", "-ren,", "e-", "-wig,", "e-", "-wig", "tri-", "-um-", "-phie-", "-ren."],
+            ["Freu'", "dich", "sehr,", "o", "mei-", "-ne", "See-", "-le", "und", "ver-", "-giss", "all", "Noth", "und", "Qual,", "Sei-", "-ne", "Freud'", "-lich-", null, null, "-keit", "sollst", "du", "seh'n", "in", "E-", "-wig-", "-keit,", "mit", null, "den", "Eng-", "-eln", "ju-", "-bi-", "-lie-", "-ren,", "e-", "-wig,", "e-", "-wig", "tri-", "-um-", "-phie-", "-ren."],
             ["weil", "dich", "nun", "Chri-", "-stus,", "dein", "Her-", "-re,", "ruft", "aus", "die-", "-sem", "Jam-", "-mer-", "-thal.", "Wenn", "mir", "fällt", "-ges", null, null, "ein,", "lass", "mich", "den-", "-ken", "dei-", "-ner", "Pein,", "dass", null, "ich", "dei-", "-ne", "Angst", "und", "Schmer-", "-zen,", "wohl", "er-", "-wäg'", "in", "mei-", "-nem", "Her-", "-zen."],
-            ["2. Je-", "-su,", "dei-", "-ne", "tie-", "-fen", "Wun-", "-den,", "dei-", "-ne", "Qual", "und", "bit-", "-tern", "Tod,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Je-", "-su,", "dei-", "-ne", "tie-", "-fen", "Wun-", "-den,", "dei-", "-ne", "Qual", "und", "bit-", "-tern", "Tod,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["lass", "mir", "ge-", "-ben", "al-", "-le", "Stun-", "-den,", "Trost", "in", "Leib's", "und", "See-", "-le-", "-noth!", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -595,8 +595,8 @@
     "chor093": {
         "source": "music21 corpus/bach/bwv194.12.mxl",
         "verses": [
-            ["1. Wach'", "auf,", "mein", "Herz,", null, "und", "sin-", "-ge", "dem", "Schöp-", "-fer", "al-", null, "-ler", "Din-", "-ge,", "dem", "Ge-", "-ber", "al-", "-ler", "Gü-", "-ter,", "dem", "from-", "-men", "Men-", null, null, "-schen", null, null, null, "-ter."],
-            ["2. Nun", "lasst", "uns", "Gott,", null, "dem", "Her-", "-ren,", "Dank", "sa-", "-gen", "und", null, "ihn", "eh-", "-ren,", "von", "we-", "-gen", "sei-", "-ner", "Ga-", "-ben,", "die", "wir", "em-", "-pfan-", null, null, "-gen", null, null, null, "-ben."]
+            ["Wach'", "auf,", "mein", "Herz,", null, "und", "sin-", "-ge", "dem", "Schöp-", "-fer", "al-", null, "-ler", "Din-", "-ge,", "dem", "Ge-", "-ber", "al-", "-ler", "Gü-", "-ter,", "dem", "from-", "-men", "Men-", null, null, "-schen", null, null, null, "-ter."],
+            ["Nun", "lasst", "uns", "Gott,", null, "dem", "Her-", "-ren,", "Dank", "sa-", "-gen", "und", null, "ihn", "eh-", "-ren,", "von", "we-", "-gen", "sei-", "-ner", "Ga-", "-ben,", "die", "wir", "em-", "-pfan-", null, null, "-gen", null, null, null, "-ben."]
         ]
     },
     "chor094": {
@@ -765,9 +765,9 @@
     "chor120": {
         "source": "music21 corpus/bach/bwv103.6.mxl",
         "verses": [
-            ["1. Was", null, "mein", "Gott", "will,", "das", "g'scheh'", "all-", "-zeit,", "sein", "Will'", "der", "ist", "der", null, "be-", "-ste;", "Er", "hilft", "aus", null, null, "Noth,", null, "der", "from-", "-me", "Gott,", "und", "züch-", "-ti-", "-get", "mit", "Ma-", "-ssen.", "Wer", null, "Gott", "ver-", "-traut,", "fest", "auf", "ihn", "baut,", "den", "will", "er", "nicht", "ver-", null, "-las-", "-sen."],
+            ["Was", null, "mein", "Gott", "will,", "das", "g'scheh'", "all-", "-zeit,", "sein", "Will'", "der", "ist", "der", null, "be-", "-ste;", "Er", "hilft", "aus", null, null, "Noth,", null, "der", "from-", "-me", "Gott,", "und", "züch-", "-ti-", "-get", "mit", "Ma-", "-ssen.", "Wer", null, "Gott", "ver-", "-traut,", "fest", "auf", "ihn", "baut,", "den", "will", "er", "nicht", "ver-", null, "-las-", "-sen."],
             ["zu", null, "hel-", "-fen", "den'n", "er", "ist", "be-", "-reit,", "die", "an", "ihn", "glau-", "-ben", null, "fe-", "-ste.", "Ich", "bin", "ein", null, null, "Sohn", null, "dess,", "der", "den", "Thron", "des", "Him-", "-mels", "auf-", "-ge-", "-zo-", "-gen:", "ob", null, "er", "gleich", "schlägt", "und", "Kreuz", "auf-", "-legt,", "bleibt", "doch", "sein", "Herz", "ge-", null, "-wo-", "-gen."],
-            ["2. Ich", null, "hab'", "in", "Got-", "-tes", "Herz", "und", "Sinn", "mein", "Herz", "und", "Sinn", "er-", null, "-ge-", "-ben;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Ich", null, "hab'", "in", "Got-", "-tes", "Herz", "und", "Sinn", "mein", "Herz", "und", "Sinn", "er-", null, "-ge-", "-ben;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["was", null, "bö-", "-se", "scheint,", "ist", "mir", "Ge-", "-winn,", "der", "Tod", "selbst", "ist", "mein", null, "Le-", "-ben:", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -909,9 +909,9 @@
     "chor144": {
         "source": "music21 corpus/bach/bwv339.mxl",
         "verses": [
-            ["1. Wer", "in", "dem", "Schutz", "des", "Höch-", "-sten", "ist,", "und", "sich", "Gott", "thut", "er-", null, "-ge-", "-ben,", "der", "du", null, "ja", "wirst", null, "er-", "-ret-", null, "-ten", "mich", "von", "Teu-", "-fels", "Stri-", "-cken", "gnä-", null, "-dig-", "-lich", "und", "von", "der", "Pe-", null, "-sti-", null, "-len-", "-ze."],
+            ["Wer", "in", "dem", "Schutz", "des", "Höch-", "-sten", "ist,", "und", "sich", "Gott", "thut", "er-", null, "-ge-", "-ben,", "der", "du", null, "ja", "wirst", null, "er-", "-ret-", null, "-ten", "mich", "von", "Teu-", "-fels", "Stri-", "-cken", "gnä-", null, "-dig-", "-lich", "und", "von", "der", "Pe-", null, "-sti-", null, "-len-", "-ze."],
             ["der", "spricht:", "du", "Herr,", "mein'", "Zu-", "-flucht", "bist,", "mein", "Gott,", "Hoff-", "-nung", "und", null, "Le-", "-ben,", "Er-", "-halt", null, "mich", "nur", null, "in", "dei-", null, "-ner", "Huld,", "sonst", "wie", "du", "willst,", "gieb", "mir", null, "Ge-", "-duld,", "dein", "Will',", "der", "ist", null, "der", null, "be-", "-ste."],
-            ["2. Herr,", "wie", "du", "willst,", "so", "schick's", "mit", "mir", "im", "Le-", "-ben", "wie", "im", null, "Ster-", "-ben,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Herr,", "wie", "du", "willst,", "so", "schick's", "mit", "mir", "im", "Le-", "-ben", "wie", "im", null, "Ster-", "-ben,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["al-", "-lein", "zu", "dir", "steht", "mein", "Be-", "-gehr,", "lass", "mich,", "Herr,", "nicht", "ver-", null, "-der-", "-ben.", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -1586,9 +1586,9 @@
     "chor254": {
         "source": "music21 corpus/bach/bwv25.6.mxl",
         "verses": [
-            ["1. Weg,", "mein", "Herz,", "mit", "den", "Ge-", "-dan-", "-ken,", "als", "ob", "du", "ver-", null, null, "-sto-", "-ssen", null, "wärst,", "Bist", "du", "bös", "und", "un-", "-ge-", "-recht?", "Ei", "so", "ist", "Gott", "fromm", "und", "schlecht.", "Hast", "du", "Zorn", "und", null, "Tod", "ver-", "-die-", "-net?", "Sin-", "ke", "nicht,", "Gott", "ist", "ver-", "-süh-", "-net."],
+            ["Weg,", "mein", "Herz,", "mit", "den", "Ge-", "-dan-", "-ken,", "als", "ob", "du", "ver-", null, null, "-sto-", "-ssen", null, "wärst,", "Bist", "du", "bös", "und", "un-", "-ge-", "-recht?", "Ei", "so", "ist", "Gott", "fromm", "und", "schlecht.", "Hast", "du", "Zorn", "und", null, "Tod", "ver-", "-die-", "-net?", "Sin-", "ke", "nicht,", "Gott", "ist", "ver-", "-süh-", "-net."],
             ["bleib", "in", "Got-", "-tes", "Wort", "und", "Schran-", "-ken,", "da", "du", "an-", "-ders", null, null, "re-", "-den", null, "hörst.", "Sei-", "-ne", "Freud'", "und", "Herr-", "-lich-", "-keit", "sollst", "du", "seh'n", "in", "E-", "-wig-", "-keit,", "mit", "den", "Eng-", "-eln", null, "ju-", "-bi-", "-lie-", "-ren,", "e-", "-wig,", "e-", "-wig", "tri-", "-um-", "-phie-", "-ren."],
-            ["2. Freu'", "dich", "sehr,", "o", "mei-", "-ne", "Seel-", "-le,", "und", "ver-", "-giss", "all", null, null, "Noth", "und", null, "Qual,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Freu'", "dich", "sehr,", "o", "mei-", "-ne", "Seel-", "-le,", "und", "ver-", "-giss", "all", null, null, "Noth", "und", null, "Qual,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["weil", "dich", "nun", "Chris-", "-tus,", "dein", "Her-", "-re,", "ruft", "aus", "die-", "-sem", null, null, "Jam-", "-mer-", null, "-thal.", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -1601,17 +1601,17 @@
     "chor256": {
         "source": "music21 corpus/bach/bwv194.6.mxl",
         "verses": [
-            ["1. Freu'", "dich", "sehr,", "o", "mei-", "-ne", "See-", "-le", "und", "ver-", "-giss", "all", "Noth", "und", "Qual,", "Sei-", "-ne", "Freud'", "-lich-", null, null, "-keit", "sollst", "du", "seh'n", "in", "E-", "-wig-", "-keit,", "mit", null, "den", "Eng-", "-eln", "ju-", "-bi-", "-lie-", "-ren,", "e-", "-wig,", "e-", "-wig", "tri-", "-um-", "-phie-", "-ren."],
+            ["Freu'", "dich", "sehr,", "o", "mei-", "-ne", "See-", "-le", "und", "ver-", "-giss", "all", "Noth", "und", "Qual,", "Sei-", "-ne", "Freud'", "-lich-", null, null, "-keit", "sollst", "du", "seh'n", "in", "E-", "-wig-", "-keit,", "mit", null, "den", "Eng-", "-eln", "ju-", "-bi-", "-lie-", "-ren,", "e-", "-wig,", "e-", "-wig", "tri-", "-um-", "-phie-", "-ren."],
             ["weil", "dich", "nun", "Chri-", "-stus,", "dein", "Her-", "-re,", "ruft", "aus", "die-", "-sem", "Jam-", "-mer-", "-thal.", "Wenn", "mir", "fällt", "-ges", null, null, "ein,", "lass", "mich", "den-", "-ken", "dei-", "-ner", "Pein,", "dass", null, "ich", "dei-", "-ne", "Angst", "und", "Schmer-", "-zen,", "wohl", "er-", "-wäg'", "in", "mei-", "-nem", "Her-", "-zen."],
-            ["2. Je-", "-su,", "dei-", "-ne", "tie-", "-fen", "Wun-", "-den,", "dei-", "-ne", "Qual", "und", "bit-", "-tern", "Tod,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Je-", "-su,", "dei-", "-ne", "tie-", "-fen", "Wun-", "-den,", "dei-", "-ne", "Qual", "und", "bit-", "-tern", "Tod,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["lass", "mir", "ge-", "-ben", "al-", "-le", "Stun-", "-den,", "Trost", "in", "Leib's", "und", "See-", "-le-", "-noth!", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
     "chor257": {
         "source": "music21 corpus/bach/bwv194.12.mxl",
         "verses": [
-            ["1. Wach'", "auf,", "mein", "Herz,", null, "und", "sin-", "-ge", "dem", "Schöp-", "-fer", "al-", null, "-ler", "Din-", "-ge,", "dem", "Ge-", "-ber", "al-", "-ler", "Gü-", "-ter,", "dem", "from-", "-men", "Men-", null, null, "-schen", null, null, null, "-ter."],
-            ["2. Nun", "lasst", "uns", "Gott,", null, "dem", "Her-", "-ren,", "Dank", "sa-", "-gen", "und", null, "ihn", "eh-", "-ren,", "von", "we-", "-gen", "sei-", "-ner", "Ga-", "-ben,", "die", "wir", "em-", "-pfan-", null, null, "-gen", null, null, null, "-ben."]
+            ["Wach'", "auf,", "mein", "Herz,", null, "und", "sin-", "-ge", "dem", "Schöp-", "-fer", "al-", null, "-ler", "Din-", "-ge,", "dem", "Ge-", "-ber", "al-", "-ler", "Gü-", "-ter,", "dem", "from-", "-men", "Men-", null, null, "-schen", null, null, null, "-ter."],
+            ["Nun", "lasst", "uns", "Gott,", null, "dem", "Her-", "-ren,", "Dank", "sa-", "-gen", "und", null, "ihn", "eh-", "-ren,", "von", "we-", "-gen", "sei-", "-ner", "Ga-", "-ben,", "die", "wir", "em-", "-pfan-", null, null, "-gen", null, null, null, "-ben."]
         ]
     },
     "chor258": {
@@ -1768,9 +1768,9 @@
     "chor282": {
         "source": "music21 corpus/bach/bwv25.6.mxl",
         "verses": [
-            ["1. Weg,", "mein", "Herz,", "mit", "den", "Ge-", "-dan-", "-ken,", "als", "ob", "du", "ver-", null, null, "-sto-", "-ssen", null, "wärst,", "Bist", "du", "bös", "und", "un-", "-ge-", "-recht?", "Ei", "so", "ist", "Gott", "fromm", "und", "schlecht.", "Hast", "du", "Zorn", "und", null, "Tod", "ver-", "-die-", "-net?", "Sin-", "ke", "nicht,", "Gott", "ist", "ver-", "-süh-", "-net."],
+            ["Weg,", "mein", "Herz,", "mit", "den", "Ge-", "-dan-", "-ken,", "als", "ob", "du", "ver-", null, null, "-sto-", "-ssen", null, "wärst,", "Bist", "du", "bös", "und", "un-", "-ge-", "-recht?", "Ei", "so", "ist", "Gott", "fromm", "und", "schlecht.", "Hast", "du", "Zorn", "und", null, "Tod", "ver-", "-die-", "-net?", "Sin-", "ke", "nicht,", "Gott", "ist", "ver-", "-süh-", "-net."],
             ["bleib", "in", "Got-", "-tes", "Wort", "und", "Schran-", "-ken,", "da", "du", "an-", "-ders", null, null, "re-", "-den", null, "hörst.", "Sei-", "-ne", "Freud'", "und", "Herr-", "-lich-", "-keit", "sollst", "du", "seh'n", "in", "E-", "-wig-", "-keit,", "mit", "den", "Eng-", "-eln", null, "ju-", "-bi-", "-lie-", "-ren,", "e-", "-wig,", "e-", "-wig", "tri-", "-um-", "-phie-", "-ren."],
-            ["2. Freu'", "dich", "sehr,", "o", "mei-", "-ne", "Seel-", "-le,", "und", "ver-", "-giss", "all", null, null, "Noth", "und", null, "Qual,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Freu'", "dich", "sehr,", "o", "mei-", "-ne", "Seel-", "-le,", "und", "ver-", "-giss", "all", null, null, "Noth", "und", null, "Qual,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["weil", "dich", "nun", "Chris-", "-tus,", "dein", "Her-", "-re,", "ruft", "aus", "die-", "-sem", null, null, "Jam-", "-mer-", null, "-thal.", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -1941,9 +1941,9 @@
     "chor309": {
         "source": "music21 corpus/bach/bwv267.mxl",
         "verses": [
-            ["1. An", "Was-", "-ser-", null, "-flüs-", null, "-sen", "Ba-", null, "-by-", "-lon,", "da", "sa-", "-ssen", "wir", "mit", null, "Schmer-", null, null, "-zen,", "Wir", "hing-", "-en", "auf", null, "mit", "schwe-", "-rem", "Muth", "die", null, "Har-", "-fen", "und", "die", "Or-", "-geln", "gut", "an", null, "ih-", "-re", "Bäum'", null, "der", "Wei-", "-den,", "die", "drin-", "-nen", "sind", "in", "ih-", "-rem", "Land;", "da", "muss-", "-ten", "wir", "viel", null, "Schmach", "und", "Schand'", "täg-", "-lich", "von", "ih-", null, null, "-nen", null, "lei-", null, null, null, "-den."],
+            ["An", "Was-", "-ser-", null, "-flüs-", null, "-sen", "Ba-", null, "-by-", "-lon,", "da", "sa-", "-ssen", "wir", "mit", null, "Schmer-", null, null, "-zen,", "Wir", "hing-", "-en", "auf", null, "mit", "schwe-", "-rem", "Muth", "die", null, "Har-", "-fen", "und", "die", "Or-", "-geln", "gut", "an", null, "ih-", "-re", "Bäum'", null, "der", "Wei-", "-den,", "die", "drin-", "-nen", "sind", "in", "ih-", "-rem", "Land;", "da", "muss-", "-ten", "wir", "viel", null, "Schmach", "und", "Schand'", "täg-", "-lich", "von", "ih-", null, null, "-nen", null, "lei-", null, null, null, "-den."],
             ["als", "wir", "ge-", null, "-dach-", null, "-ten", "an", null, "Zi-", "-on,", "da", "wein-", "-ten", "wir", "von", null, "Her-", null, null, "-zen.", "Es", "geht", "da-", "-hin,", null, "wird", "matt", "und", "krank,", "er-", null, "-giebt", "sich", "auf", "die", "Wür-", "-ge-", "-bank,", "ver-", null, "-zeiht", "sich", "al-", null, "-ler", "Freu-", "-den;", "es", "nim-", "-met", "an", "Schmach,", "Hohn", "und", "Spott,", "Angst,", "Wun-", "-den,", "Strie-", "-men,", null, "Kreuz", "und", "Tod,", "und", "spricht:", "Ich", "will", null, null, "gern", null, "lei-", null, null, null, "-den."],
-            ["2. Ein", "Lämm-", "-lein", null, "geht", null, "und", "trägt", null, "die", "Schuld", "der", "Welt", "und", "ih-", "-rer", null, "Kin-", null, null, "-der;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Ein", "Lämm-", "-lein", null, "geht", null, "und", "trägt", null, "die", "Schuld", "der", "Welt", "und", "ih-", "-rer", null, "Kin-", null, null, "-der;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["es", "geht", "und", null, "bü-", null, "-sset", "in", null, "Ge-", "-duld", "die", "Sün-", "-den", "al-", "-ler", null, "Sün-", null, null, "-der.", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -1964,9 +1964,9 @@
     "chor313": {
         "source": "music21 corpus/bach/bwv112.5-sc.mxl",
         "verses": [
-            ["1. Al-", null, "-lein", "Gott", "in", "der", "Höh'", "sei", "Ehr'", "und", "Dank", "für", null, "sei-", null, "-ne", "Gna-", null, null, "-de,", "Ein", "Wohl-", "-ge-", "-fall'n", "Gott", "an", "uns", "hat,", "nun", "ist", "gross", "Fried", "ohn'", "Un-", "-ter-", "-lass,", "all'", "Fehd'", "hat", null, "nun", null, "ein", "En-", null, null, "-de."],
+            ["Al-", null, "-lein", "Gott", "in", "der", "Höh'", "sei", "Ehr'", "und", "Dank", "für", null, "sei-", null, "-ne", "Gna-", null, null, "-de,", "Ein", "Wohl-", "-ge-", "-fall'n", "Gott", "an", "uns", "hat,", "nun", "ist", "gross", "Fried", "ohn'", "Un-", "-ter-", "-lass,", "all'", "Fehd'", "hat", null, "nun", null, "ein", "En-", null, null, "-de."],
             ["da-", null, "-rum,", "dass", "nun", "und", "nim-", "-mer-", "-mehr", "uns", "rüh-", "-ren", null, "kann", null, "kein", "Scha-", null, null, "-de!", "zum", "fri-", "-schen", "Was-", "-ser", "leit't", "er", "mich,", "mein'", "Seel'", "zu", "la-", "-ben", "kräf-", "-tig-", "-lich", "durch's", "sel'-", "-ge", null, "Wort", null, "der", "Gna-", null, null, "-den."],
-            ["2. Der", null, "Herr", "ist", "mein", "ge-", "-treu-", "-er", "Hirt,", "dem", "ich", "mich", null, "ganz", null, "ver-", "-trau-", null, null, "-e;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Der", null, "Herr", "ist", "mein", "ge-", "-treu-", "-er", "Hirt,", "dem", "ich", "mich", null, "ganz", null, "ver-", "-trau-", null, null, "-e;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["Zur", null, "Weid'", "er", "mich,", "sein", "Schäf-", "-lein,", "führt,", "auf", "schö-", "-ner,", null, "grü-", null, "-ner", "Au-", null, null, "-e;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -1999,9 +1999,9 @@
     "chor318": {
         "source": "music21 corpus/bach/bwv339.mxl",
         "verses": [
-            ["1. Wer", "in", "dem", "Schutz", "des", "Höch-", "-sten", "ist,", "und", "sich", "Gott", "thut", "er-", null, "-ge-", "-ben,", "der", "du", null, "ja", "wirst", null, "er-", "-ret-", null, "-ten", "mich", "von", "Teu-", "-fels", "Stri-", "-cken", "gnä-", null, "-dig-", "-lich", "und", "von", "der", "Pe-", null, "-sti-", null, "-len-", "-ze."],
+            ["Wer", "in", "dem", "Schutz", "des", "Höch-", "-sten", "ist,", "und", "sich", "Gott", "thut", "er-", null, "-ge-", "-ben,", "der", "du", null, "ja", "wirst", null, "er-", "-ret-", null, "-ten", "mich", "von", "Teu-", "-fels", "Stri-", "-cken", "gnä-", null, "-dig-", "-lich", "und", "von", "der", "Pe-", null, "-sti-", null, "-len-", "-ze."],
             ["der", "spricht:", "du", "Herr,", "mein'", "Zu-", "-flucht", "bist,", "mein", "Gott,", "Hoff-", "-nung", "und", null, "Le-", "-ben,", "Er-", "-halt", null, "mich", "nur", null, "in", "dei-", null, "-ner", "Huld,", "sonst", "wie", "du", "willst,", "gieb", "mir", null, "Ge-", "-duld,", "dein", "Will',", "der", "ist", null, "der", null, "be-", "-ste."],
-            ["2. Herr,", "wie", "du", "willst,", "so", "schick's", "mit", "mir", "im", "Le-", "-ben", "wie", "im", null, "Ster-", "-ben,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Herr,", "wie", "du", "willst,", "so", "schick's", "mit", "mir", "im", "Le-", "-ben", "wie", "im", null, "Ster-", "-ben,", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["al-", "-lein", "zu", "dir", "steht", "mein", "Be-", "-gehr,", "lass", "mich,", "Herr,", "nicht", "ver-", null, "-der-", "-ben.", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -2183,9 +2183,9 @@
     "chor349": {
         "source": "music21 corpus/bach/bwv103.6.mxl",
         "verses": [
-            ["1. Was", null, "mein", "Gott", "will,", "das", "g'scheh'", "all-", "-zeit,", "sein", "Will'", "der", "ist", "der", null, "be-", "-ste;", "Er", "hilft", "aus", null, null, "Noth,", null, "der", "from-", "-me", "Gott,", "und", "züch-", "-ti-", "-get", "mit", "Ma-", "-ssen.", "Wer", null, "Gott", "ver-", "-traut,", "fest", "auf", "ihn", "baut,", "den", "will", "er", "nicht", "ver-", null, "-las-", "-sen."],
+            ["Was", null, "mein", "Gott", "will,", "das", "g'scheh'", "all-", "-zeit,", "sein", "Will'", "der", "ist", "der", null, "be-", "-ste;", "Er", "hilft", "aus", null, null, "Noth,", null, "der", "from-", "-me", "Gott,", "und", "züch-", "-ti-", "-get", "mit", "Ma-", "-ssen.", "Wer", null, "Gott", "ver-", "-traut,", "fest", "auf", "ihn", "baut,", "den", "will", "er", "nicht", "ver-", null, "-las-", "-sen."],
             ["zu", null, "hel-", "-fen", "den'n", "er", "ist", "be-", "-reit,", "die", "an", "ihn", "glau-", "-ben", null, "fe-", "-ste.", "Ich", "bin", "ein", null, null, "Sohn", null, "dess,", "der", "den", "Thron", "des", "Him-", "-mels", "auf-", "-ge-", "-zo-", "-gen:", "ob", null, "er", "gleich", "schlägt", "und", "Kreuz", "auf-", "-legt,", "bleibt", "doch", "sein", "Herz", "ge-", null, "-wo-", "-gen."],
-            ["2. Ich", null, "hab'", "in", "Got-", "-tes", "Herz", "und", "Sinn", "mein", "Herz", "und", "Sinn", "er-", null, "-ge-", "-ben;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Ich", null, "hab'", "in", "Got-", "-tes", "Herz", "und", "Sinn", "mein", "Herz", "und", "Sinn", "er-", null, "-ge-", "-ben;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["was", null, "bö-", "-se", "scheint,", "ist", "mir", "Ge-", "-winn,", "der", "Tod", "selbst", "ist", "mein", null, "Le-", "-ben:", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -2212,9 +2212,9 @@
     "chor353": {
         "source": "music21 corpus/bach/bwv112.5-sc.mxl",
         "verses": [
-            ["1. Al-", null, "-lein", "Gott", "in", "der", "Höh'", "sei", "Ehr'", "und", "Dank", "für", null, "sei-", null, "-ne", "Gna-", null, null, "-de,", "Ein", "Wohl-", "-ge-", "-fall'n", "Gott", "an", "uns", "hat,", "nun", "ist", "gross", "Fried", "ohn'", "Un-", "-ter-", "-lass,", "all'", "Fehd'", "hat", null, "nun", null, "ein", "En-", null, null, "-de."],
+            ["Al-", null, "-lein", "Gott", "in", "der", "Höh'", "sei", "Ehr'", "und", "Dank", "für", null, "sei-", null, "-ne", "Gna-", null, null, "-de,", "Ein", "Wohl-", "-ge-", "-fall'n", "Gott", "an", "uns", "hat,", "nun", "ist", "gross", "Fried", "ohn'", "Un-", "-ter-", "-lass,", "all'", "Fehd'", "hat", null, "nun", null, "ein", "En-", null, null, "-de."],
             ["da-", null, "-rum,", "dass", "nun", "und", "nim-", "-mer-", "-mehr", "uns", "rüh-", "-ren", null, "kann", null, "kein", "Scha-", null, null, "-de!", "zum", "fri-", "-schen", "Was-", "-ser", "leit't", "er", "mich,", "mein'", "Seel'", "zu", "la-", "-ben", "kräf-", "-tig-", "-lich", "durch's", "sel'-", "-ge", null, "Wort", null, "der", "Gna-", null, null, "-den."],
-            ["2. Der", null, "Herr", "ist", "mein", "ge-", "-treu-", "-er", "Hirt,", "dem", "ich", "mich", null, "ganz", null, "ver-", "-trau-", null, null, "-e;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Der", null, "Herr", "ist", "mein", "ge-", "-treu-", "-er", "Hirt,", "dem", "ich", "mich", null, "ganz", null, "ver-", "-trau-", null, null, "-e;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["Zur", null, "Weid'", "er", "mich,", "sein", "Schäf-", "-lein,", "führt,", "auf", "schö-", "-ner,", null, "grü-", null, "-ner", "Au-", null, null, "-e;", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },
@@ -2266,9 +2266,9 @@
     "chor361": {
         "source": "music21 corpus/bach/bwv248.12-2.mxl",
         "verses": [
-            ["1. Er-", "-mun-", "-tre", "dich", null, "mein", "schwa-", "-cher", "Geist,", "und", "tra-", "-ge", "gross'", "Ver-", "-lan-", "-gen,", "Dies", "ist", "die", "Nacht,", "da-", "-rin", null, "es", "kam,", "und", "mensch-", "-lich", "We-", null, "-sen", "an", "sich", "nahm,", "da-", "-durch", "die", "Welt", "mit", "Treu-", "-en", "als", "sei-", "-ne", "Bräut", "zu", null, "frei-", "-en."],
+            ["Er-", "-mun-", "-tre", "dich", null, "mein", "schwa-", "-cher", "Geist,", "und", "tra-", "-ge", "gross'", "Ver-", "-lan-", "-gen,", "Dies", "ist", "die", "Nacht,", "da-", "-rin", null, "es", "kam,", "und", "mensch-", "-lich", "We-", null, "-sen", "an", "sich", "nahm,", "da-", "-durch", "die", "Welt", "mit", "Treu-", "-en", "als", "sei-", "-ne", "Bräut", "zu", null, "frei-", "-en."],
             ["ein", "klei-", "-nes", "Kind,", null, "das", "Va-", "-ter", "heisst,", "mit", "Freu-", "-den", "zu", "em-", "-pfan-", "-gen:", "wie", "soll", "ich", "dei-", "-nen", "gro-", null, "-ssen", "Sieg,", "den", "du", "durch", "ei-", null, "nen", "schwe-", "-ren", "krieg", "er-", "-wor-", "-ben", "hast,", "recht", "prei-", "-sen,", "und", "dir", "g'nug", "Ehr'", "er-", null, "-wei-", "-sen?"],
-            ["2. Du", "Le-", "-bens-", "-fürst,", null, "Herr", "Je-", "-su", "Christ,", "der", "du", "bist", "auf-", "-ge-", "-nom-", "-men", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+            ["Du", "Le-", "-bens-", "-fürst,", null, "Herr", "Je-", "-su", "Christ,", "der", "du", "bist", "auf-", "-ge-", "-nom-", "-men", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
             ["gen", "Him-", "-mel,", "da", null, "dein", "Va-", "-ter", "ist", "und", "die", "Ge-", "-mein'", "der", "From-", "-men:", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null]
         ]
     },

@@ -91,4 +91,41 @@ TEST_CASE(lyrics_that_do_not_fit_the_soprano_are_left_out) {
     CHECK_EQ(withLyrics({{"Aus", "mei-", "-nes"}}, rows), lines(rows));
 }
 
+TEST_CASE(stanzas_are_numbered_above_the_first_note) {
+    const std::string result = withLyrics({{"Gott", "sei."}, {"Wir", "Dank."}}, {
+        "**kern\t**kern",
+        "4G\t4g",
+        "4c\t4a",
+        "*-\t*-",
+    });
+    CHECK_EQ(result, lines({
+        "**kern\t**kern\t**text\t**text",
+        "*\t*\t*v:1.\t*v:2.",
+        "4G\t4g\tGott\tWir",
+        "4c\t4a\tsei.\tDank.",
+        "*-\t*-\t*-\t*-",
+    }));
+}
+
+TEST_CASE(a_repeat_makes_two_lines_one_stanza) {
+    const std::string result = withLyrics({{"Gott", "sei."}, {"Herr", "dir."}}, {
+        "**kern\t**kern",
+        "4G\t4g",
+        "4c\t4a",
+        "=:|!\t=:|!",
+        "*-\t*-",
+    });
+    CHECK(result.find("*v:") == std::string::npos);
+}
+
+TEST_CASE(lines_that_continue_a_sentence_are_no_stanzas) {
+    const std::string result = withLyrics({{"Gott", "sei,"}, {"Wir", "Dank."}}, {
+        "**kern\t**kern",
+        "4G\t4g",
+        "4c\t4a",
+        "*-\t*-",
+    });
+    CHECK(result.find("*v:") == std::string::npos);
+}
+
 TEST_MAIN()

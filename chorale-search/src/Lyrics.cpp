@@ -1,5 +1,6 @@
 #include "Lyrics.hpp"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -23,6 +24,52 @@ void reparse(hum::HumdrumFile& infile) {
     std::stringstream text;
     text << infile;
     infile.readString(text.str());
+}
+
+// Two for the bar form [A,A,B], one without repeats, none for other repeats (Te Deum).
+int linesPerStanza(hum::HTp soprano) {
+    bool repeated = false;
+    for (hum::HTp token = soprano; token; token = token->getNextToken()) {
+        if (token->compare(0, 3, "*>[") == 0) {
+            std::vector<std::string> sections;
+            std::stringstream list(token->substr(3, token->size() - 4));
+            for (std::string section; std::getline(list, section, ',');) sections.push_back(section);
+            if (sections.size() > 1 && sections[0] == sections[1]) return 2;
+            std::sort(sections.begin(), sections.end());
+            return std::adjacent_find(sections.begin(), sections.end()) == sections.end() ? 1 : 0;
+        }
+        if (token->isBarline() && token->find(":|") != std::string::npos) repeated = true;
+    }
+    return repeated ? 2 : 1;
+}
+
+// "1.", "", "2.", "" for two stanzas of two lines each. None unless every stanza but the last ends
+// a sentence, otherwise the lines belong to one stanza.
+std::vector<std::string> stanzaLabels(const std::vector<Verse>& verses, int linesPerStanza) {
+    std::vector<std::string> labels(verses.size());
+    if (linesPerStanza == 0 || verses.size() % linesPerStanza || verses.size() / linesPerStanza < 2) return labels;
+    for (std::size_t line = linesPerStanza - 1; line + linesPerStanza < verses.size(); line += linesPerStanza) {
+        auto last = std::find_if(verses[line].rbegin(), verses[line].rend(), [](const auto& s) { return s; });
+        if (last == verses[line].rend() || (*last)->find_last_of(".!?") != (*last)->size() - 1) return labels;
+    }
+    for (std::size_t line = 0; line < verses.size(); line += linesPerStanza) {
+        labels[line] = std::to_string(line / linesPerStanza + 1) + ".";
+    }
+    return labels;
+}
+
+// *v:1. above the first note, in the **text spines.
+void addVerseLabels(hum::HumdrumFile& infile, int firstNoteLine, const std::vector<std::string>& labels) {
+    if (std::all_of(labels.begin(), labels.end(), [](const std::string& label) { return label.empty(); })) return;
+    hum::HLp line = infile.insertNullInterpretationLineAboveIndex(firstNoteLine);
+    std::size_t verse = 0;
+    for (int j = 0; j < line->getFieldCount(); ++j) {
+        if (!infile[firstNoteLine + 1].token(j)->isDataType("**text")) continue;
+        if (!labels[verse].empty()) line->token(j)->setText("*v:" + labels[verse]);
+        ++verse;
+    }
+    line->createLineFromTokens();
+    reparse(infile);
 }
 
 } // namespace
@@ -60,6 +107,7 @@ void applyLyrics(hum::HumdrumFile& infile, const std::string& choraleId, const s
     infile.getKernSpineStartList(starts);
     if (starts.empty()) return;
     const int soprano = starts.back()->getTrack();
+    const std::vector<std::string> labels = stanzaLabels(verses, linesPerStanza(starts.back()));
 
     std::vector<int> attackLines;
     for (int i = 0; i < infile.getLineCount(); ++i) {
@@ -92,6 +140,7 @@ void applyLyrics(hum::HumdrumFile& infile, const std::string& choraleId, const s
         infile.insertDataSpineAfter(lastTrack, syllables, ".", "**text");
     }
     reparse(infile);
+    addVerseLabels(infile, attackLines.front(), labels);
 }
 
 } // namespace choralesearch
