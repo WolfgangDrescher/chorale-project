@@ -18,11 +18,18 @@ useHead({
     title: computed(() => chorale.value.title ? `${heading.value} (${id})` : id),
 });
 
-const { data: surroundData } = await useAsyncData(`chorales/${id}/surround`, () => {
-    return queryCollectionItemSurroundings('chorales', chorale.value.path, { fields: ['choraleId'] }).order('stem', 'ASC');
+const { listFilter } = useChoraleListFilter();
+const { data: allChorales } = await useAsyncData('chorale-list-filter-fields', () => {
+    return queryCollection('chorales').select('choraleId', 'bwv', 'title', 'key', 'mode', 'cantusFirmus', 'meter').order('stem', 'ASC').all();
 });
-const prevChorale = computed(() => surroundData.value?.[0] ?? null);
-const nextChorale = computed(() => surroundData.value?.[1] ?? null);
+// The neighbours within the filtered chorale list, even if this chorale is not in it.
+const surroundingChorales = computed(() => {
+    const chorales = (allChorales.value ?? []).filter((item) => item.choraleId === id || matchesChoraleListFilter(item, listFilter.value));
+    const index = chorales.findIndex((item) => item.choraleId === id);
+    return { prev: chorales[index - 1] ?? null, next: chorales[index + 1] ?? null };
+});
+const prevChorale = computed(() => surroundingChorales.value.prev);
+const nextChorale = computed(() => surroundingChorales.value.next);
 
 const { githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator();
 

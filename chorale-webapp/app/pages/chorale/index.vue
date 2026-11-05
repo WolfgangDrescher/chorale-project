@@ -8,13 +8,11 @@ useHead({
 
 const { data: allChorales } = await useAsyncData('all-chorales', () => queryCollection('chorales').order('stem', 'ASC').all());
 
-const filter = ref('');
+const { filter, listFilter } = useChoraleListFilter();
 const page = ref(1);
 const PAGE_SIZE = 20;
 
 watch(filter, () => (page.value = 1));
-
-const listFilter = computed(() => parseChoraleListFilter(filter.value));
 
 // What the filter was understood as, so it is clear why a chorale is or is not listed.
 const listFilterBadges = computed(() => {
