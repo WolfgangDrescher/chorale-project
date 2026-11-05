@@ -2,22 +2,20 @@ import { onKeyStroke, useDebounceFn, useTimeoutFn } from '@vueuse/core';
 
 const REPOSITORY_URL = 'https://github.com/WolfgangDrescher/chorale-project';
 
-// A key as the annotations write it: the tonic as **kern spells it, upper case for major and lower
-// case for minor, and a mode as Humdrum abbreviates it, if any ("G", "e", "B-", "g:dor", "G:mix").
-const KEY_PATTERN = /^[A-Ga-g][#-]*(:(ion|dor|phr|lyd|mix|aeo|loc))?$/;
+// A key as the annotations write it ("G", "e", "B-", "g:dor"), or "?" for one left open.
+const KEY_PATTERN = /^(\?|[A-Ga-g][#-]*(:(ion|dor|phr|lyd|mix|aeo|loc))?)$/;
 const MODE_LABELS = { dorian: 'dor', phrygian: 'phr', lydian: 'lyd', mixolydian: 'mix', locrian: 'loc' };
 
-// The key changes as markers of a HighlightedScore (its lines prop): a line each, labeled with
-// the key, "?" for one not named yet.
+// The entries as line markers of a HighlightedScore, labeled with their key.
 export function modulationMarkers(modulations) {
     return [{
         color: 'rgb(34 197 94 / 0.4)',
-        items: modulations.map(({ line, key }) => ({ lineNumber: line, label: { value: key || '?', position: 'bottom' } })),
+        items: modulations.map(({ line, key }) => ({ lineNumber: line, label: { value: key, position: 'bottom' } })),
     }];
 }
 
 // Annotates the modulations of a chorale while active and it is played: an entry is a line and a
-// key, or none yet. With saves, as in the development server, they go to bach-modulations.json.
+// key, or "?" for later. With saves, as in the development server, they go to bach-modulations.json.
 export function useModulationAnnotator(choraleId, player, active, saves = false) {
     const scoreOptions = useScoreOptions();
     // A Humdrum filter can put lines before the data, see lineShiftOf: the entries name the lines
@@ -124,7 +122,7 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
     }
 
     function mark() {
-        if (annotator.line && !entryAt(annotator.line)) setEntry(annotator.line, '');
+        if (annotator.line && !entryAt(annotator.line)) setEntry(annotator.line, '?');
     }
 
     // Whether the entry was only made for the key being typed, so that it goes again if no key comes.
@@ -135,7 +133,7 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
         if (!line) return;
         if (player.isPlaying) player.pause();
         markedForInput = !entryAt(line);
-        if (markedForInput) setEntry(line, '');
+        if (markedForInput) setEntry(line, '?');
         annotator.input = key;
         annotator.inputLine = line;
     }
@@ -143,7 +141,10 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
     function commitInput() {
         // The English names: B for H.
         const key = (annotator.input?.trim() ?? '').replace(/^h/, 'b').replace(/^H/, 'B');
-        if (KEY_PATTERN.test(key)) setEntry(annotator.inputLine, key);
+        if (KEY_PATTERN.test(key)) {
+            setEntry(annotator.inputLine, key);
+            markedForInput = false;
+        }
         closeInput();
     }
 
@@ -157,7 +158,7 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
         const { inputLine } = annotator;
         annotator.input = null;
         annotator.inputLine = null;
-        if (markedForInput && entryAt(inputLine)?.key === '') remove(inputLine);
+        if (markedForInput) remove(inputLine);
         markedForInput = false;
     }
 
@@ -214,9 +215,8 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
         }
     }
 
-    // The annotations as the file holds them: the entries that have a key, with their positions.
+    // The annotations as the file holds them: the entries with their positions.
     const annotations = computed(() => annotator.entries
-        .filter(({ key }) => key)
         .map(({ line, key }) => [positionOf(line), key])
         .filter(([position]) => position));
 
@@ -256,7 +256,7 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
         event.preventDefault();
         mark();
     });
-    onKeyStroke((event) => /^[A-Ha-h]$/.test(event.key), (event) => {
+    onKeyStroke((event) => /^[A-Ha-h?]$/.test(event.key), (event) => {
         if (!takesKeys() || event.metaKey || event.ctrlKey || event.altKey) return;
         event.preventDefault();
         openInput(event.key);

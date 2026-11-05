@@ -52,11 +52,12 @@ const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 const isMinor = (key) => key === key.toLowerCase();
 const isChurchMode = (mode) => !['major', 'minor'].includes(mode);
 
-// "D", "f dor", or as a degree of the starting key: "V", "ii", "♭III".
+// "D", "f dor", or as a degree of the starting key: "V", "ii", "♭III"; "?" for a key left open.
 function labelOf(modulation) {
     const { key, mode, keyDeg } = modulation;
+    if (key === '?') return key;
     let label = key.replaceAll('-', '♭').replaceAll('#', '♯');
-    if (labeling.value === 'degrees') {
+    if (labeling.value === 'degrees' && keyDeg) {
         const [, number, alteration] = keyDeg.match(/^(\d)([-+]*)$/);
         const roman = ROMAN_NUMERALS[number - 1];
         label = alteration.replaceAll('-', '♭').replaceAll('+', '♯') + (isMinor(key) ? roman.toLowerCase() : roman);
@@ -64,8 +65,9 @@ function labelOf(modulation) {
     return isChurchMode(mode) ? `${label} ${mode.slice(0, 3)}` : label;
 }
 
-// Major solid, minor light with a bar of its color, church modes hatched.
+// Major solid, minor light with a bar of its color, church modes hatched, a key left open gray.
 function appearanceOf({ key, mode, signature }, homeSignature) {
+    if (key === '?') return { class: 'bg-accented text-muted', style: {} };
     const minor = isMinor(key);
     const colors = COLORS_BY_SIGNATURE[(((signature - homeSignature) % 12) + 12) % 12];
     const style = {};
@@ -76,7 +78,9 @@ function appearanceOf({ key, mode, signature }, homeSignature) {
     return { class: minor ? [colors.minor, 'shadow-[inset_0_-4px_0_var(--key-color)]'] : colors.major, style };
 }
 
-const startSignature = computed(() => props.modulations[0]?.signature ?? 0);
+// The key the score starts in, unless it is left open.
+const start = computed(() => (props.modulations[0]?.key === '?' ? null : props.modulations[0]));
+const startSignature = computed(() => start.value?.signature ?? 0);
 const homeSignature = computed(() => (coloring.value === 'relative' ? startSignature.value : 0));
 
 const segments = computed(() => {
@@ -120,16 +124,16 @@ function keyDegAt(fifths, startMode) {
 // Six fifths to either side of the starting key, a row with its major or major mode and one with
 // its minor or minor mode, as a key and its relative have the same signature.
 const legend = computed(() => {
-    const start = props.modulations[0];
-    if (!start) return [];
-    const startFifths = start.signature - MODE_FIFTHS[start.mode];
-    const rows = MODE_FIFTHS[start.mode] < -1 ? ['major', start.mode] : [start.mode, 'minor'];
+    if (!start.value) return [];
+    const { signature, mode: startMode } = start.value;
+    const startFifths = signature - MODE_FIFTHS[startMode];
+    const rows = MODE_FIFTHS[startMode] < -1 ? ['major', startMode] : [startMode, 'minor'];
     return rows.map((mode) => ({
         label: t(isChurchMode(mode) ? 'keyColorsChurchMode' : mode === 'minor' ? 'keyColorsMinor' : 'keyColorsMajor'),
         entries: Array.from({ length: 13 }, (_, index) => {
-            const fifths = start.signature + index - 6 - MODE_FIFTHS[mode];
-            const key = { ...keyAt(fifths, mode), keyDeg: keyDegAt(fifths - startFifths, start.mode) };
-            return { label: labelOf(key), isHome: index === 6 && mode === start.mode, appearance: appearanceOf(key, homeSignature.value) };
+            const fifths = signature + index - 6 - MODE_FIFTHS[mode];
+            const key = { ...keyAt(fifths, mode), keyDeg: keyDegAt(fifths - startFifths, startMode) };
+            return { label: labelOf(key), isHome: index === 6 && mode === startMode, appearance: appearanceOf(key, homeSignature.value) };
         }),
     }));
 });
@@ -138,9 +142,8 @@ const legend = computed(() => {
 // another than the starting key.
 const cantusFirmus = computed(() => {
     const key = props.cantusFirmus;
-    const start = props.modulations[0];
-    if (!key || !start || (key.key === start.key && key.mode === start.mode)) return null;
-    const column = key.signature - start.signature + 6;
+    if (!key || !start.value || (key.key === start.value.key && key.mode === start.value.mode)) return null;
+    const column = key.signature - start.value.signature + 6;
     if (column < 0 || column > 12) return null;
     return { label: labelOf(key), appearance: appearanceOf(key, homeSignature.value), column };
 });

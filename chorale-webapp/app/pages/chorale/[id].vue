@@ -207,7 +207,7 @@ const modulationLines = computed(() => [{
     color: 'rgb(34 197 94 / 0.4)',
     items: modulations.value.map(({ line, key, mode }) => ({
         lineNumber: line,
-        label: { value: ['major', 'minor'].includes(mode) ? key : `${key}:${mode.slice(0, 3)}`, position: 'bottom' },
+        label: { value: !mode || ['major', 'minor'].includes(mode) ? key : `${key}:${mode.slice(0, 3)}`, position: 'bottom' },
     })),
 }]);
 

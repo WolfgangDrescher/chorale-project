@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
     if (!/^chor\d{3}$/.test(id)) throw createError({ statusCode: 404, statusMessage: 'Page Not Found' });
 
     const { modulations } = await readBody(event) ?? {};
-    const isEntry = (entry) => Array.isArray(entry) && entry.length === 2 && /^\d+\/\d+(\+\d+\/\d+)?$/.test(entry[0]) && /^[A-Ga-g][#-]*(:(ion|dor|phr|lyd|mix|aeo|loc))?$/.test(entry[1]);
+    const isEntry = (entry) => Array.isArray(entry) && entry.length === 2 && /^\d+\/\d+(\+\d+\/\d+)?$/.test(entry[0]) && /^(\?|[A-Ga-g][#-]*(:(ion|dor|phr|lyd|mix|aeo|loc))?)$/.test(entry[1]);
     if (!Array.isArray(modulations) || !modulations.every(isEntry)) {
         throw createError({ statusCode: 422, statusMessage: 'Unprocessable Content', message: '"modulations" must be a list of ["measure/beat", "key"] pairs' });
     }

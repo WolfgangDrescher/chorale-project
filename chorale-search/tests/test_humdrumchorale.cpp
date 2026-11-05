@@ -224,6 +224,16 @@ TEST_CASE(collect_info_reads_the_key_changes_with_the_line_they_take_effect_on) 
     CHECK_EQ(changes[2].signature, -1);
 }
 
+TEST_CASE(collect_info_reads_a_key_left_open) {
+    std::istringstream score("**kern\n*G:\n4g\n*?:\n4a\n*D:\n4d\n*-\n");
+    const std::vector<choralesearch::KeyChange> changes = HumdrumChorale(score, "open", false).collectInfo().keyChanges;
+    REQUIRE(changes.size() == 3u);
+    CHECK_EQ(changes[1].line, 5);
+    CHECK_EQ(changes[1].keyContext.key, std::string("?"));
+    CHECK_EQ(changes[1].keyContext.keyDeg, std::string(""));
+    CHECK_EQ(changes[2].keyContext.keyDeg, std::string("5"));
+}
+
 TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
     std::istringstream score("**kern\n4c\n4d\n*-\n");
     choralesearch::ChoraleInfo info = HumdrumChorale(score, "bare", false).collectInfo();
@@ -362,6 +372,25 @@ TEST_CASE(key_deg_is_reckoned_from_the_key_of_the_first_note) {
         if (token->isData()) keyDegs.push_back(chorale.keyContextAtLine(token->getLineNumber())->keyDeg);
     }
     CHECK_EQ(keyDegs, (std::vector<std::string>{"1", "5"}));
+}
+
+TEST_CASE(key_context_is_null_where_the_key_is_left_open) {
+    std::istringstream score("**kern\n*G:\n4g\n*?:\n4a\n*D:\n4d\n*-\n");
+    HumdrumChorale chorale(score, "open", false);
+    CHECK(chorale.keyContextAtLine(5) == nullptr);
+    REQUIRE(chorale.keyContextAtLine(7));
+    CHECK_EQ(chorale.keyContextAtLine(7)->keyDeg, std::string("5"));
+}
+
+TEST_CASE(a_score_that_starts_with_its_key_left_open_has_no_degrees) {
+    std::istringstream score("**kern\n*?:\n4g\n*D:\n4d\n*-\n");
+    HumdrumChorale chorale(score, "open", false);
+    const std::vector<choralesearch::KeyChange> changes = chorale.collectInfo().keyChanges;
+    REQUIRE(changes.size() == 2u);
+    CHECK_EQ(changes[0].keyContext.key, std::string("?"));
+    CHECK_EQ(changes[1].keyContext.keyDeg, std::string(""));
+    REQUIRE(chorale.keyContextAtLine(5));
+    CHECK_EQ(chorale.keyContextAtLine(5)->keyDeg, std::string(""));
 }
 
 TEST_CASE(key_context_is_null_above_the_first_key_designation_and_out_of_range) {

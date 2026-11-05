@@ -67,8 +67,12 @@ void HumdrumChorale::prepare(bool withComputedSpines) {
                 if (token->getTrack() != kernTrack) continue;
                 if (std::optional<KeyContext> designated = keyContextFromDesignation(*token)) {
                     if (beforeFirstNote) starting = designated;
-                    designated->keyDeg = keyScaleDegree(designated->key, starting->key, starting->mode);
+                    // A score that starts with its key left open has no degrees.
+                    if (starting) designated->keyDeg = keyScaleDegree(designated->key, starting->key, starting->mode);
                     current = designated;
+                } else if (token->isUndefinedKey()) {
+                    // As humlib's deg has it, a key left open has no degrees.
+                    current.reset();
                 }
                 break;
             }
@@ -156,6 +160,8 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
         }
         if (const std::optional<KeyContext> key = keyContextFromDesignation(*token)) {
             pendingKeyChange = KeyChange{0, *key, keySignature(key->key, key->mode)};
+        } else if (token->isUndefinedKey()) {
+            pendingKeyChange = KeyChange{0, KeyContext{"?", "", ""}, 0};
         }
         if (token->isTimeSignature()) {
             const std::string meter = token->substr(2);
@@ -176,11 +182,14 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
 
     info.duration = file.getScoreDuration().getFloat();
 
+    const bool startsInKey = !info.keyChanges.empty() && info.keyChanges.front().keyContext.key != "?";
     for (KeyChange& change : info.keyChanges) {
         const KeyContext& first = info.keyChanges.front().keyContext;
-        change.keyContext.keyDeg = keyScaleDegree(change.keyContext.key, first.key, first.mode);
+        if (startsInKey && change.keyContext.key != "?") {
+            change.keyContext.keyDeg = keyScaleDegree(change.keyContext.key, first.key, first.mode);
+        }
     }
-    if (info.cantusFirmus && !info.keyChanges.empty()) {
+    if (info.cantusFirmus && startsInKey) {
         const KeyContext& first = info.keyChanges.front().keyContext;
         info.cantusFirmus->keyDeg = keyScaleDegree(info.cantusFirmus->key, first.key, first.mode);
     }

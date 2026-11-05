@@ -17,6 +17,7 @@ const KEY_GROUPS = [
     [
         { keys: ['enter'], action: 'annotatorMark' },
         { keys: ['G', 'e', 'B-'], action: 'annotatorSetKey' },
+        { keys: ['?'], action: 'annotatorLeaveKeyOpen' },
         { modifiers: ['shift'], keys: ['arrowleft', 'arrowright'], action: 'annotatorMoveEntry' },
         { keys: ['backspace'], action: 'annotatorDeleteEntry' },
         { keys: ['tab'], action: 'annotatorNextEntry' },
@@ -67,12 +68,12 @@ watch(() => props.annotator.input === null, async (closed) => {
                         />
                         <UButton
                             v-else
-                            :color="entry.key ? 'success' : 'warning'"
+                            :color="entry.key === '?' ? 'warning' : 'success'"
                             :variant="entry.line === annotator.line ? 'solid' : 'subtle'"
                             class="font-semibold min-w-7 justify-center"
-                            @click="annotator.goTo(entry); annotator.openInput(entry.key, entry.line); $event.currentTarget.blur()"
+                            @click="annotator.goTo(entry); annotator.openInput(entry.key === '?' ? '' : entry.key, entry.line); $event.currentTarget.blur()"
                         >
-                            {{ entry.key || '?' }}
+                            {{ entry.key }}
                         </UButton>
                     </UFieldGroup>
                 </UTooltip>

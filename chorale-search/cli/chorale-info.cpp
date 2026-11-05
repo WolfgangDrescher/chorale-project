@@ -55,6 +55,7 @@ nlohmann::json keyToJson(const choralesearch::KeyContext& key) {
 }
 
 nlohmann::json keyChangeToJson(const choralesearch::KeyChange& change) {
+    if (change.keyContext.key == "?") return {{"line", change.line}, {"key", "?"}};
     return {
         {"line", change.line},
         {"key", change.keyContext.key},
