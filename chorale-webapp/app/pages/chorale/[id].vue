@@ -216,10 +216,10 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                                 <UIcon name="lucide:arrow-left" />
                             </UKbd>
                         </template>
-                        {{ $t('previous') }}
+                        {{ $t('previousChorale') }}
                     </UButton>
                     <UButton :disabled="!nextChorale" :to="localePath({ name: 'chorale-id', params: { id: nextChorale?.choraleId }, hash: $route.hash })" size="xs">
-                        {{ $t('next') }}
+                        {{ $t('nextChorale') }}
                         <template #trailing>
                             <UKbd color="neutral">
                                 <UIcon name="lucide:arrow-right" />

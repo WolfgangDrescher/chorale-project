@@ -185,8 +185,8 @@ id: ID
 title: Titel
 meter: Taktart
 bwv: BWV
-previous: Vorheriges
-next: Nächstes
+previousChorale: Vorheriger
+nextChorale: Nächster
 github: GitHub
 changelog: Changelog
 vhv: VHV
