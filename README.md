@@ -29,7 +29,7 @@ part-writing errors such as parallel fifths and octaves.
 | `chorale-search/`    | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`) and their test suite.                      |
 | `chorale-webapp/`    | Nuxt application.                                                                                                                               |
 | `chorale-tools/`     | Build setup of the tools service for Docker, see [Docker](#docker).                                                                             |
-| `kern/`              | Generated. Scores with modulations, served to Verovio for rendering. Not committed.                                                             |
+| `kern/`              | Generated. Scores with modulations and lyrics, served to Verovio for rendering. Not committed.                                                  |
 | `corpus/`            | Generated. Same scores plus computed spines, read by the search. Not committed.                                                                 |
 
 
@@ -73,7 +73,7 @@ call them yourself:
 | Command        | Description                                                                                                                      |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `make build`   | Download the pinned C++ libraries and build the `chorale-search` binaries into `chorale-search/build/`.                          |
-| `make kern`    | Generate `kern/` (scores with modulations) from `annotations/bach-modulations.json`. Needs `build`.                              |
+| `make kern`    | Generate `kern/` (scores with modulations and lyrics) from `annotations/`. Needs `build`.                                        |
 | `make corpus`  | Generate `corpus/` (same scores plus computed spines). Needed by the search and the segment endpoints. Needs `build`.            |
 | `make webapp`  | Install the npm dependencies and generate `chorale-webapp/content/chorales/` (one YAML file per chorale). Needs `kern`.          |
 | `make test`    | Run the `chorale-search` test suite.                                                                                             |
@@ -193,6 +193,8 @@ aligns their soprano with the source scores. Corrections go into the JSON file.
 pip install music21
 python3 annotations/scripts/import-lyrics.py bach-370-chorales/kern > annotations/bach-lyrics.json
 ```
+
+`make kern` and `make corpus` add the verses as `**text` spines after the soprano.
 
 
 ## Updating after changes

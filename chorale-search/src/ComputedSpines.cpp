@@ -93,10 +93,26 @@ void addComputedSpines(hum::HumdrumFile& infile) {
     }
 }
 
+namespace {
+
+// Whether the exclusive interpretations are those of the computed spines, followed by lyrics (**text) at most.
+bool isComputedSpineLayout(std::string_view exclusiveInterpretations) {
+    if (exclusiveInterpretations.substr(0, kExclusiveInterpretationsWithComputedSpines.size()) !=
+        kExclusiveInterpretationsWithComputedSpines) {
+        return false;
+    }
+    constexpr std::string_view text = "\t**text";
+    std::string_view rest = exclusiveInterpretations.substr(kExclusiveInterpretationsWithComputedSpines.size());
+    for (; rest.substr(0, text.size()) == text; rest.remove_prefix(text.size())) {}
+    return rest.empty();
+}
+
+} // namespace
+
 void addComputedSpinesWhereMissing(hum::HumdrumFile& infile) {
     for (int i = 0; i < infile.getLineCount(); ++i) {
         if (!infile[i].isExclusiveInterpretation()) continue;
-        if (std::string_view(infile[i]) == kExclusiveInterpretationsWithComputedSpines) return;
+        if (isComputedSpineLayout(infile[i])) return;
         for (int j = 0; j < infile[i].getTokenCount(); ++j) {
             if (*infile[i].token(j) != "**kern") {
                 throw std::runtime_error("The score has a spine other than **kern (" + *infile[i].token(j) +

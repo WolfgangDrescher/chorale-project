@@ -10,8 +10,8 @@
 #     Rarely needed on its own -- kern, corpus, fixtures and test all pull it in
 #
 # make kern
-#     generate ./kern (bach-370-chorales scores with modulations) from
-#     annotations/bach-modulations.json -- never committed, always derived.
+#     generate ./kern (bach-370-chorales scores with modulations and lyrics)
+#     from annotations/ -- never committed, always derived.
 #     This is the corpus the webapp serves to Verovio for rendering, so it
 #     carries no computed spines. Only generated again if the sources, the
 #     annotations or chorale-generate changed since the last time (./kern/.generated
@@ -90,6 +90,7 @@ CHORALE_GROUP := ./chorale-search/build/chorale-group
 ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
 ANALYSIS_RESULTS := $(patsubst chorale-webapp/analyses/%.json,chorale-webapp/content/analysis-results/%.json,$(ANALYSES))
 MODULATIONS := annotations/bach-modulations.json
+LYRICS := annotations/bach-lyrics.json
 SOURCE_KERN := bach-370-chorales/kern
 
 all: build corpus kern webapp analyses test
@@ -104,7 +105,7 @@ $(CHORALE_GROUP): build ;
 
 # Everything the generated chorales are made of. The marker files record when they were generated
 # last, so that generating them again is left out if none of this is newer.
-CHORALE_INPUTS := $(wildcard $(SOURCE_KERN)/*.krn) $(MODULATIONS) $(CHORALE_GENERATE)
+CHORALE_INPUTS := $(wildcard $(SOURCE_KERN)/*.krn) $(MODULATIONS) $(LYRICS) $(CHORALE_GENERATE)
 
 # Without chorale ids the whole of it is generated, if something changed. With ids it is generated
 # for just those, which leaves the marker alone, since the rest is not up to date because of it.
@@ -115,23 +116,27 @@ else
 kern: build
 	$(CHORALE_GENERATE) $(SOURCE_KERN) kern/bach-370-chorales \
 		--modulations $(MODULATIONS) \
+		--lyrics $(LYRICS) \
 		$(CHORALES)
 
 corpus: build
 	$(CHORALE_GENERATE) $(SOURCE_KERN) corpus/bach-370-chorales \
 		--modulations $(MODULATIONS) \
+		--lyrics $(LYRICS) \
 		--add-computed-spines \
 		$(CHORALES)
 endif
 
 kern/.generated: $(CHORALE_INPUTS)
 	$(CHORALE_GENERATE) $(SOURCE_KERN) kern/bach-370-chorales \
-		--modulations $(MODULATIONS)
+		--modulations $(MODULATIONS) \
+		--lyrics $(LYRICS)
 	@touch $@
 
 corpus/.generated: $(CHORALE_INPUTS)
 	$(CHORALE_GENERATE) $(SOURCE_KERN) corpus/bach-370-chorales \
 		--modulations $(MODULATIONS) \
+		--lyrics $(LYRICS) \
 		--add-computed-spines
 	@touch $@
 

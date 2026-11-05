@@ -10,18 +10,20 @@
 #include <nlohmann/json.hpp>
 
 #include "FileDispatcher.hpp"
+#include "Lyrics.hpp"
 #include "Modulations.hpp"
 #include "ComputedSpines.hpp"
 #include "humlib.h"
 
 using choralesearch::Modulation;
+using choralesearch::Verse;
 
 namespace fs = std::filesystem;
 
 namespace {
 
-void processChorale(const std::string& choraleId, const std::vector<Modulation>& mods, const fs::path& sourceDir,
-                     const fs::path& outDir, bool withComputedSpines) {
+void processChorale(const std::string& choraleId, const std::vector<Modulation>& mods, const std::vector<Verse>& verses,
+                     const fs::path& sourceDir, const fs::path& outDir, bool withComputedSpines) {
     fs::path sourcePath = sourceDir / (choraleId + ".krn");
     hum::HumdrumFile infile;
     if (!infile.read(sourcePath.string())) {
@@ -33,6 +35,8 @@ void processChorale(const std::string& choraleId, const std::vector<Modulation>&
     // After the modulations, so the spines are computed from the modulated score: **deg is
     // spelled relative to the key in effect, so a key designation added above changes the degrees.
     if (withComputedSpines) choralesearch::addComputedSpines(infile);
+
+    choralesearch::applyLyrics(infile, choraleId, verses);
 
     // Remove instrument tandem interpretations (*ICvox, *Ibass, *I" names, *I' abbreviations)
     // Backwards, since deleteLine shifts everything after it.
@@ -81,6 +85,7 @@ void printUsage(const char* argv0) {
         "    --modulations FILE    add the key designations annotated in FILE (a JSON object\n"
         "                          keyed by chorale id); chorales it doesn't mention are\n"
         "                          written out unchanged\n"
+        "    --lyrics FILE         add the lyrics in FILE under the soprano\n"
         "    --add-computed-spines\n"
         "                          add the spines computed from the **kern spines (**deg,\n"
         "                          **mint, **metweight, **fb, **hint-xy), which the other\n"
@@ -107,6 +112,7 @@ int main(int argc, char** argv) {
     fs::path sourceDir = argv[1];
     fs::path outDir = argv[2];
     fs::path modulationsPath;
+    fs::path lyricsPath;
     bool withComputedSpines = false;
     std::vector<std::string> requestedIds;
 
@@ -118,6 +124,12 @@ int main(int argc, char** argv) {
                 return 1;
             }
             modulationsPath = argv[++i];
+        } else if (arg == "--lyrics") {
+            if (i + 1 >= argc) {
+                std::cerr << "Error: --lyrics needs a value\n";
+                return 1;
+            }
+            lyricsPath = argv[++i];
         } else if (arg == "--add-computed-spines") {
             withComputedSpines = true;
         } else if (arg == "--help" || arg == "-h") {
@@ -132,9 +144,13 @@ int main(int argc, char** argv) {
         }
     }
 
+    fs::path jsonPath = modulationsPath;
     try {
         std::map<std::string, std::vector<Modulation>> modulations;
         if (!modulationsPath.empty()) modulations = choralesearch::readModulations(modulationsPath);
+        jsonPath = lyricsPath;
+        std::map<std::string, std::vector<Verse>> lyrics;
+        if (!lyricsPath.empty()) lyrics = choralesearch::readLyrics(lyricsPath);
 
         std::vector<std::string> availableIds = sourceChoraleIds(sourceDir);
         for (const std::string& choraleId : requestedIds) {
@@ -165,8 +181,10 @@ int main(int argc, char** argv) {
         choralesearch::FileDispatcher<std::string>(
             choraleIds.size(),
             [&](std::size_t i) {
-                auto it = modulations.find(choraleIds[i]);
-                processChorale(choraleIds[i], it == modulations.end() ? std::vector<Modulation>{} : it->second,
+                auto mods = modulations.find(choraleIds[i]);
+                auto verses = lyrics.find(choraleIds[i]);
+                processChorale(choraleIds[i], mods == modulations.end() ? std::vector<Modulation>{} : mods->second,
+                                verses == lyrics.end() ? std::vector<Verse>{} : verses->second,
                                 sourceDir, outDir, withComputedSpines);
                 return choraleIds[i];
             },
@@ -179,7 +197,7 @@ int main(int argc, char** argv) {
         std::cout << "✅ Generated " << generated << (generated == 1 ? " chorale" : " chorales") << " in "
                   << outDir.string() << (withComputedSpines ? " (with computed spines)" : "") << "\n";
     } catch (const nlohmann::json::exception& e) {
-        std::cerr << "Error: invalid JSON in modulations file: " << e.what() << "\n";
+        std::cerr << "Error: invalid JSON in " << jsonPath.string() << ": " << e.what() << "\n";
         return 1;
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";

@@ -68,7 +68,7 @@ target_link_libraries(chorale-info PRIVATE chorale_core)
 add_executable(chorale-group cli/chorale-group.cpp)
 target_link_libraries(chorale-group PRIVATE chorale_core)
 
-add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/ComputedSpines.cpp)
+add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/Lyrics.cpp src/ComputedSpines.cpp)
 target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
@@ -105,6 +105,11 @@ if(BUILD_TESTS)
     target_include_directories(test_modulations PRIVATE src tests external/json/single_include)
     target_link_libraries(test_modulations PRIVATE humlib)
     add_test(NAME modulations COMMAND test_modulations)
+
+    add_executable(test_lyrics tests/test_lyrics.cpp src/Lyrics.cpp)
+    target_include_directories(test_lyrics PRIVATE src tests external/json/single_include)
+    target_link_libraries(test_lyrics PRIVATE humlib)
+    add_test(NAME lyrics COMMAND test_lyrics)
 
     add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
     target_include_directories(test_queryvalidation PRIVATE src tests)
