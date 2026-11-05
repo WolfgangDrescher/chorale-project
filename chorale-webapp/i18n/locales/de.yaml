@@ -149,6 +149,8 @@ zoomIn: Partitur vergrössern
 zoomOut: Partitur verkleinern
 resetZoom: Partitur Anzeige zurücksetzen
 showHorizontalViewMode: Partitur horizontal anzeigen
+layers: Layer
+showModulations: Modulationen anzeigen
 reset: Zurücksetzen
 resetAllVerovioOptions: Alle Verovio Optionen zurücksetzen
 resetAllHumdrumFilters: Alle Humdrum Filter zurücksetzen

@@ -43,6 +43,11 @@ export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, scoreOpt
         scoreOptions.resetZoom();
     });
 
+    onKeyStroke('m', () => {
+        if (ignoreIfInput()) return;
+        scoreOptions.showModulations = !scoreOptions.showModulations;
+    });
+
     onKeyStroke('r', () => {
         if (ignoreIfInput()) return;
         scoreOptions.reset();

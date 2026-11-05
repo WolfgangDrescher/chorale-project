@@ -16,6 +16,7 @@ function createDefaultScoreOptions() {
         transposeKey: null,
         verovioScale: 40,
         showHorizontalViewMode: false,
+        showModulations: false,
     };
 }
 
@@ -66,6 +67,7 @@ const scoreOptionsStore = (createDefaults) => ({
         countOthers(state) {
             return [
                 state.showHorizontalViewMode !== createDefaults().showHorizontalViewMode,
+                state.showModulations !== createDefaults().showModulations,
             ].filter(Boolean).length;
         },
         countTotal() {

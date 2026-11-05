@@ -185,6 +185,16 @@ useChoraleKeyboardShortcuts({ prevChorale, nextChorale });
 const player = useScorePlayer();
 useScorePlayerKeyboardShortcuts(player.toggle);
 
+const modulations = computed(() => chorale.value.modulations ?? []);
+
+const modulationLines = computed(() => [{
+    color: 'rgb(34 197 94 / 0.4)',
+    items: modulations.value.map(({ line, key, mode }) => ({
+        lineNumber: line,
+        label: { value: ['major', 'minor'].includes(mode) ? key : `${key}:${mode.slice(0, 3)}`, position: 'bottom' },
+    })),
+}]);
+
 // The key as the score writes it, e.g. "G major" or "f# minor".
 const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Boolean).join(' '));
 </script>
@@ -286,6 +296,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 }"
                 :filters="scoreOptions.humdrumFilters"
                 :sections="matches"
+                :lines="scoreOptions.showModulations ? modulationLines : undefined"
                 :scroll-to-first-section="matches.length > 0"
             />
         </div>

@@ -126,6 +126,20 @@ const groups = computed(() => {
                 },
             ],
         },
+        // Without a chorale there are no modulations to show.
+        ...(props.chorale ? [{
+            id: 'layers',
+            label: t('layers'),
+            items: [
+                {
+                    label: t('showModulations'),
+                    onSelect: () => (scoreOptions.showModulations = !scoreOptions.showModulations),
+                    indicator: 'checkbox',
+                    checked: () => scoreOptions.showModulations,
+                    kbd: 'M',
+                },
+            ],
+        }] : []),
         {
             id: 'reset',
             label: t('reset'),
