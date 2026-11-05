@@ -164,6 +164,26 @@ keyColorsCantusFirmus: C.f.
 keyColorsMajor: Dur
 keyColorsMinor: Moll
 keyColorsChurchMode: Kirchentonart
+annotate: Annotieren
+annotateDone: Fertig
+modulationsUnpublished: Die Timeline zeigt den veröffentlichten Stand. Änderungen erscheinen erst, wenn sie eingepflegt sind.
+annotatorKeys: Tasten
+annotatorKeyNames: "G ist G-Dur, g ist g-Moll; - erniedrigt, # erhöht: E- ist Es-Dur, f# ist fis-Moll. Wie im Englischen steht B für H und B- für B."
+annotatorSpace: Leertaste
+annotatorPlay: Abspielen oder anhalten
+annotatorMoveFrame: Position bewegen
+annotatorMark: Stelle markieren
+annotatorSetKey: Tonart setzen
+annotatorMoveEntry: Eintrag verschieben
+annotatorDeleteEntry: Eintrag löschen
+annotatorNextEntry: Nächster Eintrag
+annotatorPreviousEntry: Vorheriger Eintrag
+downloadModulations: JSON herunterladen
+createGithubIssue: GitHub-Issue erstellen
+modulationsSaving: Speichern …
+modulationsSaved: Gespeichert
+modulationsSaveFailed: Speichern fehlgeschlagen
+modulationPositionAmbiguous: "Diese Stelle hat dieselbe Position {position} wie eine frühere, der Eintrag landet dort."
 reset: Zurücksetzen
 resetAllVerovioOptions: Alle Verovio Optionen zurücksetzen
 resetAllHumdrumFilters: Alle Humdrum Filter zurücksetzen

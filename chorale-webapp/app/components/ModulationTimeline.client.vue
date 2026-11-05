@@ -9,9 +9,12 @@ const props = defineProps({
     // The source's key of the cantus firmus, which may be another than the starting key.
     cantusFirmus: { type: Object, default: null },
     lineShift: { type: Number, default: 0 },
+    // Whether there are changes to the modulations the timeline does not show yet.
+    outdated: { type: Boolean, default: false },
 });
 
 const { t } = useI18n();
+const annotating = defineModel('annotating', { type: Boolean, default: false });
 
 // Relative: the starting key always in the color of C, the others by their distance to it.
 const coloring = useLocalStorage('chorale-key-coloring', 'absolute');
@@ -168,6 +171,16 @@ const showsPlayhead = computed(() => props.player.isPlaying || props.player.soun
             <div v-if="showsPlayhead" class="absolute -top-0.5 -bottom-0.5 w-0.5 rounded bg-gray-900 -translate-x-1/2 pointer-events-none" :style="{ left: `${progress * 100}%` }" />
         </div>
         <div class="flex items-center justify-end gap-1">
+            <span v-if="outdated" class="mr-auto text-xs text-muted">{{ $t('modulationsUnpublished') }}</span>
+            <UButton
+                size="xs"
+                color="neutral"
+                :variant="annotating ? 'soft' : 'ghost'"
+                icon="lucide:pencil"
+                :label="$t(annotating ? 'annotateDone' : 'annotate')"
+                :aria-pressed="annotating"
+                @click="annotating = !annotating; $event.currentTarget.blur()"
+            />
             <USelect v-model="labeling" :items="labelingItems" v-bind="selectWidths" />
             <USelect v-model="coloring" :items="coloringItems" v-bind="selectWidths" />
             <UPopover>

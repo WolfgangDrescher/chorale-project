@@ -198,8 +198,6 @@ const {
     downloadItems,
 } = useChoraleExport();
 
-useChoraleKeyboardShortcuts({ prevChorale, nextChorale });
-
 const player = useScorePlayer();
 useScorePlayerKeyboardShortcuts(() => toggleCurrentScorePlayer(player));
 
@@ -212,6 +210,13 @@ const modulationLines = computed(() => [{
         label: { value: ['major', 'minor'].includes(mode) ? key : `${key}:${mode.slice(0, 3)}`, position: 'bottom' },
     })),
 }]);
+
+// The modulations are annotated on the page, see useModulationAnnotator; the development server
+// writes them to the file.
+const annotating = ref(false);
+const annotator = useModulationAnnotator(id, player, annotating, import.meta.dev);
+
+useChoraleKeyboardShortcuts({ prevChorale, nextChorale, keysTaken: () => annotator.active });
 
 // The key as the score writes it, e.g. "G major" or "f# minor".
 const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Boolean).join(' '));
@@ -351,15 +356,19 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 :base-filters="scoreOptions.baseFilters"
                 :filters="scoreOptions.humdrumFilters"
                 :sections="matches"
-                :lines="scoreOptions.showModulations ? modulationLines : undefined"
+                :lines="annotator.active ? annotator.markers : (scoreOptions.showModulations ? modulationLines : undefined)"
                 :scroll-to-first-section="matches.length > 0"
             />
 
+            <ModulationAnnotator v-if="annotator.active" :annotator="annotator" />
+
             <ModulationTimeline
+                v-model:annotating="annotating"
                 :player="player"
-                :modulations="modulations"
+                :modulations="annotator.modulations ?? modulations"
                 :cantus-firmus="chorale.cantusFirmus"
                 :line-shift="lineShiftOf(scoreOptions.humdrumFilters)"
+                :outdated="annotator.active && !annotator.saves && annotator.changed"
             />
         </div>
     </UContainer>

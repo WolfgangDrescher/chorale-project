@@ -6,7 +6,9 @@ function ignoreIfInput() {
     return el && (['input', 'textarea'].includes(el.tagName.toLowerCase()) || el.isContentEditable || !!el.closest('[role="slider"]'));
 }
 
-export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, scoreOptions = useScoreOptions() } = {}) {
+// keysTaken (a value, a ref or a getter) hands the arrow keys and H to something else on the page, like
+// the annotation of modulations.
+export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, keysTaken = false, scoreOptions = useScoreOptions() } = {}) {
     const route = useRoute();
     const localePath = useLocalePath();
 
@@ -14,17 +16,17 @@ export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, scoreOpt
     const next = computed(() => unref(nextChorale));
 
     onKeyStroke('ArrowLeft', () => {
-        if (ignoreIfInput() || !prev.value) return;
+        if (ignoreIfInput() || toValue(keysTaken) || !prev.value) return;
         navigateTo(localePath({ name: 'chorale-id', params: { id: prev.value.choraleId }, hash: route.hash }));
     });
 
     onKeyStroke('ArrowRight', () => {
-        if (ignoreIfInput() || !next.value) return;
+        if (ignoreIfInput() || toValue(keysTaken) || !next.value) return;
         navigateTo(localePath({ name: 'chorale-id', params: { id: next.value.choraleId }, hash: route.hash }));
     });
 
     onKeyStroke('h', () => {
-        if (ignoreIfInput()) return;
+        if (ignoreIfInput() || toValue(keysTaken)) return;
         scoreOptions.showHorizontalViewMode = !scoreOptions.showHorizontalViewMode;
     });
 

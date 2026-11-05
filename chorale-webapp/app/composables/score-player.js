@@ -224,6 +224,7 @@ export function useScorePlayer() {
         stop,
         seek,
         goTo,
+        goToLine,
         step,
         toSeconds,
         makeCurrent,
@@ -421,6 +422,12 @@ export function useScorePlayer() {
 
     function makeCurrent() {
         currentPlayer = player;
+    }
+
+    // Goes to the first attack of a line of the drawn score.
+    function goToLine(line) {
+        const start = player.lineStarts.get(line);
+        if (start !== undefined) seek(start);
     }
 
     // Goes to the next (1) or previous (-1) sonority and returns the line attacked there, or null at
