@@ -1,7 +1,7 @@
 import { queryCollection } from '@nuxt/content/server';
 
 // Downloads a chorale: /api/chorales/:id/export?format=pdf|mei&layout=score|piano&content=cantus-firmus|complete
-// and, for the MEI, &voices=4|2, for the PDF &orientation=portrait|landscape.
+// and, for the MEI, &voices=4|2, for the PDF &orientation=portrait|landscape, and &lyrics=true for the lyrics.
 // See chorale-mei.js for what the options mean.
 const FORMATS = ['pdf', 'mei'];
 const ORIENTATIONS = ['portrait', 'landscape'];
@@ -34,6 +34,7 @@ export default defineEventHandler(async (event) => {
         content = 'cantus-firmus',
         voices = '4',
         orientation = 'portrait',
+        lyrics = 'false',
     } = getQuery(event);
 
     if (!FORMATS.includes(format)) throw invalidQuery('format', FORMATS);
@@ -41,6 +42,7 @@ export default defineEventHandler(async (event) => {
     if (!CHORALE_EXPORT_CONTENTS.includes(content)) throw invalidQuery('content', CHORALE_EXPORT_CONTENTS);
     if (!CHORALE_EXPORT_VOICES.includes(voices)) throw invalidQuery('voices', CHORALE_EXPORT_VOICES);
     if (!ORIENTATIONS.includes(orientation)) throw invalidQuery('orientation', ORIENTATIONS);
+    if (!['true', 'false'].includes(lyrics)) throw invalidQuery('lyrics', ['true', 'false']);
 
     let kern;
     try {
@@ -51,7 +53,7 @@ export default defineEventHandler(async (event) => {
 
     // The whole chorale goes out as it is. Of the cantus firmus alone, the other voices are hidden
     // in a PDF (see choraleFilters), and rests in a file for a notation program.
-    const filters = choraleFilters({ format, layout, content, voices });
+    const filters = choraleFilters({ format, layout, content, voices, lyrics: lyrics === 'true' });
     const prepared = format === 'mei' && content === 'cantus-firmus' ? restOtherVoices(kern) : kern;
     const chorale = format === 'pdf' ? await findChorale(event, id) : null;
 

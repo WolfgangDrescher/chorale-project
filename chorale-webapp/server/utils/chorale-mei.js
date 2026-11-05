@@ -161,14 +161,14 @@ function hideVoices(spines) {
 
 // The Humdrum filters (of humlib, Verovio runs them on the **kern text) that turn the chorale
 // into what is downloaded.
-export function choraleFilters({ format, layout, content, voices }) {
+export function choraleFilters({ format, layout, content, voices, lyrics = false }) {
     const cantusFirmusOnly = content === 'cantus-firmus';
     // Two voices have the bass as the only voice of the lower staff, and not as a second voice below
     // the rests of the tenor, which is less to look at in a notation program. It is a choice for
     // the MEI only. A PDF shows the cantus firmus alone in a piano layout like that, its other
     // voices are invisible anyway.
     const outerVoicesOnly = format === 'mei' ? voices === '2' : (layout === 'piano' && cantusFirmusOnly);
-    const filters = [];
+    const filters = lyrics ? [] : ['extract -I text'];
 
     if (outerVoicesOnly) filters.push(OUTER_VOICES);
     // The voices of a MEI that are not written out are rests, see restOtherVoices.
