@@ -53,7 +53,7 @@ struct ChoraleFilter {
     // The key ("G", "e", "B-") and the mode (see normalizeModeName) of the first note.
     std::vector<std::string> startKey;
     std::vector<std::string> startMode;
-    // See ChoraleInfo::cantusFirmusMode.
+    // The mode of ChoraleInfo::cantusFirmus.
     std::vector<std::string> cantusFirmusMode;
 
     bool empty() const {

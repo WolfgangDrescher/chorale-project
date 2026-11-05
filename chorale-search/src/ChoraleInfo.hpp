@@ -44,9 +44,9 @@ struct ChoraleInfo {
     std::optional<std::string> key;
     std::optional<std::string> mode;
 
-    // The mode of the first key designation: the source's mode of the cantus firmus, which may be a church mode
-    // above the annotated key of the first note.
-    std::optional<std::string> cantusFirmusMode;
+    // The first key designation: the source's key of the cantus firmus, which may be a church mode above the
+    // annotated key of the first note. keyDeg is that in the first of keyChanges.
+    std::optional<KeyContext> cantusFirmus;
 
     // Of key designations in a row only the last counts, e.g. *a: below the source's *e:phr.
     std::vector<KeyChange> keyChanges;

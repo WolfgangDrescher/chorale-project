@@ -153,7 +153,7 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
             const std::size_t colon = token->find(':');
             info.key = token->substr(1, colon - 1);
             info.mode = modeFromKeyDesignation(*info.key, token->substr(colon + 1));
-            if (!info.cantusFirmusMode) info.cantusFirmusMode = info.mode;
+            if (!info.cantusFirmus) info.cantusFirmus = KeyContext{*info.key, *info.mode, ""};
         }
     }
 
@@ -166,6 +166,10 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
     for (KeyChange& change : info.keyChanges) {
         const KeyContext& first = info.keyChanges.front().keyContext;
         change.keyContext.keyDeg = keyScaleDegree(change.keyContext.key, first.key, first.mode);
+    }
+    if (info.cantusFirmus && !info.keyChanges.empty()) {
+        const KeyContext& first = info.keyChanges.front().keyContext;
+        info.cantusFirmus->keyDeg = keyScaleDegree(info.cantusFirmus->key, first.key, first.mode);
     }
 
     info.phraseCount = phraseEndings().size();

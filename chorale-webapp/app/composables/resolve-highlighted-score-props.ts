@@ -108,19 +108,22 @@ export const defaultHighlightColors = [
     'rose',
 ].map((name) => highlightColorsByName[name]);
 
+// Lines the Humdrum filters add before the data.
+export function lineShiftOf(filters?: Array<string>): number {
+    let lineShift = 0;
+    if (filters?.includes('meter -f')) lineShift += 1;
+    if (filters?.includes('deg -k1 --box -t')) lineShift += 1;
+    if (filters?.includes('deg -k1 --box')) lineShift += 1;
+    return lineShift;
+}
+
 export function useResolveHighlightedScoreProps(props: {
     notes?: NotesProp;
     lines?: LinesProp;
     sections?: SectionsProp;
     filters?: Array<string>,
 }) {
-    const lineShiftAmount = computed(() => {
-        let lineShift = 0;
-        if (props.filters?.includes('meter -f')) lineShift += 1;
-        if (props.filters?.includes('deg -k1 --box -t')) lineShift += 1;
-        if (props.filters?.includes('deg -k1 --box')) lineShift += 1;
-        return lineShift;
-    });
+    const lineShiftAmount = computed(() => lineShiftOf(props.filters));
 
     const applyLineShift = (value: number): number => {
         return value + lineShiftAmount.value;

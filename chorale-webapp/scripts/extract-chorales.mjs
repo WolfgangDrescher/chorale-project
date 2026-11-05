@@ -92,11 +92,11 @@ for (const file of files) {
         number: parseInt(first(referenceRecords['PC#']), 10) || null,
         key: info?.key ?? null,
         mode: info?.mode ?? null,
-        cantusFirmusMode: info?.cantusFirmusMode ?? null,
         meter: info?.meters?.[0] ?? null,
         // The length in quarter notes, which the search results are ranked by.
         duration: info?.duration ?? null,
         modulations: info?.modulations ?? null,
+        cantusFirmus: info?.cantusFirmus ?? null,
     };
 
     // Missing values are left out instead of written as null, so the collection schema can mark

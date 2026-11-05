@@ -45,6 +45,6 @@ export function matchesChoraleListFilter(chorale, filter) {
 
     return filter.meters.every((meter) => chorale.meter === meter)
         && (!filter.key || (key === filter.key.key && (!filter.key.mode || chorale.mode === filter.key.mode)))
-        && filter.modes.every((mode) => chorale.mode === mode || chorale.cantusFirmusMode === mode)
+        && filter.modes.every((mode) => chorale.mode === mode || chorale.cantusFirmus?.mode === mode)
         && filter.words.every((word) => text.includes(word));
 }

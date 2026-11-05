@@ -48,7 +48,7 @@ bool ChoraleFilter::matches(const ChoraleInfo& info) const {
     if (phraseCount && !phraseCount->contains(info.phraseCount)) return false;
     if (!startKey.empty() && (!info.key || !contains(startKey, *info.key))) return false;
     if (!startMode.empty() && (!info.mode || !contains(startMode, *info.mode))) return false;
-    if (!cantusFirmusMode.empty() && (!info.cantusFirmusMode || !contains(cantusFirmusMode, *info.cantusFirmusMode))) {
+    if (!cantusFirmusMode.empty() && (!info.cantusFirmus || !contains(cantusFirmusMode, info.cantusFirmus->mode))) {
         return false;
     }
     return true;

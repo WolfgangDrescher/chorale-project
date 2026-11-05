@@ -39,6 +39,15 @@ void printUsage(const char* argv0) {
         "    2  invalid argument\n";
 }
 
+nlohmann::json keyToJson(const choralesearch::KeyContext& key) {
+    return {
+        {"key", key.key},
+        {"mode", key.mode},
+        {"keyDeg", key.keyDeg},
+        {"signature", choralesearch::keySignature(key.key, key.mode)},
+    };
+}
+
 nlohmann::json infoToJson(const ChoraleInfo& info) {
     nlohmann::json j = {
         {"id", info.id},
@@ -50,7 +59,7 @@ nlohmann::json infoToJson(const ChoraleInfo& info) {
     };
     if (info.key) j["key"] = *info.key;
     if (info.mode) j["mode"] = *info.mode;
-    if (info.cantusFirmusMode) j["cantusFirmusMode"] = *info.cantusFirmusMode;
+    if (info.cantusFirmus) j["cantusFirmus"] = keyToJson(*info.cantusFirmus);
     j["modulations"] = nlohmann::json::array();
     for (const choralesearch::KeyChange& change : info.keyChanges) {
         j["modulations"].push_back({

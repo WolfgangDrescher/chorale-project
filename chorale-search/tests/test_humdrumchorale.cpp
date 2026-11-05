@@ -197,7 +197,9 @@ TEST_CASE(collect_info_reads_the_key_of_the_first_note_below_the_church_mode_of_
     choralesearch::ChoraleInfo info = HumdrumChorale(score, "phrygian", false).collectInfo();
     CHECK_EQ(*info.key, std::string("a"));
     CHECK_EQ(*info.mode, std::string("minor"));
-    CHECK_EQ(*info.cantusFirmusMode, std::string("phrygian"));
+    CHECK_EQ(info.cantusFirmus->key, std::string("e"));
+    CHECK_EQ(info.cantusFirmus->mode, std::string("phrygian"));
+    CHECK_EQ(info.cantusFirmus->keyDeg, std::string("5"));
 }
 
 TEST_CASE(collect_info_reads_the_key_changes_with_the_line_they_take_effect_on) {
@@ -226,7 +228,7 @@ TEST_CASE(collect_info_has_no_key_and_no_measures_where_the_score_states_none) {
     CHECK(info.meters.empty());
     CHECK(!info.key.has_value());
     CHECK(!info.mode.has_value());
-    CHECK(!info.cantusFirmusMode.has_value());
+    CHECK(!info.cantusFirmus.has_value());
     CHECK_EQ(info.measureCount, std::size_t{0});
     CHECK_EQ(info.duration, 2.0);
     CHECK_EQ(info.phraseCount, std::size_t{0});

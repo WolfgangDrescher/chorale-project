@@ -177,6 +177,15 @@ function loadVoiceInstruments({ instrument, spreadVoices }, voiceCount) {
     }));
 }
 
+function lineStartsOf(performance) {
+    const starts = new Map();
+    for (const { id, start } of performance.soundings) {
+        const line = lineAndVoiceOf(id)?.line;
+        if (line && !(starts.get(line) <= start)) starts.set(line, start);
+    }
+    return starts;
+}
+
 // Only one player sounds at a time.
 let soundingPlayer = null;
 let lastPlayer = null;
@@ -202,6 +211,8 @@ export function useScorePlayer() {
         position: 0,
         duration: 0,
         soundingIds: [],
+        // The first attack of each line of the drawn score, in milliseconds.
+        lineStarts: new Map(),
         connect,
         disconnect,
         play,
@@ -240,12 +251,14 @@ export function useScorePlayer() {
         performancePromise = null;
         player.hasScore = false;
         player.duration = 0;
+        player.lineStarts = new Map();
     }
 
     function loadPerformance() {
         performancePromise ??= loadScorePerformance(callVerovioMethod).then((performance) => {
             player.duration = performance.duration;
             scoreTempo = performance.tempo;
+            player.lineStarts = lineStartsOf(performance);
             return performance;
         }, (error) => {
             performancePromise = null;

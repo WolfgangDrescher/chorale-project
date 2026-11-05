@@ -151,6 +151,18 @@ resetZoom: Partitur Anzeige zurücksetzen
 showHorizontalViewMode: Partitur horizontal anzeigen
 layers: Layer
 showModulations: Modulationen anzeigen
+keyColoringAbsolute: Absolute Farben
+keyColoringRelative: Farben relativ zur Grundtonart
+keyLabelingKeys: Tonarten
+keyLabelingDegrees: Stufen
+keyColorsExplained: Farben erklärt
+keyColorsAbsoluteExplanation: Die Farben folgen dem Quintenzirkel, jede Tonart hat in jedem Choral dieselbe Farbe.
+keyColorsRelativeExplanation: Die Farben folgen dem Quintenzirkel ab der Grundtonart, die so in jedem Choral dieselbe Farbe hat.
+keyColorsOfNeighbors: Benachbarte Tonarten haben benachbarte Farben, Paralleltonarten dieselbe.
+keyColorsCantusFirmus: C.f.
+keyColorsMajor: Dur
+keyColorsMinor: Moll
+keyColorsChurchMode: Kirchentonart
 reset: Zurücksetzen
 resetAllVerovioOptions: Alle Verovio Optionen zurücksetzen
 resetAllHumdrumFilters: Alle Humdrum Filter zurücksetzen

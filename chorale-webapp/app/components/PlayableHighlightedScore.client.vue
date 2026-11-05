@@ -1,7 +1,7 @@
 <script setup>
 // A HighlightedScore, with its props, that a player made with useScorePlayer plays. The sonority
 // at the position of the player is marked, filled while it plays and framed while it pauses, and
-// kept in view while it plays. A click on a note goes there: playback goes on from it, or, paused,
+// kept in view. A click on a note goes there: playback goes on from it, or, paused,
 // only the frame moves, so a click that means something else on the page does not start sound.
 defineOptions({ inheritAttrs: false });
 
@@ -22,7 +22,7 @@ onBeforeUnmount(() => props.player.disconnect());
     <HighlightedScore
         v-bind="$attrs"
         :clickable-notes="true"
-        :scroll-to-line="player.isPlaying ? line : undefined"
+        :scroll-to-line="line ?? undefined"
         @score-loaded="({ callVerovioMethod }) => player.connect(callVerovioMethod)"
         @note-click="({ id }) => player.goTo(id)"
     >

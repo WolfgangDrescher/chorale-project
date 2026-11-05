@@ -299,6 +299,13 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 :lines="scoreOptions.showModulations ? modulationLines : undefined"
                 :scroll-to-first-section="matches.length > 0"
             />
+
+            <ModulationTimeline
+                :player="player"
+                :modulations="modulations"
+                :cantus-firmus="chorale.cantusFirmus"
+                :line-shift="lineShiftOf(scoreOptions.humdrumFilters)"
+            />
         </div>
     </UContainer>
 </template>

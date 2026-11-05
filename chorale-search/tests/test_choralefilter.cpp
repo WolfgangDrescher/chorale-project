@@ -232,14 +232,14 @@ TEST_CASE(cantus_firmus_mode_is_the_mode_the_source_states) {
     ChoraleInfo info = someChorale();
     info.key = "a";
     info.mode = "minor";
-    info.cantusFirmusMode = "phrygian";
+    info.cantusFirmus = choralesearch::KeyContext{"e", "phrygian", "5"};
     CHECK(filterOf(R"({"cantusFirmusMode":"phrygian"})").matches(info));
     CHECK(!filterOf(R"({"cantusFirmusMode":"minor"})").matches(info));
     CHECK(filterOf(R"({"startMode":"minor","cantusFirmusMode":["dorian","phrygian"]})").matches(info));
     CHECK(!filterOf(R"({"startMode":"phrygian"})").matches(info));
     CHECK_THROWS(filterOf(R"({"cantusFirmusMode":"blues"})"));
 
-    info.cantusFirmusMode.reset();
+    info.cantusFirmus.reset();
     CHECK(!filterOf(R"({"cantusFirmusMode":"phrygian"})").matches(info));
 }
 
