@@ -25,7 +25,7 @@ part-writing errors such as parallel fifths and octaves.
 | Path                 | Description                                                                                                                                     |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bach-370-chorales/` | Git submodule with the source `**kern` files. Source: [github.com/craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales). |
-| `annotations/`       | Hand-made annotations, e.g. `bach-modulations.json`.                                                                                            |
+| `annotations/`       | Annotations: `bach-modulations.json` (hand-made) and `bach-lyrics.json`, see [Lyrics](#lyrics).                                                 |
 | `chorale-search/`    | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`) and their test suite.                      |
 | `chorale-webapp/`    | Nuxt application.                                                                                                                               |
 | `chorale-tools/`     | Build setup of the tools service for Docker, see [Docker](#docker).                                                                             |
@@ -181,6 +181,18 @@ running (a rollback), when the clone has commits that are not on
 machine (the CI builds `linux/amd64`). Tracked files must not be edited on the
 server: settings that belong to it go in `compose.override.yaml` and `.env`,
 which git ignores.
+
+
+## Lyrics
+
+`annotations/bach-lyrics.json` holds the chorale lyrics of the
+[music21](https://github.com/cuthbertLab/music21) corpus. `annotations/scripts/import-lyrics.py`
+aligns their soprano with the source scores. Corrections go into the JSON file.
+
+```sh
+pip install music21
+python3 annotations/scripts/import-lyrics.py bach-370-chorales/kern > annotations/bach-lyrics.json
+```
 
 
 ## Updating after changes
