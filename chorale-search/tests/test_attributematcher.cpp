@@ -1136,6 +1136,7 @@ TEST_CASE(matcher_wildcard_on_another_feature_asks_for_a_value) {
         "**kern\t**kern\t**kern\t**kern\n"
         "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
         "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "*C:\t*C:\t*C:\t*C:\n"
         "=1\t=1\t=1\t=1\n"
         "2C\t2G\t2e\t2r\n"
         "2D\t2A\t2f\t2dd\n"
