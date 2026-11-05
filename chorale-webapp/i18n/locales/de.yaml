@@ -208,6 +208,11 @@ landscape: Querformat
 downloadFormat: "{format} herunterladen"
 downloadAll: Alle Kombinationen als ZIP
 filterChorales: "Choräle filtern, z. B. 3/4 G major"
+filterChoraleList: Filter
+resetFilter: Filter zurücksetzen
+choralePosition: "Choral {position} von {count}"
+choralePositionFiltered: "Choral {position} von einem gefilterten | Choral {position} von {count} gefilterten"
+choraleNotInFilter: "Kein Choral entspricht dem Filter | Dieser Choral ist nicht der gefilterte | Dieser Choral ist nicht unter den {count} gefilterten"
 noChoralesFound: Keine Choräle gefunden.
 noChoralesFoundDescription: Die Choräle werden aus dem Korpus extrahiert. Führen Sie dazu im Projektverzeichnis `make webapp` aus.
 choraleCount: "ein Choral | {count} Choräle"

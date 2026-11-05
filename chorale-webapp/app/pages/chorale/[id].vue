@@ -18,9 +18,16 @@ useHead({
     title: computed(() => chorale.value.title ? `${heading.value} (${id})` : id),
 });
 
-const { listFilter } = useChoraleListFilter();
+const { filter, listFilter, isFiltered } = useChoraleListFilter();
+const isFilterModalOpen = ref(false);
+const isFilterPopoverOpen = ref(false);
 const { data: allChorales } = await useAsyncData('chorale-list-filter-fields', () => {
     return queryCollection('chorales').select('choraleId', 'bwv', 'title', 'key', 'mode', 'cantusFirmus', 'meter').order('stem', 'ASC').all();
+});
+const filteredChorales = computed(() => (allChorales.value ?? []).filter((item) => matchesChoraleListFilter(item, listFilter.value)));
+const positionInFilter = computed(() => {
+    const index = filteredChorales.value.findIndex((item) => item.choraleId === id);
+    return index === -1 ? null : index + 1;
 });
 // The neighbours within the filtered chorale list, even if this chorale is not in it.
 const surroundingChorales = computed(() => {
@@ -216,23 +223,59 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                         {{ [chorale.composer, chorale.bwv, keyName, chorale.meter].filter(Boolean).join(' · ') }}
                     </div>
                 </Heading>
-                <div class="flex gap-2">
-                    <UButton :disabled="!prevChorale" :to="localePath({ name: 'chorale-id', params: { id: prevChorale?.choraleId }, hash: $route.hash })" size="xs">
-                        <template #leading>
-                            <UKbd color="neutral">
-                                <UIcon name="lucide:arrow-left" />
-                            </UKbd>
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex gap-2">
+                        <UButton :disabled="!prevChorale" :to="localePath({ name: 'chorale-id', params: { id: prevChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
+                            <template #leading>
+                                <UKbd color="neutral" class="hidden sm:inline-flex">
+                                    <UIcon name="lucide:arrow-left" />
+                                </UKbd>
+                            </template>
+                            {{ $t('previousChorale') }}
+                        </UButton>
+                        <UButton :disabled="!nextChorale" :to="localePath({ name: 'chorale-id', params: { id: nextChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
+                            {{ $t('nextChorale') }}
+                            <template #trailing>
+                                <UKbd color="neutral" class="hidden sm:inline-flex">
+                                    <UIcon name="lucide:arrow-right" />
+                                </UKbd>
+                            </template>
+                        </UButton>
+                        <UFieldGroup size="xs">
+                            <UPopover mode="hover" :open="isFiltered && isFilterPopoverOpen" @update:open="isFilterPopoverOpen = $event">
+                                <UButton
+                                    :label="$t('filterChoraleList')"
+                                    :color="isFiltered ? 'primary' : 'neutral'"
+                                    :variant="isFiltered ? 'soft' : 'outline'"
+                                    icon="lucide:funnel"
+                                    @click="isFilterModalOpen = true"
+                                />
+                                <template #content>
+                                    <ChoraleListFilterBadges class="p-2" />
+                                </template>
+                            </UPopover>
+                            <UButton
+                                v-if="isFiltered"
+                                color="primary"
+                                variant="soft"
+                                icon="lucide:x"
+                                :aria-label="$t('resetFilter')"
+                                class="px-1.5"
+                                :ui="{ leadingIcon: 'size-3' }"
+                                @click="filter = ''"
+                            />
+                        </UFieldGroup>
+                    </div>
+                    <div v-if="allChorales.length" class="text-sm text-muted">
+                        <template v-if="!isFiltered">{{ $t('choralePosition', { position: positionInFilter, count: filteredChorales.length }) }}</template>
+                        <template v-else-if="positionInFilter">{{ $t('choralePositionFiltered', { position: positionInFilter, count: filteredChorales.length }, filteredChorales.length) }}</template>
+                        <template v-else>{{ $t('choraleNotInFilter', { count: filteredChorales.length }, filteredChorales.length) }}</template>
+                    </div>
+                    <UModal v-model:open="isFilterModalOpen" :title="$t('filterChoraleList')">
+                        <template #body>
+                            <ChoraleListFilter :count="filteredChorales.length" />
                         </template>
-                        {{ $t('previousChorale') }}
-                    </UButton>
-                    <UButton :disabled="!nextChorale" :to="localePath({ name: 'chorale-id', params: { id: nextChorale?.choraleId }, hash: $route.hash })" size="xs">
-                        {{ $t('nextChorale') }}
-                        <template #trailing>
-                            <UKbd color="neutral">
-                                <UIcon name="lucide:arrow-right" />
-                            </UKbd>
-                        </template>
-                    </UButton>
+                    </UModal>
                 </div>
             </div>
 
