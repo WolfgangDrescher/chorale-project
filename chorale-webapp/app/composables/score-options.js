@@ -1,5 +1,11 @@
 import { defineStore, acceptHMRUpdate } from 'pinia';
 
+// Filters every score goes through while their option is off, unless its view passes baseFilters.
+export const BASE_FILTERS_BY_OPTION = {
+    showLyrics: 'extract -I text',
+};
+export const BASE_FILTERS = Object.values(BASE_FILTERS_BY_OPTION);
+
 function createDefaultScoreOptions() {
     return {
         showMeter: false,
@@ -17,6 +23,7 @@ function createDefaultScoreOptions() {
         verovioScale: 40,
         showHorizontalViewMode: false,
         showModulations: false,
+        showLyrics: false,
     };
 }
 
@@ -59,6 +66,9 @@ const scoreOptionsStore = (createDefaults) => ({
                 .sort(([, a], [, b]) => (b.priority ?? 0) - (a.priority ?? 0))
                 .map(([key]) => this.humdrumFilterMap[key]);
         },
+        baseFilters: (state) => Object.entries(BASE_FILTERS_BY_OPTION)
+            .filter(([option]) => !state[option])
+            .map(([, filter]) => filter),
         verovioOptions: (state) => ({
             scale: state.verovioScale,
         }),
@@ -69,6 +79,7 @@ const scoreOptionsStore = (createDefaults) => ({
             return [
                 state.showHorizontalViewMode !== createDefaults().showHorizontalViewMode,
                 state.showModulations !== createDefaults().showModulations,
+                state.showLyrics !== createDefaults().showLyrics,
             ].filter(Boolean).length;
         },
         countTotal() {

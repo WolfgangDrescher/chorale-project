@@ -151,6 +151,7 @@ resetZoom: Partitur Anzeige zurücksetzen
 showHorizontalViewMode: Partitur horizontal anzeigen
 layers: Layer
 showModulations: Modulationen anzeigen
+showLyrics: Liedtext anzeigen
 keyColoringAbsolute: Absolute Farben
 keyColoringRelative: Farben relativ zur Grundtonart
 keyLabelingKeys: Tonarten

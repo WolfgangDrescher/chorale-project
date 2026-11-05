@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     // Where the score comes from: a piece served by the app (pieceId), or -- for a score that
     // only exists as text, like an upload -- the **kern data itself. scoreData wins when both
     // are given.
@@ -14,6 +14,8 @@ const props = defineProps<{
     sections?: SectionsProp,
     connections?: ConnectionsProp,
     filters?: Array<string>,
+    // Applied before filters, see BASE_FILTERS.
+    baseFilters?: Array<string>,
     horizontal?: Boolean,
     scrollToFirstSection?: Boolean,
     // The line of a note to keep in view: scrolled to whenever it changes and is out of view, in
@@ -21,7 +23,9 @@ const props = defineProps<{
     scrollToLine?: Number,
     // Shows the notes and rests as clickable, for a noteClick that does something.
     clickableNotes?: Boolean,
-}>();
+}>(), {
+    baseFilters: () => BASE_FILTERS,
+});
 
 const emit = defineEmits<{
     // A click on (or near) a note or a rest: its element id, and the line and voice read off it.
@@ -39,7 +43,9 @@ const verovioCanvas = ref(null);
 
 const { loadScore, setScore, applyScoreFormatting, formattedScoreData } = useScoreFormatter();
 
-watch(() => props.filters, (filters) => {
+const scoreFilters = computed(() => [...props.baseFilters, ...(props.filters ?? [])]);
+
+watch(scoreFilters, (filters) => {
     applyScoreFormatting([], filters);
 });
 
@@ -310,12 +316,12 @@ watch(() => props.horizontal, async () => {
 });
 
 watch(() => props.scoreData, (data) => {
-    if (data) setScore(data, props.filters);
+    if (data) setScore(data, scoreFilters.value);
 });
 
 onMounted(async () => {
-    if (props.scoreData) setScore(props.scoreData, props.filters);
-    else loadScore(props.pieceId, props.filters);
+    if (props.scoreData) setScore(props.scoreData, scoreFilters.value);
+    else loadScore(props.pieceId, scoreFilters.value);
     await nextTick();
     updateMarkerWidth();
     updateStickySystemStart();

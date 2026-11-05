@@ -344,6 +344,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                     pageMarginTop: 50,
                     pageMarginBottom: 50,
                 }"
+                :base-filters="scoreOptions.baseFilters"
                 :filters="scoreOptions.humdrumFilters"
                 :sections="matches"
                 :lines="scoreOptions.showModulations ? modulationLines : undefined"

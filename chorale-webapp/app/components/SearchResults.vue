@@ -206,6 +206,7 @@ function choraleLink(choraleId, items) {
                             ...scoreOptions.verovioOptions,
                             pageMarginLeft: 42,
                         }"
+                        :base-filters="scoreOptions.baseFilters"
                         :filters="scoreOptions.humdrumFilters"
                         :sections="sectionsForItems(items)"
                         :scroll-to-first-section="scoreOptions.showHorizontalViewMode"

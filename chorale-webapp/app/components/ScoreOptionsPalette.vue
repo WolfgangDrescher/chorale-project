@@ -126,20 +126,27 @@ const groups = computed(() => {
                 },
             ],
         },
-        // Without a chorale there are no modulations to show.
-        ...(props.chorale ? [{
+        {
             id: 'layers',
             label: t('layers'),
             items: [
                 {
+                    label: t('showLyrics'),
+                    onSelect: () => (scoreOptions.showLyrics = !scoreOptions.showLyrics),
+                    indicator: 'checkbox',
+                    checked: () => scoreOptions.showLyrics,
+                    kbd: 'L',
+                },
+                // Without a chorale there are no modulations to show.
+                ...(props.chorale ? [{
                     label: t('showModulations'),
                     onSelect: () => (scoreOptions.showModulations = !scoreOptions.showModulations),
                     indicator: 'checkbox',
                     checked: () => scoreOptions.showModulations,
                     kbd: 'M',
-                },
+                }] : []),
             ],
-        }] : []),
+        },
         {
             id: 'reset',
             label: t('reset'),

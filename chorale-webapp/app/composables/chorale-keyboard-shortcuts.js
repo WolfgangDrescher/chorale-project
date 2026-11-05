@@ -28,6 +28,11 @@ export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, scoreOpt
         scoreOptions.showHorizontalViewMode = !scoreOptions.showHorizontalViewMode;
     });
 
+    onKeyStroke('l', () => {
+        if (ignoreIfInput()) return;
+        scoreOptions.showLyrics = !scoreOptions.showLyrics;
+    });
+
     onKeyStroke('+', () => {
         if (ignoreIfInput()) return;
         scoreOptions.zoomIn();
