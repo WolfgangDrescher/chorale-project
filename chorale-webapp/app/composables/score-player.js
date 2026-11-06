@@ -33,7 +33,14 @@ export const useScorePlayerSettings = defineStore('score_player_settings', () =>
     // Likewise the stops of the organ; at least one stays drawn.
     settings.value.organStops = (Array.isArray(settings.value.organStops) ? settings.value.organStops : []).filter((stop) => stop in ORGAN_STOPS);
     if (!settings.value.organStops.length) settings.value.organStops = defaultSettings().organStops;
-    return Object.fromEntries(Object.entries(toRefs(settings.value)).map(([key, value]) => [key, skipHydrate(value)]));
+    // In place, the refs below point into the object.
+    function reset() {
+        Object.assign(settings.value, defaultSettings());
+    }
+    return {
+        ...Object.fromEntries(Object.entries(toRefs(settings.value)).map(([key, value]) => [key, skipHydrate(value)])),
+        reset,
+    };
 });
 
 // The stops of the organ by their pitch in feet: the sample of the organ played that many semitones

@@ -10,7 +10,8 @@ defineProps({
 
 const { t } = useI18n();
 
-const { instrument, tempo, volume, reverb, spreadVoices, organStops } = storeToRefs(useScorePlayerSettings());
+const settings = useScorePlayerSettings();
+const { instrument, tempo, volume, reverb, spreadVoices, organStops } = storeToRefs(settings);
 
 // The stops of the organ, the lowest first. At least one stays drawn.
 const organStopItems = Object.keys(ORGAN_STOPS).map(Number).sort((a, b) => b - a);
@@ -63,6 +64,9 @@ const instrumentItems = computed(() => SCORE_PLAYER_INSTRUMENTS.map(({ id, label
                     <USlider v-model="tempo" :min="40" :max="160" :step="4" class="mt-2" />
                 </UFormField>
                 <USwitch v-model="spreadVoices" :label="$t('playerSpreadVoices')" :description="$t('playerSpreadVoicesDescription')" />
+                <div class="flex items-center justify-between gap-2 pt-3 border-t border-default">
+                    <UButton :label="$t('playerResetSettings')" icon="lucide:list-restart" color="neutral" variant="ghost" size="xs" @click="settings.reset()" />
+                </div>
             </div>
         </template>
     </UPopover>

@@ -252,6 +252,7 @@ playerTempo: Tempo
 playerOrganStops: Register
 playerVolume: Lautstärke
 playerReverb: Hall
+playerResetSettings: Standardwerte
 playerSpreadVoices: Stimmen im Raum verteilen
 playerSpreadVoicesDescription: Bass links, Sopran rechts
 playerInstrumentChurchOrgan: Orgel
