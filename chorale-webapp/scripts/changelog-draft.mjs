@@ -1,6 +1,6 @@
 // Drafts the next entry of the changelog (content/changelog/) from the git history.
 //
-//   node scripts/changelog-draft.mjs                    writes content/changelog/<date>.md for the next update
+//   node scripts/changelog-draft.mjs                    writes content/changelog/<date>.md for the update of today
 //   node scripts/changelog-draft.mjs --prompt           prints a prompt for an AI to write the entry instead
 //   node scripts/changelog-draft.mjs --date 2026-11-11  drafts the update of another day
 //   node scripts/changelog-draft.mjs --range a1b2c3d..HEAD
@@ -33,16 +33,15 @@ function isoDate(date) {
     return date.toISOString().slice(0, 10);
 }
 
-function nextMonday(date) {
-    const monday = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    monday.setUTCDate(monday.getUTCDate() + (8 - monday.getUTCDay()) % 7);
-    return isoDate(monday);
+function today() {
+    const now = new Date();
+    return isoDate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())));
 }
 
 const { values: options } = parseArgs({
     options: {
         range: { type: 'string' },
-        date: { type: 'string', default: nextMonday(new Date()) },
+        date: { type: 'string', default: today() },
         prompt: { type: 'boolean', default: false },
         force: { type: 'boolean', default: false },
         offline: { type: 'boolean', default: false },
