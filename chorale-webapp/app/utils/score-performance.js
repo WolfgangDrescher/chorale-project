@@ -93,6 +93,17 @@ function holdFermatas(performance, fermataIds) {
     };
 }
 
+// The voices from the highest down.
+export const VOICES = ['soprano', 'alto', 'tenor', 'bass'];
+
+// The voice of each track of a performance, the highest first. The outer tracks are soprano and
+// bass, also when the middle voices are left out.
+export function voicesByTrack(trackCount) {
+    if (trackCount < 2) return VOICES.slice(0, trackCount);
+    const middle = Array.from({ length: trackCount - 2 }, (_, index) => (index ? 'tenor' : 'alto'));
+    return ['soprano', ...middle, 'bass'];
+}
+
 // The ids of the elements that sound at a time of the performance.
 export function idsSoundingAt(performance, time) {
     return performance.soundings.filter(({ start, end }) => start <= time && time < end).map(({ id }) => id);

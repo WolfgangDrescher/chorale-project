@@ -11,6 +11,19 @@ export const SCORE_PLAYER_INSTRUMENTS = [
     { id: 'grand_piano', label: 'playerInstrumentGrandPiano' },
 ];
 
+const defaultVoiceSettings = () => ({
+    isMuted: false,
+    // In percent.
+    volume: 100,
+    // From -100 (left) to 100 (right).
+    pan: 0,
+    // In percent of the reverb of all voices.
+    reverb: 100,
+});
+
+// From the lowest voice on the left to the highest on the right, as at a keyboard.
+export const STEREO_SPREAD_PANS = { soprano: 70, alto: 20, tenor: -20, bass: -70 };
+
 const defaultSettings = () => ({
     instrument: 'church_organ',
     // In quarter notes per minute.
@@ -18,8 +31,7 @@ const defaultSettings = () => ({
     // In percent.
     volume: 80,
     reverb: 20,
-    // From the lowest voice on the left to the highest on the right, as at a keyboard.
-    spreadVoices: false,
+    voices: Object.fromEntries(VOICES.map((voice) => [voice, defaultVoiceSettings()])),
     // The stops drawn on the organ, see ORGAN_STOPS.
     organStops: [8],
 });
@@ -33,6 +45,11 @@ export const useScorePlayerSettings = defineStore('score_player_settings', () =>
     // Likewise the stops of the organ; at least one stays drawn.
     settings.value.organStops = (Array.isArray(settings.value.organStops) ? settings.value.organStops : []).filter((stop) => stop in ORGAN_STOPS);
     if (!settings.value.organStops.length) settings.value.organStops = defaultSettings().organStops;
+    const storedVoices = settings.value.voices ?? {};
+    settings.value.voices = Object.fromEntries(VOICES.map((voice) => [voice, { ...defaultVoiceSettings(), ...storedVoices[voice] }]));
+    // Stored by an earlier version of the player, which spread the voices with a switch.
+    if (settings.value.spreadVoices) for (const voice of VOICES) settings.value.voices[voice].pan = STEREO_SPREAD_PANS[voice];
+    delete settings.value.spreadVoices;
     // In place, the refs below point into the object.
     function reset() {
         Object.assign(settings.value, defaultSettings());
@@ -90,7 +107,7 @@ function useAudio() {
             loader: smplr.SampleLoader(audioContext),
             // Hands a note due within the lookahead straight to the audio clock, not to a timer.
             scheduler: smplr.Scheduler(audioContext, { lookaheadMs: (LOOKAHEAD_SECONDS + 1) * 1000 }),
-            instruments: new Map(),
+            channels: new Map(),
             soundfonts: new Map(),
         })).then((audio) => {
             audio.reverb.connect(master);
@@ -113,7 +130,7 @@ function midiOf(name) {
 const SOUNDFONT_GAIN = 5;
 
 // The samples of an instrument of the soundfont by note name, decoded once for all its instances
-// (one per voice when the voices are spread): smplr would decode them again for each, 50 MB each.
+// (one per voice): smplr would decode them again for each, 50 MB each.
 function loadSoundfontSamples({ context, soundfonts }, name) {
     if (!soundfonts.has(name)) {
         soundfonts.set(name, (async () => {
@@ -139,52 +156,49 @@ function loadSoundfontSamples({ context, soundfonts }, name) {
     return soundfonts.get(name);
 }
 
-// An instrument at a place in the stereo field, from -1 (left) to 1 (right).
-async function loadInstrument(name, pan) {
+// A channel of the mix: an instrument for a voice, with a gain for its volume.
+async function loadChannel(name, voice) {
     const audio = await useAudio();
-    const { smplr, context, master, reverb, loader, scheduler, instruments } = audio;
-    const key = `${name} ${pan}`;
-    if (!instruments.has(key)) {
-        instruments.set(key, (async () => {
+    const { smplr, context, master, reverb, loader, scheduler, channels } = audio;
+    const key = `${name} ${voice}`;
+    if (!channels.has(key)) {
+        channels.set(key, (async () => {
             let instrument;
             if (name === 'grand_piano') {
-                instrument = smplr.SplendidGrandPiano(context, { volume: 90, pan, destination: master, loader, scheduler });
+                instrument = smplr.SplendidGrandPiano(context, { volume: 90, destination: master, loader, scheduler });
             } else {
                 const samples = await loadSoundfontSamples(audio, name);
                 // The Sampler takes undefined for a value it is not given, so all are given.
-                instrument = smplr.Sampler(context, { buffers: samples, decayTime: 0.3, detune: 0, lpfCutoffHz: 20000, volume: 90, pan, destination: master, loader, scheduler });
+                instrument = smplr.Sampler(context, { buffers: samples, decayTime: 0.3, detune: 0, lpfCutoffHz: 20000, volume: 90, destination: master, loader, scheduler });
                 const gain = context.createGain();
                 gain.gain.value = SOUNDFONT_GAIN;
                 instrument.output.addInsert(gain);
             }
+            const gain = context.createGain();
+            instrument.output.addInsert(gain);
             instrument.output.addEffect('reverb', reverb, 0);
             await instrument.ready;
-            return instrument;
+            return { voice, instrument, gain };
         })().catch((error) => {
             // Loaded again on the next play, e.g. when the network is back.
-            instruments.delete(key);
+            channels.delete(key);
             throw error;
         }));
     }
-    return instruments.get(key);
+    return channels.get(key);
 }
 
-// How far to the sides the outer voices are spread.
-const STEREO_WIDTH = 0.7;
+function mixChannel({ voice, instrument, gain }, { reverb, voices }) {
+    const { isMuted, volume, pan, reverb: voiceReverb } = voices[voice];
+    gain.gain.value = isMuted ? 0 : gainOf(volume);
+    instrument.output.pan = pan / 100;
+    instrument.output.setEffectMix('reverb', reverb / 100 * voiceReverb / 100);
+}
 
-// The share of the reverb in the sound of every instrument loaded.
-function setReverb(mix) {
-    audio?.then(({ instruments }) => {
-        for (const loading of instruments.values()) loading.then((instrument) => instrument.output.setEffectMix('reverb', mix)).catch(() => {});
+function mixChannels(settings) {
+    audio?.then(({ channels }) => {
+        for (const loading of channels.values()) loading.then((channel) => mixChannel(channel, settings)).catch(() => {});
     });
-}
-
-// An instrument for each voice.
-function loadVoiceInstruments({ instrument, spreadVoices }, voiceCount) {
-    return Promise.all(Array.from({ length: voiceCount }, (_, voice) => {
-        const pan = spreadVoices && voiceCount > 1 ? (1 - voice / (voiceCount - 1) * 2) * STEREO_WIDTH : 0;
-        return loadInstrument(instrument, pan);
-    }));
 }
 
 function lineStartsOf(performance) {
@@ -306,11 +320,11 @@ export function useScorePlayer() {
             const { context, master } = await useAudio();
             master.gain.value = gainOf(settings.volume);
             const performance = await loadPerformance();
-            const instruments = await loadVoiceInstruments(settings, performance.voiceCount);
-            setReverb(settings.reverb / 100);
+            const channels = await Promise.all(voicesByTrack(performance.voiceCount).map((voice) => loadChannel(settings.instrument, voice)));
+            mixChannels(settings);
             if (session !== thisSession) return;
             player.isLoading = false;
-            startSession(thisSession, performance, instruments, context);
+            startSession(thisSession, performance, channels.map(({ instrument }) => instrument), context);
         } catch (error) {
             // The position is kept for the next attempt.
             if (session === thisSession) pause();
@@ -455,11 +469,11 @@ export function useScorePlayer() {
         return time / 1000 * scoreTempo / settings.tempo;
     }
 
-    // Another tempo, volume or reverb takes effect at once, another sound starts the sounding notes again.
+    // Another tempo or mix takes effect at once, another sound starts the sounding notes again.
     watch(() => settings.tempo, (tempo) => session?.setTempo?.(tempo));
     watch(() => settings.volume, (volume) => audio?.then(({ master }) => (master.gain.value = gainOf(volume))));
-    watch(() => settings.reverb, (reverb) => setReverb(reverb / 100));
-    watch(() => [settings.instrument, settings.spreadVoices, settings.organStops.join()], () => {
+    watch(() => [settings.reverb, settings.voices], () => mixChannels(settings), { deep: true });
+    watch(() => [settings.instrument, settings.organStops.join()], () => {
         if (player.isPlaying && !player.isLoading) play();
     });
 

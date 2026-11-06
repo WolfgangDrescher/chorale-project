@@ -253,8 +253,15 @@ playerOrganStops: Register
 playerVolume: Lautstärke
 playerReverb: Hall
 playerResetSettings: Standardwerte
-playerSpreadVoices: Stimmen im Raum verteilen
+playerSpreadVoices: Stereo verteilen
 playerSpreadVoicesDescription: Bass links, Sopran rechts
+playerAllVoices: Alle Stimmen
+playerEachVoice: Einzelne Stimmen
+playerMuteVoice: Stimme stummschalten
+playerPan: Position
+playerPanCenter: Mitte
+playerPanLeft: "L {value}"
+playerPanRight: "R {value}"
 playerInstrumentChurchOrgan: Orgel
 playerInstrumentChoirAahs: Chor (Aah)
 playerInstrumentVoiceOohs: Chor (Ooh)
