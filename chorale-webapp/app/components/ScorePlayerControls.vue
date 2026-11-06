@@ -34,7 +34,7 @@ function formatTime(time) {
 </script>
 
 <template>
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-3" @pointerdown="player.makeCurrent()" @focusin="player.makeCurrent()">
         <div class="group relative shrink-0" :class="compact ? 'size-7' : 'size-10'">
             <button
                 type="button"

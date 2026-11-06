@@ -197,7 +197,7 @@ const {
 useChoraleKeyboardShortcuts({ prevChorale, nextChorale });
 
 const player = useScorePlayer();
-useScorePlayerKeyboardShortcuts(player.toggle);
+useScorePlayerKeyboardShortcuts(() => toggleCurrentScorePlayer(player));
 
 const modulations = computed(() => chorale.value.modulations ?? []);
 

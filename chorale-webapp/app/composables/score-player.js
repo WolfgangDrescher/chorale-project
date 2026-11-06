@@ -188,11 +188,11 @@ function lineStartsOf(performance) {
 
 // Only one player sounds at a time.
 let soundingPlayer = null;
-let lastPlayer = null;
+// The player last played or clicked into, which the space bar toggles.
+let currentPlayer = null;
 
-// Pauses the player that sounds, or else plays the last one played or the given one.
-export function toggleLastScorePlayer(fallback) {
-    const player = soundingPlayer ?? (lastPlayer?.hasScore ? lastPlayer : fallback);
+export function toggleCurrentScorePlayer(fallback) {
+    const player = currentPlayer?.hasScore ? currentPlayer : (soundingPlayer ?? fallback);
     player?.toggle();
 }
 
@@ -222,6 +222,7 @@ export function useScorePlayer() {
         seek,
         goTo,
         toSeconds,
+        makeCurrent,
     });
 
     let callVerovioMethod = null;
@@ -246,7 +247,7 @@ export function useScorePlayer() {
 
     function disconnect() {
         stop();
-        if (lastPlayer === player) lastPlayer = null;
+        if (currentPlayer === player) currentPlayer = null;
         callVerovioMethod = null;
         performancePromise = null;
         player.hasScore = false;
@@ -284,7 +285,7 @@ export function useScorePlayer() {
         if (!callVerovioMethod) return;
         pause();
         if (soundingPlayer && soundingPlayer !== player) soundingPlayer.pause();
-        soundingPlayer = lastPlayer = player;
+        soundingPlayer = currentPlayer = player;
 
         const thisSession = {};
         session = thisSession;
@@ -412,6 +413,10 @@ export function useScorePlayer() {
         if (!callVerovioMethod) return;
         const sounding = (await currentPerformance())?.soundings.find((sounding) => sounding.id === id);
         if (sounding) seek(sounding.start);
+    }
+
+    function makeCurrent() {
+        currentPlayer = player;
     }
 
     function toSeconds(time) {

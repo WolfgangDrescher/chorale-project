@@ -19,23 +19,25 @@ onBeforeUnmount(() => props.player.disconnect());
 </script>
 
 <template>
-    <HighlightedScore
-        v-bind="$attrs"
-        :clickable-notes="true"
-        :scroll-to-line="line ?? undefined"
-        @score-loaded="({ callVerovioMethod }) => player.connect(callVerovioMethod)"
-        @note-click="({ id }) => player.goTo(id)"
-    >
-        <template #markers="{ container }">
-            <HighlightedSection
-                v-if="line"
-                :key="`${line}-${player.isPlaying}`"
-                :start-line="line"
-                :end-line="line"
-                :color="primaryAt(player.isPlaying ? 25 : 60)"
-                :outline="!player.isPlaying"
-                :container="container"
-            />
-        </template>
-    </HighlightedScore>
+    <div class="contents" @pointerdown="player.makeCurrent()" @focusin="player.makeCurrent()">
+        <HighlightedScore
+            v-bind="$attrs"
+            :clickable-notes="true"
+            :scroll-to-line="line ?? undefined"
+            @score-loaded="({ callVerovioMethod }) => player.connect(callVerovioMethod)"
+            @note-click="({ id }) => player.goTo(id)"
+        >
+            <template #markers="{ container }">
+                <HighlightedSection
+                    v-if="line"
+                    :key="`${line}-${player.isPlaying}`"
+                    :start-line="line"
+                    :end-line="line"
+                    :color="primaryAt(player.isPlaying ? 25 : 60)"
+                    :outline="!player.isPlaying"
+                    :container="container"
+                />
+            </template>
+        </HighlightedScore>
+    </div>
 </template>

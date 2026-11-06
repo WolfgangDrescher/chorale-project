@@ -105,11 +105,10 @@ onScopeDispose(() => {
     for (const scope of playerScopes.values()) scope.stop();
 });
 
-// The space bar pauses the chorale that sounds, or else plays the last one played or the first
-// of the page.
+// Falls back to the first chorale of the page.
 useScorePlayerKeyboardShortcuts(() => {
     const first = players.value.values().next().value;
-    if (first) toggleLastScorePlayer(first);
+    if (first) toggleCurrentScorePlayer(first);
 });
 
 // The page of the chorale, with the matches to highlight there: "4:12-15~1:12-14,4:30-31" is a
