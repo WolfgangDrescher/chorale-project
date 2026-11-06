@@ -1,3 +1,3 @@
 <template>
-    <ContentCollectionPage collection="docs" />
+    <ContentCollectionPage collection="docs" :navigation-fields="['spine']" />
 </template>

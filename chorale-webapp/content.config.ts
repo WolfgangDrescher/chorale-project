@@ -98,6 +98,7 @@ export default defineContentConfig({
             source: 'docs/**/*.md',
             schema: z.object({
                 icon: z.string().optional(),
+                spine: z.boolean().optional(), // a page named after a spine, shown as code
             }),
         }),
     },

@@ -5,7 +5,7 @@ import { findPageHeadline } from '@nuxt/content/utils';
 const props = defineProps({
     collection: { type: String, required: true },
     // Fields of the front matter every entry of the navigation gets besides its title and path:
-    // lessonNumber, for the number in front of a lesson.
+    // lessonNumber, for the number in front of a lesson, spine, for a title shown as code.
     navigationFields: { type: Array, default: () => [] },
     // The page shown, when it is not the one of the route: the data of a lesson is a route below it.
     path: { type: String, default: null },
@@ -24,7 +24,7 @@ const { data: page } = await useAsyncData(key, () => {
 
 const { data: surround } = await useAsyncData(`${key}-surround`, () => {
     return queryCollectionItemSurroundings(props.collection, path, {
-        fields: ['description'],
+        fields: ['description', 'spine'],
     });
 });
 
@@ -74,7 +74,12 @@ useSeoMeta({
         <UPage :ui="{ root: 'lg:grid-cols-[280px_minmax(0,1fr)]', left: 'lg:col-span-1', center: 'lg:col-span-1' }">
             <template #left>
                 <UPageAside>
-                    <UContentNavigation :navigation="navigation" highlight />
+                    <UContentNavigation :navigation="navigation" highlight>
+                        <template #link-title="{ link }">
+                            <ProseCode v-if="link.spine" class="text-[0.8em]">{{ link.title }}</ProseCode>
+                            <template v-else>{{ link.title }}</template>
+                        </template>
+                    </UContentNavigation>
                 </UPageAside>
             </template>
 
@@ -89,7 +94,12 @@ useSeoMeta({
                     <ContentRenderer :value="page" />
                 </slot>
                 <USeparator />
-                <UContentSurround :surround="surround" />
+                <UContentSurround :surround="surround">
+                    <template #link-title="{ link }">
+                        <ProseCode v-if="link.spine" class="text-[0.8em]">{{ link.title }}</ProseCode>
+                        <template v-else>{{ link.title }}</template>
+                    </template>
+                </UContentSurround>
             </UPageBody>
         </UPage>
         <QueryDrawer v-if="page.queries?.length" v-model:open="queryDrawerOpen" :query="activeQuery" sort-by="density" />
