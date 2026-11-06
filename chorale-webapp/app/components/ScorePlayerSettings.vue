@@ -1,5 +1,6 @@
 <script setup>
 import { storeToRefs } from 'pinia';
+import { useKeyModifier } from '@vueuse/core';
 
 // The settings all players share, behind a button: the sound, volume and tempo of all voices, and
 // the mix of each voice. Given a player, its score can be downloaded as MIDI as it sounds. The other
@@ -16,6 +17,16 @@ const { t } = useI18n();
 const settings = useScorePlayerSettings();
 const { instrument, tempo, volume, reverb, voices } = storeToRefs(settings);
 
+// With Shift or Alt held, a control of a voice sets all voices.
+const { getKbdKey } = useKbd();
+const isShiftPressed = useKeyModifier('Shift', { initial: false });
+const isAltPressed = useKeyModifier('Alt', { initial: false });
+const targetVoices = (voice) => (isShiftPressed.value || isAltPressed.value ? VOICES : [voice]);
+
+function setVoiceSetting(voice, key, value) {
+    for (const target of targetVoices(voice)) voices.value[target][key] = value;
+}
+
 // The stops of the organ, the lowest first.
 const organStopItems = Object.keys(ORGAN_STOPS).map(Number).sort((a, b) => b - a);
 
@@ -29,7 +40,7 @@ function setOrganStop(targets, stop, isDrawn) {
 }
 
 function toggleOrganStop(voice, stop) {
-    setOrganStop([voice], stop, !voices.value[voice].organStops.includes(stop));
+    setOrganStop(targetVoices(voice), stop, !voices.value[voice].organStops.includes(stop));
 }
 
 // Drawn in all voices (true), in some ('mixed', as aria-pressed has it) or in none (false).
@@ -125,18 +136,18 @@ function spreadVoices() {
                                         :color="voices[voice].isMuted ? 'primary' : 'neutral'"
                                         variant="ghost"
                                         size="xs"
-                                        @click="voices[voice].isMuted = !voices[voice].isMuted"
+                                        @click="setVoiceSetting(voice, 'isMuted', !voices[voice].isMuted)"
                                     />
                                 </div>
                                 <div class="grid grid-cols-[auto_1fr_3rem] items-center gap-x-3 gap-y-2 text-xs text-muted" :class="voices[voice].isMuted && 'opacity-50'">
                                     <span>{{ $t('playerVolume') }}</span>
-                                    <USlider v-model="voices[voice].volume" :min="0" :max="100" :step="5" size="xs" />
+                                    <USlider :model-value="voices[voice].volume" :min="0" :max="100" :step="5" size="xs" @update:model-value="(value) => setVoiceSetting(voice, 'volume', value)" />
                                     <span class="tabular-nums text-right">{{ voices[voice].volume }} %</span>
                                     <span>{{ $t('playerPan') }}</span>
-                                    <USlider v-model="voices[voice].pan" :min="-100" :max="100" :step="10" size="xs" />
+                                    <USlider :model-value="voices[voice].pan" :min="-100" :max="100" :step="10" size="xs" @update:model-value="(value) => setVoiceSetting(voice, 'pan', value)" />
                                     <span class="tabular-nums text-right">{{ panLabel(voices[voice].pan) }}</span>
                                     <span>{{ $t('playerReverb') }}</span>
-                                    <USlider v-model="voices[voice].reverb" :min="0" :max="100" :step="10" size="xs" />
+                                    <USlider :model-value="voices[voice].reverb" :min="0" :max="100" :step="10" size="xs" @update:model-value="(value) => setVoiceSetting(voice, 'reverb', value)" />
                                     <span class="tabular-nums text-right">{{ voices[voice].reverb }} %</span>
                                     <template v-if="instrument === 'church_organ'">
                                         <span>{{ $t('playerOrganStops') }}</span>
@@ -157,6 +168,9 @@ function spreadVoices() {
                                 <UButton :label="$t('playerSpreadVoices')" icon="lucide:headphones" color="neutral" variant="outline" size="xs" @click="spreadVoices()" />
                                 <span class="text-xs text-muted">{{ $t('playerSpreadVoicesDescription') }}</span>
                             </div>
+                            <p class="text-xs text-muted">
+                                {{ $t('playerAllVoicesModifier', { shift: getKbdKey('shift'), alt: getKbdKey('alt') }) }}
+                            </p>
                         </div>
                     </template>
                 </UTabs>
