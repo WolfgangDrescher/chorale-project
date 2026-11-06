@@ -2,8 +2,11 @@
 import { storeToRefs } from 'pinia';
 
 // The settings all players share, behind a button: the sound, volume and tempo of all voices, and
-// the mix of each voice. The props style the button.
+// the mix of each voice. Given a player, its score can be downloaded as MIDI as it sounds. The other
+// props style the button.
 defineProps({
+    player: { type: Object, default: null },
+    midiFileName: { type: String, default: 'score.mid' },
     variant: { type: String, default: 'ghost' },
     size: { type: String, default: 'md' },
 });
@@ -120,6 +123,16 @@ function spreadVoices() {
                 </UTabs>
                 <div class="flex items-center justify-between gap-2 pt-3 border-t border-default">
                     <UButton :label="$t('playerResetSettings')" icon="lucide:list-restart" color="neutral" variant="ghost" size="xs" @click="settings.reset()" />
+                    <UButton
+                        v-if="player"
+                        :label="$t('downloadFormat', { format: 'MIDI' })"
+                        icon="lucide:download"
+                        color="neutral"
+                        variant="outline"
+                        size="xs"
+                        :disabled="!player.hasScore"
+                        @click="player.downloadMidi(midiFileName)"
+                    />
                 </div>
             </div>
         </template>

@@ -1,6 +1,6 @@
 // The score as Verovio plays it, in milliseconds of its own tempo: the notes by voice (the highest
 // first), the soundings (see soundingsOf), the number of voices, the tempo in quarter notes per
-// minute and the duration, with a breath after each fermata.
+// minute and the duration, with a breath after each fermata and the notes cut a little short.
 export async function loadScorePerformance(callVerovioMethod) {
     const [midiBase64, timemap, mei, { Midi }] = await Promise.all([
         callVerovioMethod('renderToMIDI'),
@@ -22,13 +22,13 @@ export async function loadScorePerformance(callVerovioMethod) {
         })))
         .sort((a, b) => a.start - b.start);
 
-    return holdFermatas({
+    return articulate(holdFermatas({
         notes,
         soundings: soundingsOf(timemap),
         voiceCount: tracks.length,
         tempo: midi.header.tempos[0]?.bpm ?? 120,
         duration: Math.max(0, ...notes.map(({ end }) => end)),
-    }, fermataNoteIds(mei));
+    }, fermataNoteIds(mei)));
 }
 
 // A sounding is one time an element of the drawn score sounds, a note or a rest, from the time it
@@ -102,6 +102,14 @@ export function voicesByTrack(trackCount) {
     if (trackCount < 2) return VOICES.slice(0, trackCount);
     const middle = Array.from({ length: trackCount - 2 }, (_, index) => (index ? 'tenor' : 'alto'));
     return ['soprano', ...middle, 'bass'];
+}
+
+// A note is cut this much short, at most by a tenth, so a repeated note is heard again.
+const ARTICULATION_GAP_MS = 40;
+
+function articulate(performance) {
+    const notes = performance.notes.map((note) => ({ ...note, end: note.end - Math.min(ARTICULATION_GAP_MS, (note.end - note.start) / 10) }));
+    return { ...performance, notes };
 }
 
 // The ids of the elements that sound at a time of the performance.

@@ -81,8 +81,6 @@ function layersPerNote({ instrument, organStops }) {
 // Notes are handed to the audio clock this far ahead, so the slowed timers of a background tab keep up.
 const LOOKAHEAD_SECONDS = 3;
 const SCHEDULE_INTERVAL_MS = 500;
-// A note is cut this much short, at most by a tenth, so a repeated note is heard again.
-const ARTICULATION_GAP_MS = 40;
 
 // Attacks this close to the position are taken as the one it is at, not as the next or the previous.
 const SAME_ATTACK_MS = 5;
@@ -247,6 +245,7 @@ export function useScorePlayer() {
         goTo,
         goToLine,
         step,
+        downloadMidi,
         toSeconds,
         makeCurrent,
     });
@@ -349,7 +348,7 @@ export function useScorePlayer() {
             const until = scoreTimeAt(context.currentTime + LOOKAHEAD_SECONDS);
             for (; next < performance.notes.length && performance.notes[next].start < until; next++) {
                 const note = performance.notes[next];
-                const end = note.end - Math.min(ARTICULATION_GAP_MS, (note.end - note.start) / 10);
+                const { end } = note;
                 if (end <= from) continue;
                 const start = Math.max(note.start, from);
                 const audioTime = audioTimeAt(start);
@@ -439,6 +438,18 @@ export function useScorePlayer() {
         if (!callVerovioMethod) return;
         const sounding = (await currentPerformance())?.soundings.find((sounding) => sounding.id === id);
         if (sounding) seek(sounding.start);
+    }
+
+    async function downloadMidi(fileName) {
+        if (!callVerovioMethod) return;
+        const performance = await currentPerformance();
+        if (!performance) return;
+        const url = URL.createObjectURL(new Blob([await performanceToMidi(performance, settings)], { type: 'audio/midi' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(url);
     }
 
     function makeCurrent() {
