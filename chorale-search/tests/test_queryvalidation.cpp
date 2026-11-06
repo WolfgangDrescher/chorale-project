@@ -447,7 +447,7 @@ TEST_CASE(is_known_pattern_key_knows_the_interval_of_the_pair_searched) {
 TEST_MAIN()
 
 TEST_CASE(the_lyrics_keys_are_known_and_word_and_syl_drive_a_search) {
-    for (const std::string& key : {"word", "syl", "sylpos"}) {
+    for (const std::string& key : {"word", "syl", "sylpos", "melisma"}) {
         CHECK(isKnownPatternKey(key));
         CHECK(isKnownPatternKey("!" + key));
         CHECK(choralesearch::isLyricsPatternKey(key));
@@ -459,6 +459,7 @@ TEST_CASE(the_lyrics_keys_are_known_and_word_and_syl_drive_a_search) {
     CHECK(choralesearch::isLyricsDrivingFeature("word"));
     CHECK(!choralesearch::isLyricsDrivingFeature("sylpos"));
     CHECK(!isKnownDrivingFeature("sylpos"));
+    CHECK(!isKnownDrivingFeature("melisma"));
     CHECK(!isKnownQueryKey("verse"));
 }
 
@@ -479,6 +480,11 @@ TEST_CASE(the_values_of_the_lyrics_keys) {
     CHECK(!isValidPatternValue("sylpos", "middle"));
     CHECK(!isValidPatternValue("sylpos", "final"));
     CHECK(!isValidPatternValue("sylpos", "*zen"));
+    for (const std::string& value : {"none", "initial", "medial", "terminal", "n", "i", "m", "t", "true", "false"}) {
+        CHECK(isValidPatternValue("melisma", value));
+    }
+    for (const std::string& value : {"start", "middle", "end", "single", "s", "continue"}) CHECK(!isValidPatternValue("melisma", value));
+    CHECK(!supportsComparison("melisma"));
     // None of the lyrics keys is compared.
     CHECK(!supportsComparison("word"));
     CHECK(!supportsComparison("syl"));

@@ -13,6 +13,7 @@ using choralesearch::HumdrumChorale;
 using choralesearch::LyricsSyllable;
 using choralesearch::LyricsVerse;
 using choralesearch::LyricsWord;
+using choralesearch::MelismaRole;
 using choralesearch::SyllablePosition;
 using choralesearch::matchesLyricsGlob;
 using choralesearch::normalizeLyricsText;
@@ -239,6 +240,33 @@ TEST_CASE(the_syllable_sounding_on_a_line_lasts_until_its_last_note_is_over) {
     CHECK(!verse.syllableAtLine(37));
     CHECK(!verse.syllableAtLine(0));
     CHECK(!verse.syllableAtLine(10000));
+}
+
+TEST_CASE(the_role_of_a_note_in_the_melisma_of_its_syllable) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    const LyricsVerse& verse = *chorale.lyrics().verse(1);
+    const auto syllables = syllablesOf(verse);
+    CHECK(syllables[0]->melismaRoleAtLine(20) == MelismaRole::None); // "Aus"
+    const LyricsSyllable& her = *syllables[3];                       // "Her-" on the dotted b and the a
+    CHECK(her.melismaRoleAtLine(27) == MelismaRole::Initial);
+    CHECK(her.melismaRoleAtLine(28) == MelismaRole::Initial); // the bass moves under the first note
+    CHECK(her.melismaRoleAtLine(29) == MelismaRole::Terminal);
+    const LyricsSyllable& grun = *syllables[5]; // "Grun-" over three notes
+    CHECK(grun.melismaRoleAtLine(32) == MelismaRole::Initial);
+    CHECK(grun.melismaRoleAtLine(34) == MelismaRole::Initial);
+    CHECK(grun.melismaRoleAtLine(35) == MelismaRole::Medial);
+    CHECK(grun.melismaRoleAtLine(36) == MelismaRole::Terminal);
+    CHECK_EQ(std::string(choralesearch::melismaRoleName(MelismaRole::None)), std::string("none"));
+    CHECK_EQ(std::string(choralesearch::melismaRoleName(MelismaRole::Initial)), std::string("initial"));
+    CHECK_EQ(std::string(choralesearch::melismaRoleName(MelismaRole::Medial)), std::string("medial"));
+    CHECK_EQ(std::string(choralesearch::melismaRoleName(MelismaRole::Terminal)), std::string("terminal"));
+    // The tied note of the inline score is one note: "Gott," over it and the dd is a melisma of two.
+    const HumdrumChorale tied = tiedAndRestingChorale();
+    const LyricsSyllable& gott = tied.lyrics().verse(2)->words()[0].syllables[0];
+    CHECK(gott.melismaRoleAtLine(7) == MelismaRole::Initial);
+    CHECK(gott.melismaRoleAtLine(9) == MelismaRole::Initial);
+    CHECK(gott.melismaRoleAtLine(10) == MelismaRole::Terminal);
+    CHECK(tied.lyrics().verse(1)->words()[0].syllables[0].melismaRoleAtLine(9) == MelismaRole::None);
 }
 
 TEST_CASE(a_word_or_a_syllable_is_normalized_to_small_letters_without_the_punctuation_around_it) {

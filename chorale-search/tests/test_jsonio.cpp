@@ -1135,6 +1135,10 @@ TEST_CASE(query_from_json_reads_the_lyrics_keys) {
     CHECK_EQ(syl.feature, std::string("syl"));
     Query keyed = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1","!sylpos":["single","i"]}]})"));
     CHECK_EQ(keyed.pattern[0].at("!sylpos"), (std::vector<PatternValue>{"single", "i"}));
+    Query melisma = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"melisma":["initial","m","t"]},{"melisma":true},{"!melisma":false}]})"));
+    CHECK_EQ(melisma.pattern[0].at("melisma"), (std::vector<PatternValue>{"initial", "m", "t"}));
+    CHECK_EQ(melisma.pattern[1].at("melisma"), (std::vector<PatternValue>{"true"}));
+    CHECK_EQ(melisma.pattern[2].at("!melisma"), (std::vector<PatternValue>{"false"}));
     Query glob = queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":["Her*","*zen","*erz*"]}]})"));
     CHECK_EQ(glob.pattern[0].at("word"), (std::vector<PatternValue>{"Her*", "*zen", "*erz*"}));
 
@@ -1145,6 +1149,9 @@ TEST_CASE(query_from_json_reads_the_lyrics_keys) {
 TEST_CASE(query_from_json_rejects_what_the_lyrics_keys_cannot_hold) {
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"sylpos":"middle"}]})")));
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"sylpos":"final"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"melisma":"start"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"melisma":"x"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"melisma":{"operator":"gt","value":"initial"}}]})")));
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"word":""}]})")));
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"word":"Gott,"}]})")));
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"syl":"Her-"}]})")));

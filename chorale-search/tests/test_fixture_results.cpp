@@ -903,6 +903,23 @@ TEST_CASE(word_sung_on_the_same_notes_in_every_verse) {
     CHECK_EQ(results[3].verses, (std::vector<std::size_t>{1}));
 }
 
+TEST_CASE(kern_melisma_initial) {
+    Query q;
+    q.feature = "kern";
+    q.pattern = {AttributeMap{{"melisma", {"initial"}}}};
+    q.voices = "soprano";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    // "-eln" and "e-" over two eighths each, after the repeat.
+    REQUIRE(results.size() == 2u);
+    CHECK_RESULT(results[0], "chor029", 4, "35", "35");
+    CHECK_EQ(results[0].verses, (std::vector<std::size_t>{1}));
+    CHECK_RESULT(results[1], "chor029", 4, "42", "42");
+    CHECK_EQ(results[1].verses, (std::vector<std::size_t>{1}));
+}
+
 TEST_CASE(fb_7_under_a_syllable) {
     Query q;
     q.feature = "fb";

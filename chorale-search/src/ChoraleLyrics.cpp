@@ -61,6 +61,16 @@ const char* syllablePositionName(SyllablePosition position) {
     return "single";
 }
 
+const char* melismaRoleName(MelismaRole role) {
+    switch (role) {
+        case MelismaRole::None: return "none";
+        case MelismaRole::Initial: return "initial";
+        case MelismaRole::Medial: return "medial";
+        case MelismaRole::Terminal: return "terminal";
+    }
+    return "none";
+}
+
 std::string normalizeLyricsText(const std::string& text) {
     std::string normalized = replaceAll(text, " ", " ");
     for (char& c : normalized) {
@@ -98,6 +108,17 @@ bool matchesGlob(std::string_view glob, std::string_view text) {
 
 bool matchesLyricsGlob(const std::string& glob, const std::string& text) {
     return matchesGlob(glob, text);
+}
+
+MelismaRole LyricsSyllable::melismaRoleAtLine(int lineNumber) const {
+    if (lines.size() < 2) return MelismaRole::None;
+    // The last of its attacks on or before the line: the note sounding there.
+    auto after = std::upper_bound(lines.begin(), lines.end(), lineNumber);
+    if (after == lines.begin()) return MelismaRole::None;
+    const int attackLine = *(after - 1);
+    if (attackLine == lines.front()) return MelismaRole::Initial;
+    if (attackLine == lines.back()) return MelismaRole::Terminal;
+    return MelismaRole::Medial;
 }
 
 const LyricsSyllable* LyricsVerse::syllableAtLine(int lineNumber) const {

@@ -63,12 +63,12 @@ bool isValidKeyValue(const std::string& v) {
     return std::regex_match(v, re);
 }
 
-// sylpos is a name or its MEI wordpos letter. A word or a syllable: letters (any byte beyond ASCII, for ä, ö, ü),
-// digits, apostrophes and "*" for any characters.
+// sylpos and melisma are a name or its MEI wordpos letter, melisma also true or false. A word or a syllable: letters (any byte beyond ASCII,
+// for ä, ö, ü), digits, apostrophes and "*" for any characters.
 bool isValidLyricsValue(const std::string& key, const std::string& v) {
-    if (key == "sylpos") {
-        return v == "single" || v == "initial" || v == "medial" || v == "terminal" || v == "s" || v == "i" || v == "m" || v == "t";
-    }
+    const bool inWord = v == "initial" || v == "medial" || v == "terminal" || v == "i" || v == "m" || v == "t";
+    if (key == "sylpos") return inWord || v == "single" || v == "s";
+    if (key == "melisma") return inWord || v == "none" || v == "n" || v == "true" || v == "false";
     return !v.empty() && std::all_of(v.begin(), v.end(), [](unsigned char c) {
         return std::isalnum(c) || c >= 0x80 || c == '\'' || c == '*';
     });
@@ -169,7 +169,7 @@ bool isLyricsDrivingFeature(const std::string& feature) {
 
 bool isLyricsPatternKey(const std::string& rawKey) {
     const std::string key = stripNegationPrefix(rawKey);
-    return isLyricsDrivingFeature(key) || key == "sylpos";
+    return isLyricsDrivingFeature(key) || key == "sylpos" || key == "melisma";
 }
 
 bool isPairWildcardFeature(const std::string& feature) {

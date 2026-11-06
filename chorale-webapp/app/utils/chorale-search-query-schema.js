@@ -95,6 +95,29 @@ const sylposPatternSchema = {
     oneOf: [sylposValueSchema, { type: 'array', items: sylposValueSchema, minItems: 1 }],
 };
 
+// What the note is to the melisma of its syllable, named like sylpos; true is any note of a melisma.
+const melismaValueSchema = {
+    oneOf: [
+        {
+            type: 'string',
+            enum: ['none', 'initial', 'medial', 'terminal', '*'],
+            enumDescriptions: [
+                'The syllable has a note of its own.',
+                'The first note of the melisma.',
+                'A note in the middle of the melisma.',
+                'The last note of the melisma.',
+                'Any note with a syllable.',
+            ],
+        },
+        { type: 'boolean', description: 'true: a note of a melisma; false: the syllable has a note of its own.' },
+    ],
+};
+
+const melismaPatternSchema = {
+    description: 'The place of the note in the melisma of its syllable: "none", "initial", "medial" or "terminal"; true for any note of a melisma, false for none. An OR-list of these or a single one.',
+    oneOf: [melismaValueSchema, { type: 'array', items: melismaValueSchema, minItems: 1 }],
+};
+
 // One position of a pattern, and the keys of everyPosition.
 const patternPositionSchema = {
     type: 'object',
@@ -111,9 +134,11 @@ const patternPositionSchema = {
         '!keyDeg': keyDegPatternSchema,
         sylpos: sylposPatternSchema,
         '!sylpos': sylposPatternSchema,
+        melisma: melismaPatternSchema,
+        '!melisma': melismaPatternSchema,
     },
     patternProperties: {
-        '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
+        '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
             description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. word and syl are the word and the syllable the soprano sings at the note, compared in small letters without the punctuation around them; a "*" in the value stands for any characters ("Her*", "*zen"), without one the whole word has to be the value. Prefix the key with "!" to negate the whole position.',
             oneOf: [
                 { type: 'string' },
@@ -124,8 +149,8 @@ const patternPositionSchema = {
         },
     },
     propertyNames: {
-        pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
-        description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked. word, syl and sylpos read the lyrics the soprano sings at the note.',
+        pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
+        description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked. word, syl, sylpos and melisma read the lyrics the soprano sings at the note.',
     },
 };
 

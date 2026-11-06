@@ -15,6 +15,13 @@ enum class SyllablePosition { Single, Initial, Medial, Terminal };
 // "single", "initial", "medial", "terminal": the values of the sylpos pattern key.
 const char* syllablePositionName(SyllablePosition position);
 
+// What a note is to the melisma of its syllable: the first, a middle or the last of the notes the
+// syllable is sung over, or none where the syllable has a note of its own.
+enum class MelismaRole { None, Initial, Medial, Terminal };
+
+// "none", "initial", "medial", "terminal": the values of the melisma pattern key.
+const char* melismaRoleName(MelismaRole role);
+
 // A word or a syllable as the search compares it: in small letters, without the punctuation at either
 // end ("Gott," is "gott"), with a plain space for the no-break space of two words elided onto one note.
 std::string normalizeLyricsText(const std::string& text);
@@ -39,6 +46,8 @@ struct LyricsSyllable {
 
     int firstLine() const { return lines.front(); }
     int lastLine() const { return lines.back(); }
+    // The role of the soprano note sounding on `lineNumber`, one of the lines it covers or a line between them.
+    MelismaRole melismaRoleAtLine(int lineNumber) const;
 };
 
 // A word of a verse: its syllables one after the other.

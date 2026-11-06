@@ -2691,6 +2691,43 @@ TEST_CASE(lyrics_a_fermata_and_the_end_of_a_phrase_are_on_the_last_note_of_a_wor
     CHECK_EQ(versesOf(onB[3]), (std::vector<std::size_t>{2}));
 }
 
+TEST_CASE(lyrics_the_melisma_of_the_soprano_note_by_note) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // "Grun-" and "-stun-" over the same three notes, "Her-" over three after the repeat.
+    auto medial = AttributeMatcher("kern", {AttributeMap{{"melisma", {"medial"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(medial), (std::vector<std::string>{"8+1/2", "50+1/2"}));
+    CHECK_EQ(versesOf(medial[0]), (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(versesOf(medial[1]), (std::vector<std::size_t>{1}));
+    auto terminal = AttributeMatcher("kern", {AttributeMap{{"melisma", {"terminal"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(terminal), (std::vector<std::string>{"5+1/2", "9", "23", "26+1/2", "51"}));
+    CHECK_EQ(versesOf(terminal[2]), (std::vector<std::size_t>{1}));
+    // The letters, and the melismas of exactly two notes.
+    auto two = AttributeMatcher("kern", {AttributeMap{{"melisma", {"i"}}}, AttributeMap{{"melisma", {"t"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(two), (std::vector<std::string>{"4", "22", "25"}));
+    CHECK_EQ(versesOf(two[0]), (std::vector<std::size_t>{1, 2}));
+    auto three = AttributeMatcher("kern", {AttributeMap{{"melisma", {"initial"}}}, AttributeMap{{"melisma", {"m"}}},
+                                           AttributeMap{{"melisma", {"terminal"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(three), (std::vector<std::string>{"7", "49"}));
+    // true is any note of a melisma, false a syllable with a note of its own.
+    auto any = AttributeMatcher("kern", {AttributeMap{{"melisma", {"true"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(any), (std::vector<std::string>{"4", "5+1/2", "7", "8+1/2", "9", "22", "23", "25", "26+1/2", "49", "50+1/2", "51"}));
+    auto none = AttributeMatcher("kern", {AttributeMap{{"melisma", {"false"}}}}).findAll(chorale, 4);
+    CHECK_EQ(none.size(), std::size_t{34});
+    CHECK_EQ(startPositionsOf(none)[0], std::string("0"));
+    // Negated, it holds in verse 2 after the repeat too, where nothing is sung; never both in one verse.
+    auto notAny = AttributeMatcher("kern", {AttributeMap{{"!melisma", {"true"}}}}).findAll(chorale, 4);
+    CHECK_EQ(notAny.size(), std::size_t{41});
+    CHECK_EQ(versesOf(notAny[0]), (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(notAny[12].startPosition, hum::HumNum(22));
+    CHECK_EQ(versesOf(notAny[12]), (std::vector<std::size_t>{2}));
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"melisma", {"true"}}, {"!melisma", {"true"}}}}).findAll(chorale, 4).empty());
+    // The bass under the held first note of "Her-" and of "Grun-".
+    auto bass = AttributeMatcher("kern", {AttributeMap{{"melisma", {"initial"}}}}).findAll(chorale, 1);
+    const auto bassPositions = startPositionsOf(bass);
+    for (const char* position : {"4", "5", "7", "8"}) CHECK(std::find(bassPositions.begin(), bassPositions.end(), position) != bassPositions.end());
+    CHECK(std::find(bassPositions.begin(), bassPositions.end(), "6") == bassPositions.end());
+}
+
 TEST_CASE(lyrics_a_word_cannot_be_divided_up_or_compared) {
     MatcherOptions split;
     split.durationAllowSplitNotes = true;

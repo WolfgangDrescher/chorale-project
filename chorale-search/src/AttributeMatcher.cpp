@@ -33,6 +33,7 @@ const std::string kMetweightFeature = "metweight";
 const std::string kWordFeature = "word";
 const std::string kSylFeature = "syl";
 const std::string kSylposKey = "sylpos";
+const std::string kMelismaKey = "melisma";
 
 // How Tool_metweight abbreviates a metrically unclassified position -- an onset that falls
 // between the beats the meter classifies, which in these chorales is where the diminution sits.
@@ -614,10 +615,10 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
     return chorale.tokenAtLine(feature, voice, lineNumber);
 }
 
-// A sylpos value by its name: MEI's wordpos letters stand for them ("i" for "initial").
+// A sylpos or melisma value by its name: MEI's wordpos letters stand for them ("i" for "initial").
 std::string positionNameFromLetter(const std::string& value) {
     static const std::map<std::string, std::string> names = {
-        {"s", "single"}, {"i", "initial"}, {"m", "medial"}, {"t", "terminal"}};
+        {"s", "single"}, {"i", "initial"}, {"m", "medial"}, {"t", "terminal"}, {"n", "none"}};
     const auto name = names.find(value);
     return name == names.end() ? value : name->second;
 }
@@ -626,13 +627,18 @@ bool positionNameInList(const std::vector<PatternValue>& allowed, const std::str
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return positionNameFromLetter(v.text) == name; });
 }
 
-// Whether `key` matches `syllable`. word and syl are compared normalized, their values as globs.
-bool lyricsInList(const std::string& key, const std::vector<PatternValue>& allowed, const LyricsSyllable& syllable) {
+// Whether `key` matches `syllable` at the soprano note on `lineNumber`. word and syl are compared normalized,
+// their values as globs.
+bool lyricsInList(const std::string& key, const std::vector<PatternValue>& allowed, const LyricsSyllable& syllable, int lineNumber) {
     if (key == kWordFeature || key == kSylFeature) {
         const std::string& actual = key == kWordFeature ? syllable.word->normalizedText : syllable.normalizedText;
         return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return matchesLyricsGlob(v.text, actual); });
     } else if (key == kSylposKey) {
         return positionNameInList(allowed, syllablePositionName(syllable.position));
+    } else if (key == kMelismaKey) {
+        // true is any note of a melisma, false a syllable with a note of its own.
+        const MelismaRole role = syllable.melismaRoleAtLine(lineNumber);
+        return positionNameInList(allowed, melismaRoleName(role)) || inList(allowed, role == MelismaRole::None ? "false" : "true");
     }
     return false;
 }
@@ -712,7 +718,7 @@ VerseSet versesMatchingKey(const HumdrumChorale& chorale, const std::string& raw
     for (std::size_t n = 1; n <= chorale.verseCount(); ++n) {
         const LyricsSyllable* syllable = chorale.lyrics().verse(n)->syllableAtLine(lineNumber);
         // The wildcard asks for a syllable to sound: none does at a rest or where the verse has run out of text.
-        const bool holds = syllable && (isWildcard(allowed) || lyricsInList(key, allowed, *syllable));
+        const bool holds = syllable && (isWildcard(allowed) || lyricsInList(key, allowed, *syllable, lineNumber));
         if (holds != negate) verses |= VerseSet::of(n);
     }
     return verses;
