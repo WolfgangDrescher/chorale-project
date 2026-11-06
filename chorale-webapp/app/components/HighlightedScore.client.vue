@@ -39,6 +39,13 @@ defineOptions({ inheritAttrs: false });
 
 const { resolvedNotes, resolvedLines, resolvedSections } = useResolveHighlightedScoreProps(props);
 
+// Space below the last system for the labels under a marker.
+const bottomLabelSpace = computed(() => {
+    const hasBottomLabels = [...resolvedSections.value, ...resolvedLines.value]
+        .some((group) => group.items.some((item) => item.label?.position === 'bottom'));
+    return hasBottomLabels ? '2rem' : '0px';
+});
+
 const verovioCanvas = ref(null);
 
 const { loadScore, setScore, applyScoreFormatting, formattedScoreData } = useScoreFormatter();
@@ -97,7 +104,7 @@ const STICKY_FADE_WIDTH = 28;
 // In the horizontal view the system start (labels, brace, clef, key and time signature) stays at
 // the left edge while the score scrolls: a clone of just those parts, on an opaque background so
 // the notes scrolling underneath do not show through. It sits above the markers (up to z-30).
-function useStickySystemStart({ scoreContainer, wrapperElem, horizontal }) {
+function useStickySystemStart({ scoreContainer, wrapperElem, horizontal, bottomLabelSpace }) {
     const PADDING = 8;
     // A fade on its right edge hints that the score continues to its left; it is only shown
     // together with the copy, so it does not mark the true start of the piece.
@@ -171,7 +178,7 @@ function useStickySystemStart({ scoreContainer, wrapperElem, horizontal }) {
         for (const el of root.querySelectorAll('[id]')) el.removeAttribute('id');
         target.appendChild(root);
         style.width = `${Math.ceil(right + PADDING)}px`;
-        style.height = `${svgRect.height}px`;
+        style.height = `calc(${svgRect.height}px + ${bottomLabelSpace()})`;
         style.backgroundColor = backgroundBehind(wrapperElem.value);
     }
 
@@ -190,7 +197,7 @@ const {
     update: updateStickySystemStart,
     onScroll,
     containsPoint: stickySystemStartContainsPoint,
-} = useStickySystemStart({ scoreContainer, wrapperElem, horizontal: () => props.horizontal });
+} = useStickySystemStart({ scoreContainer, wrapperElem, horizontal: () => props.horizontal, bottomLabelSpace: () => bottomLabelSpace.value });
 
 // How far from a notehead or a rest, in pixels, a click still counts as a click on it.
 const NOTE_CLICK_PADDING = 10;
@@ -331,12 +338,12 @@ onMounted(async () => {
 
 <template>
     <div class="relative" :class="[horizontal && 'overflow-x-auto', clickableNotes && '[&_g.note]:cursor-pointer [&_g.rest]:cursor-pointer [&_g.mRest]:cursor-pointer']" ref="wrapperElem" :key="horizontal ? 'horizontal' : 'vertical'" @click="onClick" @scroll.passive="onScroll">
-        <div class="relative" :class="horizontal && 'w-max min-w-full'">
+        <div class="relative" :class="horizontal && 'w-max min-w-full'" :style="{ paddingBottom: bottomLabelSpace }">
             <div v-if="horizontal" class="sticky left-0 z-40 h-0" :style="{ width: stickySystemStartStyle.width }">
                 <div ref="stickySystemStartElem" class="overflow-hidden transition-opacity duration-150" :class="!stickySystemStartVisible && 'opacity-0'" :style="stickySystemStartStyle" />
                 <div class="absolute top-0 pointer-events-none transition-opacity duration-150" :style="stickySystemStartFadeStyle" />
             </div>
-            <div class="absolute h-full top-0 left-0 overflow-hidden" :class="!horizontal && 'w-full'" ref="markerContainer" :key="scoreKey" :style="markerContainerStyle">
+            <div class="absolute h-full top-0 left-0 overflow-x-clip" :class="!horizontal && 'w-full'" ref="markerContainer" :key="scoreKey" :style="markerContainerStyle">
                 <template v-if="scoreContainer">
                     <template v-for="(noteGroup, groupIndex) in resolvedNotes" :key="groupIndex">
                         <HighlightedNote v-for="noteId in noteGroup.items" :key="`${noteId}-${noteGroup.color}`" :note-id="noteId" :color="noteGroup.color" :container="scoreContainer" />
