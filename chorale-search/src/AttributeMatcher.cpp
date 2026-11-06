@@ -519,12 +519,16 @@ bool hintComparisonMatches(const PatternValue& v, const std::string& actual) {
                                       {"", threshold->quality, threshold->figure});
 }
 
+} // namespace
+
 bool hintInList(const std::vector<PatternValue>& allowed, const std::string& actual, bool reduceCompound) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) {
         if (v.hasRelationalOperator()) return hintComparisonMatches(v, actual);
         return hintValueMatches(v.text, actual, reduceCompound);
     });
 }
+
+namespace {
 
 // Tool_metweight writes the **metweight spine in abbreviated form ("s"/"hs"/"w"/"u",
 // but a pattern value may spell a weight class out as an abbreviation, a full word,

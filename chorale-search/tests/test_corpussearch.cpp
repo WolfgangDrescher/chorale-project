@@ -494,6 +494,43 @@ TEST_CASE(an_fb_key_links_the_voices_that_make_its_figure_at_the_position_that_n
     }
 }
 
+// In chor029 at quarter 48 (D d g a) only the alto is a fourth (an eleventh) above the bass.
+TEST_CASE(a_set_of_voice_pairs_links_the_voices_of_the_pairs_whose_interval_it_names) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+
+    Query query;
+    query.feature = "kern";
+    query.voices = "soprano";
+    query.hintReduceCompound = true;
+    query.pattern = {AttributeMap{{"kern", {"*"}}, {"hint-1*", {"4"}}}};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(!found.empty());
+    bool foundQuarter48 = false;
+    for (const Result& r : found) {
+        std::set<std::size_t> linked;
+        for (const NoteSection& section : r.linkedSections) {
+            if (section.feature != "hint-1*") continue;
+            linked.insert(section.voice);
+            CHECK_EQ(section.startLineNumber, r.startLineNumber);
+            CHECK_EQ(section.endLineNumber, r.startLineNumber);
+        }
+        CHECK(linked.count(1) == 1u);
+        CHECK(linked.count(4) == 0u);
+        if (r.startPosition == "48") {
+            foundQuarter48 = true;
+            CHECK(linked == (std::set<std::size_t>{1, 3}));
+        }
+    }
+    CHECK(foundQuarter48);
+
+    // A negated set links nothing.
+    query.pattern = {AttributeMap{{"kern", {"*"}}, {"!hint-1*", {"4"}}}};
+    for (const Result& r : search.runOne(chorale, query)) {
+        for (const NoteSection& section : r.linkedSections) CHECK(section.feature.find("hint-1*") == std::string::npos);
+    }
+}
+
 // An fb key in a simultaneousWith entry driven by fb links the voices of its figures, but covers none of them: the
 // alto searched keeps its own section where it forms the figure.
 TEST_CASE(an_fb_key_of_a_simultaneous_entry_covers_no_voice) {
@@ -542,7 +579,7 @@ TEST_CASE(a_hint_pair_key_links_both_voices_of_the_pair_at_the_position_that_nam
         CHECK(pairVoices == (std::set<std::size_t>{1, 4}));
     }
 
-    // A set of pairs names no voices.
+    // A set of pairs that names no interval names no voices.
     query.pattern[0] = AttributeMap{{"kern", {"*"}}, {"hint-*4", {"*"}}};
     for (const Result& r : search.runOne(chorale, query)) {
         for (const NoteSection& section : r.linkedSections) CHECK_EQ(section.voice, std::size_t{3});

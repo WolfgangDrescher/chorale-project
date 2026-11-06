@@ -49,6 +49,9 @@ std::string reduceMintValue(const std::string& value);
 // spine has it ("P11"): folded within an octave, as the fb spine has it, and of the quality only if the figure names one.
 bool fbFigureMatchesInterval(const std::string& figure, const std::string& interval);
 
+// Whether a hint interval ("P11") matches one of the values of a hint key.
+bool hintInList(const std::vector<PatternValue>& allowed, const std::string& actual, bool reduceCompound);
+
 class AttributeMatcher {
 public:
     AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
