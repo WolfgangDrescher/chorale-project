@@ -126,6 +126,8 @@ private:
                                                      const Onset& onset, std::size_t patternIndex,
                                                      hum::HumNum remaining, bool isContinuation) const;
 
+    static void normalizePatternValue(const std::string& key, PatternValue& value);
+
     std::string m_drivingFeature;
     std::vector<AttributeMap> m_pattern;
     MatcherOptions m_options;

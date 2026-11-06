@@ -547,15 +547,6 @@ std::string normalizeMetweightValue(const std::string& value) {
     return value;
 }
 
-bool metweightValueMatches(const std::string& patternValue, const std::string& actual) {
-    return normalizeMetweightValue(patternValue) == actual;
-}
-
-bool metweightInList(const std::vector<PatternValue>& allowed, const std::string& actual) {
-    return std::any_of(allowed.begin(), allowed.end(),
-                        [&](const PatternValue& v) { return metweightValueMatches(v.text, actual); });
-}
-
 // A **deg pattern value is a scale degree ("4+", "7", "r") compared literally, or an alteration
 // alone ("+", "--"): every degree raised or lowered by exactly as much against the local key, the
 // way Tool_deg reckons it (in minor against the natural minor scale, so a leading tone is "7+").
@@ -602,10 +593,7 @@ bool phraseInList(const std::vector<PatternValue>& allowed, const PhraseRoles& r
 // mode and key literally, keyDeg as a deg value.
 bool keyContextInList(const std::string& key, const std::vector<PatternValue>& allowed, const KeyContext& context) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
-        if (key == kModeKey) {
-            const std::optional<std::string> mode = normalizeModeName(value.text);
-            return mode == context.mode;
-        }
+        if (key == kModeKey) return value.text == context.mode;
         if (key == kKeyKey) return value.text == context.key;
         return degValueMatches(value.text, context.keyDeg);
     });
@@ -623,10 +611,6 @@ std::string positionNameFromLetter(const std::string& value) {
     return name == names.end() ? value : name->second;
 }
 
-bool positionNameInList(const std::vector<PatternValue>& allowed, const std::string& name) {
-    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return positionNameFromLetter(v.text) == name; });
-}
-
 // Whether `key` matches `syllable` at the soprano note on `lineNumber`. word and syl are compared normalized,
 // their values as globs.
 bool lyricsInList(const std::string& key, const std::vector<PatternValue>& allowed, const LyricsSyllable& syllable, int lineNumber) {
@@ -634,11 +618,11 @@ bool lyricsInList(const std::string& key, const std::vector<PatternValue>& allow
         const std::string& actual = key == kWordFeature ? syllable.word->normalizedText : syllable.normalizedText;
         return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return matchesLyricsGlob(v.text, actual); });
     } else if (key == kSylposKey) {
-        return positionNameInList(allowed, syllablePositionName(syllable.position));
+        return inList(allowed, syllablePositionName(syllable.position));
     } else if (key == kMelismaKey) {
         // true is any note of a melisma, false a syllable with a note of its own.
         const MelismaRole role = syllable.melismaRoleAtLine(lineNumber);
-        return positionNameInList(allowed, melismaRoleName(role)) || inList(allowed, role == MelismaRole::None ? "false" : "true");
+        return inList(allowed, melismaRoleName(role)) || inList(allowed, role == MelismaRole::None ? "false" : "true");
     }
     return false;
 }
@@ -916,20 +900,24 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
         throw std::invalid_argument("'" + m_drivingFeature + "' cannot be searched with durationAllowSplitNotes, "
                                     "durationAllowMergedNotes or metweightSkipUnclassified");
     }
-    // Whether the pattern reads the lyrics, and its word and syl values normalized like them (see
-    // normalizeLyricsText): "Jesu" finds "jesu".
     m_readsLyrics = isLyricsDrivingFeature(m_drivingFeature);
     for (AttributeMap& position : m_pattern) {
         for (auto& [key, values] : position) {
-            if (!isLyricsPatternKey(key)) continue;
-            m_readsLyrics = true;
-            const std::string bare = stripNegationPrefix(key);
-            if (bare != kWordFeature && bare != kSylFeature) continue;
-            for (PatternValue& value : values) {
-                if (value.text != "*") value.text = normalizeLyricsText(value.text);
-            }
+            if (isLyricsPatternKey(key)) m_readsLyrics = true;
+            for (PatternValue& value : values) normalizePatternValue(stripNegationPrefix(key), value);
         }
     }
+}
+
+// The value as the score spells what it is compared with, so the comparison is literal: metweight and mode
+// by their canonical name, sylpos and melisma by name ("i" is "initial"), word and syl like the lyrics
+// (see normalizeLyricsText: "Jesu" finds "jesu"). A wildcard and a comparison stay as they are.
+void AttributeMatcher::normalizePatternValue(const std::string& key, PatternValue& value) {
+    if (value.text == "*" || value.hasRelationalOperator() || value.isVoiceReference()) return;
+    if (key == kMetweightFeature) value.text = normalizeMetweightValue(value.text);
+    else if (key == kModeKey) value.text = normalizeModeName(value.text).value_or(value.text);
+    else if (key == kSylposKey || key == kMelismaKey) value.text = positionNameFromLetter(value.text);
+    else if (key == kWordFeature || key == kSylFeature) value.text = normalizeLyricsText(value.text);
 }
 
 std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const HumdrumChorale& chorale,
@@ -1072,7 +1060,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
             matched = durationInList(allowed, onset.duration) ||
                       voiceReferenceInList(chorale, voice, key, allowed, tok, nullptr, onset.duration, m_options.kernIgnoreOctave);
         }
-        else if (key == kMetweightFeature) matched = metweightInList(allowed, actual);
+        else if (key == kMetweightFeature) matched = inList(allowed, actual);
         else if (key == kDegFeature) matched = degInList(allowed, actual);
         else matched = inList(allowed, actual);
     }
