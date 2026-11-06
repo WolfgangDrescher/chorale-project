@@ -10,7 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "FileDispatcher.hpp"
-#include "Lyrics.hpp"
+#include "LyricsSpines.hpp"
 #include "Modulations.hpp"
 #include "ComputedSpines.hpp"
 #include "humlib.h"

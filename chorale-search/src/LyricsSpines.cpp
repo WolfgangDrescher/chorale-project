@@ -1,4 +1,4 @@
-#include "Lyrics.hpp"
+#include "LyricsSpines.hpp"
 
 #include <algorithm>
 #include <fstream>

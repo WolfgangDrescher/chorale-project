@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Lyrics.hpp"
+#include "LyricsSpines.hpp"
 
 using choralesearch::applyLyrics;
 using choralesearch::Verse;
