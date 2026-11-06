@@ -14,13 +14,41 @@ defineProps({
 const { t } = useI18n();
 
 const settings = useScorePlayerSettings();
-const { instrument, tempo, volume, reverb, organStops, voices } = storeToRefs(settings);
+const { instrument, tempo, volume, reverb, voices } = storeToRefs(settings);
 
-// The stops of the organ, the lowest first. At least one stays drawn.
+// The stops of the organ, the lowest first.
 const organStopItems = Object.keys(ORGAN_STOPS).map(Number).sort((a, b) => b - a);
-function toggleOrganStop(stop) {
-    if (!organStops.value.includes(stop)) organStops.value = [...organStops.value, stop];
-    else if (organStops.value.length > 1) organStops.value = organStops.value.filter((drawn) => drawn !== stop);
+
+// At least one stop stays drawn in each voice.
+function setOrganStop(targets, stop, isDrawn) {
+    for (const voice of targets) {
+        const { organStops } = voices.value[voice];
+        if (isDrawn && !organStops.includes(stop)) voices.value[voice].organStops = [...organStops, stop];
+        else if (!isDrawn && organStops.includes(stop) && organStops.length > 1) voices.value[voice].organStops = organStops.filter((drawn) => drawn !== stop);
+    }
+}
+
+function toggleOrganStop(voice, stop) {
+    setOrganStop([voice], stop, !voices.value[voice].organStops.includes(stop));
+}
+
+// Drawn in all voices (true), in some ('mixed', as aria-pressed has it) or in none (false).
+function organStopStateInAllVoices(stop) {
+    const drawing = VOICES.filter((voice) => voices.value[voice].organStops.includes(stop)).length;
+    return drawing === VOICES.length || (drawing > 0 && 'mixed');
+}
+
+// Draws a stop in all voices, or, drawn in all, takes it off in all.
+function toggleOrganStopInAllVoices(stop) {
+    setOrganStop(VOICES, stop, organStopStateInAllVoices(stop) !== true);
+}
+
+function organStopButtonProps(state) {
+    return {
+        'color': state ? 'primary' : 'neutral',
+        'variant': state === true ? 'solid' : state ? 'soft' : 'outline',
+        'aria-pressed': state,
+    };
 }
 
 const instrumentItems = computed(() => SCORE_PLAYER_INSTRUMENTS.map(({ id, label }) => ({ value: id, label: t(label) })));
@@ -59,11 +87,9 @@ function spreadVoices() {
                                         v-for="stop in organStopItems"
                                         :key="stop"
                                         :label="`${stop}'`"
-                                        :color="organStops.includes(stop) ? 'primary' : 'neutral'"
-                                        :variant="organStops.includes(stop) ? 'solid' : 'outline'"
-                                        :aria-pressed="organStops.includes(stop)"
+                                        v-bind="organStopButtonProps(organStopStateInAllVoices(stop))"
                                         class="flex-1 justify-center"
-                                        @click="toggleOrganStop(stop)"
+                                        @click="toggleOrganStopInAllVoices(stop)"
                                     />
                                 </UFieldGroup>
                             </UFormField>
@@ -112,6 +138,19 @@ function spreadVoices() {
                                     <span>{{ $t('playerReverb') }}</span>
                                     <USlider v-model="voices[voice].reverb" :min="0" :max="100" :step="10" size="xs" />
                                     <span class="tabular-nums text-right">{{ voices[voice].reverb }} %</span>
+                                    <template v-if="instrument === 'church_organ'">
+                                        <span>{{ $t('playerOrganStops') }}</span>
+                                        <UFieldGroup size="xs" class="col-span-2">
+                                            <UButton
+                                                v-for="stop in organStopItems"
+                                                :key="stop"
+                                                :label="`${stop}'`"
+                                                v-bind="organStopButtonProps(voices[voice].organStops.includes(stop))"
+                                                class="flex-1 justify-center"
+                                                @click="toggleOrganStop(voice, stop)"
+                                            />
+                                        </UFieldGroup>
+                                    </template>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">

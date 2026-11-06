@@ -19,6 +19,8 @@ const defaultVoiceSettings = () => ({
     pan: 0,
     // In percent of the reverb of all voices.
     reverb: 100,
+    // The stops drawn on the organ, see ORGAN_STOPS.
+    organStops: [8],
 });
 
 // From the lowest voice on the left to the highest on the right, as at a keyboard.
@@ -32,9 +34,13 @@ const defaultSettings = () => ({
     volume: 80,
     reverb: 20,
     voices: Object.fromEntries(VOICES.map((voice) => [voice, defaultVoiceSettings()])),
-    // The stops drawn on the organ, see ORGAN_STOPS.
-    organStops: [8],
 });
+
+// The stops of the organ known to this version of the player; at least one stays drawn.
+function validOrganStops(stops) {
+    const valid = (Array.isArray(stops) ? stops : []).filter((stop) => stop in ORGAN_STOPS);
+    return valid.length ? valid : defaultVoiceSettings().organStops;
+}
 
 // Shared by all players, so that a score of the search results sounds like the chorale it links
 // to, and kept in the local storage. The refs are not hydrated from the server, which has no storage.
@@ -42,11 +48,14 @@ export const useScorePlayerSettings = defineStore('score_player_settings', () =>
     const settings = useLocalStorage('chorale-player-settings', defaultSettings(), { mergeDefaults: true });
     // An instrument stored by an earlier version of the player that this one does not have.
     if (!SCORE_PLAYER_INSTRUMENTS.some(({ id }) => id === settings.value.instrument)) settings.value.instrument = defaultSettings().instrument;
-    // Likewise the stops of the organ; at least one stays drawn.
-    settings.value.organStops = (Array.isArray(settings.value.organStops) ? settings.value.organStops : []).filter((stop) => stop in ORGAN_STOPS);
-    if (!settings.value.organStops.length) settings.value.organStops = defaultSettings().organStops;
     const storedVoices = settings.value.voices ?? {};
-    settings.value.voices = Object.fromEntries(VOICES.map((voice) => [voice, { ...defaultVoiceSettings(), ...storedVoices[voice] }]));
+    settings.value.voices = Object.fromEntries(VOICES.map((voice) => {
+        const stored = { ...defaultVoiceSettings(), ...storedVoices[voice] };
+        // Stored for all voices by an earlier version of the player.
+        stored.organStops = validOrganStops(storedVoices[voice]?.organStops ?? settings.value.organStops);
+        return [voice, stored];
+    }));
+    delete settings.value.organStops;
     // Stored by an earlier version of the player, which spread the voices with a switch.
     if (settings.value.spreadVoices) for (const voice of VOICES) settings.value.voices[voice].pan = STEREO_SPREAD_PANS[voice];
     delete settings.value.spreadVoices;
@@ -70,9 +79,9 @@ export const ORGAN_STOPS = {
     2: { transposition: 24, level: 0.5 },
 };
 
-// The layers each note is played in: one, or one per stop drawn on the organ. A single stop sounds
-// at full level.
-function layersPerNote({ instrument, organStops }) {
+// The layers each note of a voice is played in: one, or one per stop drawn on the organ. A single
+// stop sounds at full level.
+function layersPerNote(instrument, organStops) {
     if (instrument !== 'church_organ') return [ORGAN_STOPS[8]];
     if (organStops.length === 1) return [{ ...ORGAN_STOPS[organStops[0]], level: 1 }];
     return organStops.map((stop) => ORGAN_STOPS[stop]);
@@ -340,7 +349,7 @@ export function useScorePlayer() {
         const scoreTimeAt = (audioTime) => clock.scoreTime + (audioTime - clock.audioTime) * 1000 * clock.rate;
         const audioTimeAt = (scoreTime) => clock.audioTime + (scoreTime - clock.scoreTime) / 1000 / clock.rate;
 
-        const layers = layersPerNote(settings);
+        const layersPerTrack = voicesByTrack(performance.voiceCount).map((voice) => layersPerNote(settings.instrument, settings.voices[voice].organStops));
         // The notes handed to the audio clock, with their index, which is also their stopId.
         const scheduled = [];
         let next = 0;
@@ -353,7 +362,7 @@ export function useScorePlayer() {
                 const start = Math.max(note.start, from);
                 const audioTime = audioTimeAt(start);
                 scheduled.push({ index: next, audioTime });
-                for (const { transposition, level } of layers) {
+                for (const { transposition, level } of layersPerTrack[note.voice]) {
                     instruments[note.voice].start({
                         note: note.pitch + transposition,
                         velocity: Math.round(note.velocity * level),
@@ -484,7 +493,7 @@ export function useScorePlayer() {
     watch(() => settings.tempo, (tempo) => session?.setTempo?.(tempo));
     watch(() => settings.volume, (volume) => audio?.then(({ master }) => (master.gain.value = gainOf(volume))));
     watch(() => [settings.reverb, settings.voices], () => mixChannels(settings), { deep: true });
-    watch(() => [settings.instrument, settings.organStops.join()], () => {
+    watch(() => [settings.instrument, ...VOICES.map((voice) => settings.voices[voice].organStops.join())], () => {
         if (player.isPlaying && !player.isLoading) play();
     });
 
