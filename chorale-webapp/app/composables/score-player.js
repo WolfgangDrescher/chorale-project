@@ -163,36 +163,39 @@ function loadSoundfontSamples({ context, soundfonts }, name) {
     return soundfonts.get(name);
 }
 
-// A channel of the mix: an instrument for a voice, with a gain for its volume.
+// A channel of the mix: an instrument for a voice, with a gain for its volume. Made in the context
+// of the bus, the live one or one rendered offline; the samples are those of the live one.
+async function createChannel(audio, { context, master, reverb, scheduler }, name, voice) {
+    const { smplr, loader } = audio;
+    let instrument;
+    if (name === 'grand_piano') {
+        instrument = smplr.SplendidGrandPiano(context, { volume: 90, destination: master, loader, scheduler });
+    } else {
+        const samples = await loadSoundfontSamples(audio, name);
+        // The Sampler takes undefined for a value it is not given, so all are given.
+        instrument = smplr.Sampler(context, { buffers: samples, decayTime: 0.3, detune: 0, lpfCutoffHz: 20000, volume: 90, destination: master, loader, scheduler });
+        const gain = context.createGain();
+        gain.gain.value = SOUNDFONT_GAIN;
+        instrument.output.addInsert(gain);
+    }
+    const gain = context.createGain();
+    instrument.output.addInsert(gain);
+    instrument.output.addEffect('reverb', reverb, 0);
+    await instrument.ready;
+    return { voice, instrument, gain };
+}
+
 async function loadChannel(name, voice) {
     const audio = await useAudio();
-    const { smplr, context, master, reverb, loader, scheduler, channels } = audio;
     const key = `${name} ${voice}`;
-    if (!channels.has(key)) {
-        channels.set(key, (async () => {
-            let instrument;
-            if (name === 'grand_piano') {
-                instrument = smplr.SplendidGrandPiano(context, { volume: 90, destination: master, loader, scheduler });
-            } else {
-                const samples = await loadSoundfontSamples(audio, name);
-                // The Sampler takes undefined for a value it is not given, so all are given.
-                instrument = smplr.Sampler(context, { buffers: samples, decayTime: 0.3, detune: 0, lpfCutoffHz: 20000, volume: 90, destination: master, loader, scheduler });
-                const gain = context.createGain();
-                gain.gain.value = SOUNDFONT_GAIN;
-                instrument.output.addInsert(gain);
-            }
-            const gain = context.createGain();
-            instrument.output.addInsert(gain);
-            instrument.output.addEffect('reverb', reverb, 0);
-            await instrument.ready;
-            return { voice, instrument, gain };
-        })().catch((error) => {
+    if (!audio.channels.has(key)) {
+        audio.channels.set(key, createChannel(audio, audio, name, voice).catch((error) => {
             // Loaded again on the next play, e.g. when the network is back.
-            channels.delete(key);
+            audio.channels.delete(key);
             throw error;
         }));
     }
-    return channels.get(key);
+    return audio.channels.get(key);
 }
 
 function mixChannel({ voice, instrument, gain }, { reverb, voices }) {
@@ -206,6 +209,44 @@ function mixChannels(settings) {
     audio?.then(({ channels }) => {
         for (const loading of channels.values()) loading.then((channel) => mixChannel(channel, settings)).catch(() => {});
     });
+}
+
+function startNote(instrument, note, layers, { time, duration, stopId }) {
+    for (const { transposition, level } of layers) {
+        instrument.start({ note: note.pitch + transposition, velocity: Math.round(note.velocity * level), time, duration, stopId });
+    }
+}
+
+const layersPerTrackOf = (performance, { instrument, voices }) => voicesByTrack(performance.voiceCount).map((voice) => layersPerNote(instrument, voices[voice].organStops));
+
+// Long enough for the reverb to fade out after the last note.
+const REVERB_TAIL_SECONDS = 4;
+
+// The performance as the player sounds it, rendered offline as fast as it can be.
+async function renderPerformance(performance, settings) {
+    const audio = await useAudio();
+    const rate = settings.tempo / performance.tempo;
+    const duration = performance.duration / 1000 / rate + REVERB_TAIL_SECONDS;
+    return audio.smplr.renderOffline(async (context) => {
+        const master = context.createGain();
+        master.gain.value = gainOf(settings.volume);
+        master.connect(context.destination);
+        const reverb = audio.smplr.Reverb(context);
+        reverb.connect(master);
+        await reverb.ready();
+        // Hands all notes to the audio clock at once: offline, a timer of smplr would miss most of them.
+        const scheduler = audio.smplr.Scheduler(context, { lookaheadMs: duration * 1000 });
+        const bus = { context, master, reverb, scheduler };
+        const channels = await Promise.all(voicesByTrack(performance.voiceCount).map((voice) => createChannel(audio, bus, settings.instrument, voice)));
+        for (const channel of channels) mixChannel(channel, settings);
+        const layersPerTrack = layersPerTrackOf(performance, settings);
+        for (const note of performance.notes) {
+            startNote(channels[note.voice].instrument, note, layersPerTrack[note.voice], {
+                time: note.start / 1000 / rate,
+                duration: (note.end - note.start) / 1000 / rate,
+            });
+        }
+    }, { duration, sampleRate: audio.context.sampleRate });
 }
 
 function lineStartsOf(performance) {
@@ -238,6 +279,7 @@ export function useScorePlayer() {
     const player = reactive({
         hasScore: false,
         isLoading: false,
+        isDownloading: false,
         isPlaying: false,
         position: 0,
         duration: 0,
@@ -254,7 +296,7 @@ export function useScorePlayer() {
         goTo,
         goToLine,
         step,
-        downloadMidi,
+        download,
         toSeconds,
         makeCurrent,
     });
@@ -349,7 +391,7 @@ export function useScorePlayer() {
         const scoreTimeAt = (audioTime) => clock.scoreTime + (audioTime - clock.audioTime) * 1000 * clock.rate;
         const audioTimeAt = (scoreTime) => clock.audioTime + (scoreTime - clock.scoreTime) / 1000 / clock.rate;
 
-        const layersPerTrack = voicesByTrack(performance.voiceCount).map((voice) => layersPerNote(settings.instrument, settings.voices[voice].organStops));
+        const layersPerTrack = layersPerTrackOf(performance, settings);
         // The notes handed to the audio clock, with their index, which is also their stopId.
         const scheduled = [];
         let next = 0;
@@ -362,15 +404,7 @@ export function useScorePlayer() {
                 const start = Math.max(note.start, from);
                 const audioTime = audioTimeAt(start);
                 scheduled.push({ index: next, audioTime });
-                for (const { transposition, level } of layersPerTrack[note.voice]) {
-                    instruments[note.voice].start({
-                        note: note.pitch + transposition,
-                        velocity: Math.round(note.velocity * level),
-                        time: audioTime,
-                        duration: (end - start) / 1000 / clock.rate,
-                        stopId: next,
-                    });
-                }
+                startNote(instruments[note.voice], note, layersPerTrack[note.voice], { time: audioTime, duration: (end - start) / 1000 / clock.rate, stopId: next });
             }
         }
 
@@ -449,16 +483,27 @@ export function useScorePlayer() {
         if (sounding) seek(sounding.start);
     }
 
-    async function downloadMidi(fileName) {
-        if (!callVerovioMethod) return;
-        const performance = await currentPerformance();
-        if (!performance) return;
-        const url = URL.createObjectURL(new Blob([await performanceToMidi(performance, settings)], { type: 'audio/midi' }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        URL.revokeObjectURL(url);
+    // The score as it sounds, as 'midi' or 'wav', in a file of the given name and the format's extension.
+    async function download(format, fileName) {
+        if (!callVerovioMethod || player.isDownloading) return;
+        player.isDownloading = true;
+        try {
+            const performance = await currentPerformance();
+            if (!performance) return;
+            const blob = format === 'wav'
+                ? (await renderPerformance(performance, settings)).toWav16()
+                : new Blob([await performanceToMidi(performance, settings)], { type: 'audio/midi' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${fileName}.${format === 'wav' ? 'wav' : 'mid'}`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            player.isDownloading = false;
+        }
     }
 
     function makeCurrent() {

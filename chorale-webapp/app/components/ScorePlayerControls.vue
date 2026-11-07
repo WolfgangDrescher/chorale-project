@@ -5,7 +5,7 @@
 const props = defineProps({
     player: { type: Object, required: true },
     compact: { type: Boolean, default: false },
-    midiFileName: { type: String, default: undefined },
+    fileName: { type: String, default: undefined },
 });
 
 // The progress is drawn a little darker than the button, so it stands apart from it.
@@ -75,7 +75,7 @@ function formatTime(time) {
             <span class="text-xs text-muted tabular-nums whitespace-nowrap">
                 {{ formatTime(player.position) }} / {{ formatTime(player.duration) }}
             </span>
-            <ScorePlayerSettings :player="player" :midi-file-name="midiFileName" />
+            <ScorePlayerSettings :player="player" :file-name="fileName" />
         </template>
     </div>
 </template>

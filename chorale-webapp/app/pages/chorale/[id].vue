@@ -290,7 +290,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
 
             <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
                 <ScoreOptionsPalette :chorale="chorale" />
-                <ScorePlayerControls :player="player" :midi-file-name="`${chorale.choraleId}.mid`" />
+                <ScorePlayerControls :player="player" :file-name="chorale.choraleId" />
                 <div class="shrink-0 flex gap-2 ml-auto">
                     <UButton :to="githubScoreUrlGenerator(chorale.choraleId)" target="_blank">
                         {{ $t('github') }}

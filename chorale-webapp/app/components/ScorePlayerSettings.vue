@@ -3,11 +3,11 @@ import { storeToRefs } from 'pinia';
 import { useKeyModifier } from '@vueuse/core';
 
 // The settings all players share, behind a button: the sound, volume and tempo of all voices, and
-// the mix of each voice. Given a player, its score can be downloaded as MIDI as it sounds. The other
-// props style the button.
+// the mix of each voice. Given a player, its score can be downloaded as MIDI or WAV as it sounds,
+// in a file named fileName. The other props style the button.
 defineProps({
     player: { type: Object, default: null },
-    midiFileName: { type: String, default: 'score.mid' },
+    fileName: { type: String, default: 'score' },
     variant: { type: String, default: 'ghost' },
     size: { type: String, default: 'md' },
 });
@@ -61,6 +61,12 @@ function organStopButtonProps(state) {
         'aria-pressed': state,
     };
 }
+
+const downloadFormat = ref('wav');
+const downloadFormatItems = [
+    { label: 'WAV', value: 'wav' },
+    { label: 'MIDI', value: 'midi' },
+];
 
 const instrumentItems = computed(() => SCORE_PLAYER_INSTRUMENTS.map(({ id, label }) => ({ value: id, label: t(label) })));
 
@@ -176,16 +182,18 @@ function spreadVoices() {
                 </UTabs>
                 <div class="flex items-center justify-between gap-2 pt-3 border-t border-default">
                     <UButton :label="$t('playerResetSettings')" icon="lucide:list-restart" color="neutral" variant="ghost" size="xs" @click="settings.reset()" />
-                    <UButton
-                        v-if="player"
-                        :label="$t('downloadFormat', { format: 'MIDI' })"
-                        icon="lucide:download"
-                        color="neutral"
-                        variant="outline"
-                        size="xs"
-                        :disabled="!player.hasScore"
-                        @click="player.downloadMidi(midiFileName)"
-                    />
+                    <UFieldGroup v-if="player" size="xs">
+                        <USelect v-model="downloadFormat" :items="downloadFormatItems" :aria-label="$t('exportFormat')" class="w-20" />
+                        <UButton
+                            :aria-label="$t('download')"
+                            icon="lucide:download"
+                            color="neutral"
+                            variant="outline"
+                            :loading="player.isDownloading"
+                            :disabled="!player.hasScore"
+                            @click="player.download(downloadFormat, fileName)"
+                        />
+                    </UFieldGroup>
                 </div>
             </div>
         </template>
