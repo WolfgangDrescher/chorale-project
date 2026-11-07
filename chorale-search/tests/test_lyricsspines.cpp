@@ -128,4 +128,28 @@ TEST_CASE(lines_that_continue_a_sentence_are_no_stanzas) {
     CHECK(result.find("*v:") == std::string::npos);
 }
 
+TEST_CASE(a_syllable_that_continues_a_word_starts_with_a_hyphen) {
+    // The syllable before tells: "ren" goes on after "Eh-", "-durch" starts a word after "ren".
+    const std::string result = withLyrics({{"Eh-", "ren", "-durch", std::nullopt, "mich", "-hast"}}, {
+        "**kern\t**kern",
+        "4G\t4g",
+        "4A\t4a",
+        "4B\t4b",
+        "4c\t4cc",
+        "4d\t4dd",
+        "4e\t4ee",
+        "*-\t*-",
+    });
+    CHECK_EQ(result, lines({
+        "**kern\t**kern\t**text",
+        "4G\t4g\tEh-",
+        "4A\t4a\t-ren",
+        "4B\t4b\tdurch",
+        "4c\t4cc\t.",
+        "4d\t4dd\tmich",
+        "4e\t4ee\thast",
+        "*-\t*-\t*-",
+    }));
+}
+
 TEST_MAIN()

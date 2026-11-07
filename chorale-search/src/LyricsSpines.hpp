@@ -10,7 +10,7 @@
 
 namespace choralesearch {
 
-// One syllable (or none) per soprano attack, spelled as in **text: "Her-", "-zens".
+// One syllable (or none) per soprano attack, spelled as in **text: "Her-", "-zen".
 using Verse = std::vector<std::optional<std::string>>;
 
 // {"chor001": {"source": "...", "verses": [["Aus", "mei-", null, ...]]}}

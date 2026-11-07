@@ -72,6 +72,24 @@ void addVerseLabels(hum::HumdrumFile& infile, int firstNoteLine, const std::vect
     reparse(infile);
 }
 
+// Spelled as **text spells syllables: a hyphen in front of each one that continues a word ("Her-", "-zen").
+// Only the hyphen at the end of the syllable before tells; the source is not always consistent ("Eh-", "ren", "-durch").
+Verse spelledAsText(const Verse& verse) {
+    Verse spelled;
+    bool continuesWord = false;
+    for (const std::optional<std::string>& syllable : verse) {
+        if (!syllable) {
+            spelled.emplace_back();
+            continue;
+        }
+        std::string text = syllable->substr(syllable->find_first_not_of('-') == std::string::npos ? syllable->size() : syllable->find_first_not_of('-'));
+        if (continuesWord) text = "-" + text;
+        continuesWord = !text.empty() && text.back() == '-';
+        spelled.push_back(std::move(text));
+    }
+    return spelled;
+}
+
 } // namespace
 
 bool isSyllableAttack(hum::HTp token) {
@@ -132,10 +150,11 @@ void applyLyrics(hum::HumdrumFile& infile, const std::string& choraleId, const s
     // At the end of the line, after the computed spines of the soprano if there are any. Last verse
     // first, since each one is inserted right there.
     const int lastTrack = infile.getMaxTrack();
-    for (auto verse = verses.rbegin(); verse != verses.rend(); ++verse) {
+    for (auto it = verses.rbegin(); it != verses.rend(); ++it) {
+        const Verse verse = spelledAsText(*it);
         std::vector<std::string> syllables(infile.getLineCount());
         for (std::size_t n = 0; n < attackLines.size(); ++n) {
-            if ((*verse)[n]) syllables[attackLines[n]] = withNoBreakSpaces(*(*verse)[n]);
+            if (verse[n]) syllables[attackLines[n]] = withNoBreakSpaces(*verse[n]);
         }
         infile.insertDataSpineAfter(lastTrack, syllables, ".", "**text");
     }
