@@ -53,15 +53,19 @@ if (filters.length) {
 
 // A link from the search results highlights its matches: ?matches=4:12-15~1:12-14,4:30-31 is a
 // voice and its lines for each section, joined with "~" to the sections it links in other voices,
-// which are drawn as frames (see SearchResults.vue).
+// which are drawn as frames; t1:27-38 is the text of verse 1 over those lines (see SearchResults.vue).
 function sectionOf(text) {
-    const [, voice, startLine, endLine] = text.match(/^(\d+):(\d+)-(\d+)$/) ?? [];
-    return voice ? { voice: Number(voice), startLine: Number(startLine), endLine: Number(endLine) } : null;
+    const [, type, number, startLine, endLine] = text.match(/^(t?)(\d+):(\d+)-(\d+)$/) ?? [];
+    if (!number) return null;
+    const lines = { startLine: Number(startLine), endLine: Number(endLine) };
+    return type ? { type: 'text', verse: Number(number), ...lines } : { voice: Number(number), ...lines };
 }
 const matches = String(useRoute().query.matches ?? '').split(',').flatMap((match) => {
     const [section, ...linkedSections] = match.split('~').map(sectionOf);
     return section ? [{ ...section, linkedSections: linkedSections.filter(Boolean) }] : [];
 });
+// The lyrics show for a match of them.
+if (matches.some((match) => match.type === 'text' || match.linkedSections.some((linked) => linked.type === 'text'))) scoreOptions.showLyrics = true;
 
 // The downloads of a chorale, or of a worksheet with only the cantus firmus written out: as a PDF to print or as MEI for notation programs.
 function useChoraleExport() {

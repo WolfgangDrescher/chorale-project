@@ -71,6 +71,8 @@ const scoreOptionsStore = (createDefaults) => ({
             .map(([, filter]) => filter),
         verovioOptions: (state) => ({
             scale: state.verovioScale,
+            // Room between the verses, for the marks of a match of the lyrics.
+            lyricHeightFactor: 1.4,
         }),
         countHumdrumFilters(state) {
             return Object.keys(this.humdrumFilterDefinitions).filter((key) => state[key]).length;

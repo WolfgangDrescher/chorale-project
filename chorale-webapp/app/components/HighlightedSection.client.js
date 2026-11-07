@@ -124,6 +124,71 @@ function createFittedMarker(noteElems, containerElem, color) {
     });
 }
 
+// The fields of the **text spines, as the ids of the syllables name them (syl-L27F5): verse 1 is the first.
+function textFieldsOf(containerElem) {
+    const fields = new Set();
+    for (const elem of containerElem.querySelectorAll('g[id^="syl-L"]')) {
+        const match = elem.id.match(/^syl-L\d+F(\d+)/);
+        if (match) fields.add(Number(match[1]));
+    }
+    return [...fields].sort((a, b) => a - b);
+}
+
+// The box of a section of text: behind the syllables of its verse on its lines, from the first to the last on
+// a system, hyphens and extender lines included. Where the text goes on to the next system the box ends in a
+// zig-zag a little past the last syllable, and starts in one before the first on the next. As an outline (a
+// linked section) each syllable gets a frame of its own, like a note.
+function createTextMarkers(props, containerElem) {
+    const field = textFieldsOf(containerElem)[props.verse - 1];
+    if (field == null) return [];
+    const syllableElems = [];
+    for (let line = props.startLine; line <= props.endLine; line++) {
+        const elem = containerElem.querySelector(`g#syl-L${line}F${field}`);
+        if (elem) syllableElems.push(elem);
+    }
+    if (props.outline) return syllableElems.map((elem) => createFittedMarker([elem], containerElem, props.color)).filter(Boolean);
+
+    const containerRect = containerElem.getBoundingClientRect();
+    const paddingX = 2;
+    const paddingY = 1;
+    const brokenEdge = 6;
+    const rectsBySystem = new Map();
+    for (const elem of syllableElems) {
+        const rect = getBBoxElem(elem)?.getBoundingClientRect();
+        if (!rect || rect.width === 0) continue;
+        const system = elem.closest('g.system');
+        rectsBySystem.set(system, [...(rectsBySystem.get(system) ?? []), rect]);
+    }
+    const systems = [...rectsBySystem.keys()];
+    return systems.map((system, index) => {
+        const rects = rectsBySystem.get(system);
+        const continuesLeft = index > 0;
+        const continuesRight = index + 1 < systems.length;
+        const left = Math.min(...rects.map((rect) => rect.left)) - (continuesLeft ? brokenEdge : 0);
+        const right = Math.max(...rects.map((rect) => rect.right)) + (continuesRight ? brokenEdge : 0);
+        const top = Math.min(...rects.map((rect) => rect.top));
+        const bottom = Math.max(...rects.map((rect) => rect.bottom));
+        return h('div', {
+            class: [
+                'absolute z-20',
+                (continuesLeft || continuesRight) && 'bg-zig-zag-sm',
+                continuesLeft && 'bg-zig-zag-left',
+                continuesRight && 'bg-zig-zag-right',
+                !continuesLeft && 'rounded-tl rounded-bl',
+                !continuesRight && 'rounded-tr rounded-br',
+            ],
+            style: {
+                backgroundColor: props.color,
+                '--zig-zag-color': props.color,
+                width: `${right - left + paddingX * 2}px`,
+                height: `${bottom - top + paddingY * 2}px`,
+                left: `${left - paddingX - containerRect.x}px`,
+                top: `${top - paddingY - containerRect.y}px`,
+            },
+        });
+    });
+}
+
 function selectBBoxElem(elem, selectors) {
     const selectedElem = elem?.querySelector(selectors);
     return getBBoxElem(selectedElem);
@@ -148,6 +213,15 @@ export default {
         // Fits the frame to the notes of the section (those of `voice`, or of every voice) instead of
         // spanning the staves they are on: one frame per system, around exactly those notes.
         fitBoundingBox: Boolean,
+        // "notes": the notes of `voice` on the lines; "text": the text of `verse` there.
+        type: {
+            type: String,
+            default: 'notes',
+        },
+        verse: {
+            type: Number,
+            default: null,
+        },
         container: HTMLElement,
         label: {
             type: Object,
@@ -157,10 +231,15 @@ export default {
     setup(props) {
 
         const markers = [];
+        const containerElem = props.container;
+
+        if (props.type === 'text' && props.verse && containerElem) {
+            const textMarkers = createTextMarkers(props, containerElem);
+            return () => h('div', {}, textMarkers);
+        }
 
         let startElem = null;
         let endElem = null;
-        const containerElem = props.container;
 
         if (props.fitBoundingBox && containerElem) {
             const noteElemsBySystem = new Map();

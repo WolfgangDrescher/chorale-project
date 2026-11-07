@@ -61,4 +61,22 @@
         background-position: left top;
         left: 100%;
     }
+
+    /* A third of the size, for the low boxes around the lyrics. */
+    .bg-zig-zag-sm::before,
+    .bg-zig-zag-sm::after {
+        background-size: 3.5px 7.2px;
+    }
+
+    .bg-zig-zag-sm.bg-zig-zag-left::before {
+        background-image:
+            linear-gradient(-135deg, var(--zig-zag-color) 2.5px, transparent 0),
+            linear-gradient(-45deg, var(--zig-zag-color) 2.5px, transparent 0);
+    }
+
+    .bg-zig-zag-sm.bg-zig-zag-right::after {
+        background-image:
+            linear-gradient(135deg, var(--zig-zag-color) 2.5px, transparent 0),
+            linear-gradient(45deg, var(--zig-zag-color) 2.5px, transparent 0);
+    }
 }

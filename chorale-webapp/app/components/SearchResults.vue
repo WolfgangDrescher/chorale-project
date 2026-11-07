@@ -14,6 +14,7 @@ const scoreOptions = useSearchScoreOptions();
 useChoraleKeyboardShortcuts({ scoreOptions });
 
 const {
+    results,
     searchFetchCompleted,
     chorales,
     choraleEntries,
@@ -57,24 +58,42 @@ function lineRangeOf(item) {
     };
 }
 
+// A search that reads the lyrics shows them once its results are in; the other options stay as they are.
+watch(results, (resultsByChorale) => {
+    if (Object.values(resultsByChorale).flat().some((item) => item.verses?.length)) scoreOptions.showLyrics = true;
+}, { immediate: true });
+
 // The sections of notes a result links in other voices than the one it was found in (the other voice of a parallel,
 // the voice of a hint-<voice> key, the voice of a group), each from its start line to its end line.
 function otherSectionsOf(item) {
     return (item.linkedSections ?? []).filter(({ voice }) => voice !== item.voice);
 }
 
+// The text of a verse over the lines of a result, where it reads the lyrics.
+function textSectionsOf(item) {
+    return (item.verses ?? []).map((verse) => ({ type: 'text', verse, ...lineRangeOf(item) }));
+}
+
 // A result is a section over the voice it was found in, with the sections it links in other voices, which
 // HighlightedScore draws as frames in the same color. A voice that the pattern names only at some of
-// its positions is marked at those and not in between.
+// its positions is marked at those and not in between. A result driven by word or syl is the text itself,
+// a section per verse; a lyrics value on another feature links the text of its verses.
 function sectionsForItems(items) {
     const itemsByQueryId = new Map();
     for (const item of items) {
         const queryId = item.queryId ?? '';
         if (!itemsByQueryId.has(queryId)) itemsByQueryId.set(queryId, []);
+        const linkedSections = otherSectionsOf(item).map(({ voice, startLine, endLine }) => ({ voice, startLine, endLine }));
+        if (item.feature === 'word' || item.feature === 'syl') {
+            textSectionsOf(item).forEach((section, index) => {
+                itemsByQueryId.get(queryId).push({ ...section, linkedSections: index === 0 ? linkedSections : [] });
+            });
+            continue;
+        }
         itemsByQueryId.get(queryId).push({
             voice: item.voice,
             ...lineRangeOf(item),
-            linkedSections: otherSectionsOf(item).map(({ voice, startLine, endLine }) => ({ voice, startLine, endLine })),
+            linkedSections: [...linkedSections, ...textSectionsOf(item)],
         });
     }
 
@@ -112,10 +131,10 @@ useScorePlayerKeyboardShortcuts(() => {
 });
 
 // The page of the chorale, with the matches to highlight there: "4:12-15~1:12-14,4:30-31" is a
-// voice and its lines for each section, joined with "~" to the sections it links in other voices
-// (see pages/chorale/[id].vue).
+// voice and its lines for each section, joined with "~" to the sections it links in other voices;
+// "t1:27-38" is the text of verse 1 over those lines (see pages/chorale/[id].vue).
 function choraleLink(choraleId, items) {
-    const text = ({ voice, startLine, endLine }) => `${voice}:${startLine}-${endLine}`;
+    const text = ({ type, voice, verse, startLine, endLine }) => `${type === 'text' ? 't' + verse : voice}:${startLine}-${endLine}`;
     const sections = sectionsForItems(items).flatMap(({ items: sectionItems }) => sectionItems);
     const matches = sections.map((section) => [section, ...section.linkedSections].map(text).join('~')).join(',');
     return { path: localePath(`/chorale/${choraleId}`), query: { matches } };

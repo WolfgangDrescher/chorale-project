@@ -86,6 +86,7 @@ export function useChoraleSearch(initialQuery = '', { sortBy: initialSortBy = 'i
     }
 
     return {
+        results,
         searchFetchCompleted,
         chorales,
         choraleEntries,

@@ -4,18 +4,23 @@ interface NoteGroup {
 }
 
 // A section in another voice that belongs to a section: drawn as a frame in the color of that section, so that it
-// stands apart from the sections themselves.
+// stands apart from the sections themselves. Of type "text" it is the text of a verse instead of the notes of a voice.
 interface LinkedSection {
-    voice: number;
+    type?: 'notes' | 'text'; // notes unless given
+    voice?: number;
+    verse?: number;
     startLine: number;
     endLine: number;
 }
 
+// The notes of a voice over some lines, or, of type "text", the text of a verse there.
 interface Section {
+    type?: 'notes' | 'text'; // notes unless given
     startLine: number;
     endLine: number;
     label?: Label | string | null;
     voice?: number;
+    verse?: number;
     linkedSections?: LinkedSection[];
 }
 
@@ -198,9 +203,11 @@ export function useResolveHighlightedScoreProps(props: {
     // The linked sections of a section, those of a voice only: a linked section is always in a voice of its own.
     function resolveLinkedSections(section: Section): LinkedSection[] {
         return (section.linkedSections ?? [])
-            .filter((linked) => isValidSection(linked) && resolveVoice(linked.voice))
+            .filter((linked) => isValidSection(linked) && (linked.type === 'text' ? resolveVoice(linked.verse) : resolveVoice(linked.voice)))
             .map((linked) => ({
+                type: linked.type ?? 'notes',
                 voice: linked.voice,
+                verse: linked.verse,
                 startLine: applyLineShift(linked.startLine),
                 endLine: applyLineShift(linked.endLine),
             }));
@@ -215,7 +222,9 @@ export function useResolveHighlightedScoreProps(props: {
                     startLine: applyLineShift(s.startLine)!,
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label),
+                    type: s.type ?? 'notes',
                     voice: resolveVoice(s.voice),
+                    verse: resolveVoice(s.verse),
                     linkedSections: resolveLinkedSections(s),
                 }));
             return [
@@ -234,7 +243,9 @@ export function useResolveHighlightedScoreProps(props: {
                     startLine: applyLineShift(s.startLine)!,
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label) ?? null,
+                    type: s.type ?? 'notes',
                     voice: resolveVoice(s.voice),
+                    verse: resolveVoice(s.verse),
                     linkedSections: resolveLinkedSections(s),
                 }))
                 : [],
