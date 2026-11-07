@@ -5,163 +5,164 @@
 !!!SCT: BWV 267
 !!!PC#: 5
 !!!AGN: chorale
-**kern	**kern	**kern	**kern
-*>[A,A,B]	*>[A,A,B]	*>[A,A,B]	*>[A,A,B]
-*>norep[A,B]	*>norep[A,B]	*>norep[A,B]	*>norep[A,B]
-*>A	*>A	*>A	*>A
-*clefF4	*clefGv2	*clefG2	*clefG2
-*k[f#]	*k[f#]	*k[f#]	*k[f#]
-*G:	*G:	*G:	*G:
-*M4/4	*M4/4	*M4/4	*M4/4
-*met(c)	*met(c)	*met(c)	*met(c)
-*MM100	*MM100	*MM100	*MM100
+**kern	**kern	**kern	**kern	**text	**text	**text	**text
+*>[A,A,B]	*>[A,A,B]	*>[A,A,B]	*>[A,A,B]	*	*	*	*
+*>norep[A,B]	*>norep[A,B]	*>norep[A,B]	*>norep[A,B]	*	*	*	*
+*>A	*>A	*>A	*>A	*	*	*	*
+*clefF4	*clefGv2	*clefG2	*clefG2	*	*	*	*
+*k[f#]	*k[f#]	*k[f#]	*k[f#]	*	*	*	*
+*G:	*G:	*G:	*G:	*	*	*	*
+*M4/4	*M4/4	*M4/4	*M4/4	*	*	*	*
+*met(c)	*met(c)	*met(c)	*met(c)	*	*	*	*
+*MM100	*MM100	*MM100	*MM100	*	*	*	*
 !!xywh-#13:154,31,2719,474
-4G	4B	4g	4dd
-=1	=1	=1	=1
-4C	8cL	4g	4ee
-.	8BJ	.	.
-4D	4A	4f#	8ddL
-.	.	.	8ccJ
-4E	4e	4g	8bL
-.	.	.	8ccJ
-8F#L	8AL	4f#	4dd
-8GJ	8BJ	.	.
-=2	=2	=2	=2
-4A	8cL	8eL	8ccL
-.	8eJ	8gJ	8bJ
-4D	4d	8gL	4cc
-.	.	8f#J	.
-4G;	4d;	4g;	4b;
-4F#	4d	4a	4a
-=3	=3	=3	=3
-8GL	4d	4g	4b
-8F#J	.	.	.
-4E	8GL	4g	4cc
-.	8AJ	.	.
-4BB	8BL	4g	4dd
-.	8GJ	.	.
-4C	4e	4g	8ccL
-.	.	.	8bJ
-=4	=4	=4	=4
-2D	8AL	4g	8aL
-.	8BJ	.	8gJ
-.	4c	4f#	4a
-4GG;	4B;	4d;	4g;
-=:|!	=:|!	=:|!	=:|!
-*>B	*>B	*>B	*>B
-4G	4B	4d	4g
-=5	=5	=5	=5
-4F#	4A	8dL	4a
-.	.	8eJ	.
-8EL	4d	4f#	4b
-8DJ	.	.	.
-4E	4G	4e	8ccL
-.	.	.	8bJ
-4F#	4A	8eL	4a
-.	.	8dJ	.
-=6	=6	=6	=6
+*	*	*	*	*v:1.	*	*v:2.	*
+4G	4B	4g	4dd	An	als	Ein	es
+=1	=1	=1	=1	=1	=1	=1	=1
+4C	8cL	4g	4ee	Was-	wir	Lämm-	geht
+.	8BJ	.	.	.	.	.	.
+4D	4A	4f#	8ddL	-ser-	ge-	-lein	und
+.	.	.	8ccJ	.	.	.	.
+4E	4e	4g	8bL	-flüs-	-dach-	geht	bü-
+.	.	.	8ccJ	.	.	.	.
+8F#L	8AL	4f#	4dd	-sen	-ten	und	-sset
+8GJ	8BJ	.	.	.	.	.	.
+=2	=2	=2	=2	=2	=2	=2	=2
+4A	8cL	8eL	8ccL	Ba-	an	trägt	in
+.	8eJ	8gJ	8bJ	.	.	.	.
+4D	4d	8gL	4cc	-by-	Zi-	die	Ge-
+.	.	8f#J	.	.	.	.	.
+4G;	4d;	4g;	4b;	-lon,	-on,	Schuld	-duld
+4F#	4d	4a	4a	da	da	der	die
+=3	=3	=3	=3	=3	=3	=3	=3
+8GL	4d	4g	4b	sa-	wein-	Welt	Sün-
+8F#J	.	.	.	.	.	.	.
+4E	8GL	4g	4cc	-ssen	-ten	und	-den
+.	8AJ	.	.	.	.	.	.
+4BB	8BL	4g	4dd	wir	wir	ih-	al-
+.	8GJ	.	.	.	.	.	.
+4C	4e	4g	8ccL	mit	von	-rer	-ler
+.	.	.	8bJ	.	.	.	.
+=4	=4	=4	=4	=4	=4	=4	=4
+2D	8AL	4g	8aL	Schmer-	Her-	Kin-	Sün-
+.	8BJ	.	8gJ	.	.	.	.
+.	4c	4f#	4a	.	.	.	.
+4GG;	4B;	4d;	4g;	-zen,	-zen.	-der;	-der.
+=:|!	=:|!	=:|!	=:|!	=:|!	=:|!	=:|!	=:|!
+*>B	*>B	*>B	*>B	*	*	*	*
+4G	4B	4d	4g	Wir	Es	.	.
+=5	=5	=5	=5	=5	=5	=5	=5
+4F#	4A	8dL	4a	hing-	geht	.	.
+.	.	8eJ	.	.	.	.	.
+8EL	4d	4f#	4b	-en	da-	.	.
+8DJ	.	.	.	.	.	.	.
+4E	4G	4e	8ccL	auf	-hin,	.	.
+.	.	.	8bJ	.	.	.	.
+4F#	4A	8eL	4a	mit	wird	.	.
+.	.	8dJ	.	.	.	.	.
+=6	=6	=6	=6	=6	=6	=6	=6
 !!xywh-#13:160,472,2712,405
-4G	8AL	4d	4b
-.	8GJ	.	.
-4D	8GL	4c	4a
-.	8F#J	.	.
-4GG;	4G;	4B;	4g;
-4C	4G	4e	8gL
-.	.	.	8aJ
-=7	=7	=7	=7
-8GL	4G	4d	4b
-8FJ	.	.	.
-8EL	4G	4e	4cc
-8DJ	.	.	.
-8CL	4G	4f	4dd
-8BBJ	.	.	.
-8CL	4G	8eL	4ee
-8DJ	.	8f#J	.
-=8	=8	=8	=8
-4E	8GL	8gL	4b
-.	16AL	8f#J	.
-.	16BJJ	.	.
-4AA	4A	8gL	4cc#
-.	.	8aJ	.
-4D;	4A;	4f#;	4dd;
-8GL	4G	4d	8bL
-8AJ	.	.	8ccJ
-=9	=9	=9	=9
-4B	8GL	4g	4dd
-.	8dJ	.	.
-4c	8cL	4g	4ee
-.	8BJ	.	.
-4F#	4A	4a	8ddL
-.	.	.	8ccJ
-4G#	4e	4b	4b
-=10	=10	=10	=10
-4A	2e	8bL	2cc
-.	.	8g#J	.
-4AA	.	4a	.
-4E;	4e;	4g#;	4b;
-4GG#	8eL	4b	4ee
-.	8dJ	.	.
-=11	=11	=11	=11
-8AAL	8cL	4a	4ee
-8BBJ	8BJ	.	.
-8CL	[4A	8eL	4ee
-8AAJ	.	8cJ	.
-4F	8AL]	8dL	4a
-.	8G#J	8eJ	.
-8EL	8AL	4f	4dd
-8DJ	8BJ	.	.
-=12	=12	=12	=12
+4G	8AL	4d	4b	schwe-	matt	.	.
+.	8GJ	.	.	.	.	.	.
+4D	8GL	4c	4a	-rem	und	.	.
+.	8F#J	.	.	.	.	.	.
+4GG;	4G;	4B;	4g;	Muth	krank,	.	.
+4C	4G	4e	8gL	die	er-	.	.
+.	.	.	8aJ	.	.	.	.
+=7	=7	=7	=7	=7	=7	=7	=7
+8GL	4G	4d	4b	Har-	-giebt	.	.
+8FJ	.	.	.	.	.	.	.
+8EL	4G	4e	4cc	-fen	sich	.	.
+8DJ	.	.	.	.	.	.	.
+8CL	4G	4f	4dd	und	auf	.	.
+8BBJ	.	.	.	.	.	.	.
+8CL	4G	8eL	4ee	die	die	.	.
+8DJ	.	8f#J	.	.	.	.	.
+=8	=8	=8	=8	=8	=8	=8	=8
+4E	8GL	8gL	4b	Or-	Wür-	.	.
+.	16AL	8f#J	.	.	.	.	.
+.	16BJJ	.	.	.	.	.	.
+4AA	4A	8gL	4cc#	-geln	-ge-	.	.
+.	.	8aJ	.	.	.	.	.
+4D;	4A;	4f#;	4dd;	gut	-bank,	.	.
+8GL	4G	4d	8bL	an	ver-	.	.
+8AJ	.	.	8ccJ	.	.	.	.
+=9	=9	=9	=9	=9	=9	=9	=9
+4B	8GL	4g	4dd	ih-	-zeiht	.	.
+.	8dJ	.	.	.	.	.	.
+4c	8cL	4g	4ee	-re	sich	.	.
+.	8BJ	.	.	.	.	.	.
+4F#	4A	4a	8ddL	Bäum'	al-	.	.
+.	.	.	8ccJ	.	.	.	.
+4G#	4e	4b	4b	der	-ler	.	.
+=10	=10	=10	=10	=10	=10	=10	=10
+4A	2e	8bL	2cc	Wei-	Freu-	.	.
+.	.	8g#J	.	.	.	.	.
+4AA	.	4a	.	.	.	.	.
+4E;	4e;	4g#;	4b;	-den,	-den;	.	.
+4GG#	8eL	4b	4ee	die	es	.	.
+.	8dJ	.	.	.	.	.	.
+=11	=11	=11	=11	=11	=11	=11	=11
+8AAL	8cL	4a	4ee	drin-	nim-	.	.
+8BBJ	8BJ	.	.	.	.	.	.
+8CL	[4A	8eL	4ee	-nen	-met	.	.
+8AAJ	.	8cJ	.	.	.	.	.
+4F	8AL]	8dL	4a	sind	an	.	.
+.	8G#J	8eJ	.	.	.	.	.
+8EL	8AL	4f	4dd	in	Schmach,	.	.
+8DJ	8BJ	.	.	.	.	.	.
+=12	=12	=12	=12	=12	=12	=12	=12
 !!xywh-#13:141,849,2699,484
-4E	8G#	4e	4cc
-.	4A	.	.
-4EE	.	4d	4b
-.	8G#	.	.
-4AA;	4A;	4c;	4a;
-4AA	8EL	4a	4cc
-.	8F#XJ	.	.
-=13	=13	=13	=13
-8BBL	4GnX	8dL	4b
-8C#J	.	8eJ	.
-2D	8dL	4f	4a
-.	8cJ	.	.
-.	4B-	8eL	4g
-.	.	8dJ	.
-4C#	4A	[4e	8aL
-.	.	.	8gJ
-=14	=14	=14	=14
-4D	4A	8eL]	4f
-.	.	8dJ	.
-4AA	4G	8dL	4e
-.	.	8c#J	.
-4D;	4F#X;	4d;	4d;
-4BB	4F#	8dL	4d
-.	.	8cJ	.
-=15	=15	=15	=15
-4E	4G	8BL	4g
-.	.	8AJ	.
-4D	4d	8GL	4a
-.	.	8F#J	.
-8GL	4d	4G	4.b
-8F#J	.	.	.
-4E	4e	4g	.
-.	.	.	8cc
-=16	=16	=16	=16
-8BBL	2d	4f#	4dd
-8AAJ	.	.	.
-4GG	.	4g	8ccL
-.	.	.	8bJ
-8CL	8eL	4g	4a
-8BBJ	8dJ	.	.
-4AA	4c	[4g	8bL
-.	.	.	8ccJ
-=17	=17	=17	=17
-8DL	8dL	4g]	2a
-8CJ	8eJ	.	.
-4D	8dL	4f#	.
-.	8cJ	.	.
-4GG;	4B;	4d;	4g;
-==	==	==	==
-*-	*-	*-	*-
+4E	8G#	4e	4cc	ih-	Hohn	.	.
+.	4A	.	.	.	.	.	.
+4EE	.	4d	4b	-rem	und	.	.
+.	8G#	.	.	.	.	.	.
+4AA;	4A;	4c;	4a;	Land;	Spott,	.	.
+4AA	8EL	4a	4cc	da	Angst,	.	.
+.	8F#XJ	.	.	.	.	.	.
+=13	=13	=13	=13	=13	=13	=13	=13
+8BBL	4GnX	8dL	4b	muss-	Wun-	.	.
+8C#J	.	8eJ	.	.	.	.	.
+2D	8dL	4f	4a	-ten	-den,	.	.
+.	8cJ	.	.	.	.	.	.
+.	4B-	8eL	4g	wir	Strie-	.	.
+.	.	8dJ	.	.	.	.	.
+4C#	4A	[4e	8aL	viel	-men,	.	.
+.	.	.	8gJ	.	.	.	.
+=14	=14	=14	=14	=14	=14	=14	=14
+4D	4A	8eL]	4f	Schmach	Kreuz	.	.
+.	.	8dJ	.	.	.	.	.
+4AA	4G	8dL	4e	und	und	.	.
+.	.	8c#J	.	.	.	.	.
+4D;	4F#X;	4d;	4d;	Schand'	Tod,	.	.
+4BB	4F#	8dL	4d	täg-	und	.	.
+.	.	8cJ	.	.	.	.	.
+=15	=15	=15	=15	=15	=15	=15	=15
+4E	4G	8BL	4g	-lich	spricht:	.	.
+.	.	8AJ	.	.	.	.	.
+4D	4d	8GL	4a	von	Ich	.	.
+.	.	8F#J	.	.	.	.	.
+8GL	4d	4G	4.b	ih-	will	.	.
+8F#J	.	.	.	.	.	.	.
+4E	4e	4g	.	.	.	.	.
+.	.	.	8cc	.	.	.	.
+=16	=16	=16	=16	=16	=16	=16	=16
+8BBL	2d	4f#	4dd	.	.	.	.
+8AAJ	.	.	.	.	.	.	.
+4GG	.	4g	8ccL	-nen	gern	.	.
+.	.	.	8bJ	.	.	.	.
+8CL	8eL	4g	4a	lei-	lei-	.	.
+8BBJ	8dJ	.	.	.	.	.	.
+4AA	4c	[4g	8bL	.	.	.	.
+.	.	.	8ccJ	.	.	.	.
+=17	=17	=17	=17	=17	=17	=17	=17
+8DL	8dL	4g]	2a	.	.	.	.
+8CJ	8eJ	.	.	.	.	.	.
+4D	8dL	4f#	.	.	.	.	.
+.	8cJ	.	.	.	.	.	.
+4GG;	4B;	4d;	4g;	-den.	-den.	.	.
+==	==	==	==	==	==	==	==
+*-	*-	*-	*-	*-	*-	*-	*-
 !!!URL-github: https://github.com/craigsapp/bach-370-chorales/blob/main/kern/chor005.krn
 !!!URL-scan: https://www.digitale-sammlungen.de/en/view/bsb11108042?page=13 Plate 12021 from the Bavarian State Library
 !!!IIIF: https://api.digitale-sammlungen.de/iiif/presentation/v2/bsb11108042/manifest
