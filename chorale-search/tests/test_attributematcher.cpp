@@ -8,6 +8,7 @@
 #include "AttributeMatcher.hpp"
 #include "QueryValidation.hpp"
 #include "HumdrumChorale.hpp"
+#include "HumdrumUtils.hpp"
 
 using choralesearch::AttributeMap;
 using choralesearch::AttributeMatcher;
@@ -2438,4 +2439,268 @@ TEST_CASE(matcher_interval_sizes_agree_with_humlibs_base40_interval_names) {
         ++named;
     }
     CHECK(named > 60);
+}
+
+
+// The lyrics keys and the word and syl driving features, against the fixtures with lyrics: chor001 (two
+// verses, the second only under the repeat), chor029 (two verses) and chor005 (four). The soprano is voice 4.
+namespace {
+
+// The start of each match, in quarter notes from the start of the piece: "5+1/2" for the second eighth of beat 2.
+std::vector<std::string> startPositionsOf(const std::vector<choralesearch::AttributeMatch>& matches) {
+    std::vector<std::string> positions;
+    for (const auto& m : matches) positions.push_back(choralesearch::humNumToString(m.startPosition));
+    return positions;
+}
+
+std::vector<std::size_t> versesOf(const choralesearch::AttributeMatch& match) {
+    return match.verses.list();
+}
+
+} // namespace
+
+TEST_CASE(lyrics_a_search_driven_by_word_walks_the_words_of_every_verse_each_span_once) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    AttributeMatcher matcher("word", {AttributeMap{{"word", {"*"}}}});
+    // 28 words in verse 1 and 6 in verse 2, three of them on the same notes in both: "Aus" and "in", "meines"
+    // and "dieser", "dir" and "mein".
+    const auto onsets = matcher.buildOnsets(chorale, 4);
+    REQUIRE(onsets.size() == 31u);
+    CHECK_EQ(onsets[0].token->getDurationFromStart(), hum::HumNum(0));
+    CHECK_EQ(onsets[0].verses.list(), (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(onsets[1].token->getDurationFromStart(), hum::HumNum(1));
+    CHECK_EQ(onsets[1].lastToken->getDurationFromStart(), hum::HumNum(3));
+    CHECK_EQ(onsets[1].duration, hum::HumNum(3));
+    CHECK_EQ(onsets[1].verses.list(), (std::vector<std::size_t>{1, 2}));
+    // "Herzens" and "Morgenstunde" start on the same note and end on different ones: two onsets, in the order
+    // of the verses.
+    CHECK_EQ(onsets[2].token->getDurationFromStart(), hum::HumNum(4));
+    CHECK_EQ(onsets[2].lastToken->getDurationFromStart(), hum::HumNum(6));
+    CHECK_EQ(onsets[2].verses.list(), (std::vector<std::size_t>{1}));
+    CHECK_EQ(onsets[3].token->getDurationFromStart(), hum::HumNum(4));
+    CHECK_EQ(onsets[3].lastToken->getDurationFromStart(), hum::HumNum(10));
+    CHECK_EQ(onsets[3].duration, hum::HumNum(8));
+    CHECK_EQ(onsets[3].verses.list(), (std::vector<std::size_t>{2}));
+    CHECK_EQ(onsets[30].token->getDurationFromStart(), hum::HumNum(61));
+    CHECK_EQ(onsets[30].verses.list(), (std::vector<std::size_t>{1}));
+    CHECK(onsets[30].lastToken == onsets[30].token);
+    // Every word is a match, once, in the order of the score; the lyrics belong to the soprano.
+    const auto all = matcher.findAll(chorale, 4);
+    REQUIRE(all.size() == 31u);
+    CHECK_EQ(all[0].startPosition, hum::HumNum(0));
+    CHECK_EQ(all[0].endPosition, hum::HumNum(0));
+    CHECK_EQ(versesOf(all[0]), (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(all[2].endPosition, hum::HumNum(6));
+    CHECK_EQ(versesOf(all[2]), (std::vector<std::size_t>{1}));
+    CHECK_EQ(all[3].endPosition, hum::HumNum(10));
+    CHECK_EQ(versesOf(all[3]), (std::vector<std::size_t>{2}));
+    CHECK_EQ(all[3].positionOnsets[0].duration, hum::HumNum(8));
+    for (std::size_t i = 1; i < all.size(); ++i) {
+        CHECK(all[i - 1].startPosition <= all[i].startPosition);
+        CHECK(all[i - 1].startPosition != all[i].startPosition || all[i - 1].endPosition != all[i].endPosition);
+    }
+    CHECK(matcher.findAll(chorale, 1).empty());
+    CHECK(matcher.findAll(chorale, 3).empty());
+    // A chorale without lyrics has no words.
+    HumdrumChorale withoutLyrics(FIXTURE_CHORALE("chor006"));
+    CHECK(matcher.buildOnsets(withoutLyrics, 4).empty());
+    CHECK(matcher.findAll(withoutLyrics, 4).empty());
+}
+
+TEST_CASE(lyrics_a_search_driven_by_syl_walks_the_syllables_of_every_verse) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher matcher("syl", {AttributeMap{{"syl", {"*"}}}});
+    // 45 syllables in verse 1, 15 in verse 2, each of the latter on a note verse 1 has a syllable of its own on.
+    const auto all = matcher.findAll(chorale, 4);
+    REQUIRE(all.size() == 45u);
+    std::size_t inBoth = 0;
+    for (const auto& m : all) {
+        if (m.verses.list().size() == 2) ++inBoth;
+    }
+    CHECK_EQ(inBoth, std::size_t{15});
+    CHECK_EQ(versesOf(all[0]), (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(versesOf(all[4]), (std::vector<std::size_t>{1, 2})); // "mei-" and "-tus," on the g of bar 2
+    CHECK_EQ(versesOf(all[15]), (std::vector<std::size_t>{1}));   // "Sei-", under the repeat verse 2 has no text for
+    // "-eln" sounds on two notes.
+    auto eln = AttributeMatcher("syl", {AttributeMap{{"syl", {"eln"}}}}).findAll(chorale, 4);
+    REQUIRE(eln.size() == 1u);
+    CHECK_EQ(eln[0].startPosition, hum::HumNum(35));
+    CHECK_EQ(eln[0].endPosition, hum::HumNum(71, 2));
+    CHECK_EQ(eln[0].positionOnsets[0].duration, hum::HumNum(1));
+    CHECK_EQ(versesOf(eln[0]), (std::vector<std::size_t>{1}));
+    // The syllables of a word, by their position in it: "Jam-mer-thal." in verse 2, "Herr-lich-keit" and
+    // "E-wig-keit," in verse 1; "ju-bi-lier-en" has a syllable more.
+    auto spelled = AttributeMatcher("syl", {AttributeMap{{"sylpos", {"initial"}}}, AttributeMap{{"sylpos", {"medial"}}},
+                                            AttributeMap{{"sylpos", {"terminal"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(spelled), (std::vector<std::string>{"12", "20", "28"}));
+    CHECK_EQ(versesOf(spelled[0]), (std::vector<std::size_t>{2}));
+    CHECK_EQ(spelled[0].endPosition, hum::HumNum(14));
+    CHECK_EQ(versesOf(spelled[1]), (std::vector<std::size_t>{1}));
+}
+
+TEST_CASE(lyrics_a_phrase_of_words_is_found_in_one_verse) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // The pattern values are normalized like the lyrics: "Aus" finds "aus".
+    auto verse1 = AttributeMatcher("word", {AttributeMap{{"word", {"Aus"}}}, AttributeMap{{"word", {"meines"}}}}).findAll(chorale, 4);
+    REQUIRE(verse1.size() == 1u);
+    CHECK_EQ(verse1[0].startPosition, hum::HumNum(0));
+    CHECK_EQ(verse1[0].endPosition, hum::HumNum(3));
+    CHECK_EQ(verse1[0].startPosition, hum::HumNum(0));
+    CHECK_EQ(verse1[0].endPosition, hum::HumNum(3));
+    CHECK_EQ(versesOf(verse1[0]), (std::vector<std::size_t>{1}));
+    auto verse2 = AttributeMatcher("word", {AttributeMap{{"word", {"in"}}}, AttributeMap{{"word", {"dieser"}}}}).findAll(chorale, 4);
+    REQUIRE(verse2.size() == 1u);
+    CHECK_EQ(verse2[0].startPosition, hum::HumNum(0));
+    CHECK_EQ(versesOf(verse2[0]), (std::vector<std::size_t>{2}));
+    // Both words occur, but never in the same verse.
+    CHECK(AttributeMatcher("word", {AttributeMap{{"word", {"Aus"}}}, AttributeMap{{"word", {"dieser"}}}}).findAll(chorale, 4).empty());
+    // Two words on the same notes in both verses are one match with both.
+    auto any = AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}, AttributeMap{{"word", {"*"}}}}).findAll(chorale, 4);
+    REQUIRE(any.size() >= 2u);
+    CHECK_EQ(any[0].startPosition, hum::HumNum(0));
+    CHECK_EQ(any[0].endPosition, hum::HumNum(3));
+    CHECK_EQ(versesOf(any[0]), (std::vector<std::size_t>{1, 2}));
+    // The next word of a verse, where the other verse has a word starting in between.
+    auto darzu = AttributeMatcher("word", {AttributeMap{{"word", {"Morgenstunde"}}}, AttributeMap{{"word", {"darzu"}}}}).findAll(chorale, 4);
+    REQUIRE(darzu.size() == 1u);
+    CHECK_EQ(darzu[0].startPosition, hum::HumNum(4));
+    CHECK_EQ(darzu[0].endPosition, hum::HumNum(13));
+    CHECK_EQ(versesOf(darzu[0]), (std::vector<std::size_t>{2}));
+    auto sag = AttributeMatcher("word", {AttributeMap{{"word", {"Grunde"}}}, AttributeMap{{"word", {"sag'"}}}}).findAll(chorale, 4);
+    REQUIRE(sag.size() == 1u);
+    CHECK_EQ(sag[0].startPosition, hum::HumNum(7));
+    CHECK_EQ(sag[0].endPosition, hum::HumNum(12));
+    CHECK_EQ(versesOf(sag[0]), (std::vector<std::size_t>{1}));
+    // "dich" on the same note in both verses of chor029.
+    HumdrumChorale dich(FIXTURE_CHORALE("chor029"));
+    auto found = AttributeMatcher("word", {AttributeMap{{"word", {"dich"}}}}).findAll(dich, 4);
+    REQUIRE(found.size() == 1u);
+    CHECK_EQ(found[0].startPosition, hum::HumNum(1));
+    CHECK_EQ(versesOf(found[0]), (std::vector<std::size_t>{1, 2}));
+}
+
+TEST_CASE(lyrics_keys_are_read_at_the_notes_of_any_voice_from_the_syllable_sounding_there) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    auto soprano = AttributeMatcher("kern", {AttributeMap{{"word", {"grunde"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(soprano), (std::vector<std::string>{"7", "8+1/2", "9", "10"}));
+    for (const auto& m : soprano) CHECK_EQ(versesOf(m), (std::vector<std::size_t>{1}));
+    // The bass moves under "Grun-" and attacks its own notes under the word.
+    auto bass = AttributeMatcher("kern", {AttributeMap{{"word", {"grunde"}}}}).findAll(chorale, 1);
+    CHECK_EQ(startPositionsOf(bass), (std::vector<std::string>{"7", "8", "8+1/2", "9", "10"}));
+    auto medial = AttributeMatcher("deg", {AttributeMap{{"sylpos", {"medial"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(medial), (std::vector<std::string>{"6", "7", "8+1/2", "9", "17", "57", "58"}));
+    CHECK_EQ(versesOf(medial[0]), (std::vector<std::size_t>{2})); // "-gen-" of "Morgenstunde"
+    CHECK_EQ(versesOf(medial[4]), (std::vector<std::size_t>{2})); // "-be-" of "Lebelang,"
+    CHECK_EQ(versesOf(medial[5]), (std::vector<std::size_t>{1})); // "-ge-" of "eingebornen"
+    // The MEI wordpos letters name the same.
+    auto letters = AttributeMatcher("deg", {AttributeMap{{"sylpos", {"m"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(letters), startPositionsOf(medial));
+    auto single = AttributeMatcher("syl", {AttributeMap{{"sylpos", {"s"}}}}).findAll(chorale, 4);
+    CHECK_EQ(single.size(), AttributeMatcher("syl", {AttributeMap{{"sylpos", {"single"}}}}).findAll(chorale, 4).size());
+}
+
+TEST_CASE(lyrics_a_match_needs_one_verse_in_which_every_lyrics_key_holds) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // "-zens" and "Grun-" follow each other in verse 1, "-gen-" and "-stun-" in verse 2, on the same notes.
+    auto zensGrun = AttributeMatcher("kern", {AttributeMap{{"syl", {"zens"}}}, AttributeMap{{"syl", {"grun"}}}}).findAll(chorale, 4);
+    REQUIRE(zensGrun.size() == 1u);
+    CHECK_EQ(zensGrun[0].startPosition, hum::HumNum(6));
+    CHECK_EQ(versesOf(zensGrun[0]), (std::vector<std::size_t>{1}));
+    auto genStun = AttributeMatcher("kern", {AttributeMap{{"syl", {"gen"}}}, AttributeMap{{"syl", {"stun"}}}}).findAll(chorale, 4);
+    REQUIRE(genStun.size() == 1u);
+    CHECK_EQ(versesOf(genStun[0]), (std::vector<std::size_t>{2}));
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"syl", {"zens"}}}, AttributeMap{{"syl", {"stun"}}}}).findAll(chorale, 4).empty());
+    // Within one position too: a syllable and none at the same note is no verse.
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"word", {"*"}}, {"!word", {"*"}}}}).findAll(chorale, 4).empty());
+    // The last note of the repeat with text, the first after it without: only verse 2, which ends there.
+    auto end = AttributeMatcher("kern", {AttributeMap{{"word", {"*"}}}, AttributeMap{{"!word", {"*"}}}}).findAll(chorale, 4);
+    REQUIRE(end.size() == 1u);
+    CHECK_EQ(end[0].startPosition, hum::HumNum(19));
+    CHECK_EQ(end[0].endPosition, hum::HumNum(21));
+    CHECK_EQ(versesOf(end[0]), (std::vector<std::size_t>{2}));
+}
+
+TEST_CASE(lyrics_a_wildcard_asks_for_a_syllable_and_a_negated_key_holds_where_none_sounds) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    // The 30 soprano notes after the repeat have no text in verse 2.
+    auto unsung = AttributeMatcher("kern", {AttributeMap{{"!word", {"*"}}}}).findAll(chorale, 4);
+    REQUIRE(unsung.size() == 30u);
+    CHECK_EQ(unsung[0].startPosition, hum::HumNum(21));
+    CHECK_EQ(unsung[29].startPosition, hum::HumNum(61));
+    for (const auto& m : unsung) CHECK_EQ(versesOf(m), (std::vector<std::size_t>{2}));
+    // "!word": "gott" holds in verse 2 under "Gott" too, where nothing sounds: every one of the 46 soprano notes.
+    auto notGott = AttributeMatcher("kern", {AttributeMap{{"!word", {"gott"}}}}).findAll(chorale, 4);
+    REQUIRE(notGott.size() == 46u);
+    CHECK_EQ(versesOf(notGott[0]), (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(notGott[16].startPosition, hum::HumNum(21));
+    CHECK_EQ(versesOf(notGott[16]), (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(notGott[17].startPosition, hum::HumNum(22));
+    CHECK_EQ(versesOf(notGott[17]), (std::vector<std::size_t>{2}));
+    CHECK_EQ(versesOf(notGott[18]), (std::vector<std::size_t>{2}));
+    auto gott = AttributeMatcher("kern", {AttributeMap{{"word", {"gott"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(gott), (std::vector<std::string>{"22", "23"}));
+    // A chorale without lyrics has no verse, so no lyrics key holds in it, the negated ones included.
+    HumdrumChorale withoutLyrics(FIXTURE_CHORALE("chor006"));
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"word", {"*"}}}}).findAll(withoutLyrics, 4).empty());
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"!word", {"*"}}}}).findAll(withoutLyrics, 4).empty());
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"!word", {"gott"}}}}).findAll(withoutLyrics, 4).empty());
+    CHECK(!AttributeMatcher("kern", {AttributeMap{{"kern", {"*"}}}}).findAll(withoutLyrics, 4).empty());
+}
+
+TEST_CASE(lyrics_a_star_in_a_value_stands_for_any_characters) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    auto her = AttributeMatcher("word", {AttributeMap{{"word", {"Her*"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(her), (std::vector<std::string>{"4", "49"})); // Herzens, Herren
+    CHECK_EQ(her[0].endPosition, hum::HumNum(6));
+    CHECK_EQ(versesOf(her[0]), (std::vector<std::size_t>{1}));
+    auto stunde = AttributeMatcher("kern", {AttributeMap{{"word", {"*stunde"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(stunde), (std::vector<std::string>{"4", "5+1/2", "6", "7", "8+1/2", "9", "10"}));
+    CHECK_EQ(versesOf(stunde[0]), (std::vector<std::size_t>{2}));
+    auto zens = AttributeMatcher("syl", {AttributeMap{{"syl", {"*zens"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(zens), (std::vector<std::string>{"6"}));
+    auto lob = AttributeMatcher("word", {AttributeMap{{"word", {"*ob*"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(lob), (std::vector<std::string>{"16", "33"}));
+    // Without a star the whole word has to be the value.
+    CHECK(AttributeMatcher("word", {AttributeMap{{"word", {"Her"}}}}).findAll(chorale, 4).empty());
+    CHECK_EQ(AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}}).findAll(chorale, 4).size(), std::size_t{31});
+}
+
+TEST_CASE(lyrics_a_fermata_and_the_end_of_a_phrase_are_on_the_last_note_of_a_word) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    auto fermatas = AttributeMatcher("word", {AttributeMap{{"word", {"*"}}, {"fermata", {"true"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(fermatas), (std::vector<std::string>{"4", "7", "16", "19", "28", "37", "49", "61"}));
+    CHECK_EQ(fermatas[0].endPosition, hum::HumNum(10)); // Morgenstunde
+    CHECK_EQ(versesOf(fermatas[0]), (std::vector<std::size_t>{2}));
+    CHECK_EQ(fermatas[1].endPosition, hum::HumNum(10)); // Grunde
+    CHECK_EQ(versesOf(fermatas[1]), (std::vector<std::size_t>{1}));
+    auto ends = AttributeMatcher("word", {AttributeMap{{"phrase", {"end"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(ends), (std::vector<std::string>{"4", "7", "16", "19", "28", "37", "49", "61"}));
+    // "sag'" and "darzu" both start the phrase after the first fermata.
+    auto starts = AttributeMatcher("word", {AttributeMap{{"phrase", {"start"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(starts), (std::vector<std::string>{"0", "12", "12", "21", "30", "42", "54"}));
+    CHECK_EQ(versesOf(starts[1]), (std::vector<std::size_t>{1}));
+    CHECK_EQ(versesOf(starts[2]), (std::vector<std::size_t>{2}));
+    // The other keys are read at the first note of the word: its duration is that of the whole word.
+    auto longWords = AttributeMatcher("word", {AttributeMap{{"duration", {PatternValue(ComparisonOperator::GreaterThan, "1")}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(longWords), (std::vector<std::string>{"4", "7", "16", "37", "49", "55"}));
+    // A word on a b with a word after it in the same verse: "Lebelang," ends verse 2, "sag'" and "darzu" both
+    // start on the b after the first fermata.
+    auto onB = AttributeMatcher("word", {AttributeMap{{"kern", {"b"}}}, AttributeMap{{"word", {"*"}}}}).findAll(chorale, 4);
+    CHECK_EQ(startPositionsOf(onB), (std::vector<std::string>{"4", "4", "12", "12", "16", "21", "22", "31", "37", "42", "46", "54"}));
+    CHECK_EQ(versesOf(onB[2]), (std::vector<std::size_t>{1}));
+    CHECK_EQ(versesOf(onB[3]), (std::vector<std::size_t>{2}));
+}
+
+TEST_CASE(lyrics_a_word_cannot_be_divided_up_or_compared) {
+    MatcherOptions split;
+    split.durationAllowSplitNotes = true;
+    CHECK_THROWS(AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}}, split));
+    MatcherOptions merged;
+    merged.durationAllowMergedNotes = true;
+    CHECK_THROWS(AttributeMatcher("syl", {AttributeMap{{"syl", {"*"}}}}, merged));
+    MatcherOptions skip;
+    skip.metweightSkipUnclassified = true;
+    CHECK_THROWS(AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}}, skip));
+    CHECK_NOTHROW(AttributeMatcher("kern", {AttributeMap{{"word", {"*"}}}}, skip));
+    CHECK_THROWS(AttributeMatcher("kern", {AttributeMap{{"word", {PatternValue(ComparisonOperator::GreaterThan, "a")}}}}));
 }

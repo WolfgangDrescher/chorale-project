@@ -76,6 +76,25 @@ const keyDegPatternSchema = {
     oneOf: [keyDegValueSchema, { type: 'array', items: keyDegValueSchema, minItems: 1 }],
 };
 
+// The lyrics: where the syllable of the soprano at the note stands in its word. "*" is the wildcard every key
+// accepts. The MEI wordpos letters (s, i, m, t) are accepted too, but not offered.
+const sylposValueSchema = {
+    type: 'string',
+    enum: ['single', 'initial', 'medial', 'terminal', '*'],
+    enumDescriptions: [
+        'The syllable is a word of its own.',
+        'The first syllable of its word.',
+        'A syllable in the middle of its word.',
+        'The last syllable of its word.',
+        'Any syllable.',
+    ],
+};
+
+const sylposPatternSchema = {
+    description: 'Where the syllable of the soprano at the note stands in its word: "single", "initial", "medial" or "terminal". An OR-list of these or a single one.',
+    oneOf: [sylposValueSchema, { type: 'array', items: sylposValueSchema, minItems: 1 }],
+};
+
 // One position of a pattern, and the keys of everyPosition.
 const patternPositionSchema = {
     type: 'object',
@@ -90,10 +109,12 @@ const patternPositionSchema = {
         '!key': keyPatternSchema,
         keyDeg: keyDegPatternSchema,
         '!keyDeg': keyDegPatternSchema,
+        sylpos: sylposPatternSchema,
+        '!sylpos': sylposPatternSchema,
     },
     patternProperties: {
-        '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
-            description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. Prefix the key with "!" to negate the whole position.',
+        '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
+            description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. word and syl are the word and the syllable the soprano sings at the note, compared in small letters without the punctuation around them; a "*" in the value stands for any characters ("Her*", "*zen"), without one the whole word has to be the value. Prefix the key with "!" to negate the whole position.',
             oneOf: [
                 { type: 'string' },
                 { type: 'boolean' },
@@ -103,8 +124,8 @@ const patternPositionSchema = {
         },
     },
     propertyNames: {
-        pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
-        description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked.',
+        pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
+        description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked. word, syl and sylpos read the lyrics the soprano sings at the note.',
     },
 };
 
@@ -113,8 +134,8 @@ const patternPositionSchema = {
 const searchRequestFieldSchemas = {
     feature: {
         type: 'string',
-        enum: ['kern', 'deg', 'mint', 'fb', 'metweight', 'hint-12', 'hint-13', 'hint-14', 'hint-23', 'hint-24', 'hint-34'],
-        description: 'The driving feature: which analysis spine the search walks through. A hint-<pair> names a specific pair of voices (lower voice number first).',
+        enum: ['kern', 'deg', 'mint', 'fb', 'metweight', 'word', 'syl', 'hint-12', 'hint-13', 'hint-14', 'hint-23', 'hint-24', 'hint-34'],
+        description: 'The driving feature: which analysis spine the search walks through. A hint-<pair> names a specific pair of voices (lower voice number first). word and syl walk the words or the syllables the soprano sings, so a match spans the notes of a word.',
         suggestSortText: '0',
     },
     voices: {
@@ -227,6 +248,23 @@ const mintStartAtPreviousTokenOnlyForMint = [
     },
 ];
 
+// The backend rejects these options for word and syl, which are matched with all their notes.
+const noteOptionsNotForWordOrSyl = [
+    {
+        if: {
+            required: ['feature'],
+            properties: { feature: { enum: ['word', 'syl'] } },
+        },
+        then: {
+            properties: {
+                durationAllowSplitNotes: { const: false, description: 'durationAllowSplitNotes cannot be true when feature is "word" or "syl".' },
+                durationAllowMergedNotes: { const: false, description: 'durationAllowMergedNotes cannot be true when feature is "word" or "syl".' },
+                metweightSkipUnclassified: { const: false, description: 'metweightSkipUnclassified cannot be true when feature is "word" or "syl".' },
+            },
+        },
+    },
+];
+
 // Which chorales a query searches: one entry of a list of ids is a number or a string, and a count is a
 // number or a range. Only the top-level query has one, a simultaneousWith group runs in the same chorale.
 const choraleIdSchema = {
@@ -295,7 +333,7 @@ const singleQuerySchema = {
     title: 'Chorale Search Query',
     required: ['feature', 'pattern'],
     additionalProperties: false,
-    allOf: mintStartAtPreviousTokenOnlyForMint,
+    allOf: [...mintStartAtPreviousTokenOnlyForMint, ...noteOptionsNotForWordOrSyl],
     properties: {
         id: {
             type: 'string',
@@ -324,7 +362,7 @@ const singleQuerySchema = {
                 type: 'object',
                 required: ['feature', 'pattern'],
                 additionalProperties: false,
-                allOf: mintStartAtPreviousTokenOnlyForMint,
+                allOf: [...mintStartAtPreviousTokenOnlyForMint, ...noteOptionsNotForWordOrSyl],
                 properties: searchRequestFieldSchemas,
             },
         },

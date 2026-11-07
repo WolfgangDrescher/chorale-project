@@ -57,6 +57,9 @@ struct Result : NoteSection {
     // query, where there's nothing to disambiguate.
     std::optional<std::string> queryId;
 
+    // The verses in which the lyrics keys of the pattern hold; empty for a pattern without them.
+    std::vector<std::size_t> verses;
+
     // Where each position of the pattern matched, for a caller that reads the score at the very notes the
     // pattern was matched on. Not written to the JSON.
     std::vector<PositionOnset> positionOnsets;

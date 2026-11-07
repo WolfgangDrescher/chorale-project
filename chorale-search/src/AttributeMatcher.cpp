@@ -8,9 +8,11 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iterator>
+#include <map>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 
 namespace choralesearch {
@@ -28,6 +30,9 @@ const std::string kMintFeature = "mint";
 const std::string kDegFeature = "deg";
 const std::string kFbFeature = "fb";
 const std::string kMetweightFeature = "metweight";
+const std::string kWordFeature = "word";
+const std::string kSylFeature = "syl";
+const std::string kSylposKey = "sylpos";
 
 // How Tool_metweight abbreviates a metrically unclassified position -- an onset that falls
 // between the beats the meter classifies, which in these chorales is where the diminution sits.
@@ -609,6 +614,83 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
     return chorale.tokenAtLine(feature, voice, lineNumber);
 }
 
+// A sylpos value by its name: MEI's wordpos letters stand for them ("i" for "initial").
+std::string positionNameFromLetter(const std::string& value) {
+    static const std::map<std::string, std::string> names = {
+        {"s", "single"}, {"i", "initial"}, {"m", "medial"}, {"t", "terminal"}};
+    const auto name = names.find(value);
+    return name == names.end() ? value : name->second;
+}
+
+bool positionNameInList(const std::vector<PatternValue>& allowed, const std::string& name) {
+    return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return positionNameFromLetter(v.text) == name; });
+}
+
+// Whether `key` matches `syllable`. word and syl are compared normalized, their values as globs.
+bool lyricsInList(const std::string& key, const std::vector<PatternValue>& allowed, const LyricsSyllable& syllable) {
+    if (key == kWordFeature || key == kSylFeature) {
+        const std::string& actual = key == kWordFeature ? syllable.word->normalizedText : syllable.normalizedText;
+        return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return matchesLyricsGlob(v.text, actual); });
+    } else if (key == kSylposKey) {
+        return positionNameInList(allowed, syllablePositionName(syllable.position));
+    }
+    return false;
+}
+
+// Adds the onset of a word or a syllable of `verse`, from `firstLine` to `lastLine`; on the same notes in
+// another verse already, that onset gets the verse instead.
+void addLyricsOnset(std::vector<AttributeMatcher::Onset>& onsets, const HumdrumChorale& chorale, std::size_t verse,
+                    int firstLine, int lastLine, hum::HumNum duration) {
+    const std::size_t soprano = chorale.voiceCount();
+    hum::HTp firstTok = chorale.tokenAtLine(kKernFeature, soprano, firstLine);
+    hum::HTp lastTok = chorale.tokenAtLine(kKernFeature, soprano, lastLine);
+    if (!firstTok || !lastTok) return;
+    for (AttributeMatcher::Onset& onset : onsets) {
+        if (onset.token == firstTok && onset.lastToken == lastTok) {
+            onset.verses |= VerseSet::of(verse);
+            return;
+        }
+    }
+    onsets.push_back({firstTok, duration, std::nullopt, lastTok, VerseSet::of(verse)});
+}
+
+void sortByLine(std::vector<AttributeMatcher::Onset>& onsets) {
+    std::stable_sort(onsets.begin(), onsets.end(), [](const AttributeMatcher::Onset& a, const AttributeMatcher::Onset& b) {
+        return a.token->getLineNumber() < b.token->getLineNumber();
+    });
+}
+
+// One per syllable of every verse, lasting over all its notes (see Onset::lastToken). The lyrics belong to
+// the soprano: another voice has none.
+std::vector<AttributeMatcher::Onset> syllableOnsets(const HumdrumChorale& chorale, std::size_t voice) {
+    std::vector<AttributeMatcher::Onset> onsets;
+    if (voice != chorale.voiceCount()) return onsets;
+    for (std::size_t verse = 1; verse <= chorale.verseCount(); ++verse) {
+        for (const LyricsWord& word : chorale.lyrics().verse(verse)->words()) {
+            for (const LyricsSyllable& syllable : word.syllables) {
+                addLyricsOnset(onsets, chorale, verse, syllable.firstLine(), syllable.lastLine(), syllable.end - syllable.start);
+            }
+        }
+    }
+    sortByLine(onsets);
+    return onsets;
+}
+
+// The same per word.
+std::vector<AttributeMatcher::Onset> wordOnsets(const HumdrumChorale& chorale, std::size_t voice) {
+    std::vector<AttributeMatcher::Onset> onsets;
+    if (voice != chorale.voiceCount()) return onsets;
+    for (std::size_t verse = 1; verse <= chorale.verseCount(); ++verse) {
+        for (const LyricsWord& word : chorale.lyrics().verse(verse)->words()) {
+            hum::HumNum duration(0);
+            for (const LyricsSyllable& syllable : word.syllables) duration += syllable.end - syllable.start;
+            addLyricsOnset(onsets, chorale, verse, word.firstLine(), word.lastLine(), duration);
+        }
+    }
+    sortByLine(onsets);
+    return onsets;
+}
+
 // Strips the "!" negation prefix (see the pattern loop below). A lone "!" isn't a prefix --
 // there'd be nothing left to negate.
 bool isNegatedKey(const std::string& rawKey) {
@@ -617,6 +699,23 @@ bool isNegatedKey(const std::string& rawKey) {
 
 std::string stripNegationPrefix(const std::string& rawKey) {
     return isNegatedKey(rawKey) ? rawKey.substr(1) : rawKey;
+}
+
+// The verses a lyrics key matches at the soprano note on `lineNumber`, negation included: "!word": "gott" matches
+// a verse where the note has no gott, one without a syllable there too. A chorale without lyrics has no verse,
+// so no key matches it, a negated one and the wildcard included.
+VerseSet versesMatchingKey(const HumdrumChorale& chorale, const std::string& rawKey, const std::vector<PatternValue>& allowed,
+                           int lineNumber) {
+    const bool negate = isNegatedKey(rawKey);
+    const std::string key = stripNegationPrefix(rawKey);
+    VerseSet verses = VerseSet::none();
+    for (std::size_t n = 1; n <= chorale.verseCount(); ++n) {
+        const LyricsSyllable* syllable = chorale.lyrics().verse(n)->syllableAtLine(lineNumber);
+        // The wildcard asks for a syllable to sound: none does at a rest or where the verse has run out of text.
+        const bool holds = syllable && (isWildcard(allowed) || lyricsInList(key, allowed, *syllable));
+        if (holds != negate) verses |= VerseSet::of(n);
+    }
+    return verses;
 }
 
 // Whether a **mint octave leap may pass for a re-attack: only for a query that opted the
@@ -805,10 +904,33 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
             }
         }
     }
+    // A word or a syllable is matched as a whole, with all its notes: these options have nothing to work on.
+    if (isLyricsDrivingFeature(m_drivingFeature) &&
+        (m_options.durationAllowSplitNotes || m_options.durationAllowMergedNotes || m_options.metweightSkipUnclassified)) {
+        throw std::invalid_argument("'" + m_drivingFeature + "' cannot be searched with durationAllowSplitNotes, "
+                                    "durationAllowMergedNotes or metweightSkipUnclassified");
+    }
+    // Whether the pattern reads the lyrics, and its word and syl values normalized like them (see
+    // normalizeLyricsText): "Jesu" finds "jesu".
+    m_readsLyrics = isLyricsDrivingFeature(m_drivingFeature);
+    for (AttributeMap& position : m_pattern) {
+        for (auto& [key, values] : position) {
+            if (!isLyricsPatternKey(key)) continue;
+            m_readsLyrics = true;
+            const std::string bare = stripNegationPrefix(key);
+            if (bare != kWordFeature && bare != kSylFeature) continue;
+            for (PatternValue& value : values) {
+                if (value.text != "*") value.text = normalizeLyricsText(value.text);
+            }
+        }
+    }
 }
 
 std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const HumdrumChorale& chorale,
                                                                     std::size_t voice) const {
+    if (m_drivingFeature == kWordFeature) return wordOnsets(chorale, voice);
+    if (m_drivingFeature == kSylFeature) return syllableOnsets(chorale, voice);
+
     std::vector<Onset> onsets;
     hum::HTp drivingStart = chorale.spine(m_drivingFeature, effectiveVoice(m_drivingFeature, voice));
     if (!drivingStart) return onsets;
@@ -820,7 +942,7 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
     onsets.reserve(tokens.size());
 
     if (!m_options.metweightSkipUnclassified) {
-        for (hum::HTp tok : tokens) onsets.push_back(Onset{tok, tok->getTiedDuration(), std::nullopt});
+        for (hum::HTp tok : tokens) onsets.push_back(Onset{tok, tok->getTiedDuration(), std::nullopt, tok});
         return onsets;
     }
 
@@ -850,7 +972,7 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
             continue;
         }
 
-        Onset onset{tok, tok->getTiedDuration(), std::nullopt};
+        Onset onset{tok, tok->getTiedDuration(), std::nullopt, tok};
         if (skippedSincePreviousOnset && lastSoundingNote && isSoundingNote) {
             std::string interval = mintIntervalToken(lastSoundingNote, kernTok);
             if (!interval.empty()) onset.mint = interval;
@@ -872,6 +994,12 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
     const std::string key = stripNegationPrefix(rawKey);
     hum::HTp tok = onset.token;
     int lineNumber = tok->getLineNumber();
+    // fermata and the end of a phrase are judged on the last note of a word or a syllable.
+    hum::HTp lastTok = onset.lastToken;
+
+    // Some verse has to match the key here; that one verse matches every key of the pattern is checked once
+    // the walk is through, see walkPattern.
+    if (isLyricsPatternKey(key)) return !versesMatchingKey(chorale, rawKey, allowed, lineNumber).empty();
 
     bool matched;
     if (isWildcard(allowed)) {
@@ -898,8 +1026,9 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         matched = valTok && hintInList(allowed, std::string(*valTok), m_options.hintReduceCompound);
     } else if (key == kPhraseKey) {
         hum::HTp noteTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
-        if (!noteTok) return std::nullopt;
-        matched = phraseInList(allowed, notePhraseRoles(noteTok, noteTok));
+        hum::HTp lastNoteTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernFeature);
+        if (!noteTok || !lastNoteTok) return std::nullopt;
+        matched = phraseInList(allowed, notePhraseRoles(noteTok, lastNoteTok));
     } else if (key == kModeKey || key == kKeyKey || key == kKeyDegKey) {
         const KeyContext* context = chorale.keyContextAtLine(lineNumber);
         if (!context) return std::nullopt;
@@ -910,7 +1039,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         if (key == kDurationKey) {
             actual = hum::Convert::durationToRecip(onset.duration);
         } else if (key == kFermataKey) {
-            hum::HTp fermataTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
+            hum::HTp fermataTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernFeature);
             if (!fermataTok) return std::nullopt;
             actual = fermataTok->hasFermata() ? "true" : "false";
         } else if (key == kMintFeature && onset.mint) {
@@ -1092,10 +1221,39 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
 
 std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
     std::vector<AttributeMatch> matches;
-    std::size_t n = m_pattern.size();
-    if (n == 0) return matches;
-
+    if (m_pattern.empty()) return matches;
     std::vector<Onset> onsets = buildOnsets(chorale, voice);
+    if (!isLyricsDrivingFeature(m_drivingFeature)) return walkPattern(chorale, voice, onsets);
+
+    // The next word of a verse is not the next onset of the merged list, so the walk follows one verse at a
+    // time; a match found in several verses is kept once, with all of them.
+    for (std::size_t n = 1; n <= chorale.verseCount(); ++n) {
+        std::vector<Onset> verseOnsets;
+        for (const Onset& onset : onsets) {
+            if (onset.verses.contains(n)) verseOnsets.push_back(onset);
+        }
+        for (AttributeMatch& m : walkPattern(chorale, voice, verseOnsets)) {
+            if (!m.verses.contains(n)) continue;
+            m.verses = VerseSet::of(n);
+            const auto same = std::find_if(matches.begin(), matches.end(), [&](const AttributeMatch& found) {
+                return found.startLineNumber == m.startLineNumber && found.endLineNumber == m.endLineNumber &&
+                       std::equal(found.positionOnsets.begin(), found.positionOnsets.end(), m.positionOnsets.begin(), m.positionOnsets.end(),
+                                  [](const PositionOnset& a, const PositionOnset& b) { return a.line == b.line; });
+            });
+            if (same != matches.end()) same->verses |= VerseSet::of(n);
+            else matches.push_back(std::move(m));
+        }
+    }
+    std::stable_sort(matches.begin(), matches.end(), [](const AttributeMatch& a, const AttributeMatch& b) {
+        return std::tie(a.startLineNumber, a.endLineNumber) < std::tie(b.startLineNumber, b.endLineNumber);
+    });
+    return matches;
+}
+
+std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& chorale, std::size_t voice,
+                                                        const std::vector<Onset>& onsets) const {
+    std::vector<AttributeMatch> matches;
+    std::size_t n = m_pattern.size();
     if (onsets.empty()) return matches;
 
     // A pattern normally needs one onset per position, but a merged run covers several
@@ -1167,6 +1325,15 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         }
         if (!ok) continue;
 
+        // One verse in which every lyrics key of every position holds, else the match is none.
+        VerseSet verses = VerseSet::all();
+        for (std::size_t p = 0; p < n; ++p) {
+            for (const auto& [rawKey, allowed] : m_pattern[p]) {
+                if (isLyricsPatternKey(rawKey)) verses &= versesMatchingKey(chorale, rawKey, allowed, static_cast<int>(positionOnsets[p].line));
+            }
+        }
+        if (verses.empty()) continue;
+
         // The note the first interval was measured from is the nearest preceding onset that
         // actually sounds -- rests carry a **mint token of their own but are transparent to
         // the interval calculation, so they must be skipped here too. If nothing sounds before
@@ -1182,7 +1349,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
             }
         }
 
-        hum::HTp endTok = onsets[idx - 1].token;
+        hum::HTp endTok = onsets[idx - 1].lastToken;
         AttributeMatch m;
         m.voice = voice;
         m.startLineNumber = static_cast<std::size_t>(startTok->getLineNumber());
@@ -1190,6 +1357,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         m.startPosition = startTok->getDurationFromStart();
         m.endPosition = endTok->getDurationFromStart();
         m.positionOnsets = std::move(positionOnsets);
+        m.verses = verses;
         matches.push_back(std::move(m));
     }
     return matches;

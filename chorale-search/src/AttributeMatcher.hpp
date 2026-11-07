@@ -8,6 +8,7 @@
 #include "HumdrumChorale.hpp"
 #include "Query.hpp"
 #include "Result.hpp"
+#include "VerseSet.hpp"
 
 namespace choralesearch {
 
@@ -19,6 +20,7 @@ struct AttributeMatch {
     hum::HumNum endPosition;     // same, for the last matched position without the duration of that slice
     // Where each position of the pattern matched, see PositionOnset.
     std::vector<PositionOnset> positionOnsets;
+    VerseSet verses = VerseSet::all(); // the verses the match holds in
 };
 
 // The **mint token for the step from the note `from` to the note `to` ("+M2", "-m3", "P1"), the
@@ -59,24 +61,34 @@ public:
 
     std::vector<AttributeMatch> findAll(const HumdrumChorale& chorale, std::size_t voice) const;
 
+    // Driven by word or syl, or with a lyrics key in the pattern: the matches say which verses they hold in.
+    bool readsLyrics() const { return m_readsLyrics; }
+
     // One onset of the driving spine as the pattern walk sees it. Without
     // MatcherOptions::metweightSkipUnclassified that is just the spine's own token and its own
     // sounding duration. With it, ornamental onsets are gone from the walk entirely and survive
     // only in what they changed about their neighbours: the duration of the note they decorate,
     // and the interval into the note that follows them -- see buildOnsets().
+    // Driven by word or syl, an onset is a whole word or syllable: its duration is that of all its notes.
     struct Onset {
         hum::HTp token;
         hum::HumNum duration;            // own sounding duration, plus that of any ornament skipped after it
         std::optional<std::string> mint; // interval measured across skipped ornaments; nullopt = ask the spine
+        hum::HTp lastToken = nullptr;    // the last note of a word or a syllable on several, else the token itself
+        VerseSet verses = VerseSet::all(); // driven by word or syl, the verses with this word or syllable here
     };
 
     // The driving spine's onsets in order, with ornaments already folded away when
     // MatcherOptions::metweightSkipUnclassified asks for it. Rests are never ornaments (their
     // **metweight is unclassified regardless of where they fall), and neither is a voice's very
-    // first onset -- there is no note in front of it whose duration it could belong to.
+    // first onset -- there is no note in front of it whose duration it could belong to. Driven by
+    // word or syl, the words or syllables of every verse of the soprano, each span once; another voice has none.
     std::vector<Onset> buildOnsets(const HumdrumChorale& chorale, std::size_t voice) const;
 
 private:
+    // Walks the pattern along `onsets`, the matches in their order.
+    std::vector<AttributeMatch> walkPattern(const HumdrumChorale& chorale, std::size_t voice, const std::vector<Onset>& onsets) const;
+
     // Judges a single pattern key (possibly "!"-negated) against a single onset, with the
     // negation already applied to the returned value. nullopt means the key couldn't be
     // judged at all because the spine or token it needs isn't there -- that fails the
@@ -117,6 +129,7 @@ private:
     std::string m_drivingFeature;
     std::vector<AttributeMap> m_pattern;
     MatcherOptions m_options;
+    bool m_readsLyrics = false; // driven by word or syl, or with a lyrics key in the pattern
 };
 
 } // namespace choralesearch

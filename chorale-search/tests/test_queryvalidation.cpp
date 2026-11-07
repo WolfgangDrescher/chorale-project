@@ -54,7 +54,7 @@ TEST_CASE(is_known_query_key_rejects_unknown_fields) {
 
 TEST_CASE(driving_feature_names_lists_exactly_the_known_spines) {
     std::vector<std::string> expected = {
-        "kern", "deg", "mint", "fb", "metweight", "hint-12", "hint-13", "hint-14", "hint-23", "hint-24", "hint-34",
+        "kern", "deg", "mint", "fb", "metweight", "word", "syl", "hint-12", "hint-13", "hint-14", "hint-23", "hint-24", "hint-34",
     };
     CHECK_EQ(drivingFeatureNames(), expected);
 }
@@ -445,3 +445,44 @@ TEST_CASE(is_known_pattern_key_knows_the_interval_of_the_pair_searched) {
 }
 
 TEST_MAIN()
+
+TEST_CASE(the_lyrics_keys_are_known_and_word_and_syl_drive_a_search) {
+    for (const std::string& key : {"word", "syl", "sylpos"}) {
+        CHECK(isKnownPatternKey(key));
+        CHECK(isKnownPatternKey("!" + key));
+        CHECK(choralesearch::isLyricsPatternKey(key));
+        CHECK(choralesearch::isLyricsPatternKey("!" + key));
+    }
+    CHECK(!choralesearch::isLyricsPatternKey("kern"));
+    CHECK(isKnownDrivingFeature("word"));
+    CHECK(isKnownDrivingFeature("syl"));
+    CHECK(choralesearch::isLyricsDrivingFeature("word"));
+    CHECK(!choralesearch::isLyricsDrivingFeature("sylpos"));
+    CHECK(!isKnownDrivingFeature("sylpos"));
+    CHECK(!isKnownQueryKey("verse"));
+}
+
+TEST_CASE(the_values_of_the_lyrics_keys) {
+    CHECK(isValidPatternValue("word", "Jesu"));
+    CHECK(isValidPatternValue("syl", "her"));
+    CHECK(isValidPatternValue("!word", "Gott"));
+    // Letters, digits, apostrophes and a star for any characters; the punctuation around a word is not written.
+    for (const std::string& value : {"Her*", "*zen", "*erz*", "*", "g'nug", "dein’", "über", "Ängsten", "1"}) {
+        CHECK(isValidPatternValue("word", value));
+        CHECK(isValidPatternValue("syl", value));
+    }
+    for (const std::string& value : {"", "Gott,", "Her-", "sag.", "@4", "a b", "(Jesu)", "Christ;"}) {
+        CHECK(!isValidPatternValue("word", value));
+        CHECK(!isValidPatternValue("!syl", value));
+    }
+    for (const std::string& value : {"single", "initial", "medial", "terminal", "s", "i", "m", "t"}) CHECK(isValidPatternValue("sylpos", value));
+    CHECK(!isValidPatternValue("sylpos", "middle"));
+    CHECK(!isValidPatternValue("sylpos", "final"));
+    CHECK(!isValidPatternValue("sylpos", "*zen"));
+    // None of the lyrics keys is compared.
+    CHECK(!supportsComparison("word"));
+    CHECK(!supportsComparison("syl"));
+    CHECK(!supportsComparison("sylpos"));
+    CHECK(!supportsComparison("!sylpos"));
+    CHECK(!supportsVoiceReference("word"));
+}

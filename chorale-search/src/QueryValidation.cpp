@@ -3,6 +3,7 @@
 #include "HintPairs.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <iterator>
 #include <optional>
 #include <regex>
@@ -22,7 +23,7 @@ const std::vector<std::string> kSharedRequestFieldNames = {
 };
 
 std::vector<std::string> buildDrivingFeatureNames() {
-    std::vector<std::string> names = {"kern", "deg", "mint", "fb", "metweight"};
+    std::vector<std::string> names = {"kern", "deg", "mint", "fb", "metweight", "word", "syl"};
     names.insert(names.end(), hintPairFeatureNames().begin(), hintPairFeatureNames().end());
     return names;
 }
@@ -60,6 +61,17 @@ bool isValidDegValue(const std::string& v) {
 bool isValidKeyValue(const std::string& v) {
     static const std::regex re(R"(^[a-gA-G][#-]*$)");
     return std::regex_match(v, re);
+}
+
+// sylpos is a name or its MEI wordpos letter. A word or a syllable: letters (any byte beyond ASCII, for ä, ö, ü),
+// digits, apostrophes and "*" for any characters.
+bool isValidLyricsValue(const std::string& key, const std::string& v) {
+    if (key == "sylpos") {
+        return v == "single" || v == "initial" || v == "medial" || v == "terminal" || v == "s" || v == "i" || v == "m" || v == "t";
+    }
+    return !v.empty() && std::all_of(v.begin(), v.end(), [](unsigned char c) {
+        return std::isalnum(c) || c >= 0x80 || c == '\'' || c == '*';
+    });
 }
 
 bool isValidFermataValue(const std::string& v) {
@@ -151,6 +163,15 @@ bool isKnownDrivingFeature(const std::string& feature) {
     return std::find(names.begin(), names.end(), feature) != names.end();
 }
 
+bool isLyricsDrivingFeature(const std::string& feature) {
+    return feature == "word" || feature == "syl";
+}
+
+bool isLyricsPatternKey(const std::string& rawKey) {
+    const std::string key = stripNegationPrefix(rawKey);
+    return isLyricsDrivingFeature(key) || key == "sylpos";
+}
+
 bool isPairWildcardFeature(const std::string& feature) {
     return isHintWildcardKey(feature) && !expandHintPairKey(feature).empty();
 }
@@ -158,7 +179,7 @@ bool isPairWildcardFeature(const std::string& feature) {
 bool isKnownPatternKey(const std::string& rawKey) {
     std::string key = stripNegationPrefix(rawKey);
     return isKnownDrivingFeature(key) || key == "duration" || key == "fermata" || key == "phrase" ||
-           key == "mode" || key == "key" || key == "keyDeg" ||
+           key == "mode" || key == "key" || key == "keyDeg" || isLyricsPatternKey(key) ||
            isHintRelativeKey(key) || isHintWildcardKey(key) || isPairSearchedKey(key);
 }
 
@@ -232,6 +253,7 @@ bool isValidPatternValue(const std::string& rawKey, const std::string& value) {
     if (key == "mint") return isValidMintValue(value);
     if (key == "fb") return isValidFbValue(value);
     if (key == "duration") return isValidDurationValue(value);
+    if (isLyricsPatternKey(key)) return isValidLyricsValue(key, value);
     if (isHintFlavoredKey(key)) return isValidFbComponentValue(value); // a single interval, never a chord
     return true; // unreachable once isKnownPatternKey has already checked the key
 }

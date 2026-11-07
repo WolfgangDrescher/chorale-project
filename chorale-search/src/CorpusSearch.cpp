@@ -56,6 +56,7 @@ struct ResolvedSimultaneousGroup {
     std::vector<AttributeMatch> matches;
     bool checkStart;
     bool checkEnd;
+    bool readsLyrics = false;
 };
 
 ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale, const Query& query,
@@ -68,6 +69,7 @@ ResolvedSimultaneousGroup resolveSimultaneousGroup(const HumdrumChorale& chorale
     if (!chorale.hasFeature(group.feature)) return resolved;
 
     AttributeMatcher matcher(group.feature, group.pattern, matcherOptions(query, group));
+    resolved.readsLyrics = matcher.readsLyrics();
     for (std::size_t voice : resolveVoices(group.voices)) {
         for (const auto& m : matcher.findAll(chorale, voice)) resolved.matches.push_back(m);
     }
@@ -316,16 +318,23 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
 
     for (std::size_t voice : resolveVoices(query.voices)) {
         for (auto& m : matcher.findAll(chorale, voice)) {
-            // Every match of each simultaneousWith entry that lines up with this one.
+            // Every match of each simultaneousWith entry that lines up with this one, in a verse it holds in.
             std::vector<std::vector<const AttributeMatch*>> simultaneousMatches;
+            VerseSet verses = m.verses;
+            bool readsLyrics = matcher.readsLyrics();
             for (const ResolvedSimultaneousGroup& g : resolvedGroups) {
                 std::vector<const AttributeMatch*> lined;
+                VerseSet groupVerses = VerseSet::none();
                 for (const AttributeMatch& candidate : g.matches) {
                     if (g.checkStart && candidate.startPosition != m.startPosition) continue;
                     if (g.checkEnd && candidate.endPosition != m.endPosition) continue;
+                    if ((candidate.verses & verses).empty()) continue;
                     lined.push_back(&candidate);
+                    groupVerses |= candidate.verses;
                 }
                 if (lined.empty()) break;
+                verses &= groupVerses;
+                readsLyrics = readsLyrics || g.readsLyrics;
                 simultaneousMatches.push_back(std::move(lined));
             }
             if (simultaneousMatches.size() != resolvedGroups.size()) continue;
@@ -338,6 +347,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
             r.endPosition = humNumToString(m.endPosition);
             r.startLineNumber = m.startLineNumber;
             r.endLineNumber = m.endLineNumber;
+            if (readsLyrics) r.verses = verses.list();
 
             // The sections of every aligned match of each group, by the feature and pattern of the group, noting the
             // voices a group covers over its whole match.

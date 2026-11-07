@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "ComputedSpines.hpp"
+#include "QueryValidation.hpp"
 
 namespace fs = std::filesystem;
 
@@ -46,6 +47,12 @@ void HumdrumChorale::prepare(bool withComputedSpines) {
         m_spinesByFeature[type].push_back(start);
     }
 
+    // The lyrics sit under the soprano, the last **kern spine, one **text spine per verse.
+    const auto textSpines = m_spinesByFeature.find("text");
+    if (textSpines != m_spinesByFeature.end() && voiceCount() > 0) {
+        m_lyrics = ChoraleLyrics(spine("kern", voiceCount()), textSpines->second);
+    }
+
     // All voices share the key designations, so the first one is read.
     // keyDeg is reckoned from the key of the first note, below a church mode of the source.
     std::optional<KeyContext> current;
@@ -75,10 +82,16 @@ std::vector<std::string> HumdrumChorale::availableFeatures() const {
     std::vector<std::string> names;
     names.reserve(m_spinesByFeature.size());
     for (const auto& [name, spines] : m_spinesByFeature) names.push_back(name);
+    if (verseCount() > 0) {
+        names.push_back("syl");
+        names.push_back("word");
+        std::sort(names.begin(), names.end());
+    }
     return names;
 }
 
 bool HumdrumChorale::hasFeature(const std::string& name) const {
+    if (isLyricsDrivingFeature(name)) return verseCount() > 0;
     return m_spinesByFeature.count(name) > 0;
 }
 

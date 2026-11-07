@@ -385,6 +385,16 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         target.metweightSkipUnclassified = j["metweightSkipUnclassified"].get<bool>();
     }
 
+    // A word or a syllable is matched with all its notes, so these options would do nothing.
+    if (isLyricsDrivingFeature(target.feature)) {
+        for (const char* option : {"durationAllowSplitNotes", "durationAllowMergedNotes", "metweightSkipUnclassified"}) {
+            if (j.value(option, false)) {
+                throw std::invalid_argument("'" + std::string(option) + "' in " + context + " cannot be true when 'feature' is '" +
+                                            target.feature + "'");
+            }
+        }
+    }
+
     if (j.contains("simultaneousAlignment")) {
         target.simultaneousAlignment = simultaneousAlignmentFromJson(j["simultaneousAlignment"], "simultaneousAlignment");
     }
@@ -643,6 +653,7 @@ nlohmann::json resultToJson(const Result& r) {
         }
     }
     if (r.queryId) j["queryId"] = *r.queryId;
+    if (!r.verses.empty()) j["verses"] = r.verses;
     return j;
 }
 

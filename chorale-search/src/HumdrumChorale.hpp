@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ChoraleInfo.hpp"
+#include "ChoraleLyrics.hpp"
 #include "KeyContext.hpp"
 #include "humlib.h"
 
@@ -24,6 +25,7 @@ public:
     const std::string& id() const { return m_id; }
     const std::string& path() const { return m_path; }
 
+    // The spines, and word and syl where the chorale has lyrics.
     std::vector<std::string> availableFeatures() const;
     bool hasFeature(const std::string& name) const;
 
@@ -31,6 +33,10 @@ public:
 
     // The number of voices: the **kern spines the score has.
     std::size_t voiceCount() const;
+
+    // One per **text spine under the soprano, see LyricsVerse.
+    const ChoraleLyrics& lyrics() const { return m_lyrics; }
+    std::size_t verseCount() const { return m_lyrics.verseCount(); }
 
     // Where the phrases end, in order: a fermata closes one, and fermata notes sounding at the same time
     // close one phrase together, where the last of them stops.
@@ -59,6 +65,7 @@ private:
     hum::HumdrumFile m_infile;
     std::map<std::string, std::vector<hum::HTp>> m_spinesByFeature;
     std::vector<std::optional<KeyContext>> m_keyContextByLine;
+    ChoraleLyrics m_lyrics;
 };
 
 } // namespace choralesearch

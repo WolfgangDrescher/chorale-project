@@ -16,12 +16,20 @@ bool isKnownSimultaneousGroupKey(const std::string& key);
 bool isKnownQueryKey(const std::string& key);
 
 // The only spines ever computed (see kExclusiveInterpretationsWithComputedSpines in
-// ComputedSpines.hpp) -- the only features that can drive a search. Always the same set,
-// never discovered per file, so this can be checked up front against untrusted query JSON.
+// ComputedSpines.hpp), and the lyrics features word and syl -- the only features that can drive a
+// search. Always the same set, never discovered per file, so this can be checked up front against
+// untrusted query JSON.
 const std::vector<std::string>& drivingFeatureNames();
 
 // True if `feature` is one of drivingFeatureNames().
 bool isKnownDrivingFeature(const std::string& feature);
+
+// True if `feature` is word or syl: among drivingFeatureNames(), but with no spine of their own (see ChoraleLyrics.hpp).
+bool isLyricsDrivingFeature(const std::string& feature);
+
+// True if `key` reads the lyrics at a note: word, syl or sylpos. `key` may carry a leading '!' negation,
+// same as isKnownPatternKey.
+bool isLyricsPatternKey(const std::string& key);
 
 // True if `feature` names a set of voice pairs with at least one pair in it, "hint-**" (every pair), "hint-*4" (the
 // pairs with the soprano above) or "hint-1*" (with the bass below), see expandHintPairKey: each digit is a voice or

@@ -1125,3 +1125,55 @@ TEST_CASE(query_to_json_writes_the_chorale_filter_back_and_reads_it_again) {
 }
 
 TEST_MAIN()
+
+TEST_CASE(query_from_json_reads_the_lyrics_keys) {
+    Query q = queryFromJson(json::parse(R"({"feature":"word","voices":"soprano","pattern":[{"word":"Jesu"},{"word":"*","sylpos":"initial"}]})"));
+    CHECK_EQ(q.feature, std::string("word"));
+    CHECK_EQ(q.pattern[0].at("word"), (std::vector<PatternValue>{"Jesu"}));
+    CHECK_EQ(choralesearch::queryToJson(q)["pattern"][1]["sylpos"], json("initial"));
+    Query syl = queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"syl":"*"}]})"));
+    CHECK_EQ(syl.feature, std::string("syl"));
+    Query keyed = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1","!sylpos":["single","i"]}]})"));
+    CHECK_EQ(keyed.pattern[0].at("!sylpos"), (std::vector<PatternValue>{"single", "i"}));
+    Query glob = queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":["Her*","*zen","*erz*"]}]})"));
+    CHECK_EQ(glob.pattern[0].at("word"), (std::vector<PatternValue>{"Her*", "*zen", "*erz*"}));
+
+    // The search reads every verse itself, a query names none.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],"verse":1})")));
+}
+
+TEST_CASE(query_from_json_rejects_what_the_lyrics_keys_cannot_hold) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"sylpos":"middle"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"sylpos":"final"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"word":""}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"word":"Gott,"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"syl":"Her-"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"word":{"operator":"gt","value":"a"}}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"sylpos":{"operator":"gt","value":"initial"}}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"word":"@4"}]})")));
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"!word":["Gott","Herr"],"sylpos":["initial","medial"]}]})")));
+    // A word or a syllable is matched as a whole.
+    for (const char* option : {"durationAllowSplitNotes", "durationAllowMergedNotes", "metweightSkipUnclassified"}) {
+        const std::string name = std::string("\"") + option + "\"";
+        CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],)" + name + ":true}")));
+        CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"syl":"*"}],)" + name + ":false}")));
+        CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"*"}],"simultaneousWith":[{"feature":"word","pattern":[{"word":"*"}],)" + name + ":true}]}")));
+    }
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],"mintStartAtPreviousToken":true})")));
+    try {
+        queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],"durationAllowSplitNotes":true})"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'durationAllowSplitNotes' in Query JSON cannot be true when 'feature' is 'word'") != std::string::npos);
+    }
+}
+
+TEST_CASE(result_to_json_writes_the_verses_only_where_the_match_has_some) {
+    Result r;
+    r.choraleId = "chor001";
+    r.feature = "word";
+    r.voice = 4;
+    CHECK(!resultToJson(r).contains("verses"));
+    r.verses = {1, 2};
+    CHECK_EQ(resultToJson(r)["verses"], json::parse("[1, 2]"));
+}

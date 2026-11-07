@@ -16,8 +16,8 @@ constexpr std::string_view kExclusiveInterpretationsWithComputedSpines =
 // Adds **deg, **mint, **metweight, **fb and **hint-xy to `infile`. Throws if a tool changes the lines.
 void addComputedSpines(hum::HumdrumFile& infile);
 
-// Adds the computed spines where `infile` has only **kern, keeps a file that has them all, and
-// throws for any other spines.
+// Adds the computed spines where `infile` has only **kern (and the lyrics, **text, after it), keeps
+// a file that has them all, and throws for any other spines.
 void addComputedSpinesWhereMissing(hum::HumdrumFile& infile);
 
 } // namespace choralesearch

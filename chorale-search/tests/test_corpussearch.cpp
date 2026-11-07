@@ -1409,3 +1409,111 @@ TEST_CASE(chorale_filter_applies_to_for_each_match_and_to_run_one) {
 }
 
 TEST_MAIN()
+
+// A query that reads the lyrics, against chor001 (two verses, the second only under the repeat).
+TEST_CASE(a_query_that_reads_the_lyrics_is_run_once_and_its_results_say_the_verses) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "kern";
+    q.voices = "soprano";
+    q.pattern = {AttributeMap{{"word", {"*"}}}};
+    const auto results = search.run(q);
+    // Every soprano note has text in verse 1, the 16 up to the repeat in verse 2 as well.
+    REQUIRE(results.size() == 46u);
+    for (std::size_t i = 0; i < results.size(); ++i) {
+        CHECK_EQ(results[i].verses, i < 16 ? (std::vector<std::size_t>{1, 2}) : (std::vector<std::size_t>{1}));
+        CHECK_EQ(results[i].choraleId, std::string("chor001"));
+        if (i > 0) CHECK(results[i - 1].startLineNumber < results[i].startLineNumber);
+    }
+    q.limit = 5;
+    CHECK_EQ(search.run(q).size(), std::size_t{5});
+    // Driven by word, a word in both verses is one result.
+    q.limit = std::nullopt;
+    q.feature = "word";
+    const auto words = search.run(q);
+    REQUIRE(words.size() == 31u);
+    CHECK_EQ(words[0].verses, (std::vector<std::size_t>{1, 2}));
+    CHECK_EQ(words[2].startLineNumber, std::size_t{27});
+    CHECK_EQ(words[2].endLineNumber, std::size_t{30});
+    CHECK_EQ(words[2].verses, (std::vector<std::size_t>{1}));
+    CHECK_EQ(words[3].startLineNumber, std::size_t{27});
+    CHECK_EQ(words[3].endLineNumber, std::size_t{38});
+    CHECK_EQ(words[3].verses, (std::vector<std::size_t>{2}));
+}
+
+TEST_CASE(a_query_that_reads_no_lyrics_has_results_without_verses) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "kern";
+    q.voices = "soprano";
+    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    const auto results = search.run(q);
+    CHECK_EQ(results.size(), std::size_t{46});
+    for (const Result& r : results) CHECK(r.verses.empty());
+}
+
+TEST_CASE(a_group_that_reads_the_lyrics_lines_up_with_the_notes_of_the_words) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "kern";
+    q.voices = "bass";
+    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    SimultaneousGroup group;
+    group.feature = "word";
+    group.voices = "soprano";
+    group.pattern = {AttributeMap{{"word", {"Grunde", "Morgenstunde"}}}};
+    q.simultaneousWith = {group};
+    const auto results = search.run(q);
+    // The bass notes where "Grun-" (verse 1) and "Mor-" (verse 2) start.
+    REQUIRE(results.size() == 2u);
+    CHECK_EQ(results[0].startLineNumber, std::size_t{27});
+    CHECK_EQ(results[1].startLineNumber, std::size_t{32});
+}
+
+TEST_CASE(a_group_that_reads_the_lyrics_holds_in_a_verse_the_match_holds_in) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    CorpusSearch search(chorale.path());
+    // Line 27 sings "Her-" in verse 1 and "Mor-" in verse 2.
+    Query q;
+    q.feature = "kern";
+    q.voices = "bass";
+    q.pattern = {AttributeMap{{"kern", {"*"}}, {"syl", {"her"}}}};
+    SimultaneousGroup group;
+    group.feature = "kern";
+    group.voices = "soprano";
+    group.pattern = {AttributeMap{{"syl", {"mor"}}}};
+    q.simultaneousWith = {group};
+    CHECK(search.run(q).empty());
+    group.pattern = {AttributeMap{{"syl", {"her"}}}};
+    q.simultaneousWith = {group};
+    q.limit = 1;
+    const auto results = search.run(q);
+    REQUIRE(results.size() == 1u);
+    CHECK_EQ(results[0].startLineNumber, std::size_t{27});
+    CHECK_EQ(results[0].verses, (std::vector<std::size_t>{1}));
+    // A group alone narrows the verses too.
+    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    const auto narrowed = search.run(q);
+    REQUIRE(narrowed.size() == 1u);
+    CHECK_EQ(narrowed[0].startLineNumber, std::size_t{27});
+    CHECK_EQ(narrowed[0].verses, (std::vector<std::size_t>{1}));
+}
+
+TEST_CASE(a_chorale_without_lyrics_has_no_matches_for_a_query_that_reads_them) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    CorpusSearch search(chorale.path());
+    Query q;
+    q.feature = "word";
+    q.voices = "soprano";
+    q.pattern = {AttributeMap{{"word", {"*"}}}};
+    CHECK(search.runOne(chorale, q).empty());
+    q.feature = "kern";
+    CHECK(search.runOne(chorale, q).empty());
+    q.pattern = {AttributeMap{{"!word", {"*"}}}};
+    CHECK(search.runOne(chorale, q).empty());
+    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    CHECK(!search.runOne(chorale, q).empty());
+}

@@ -113,8 +113,9 @@ void addComputedSpinesWhereMissing(hum::HumdrumFile& infile) {
     for (int i = 0; i < infile.getLineCount(); ++i) {
         if (!infile[i].isExclusiveInterpretation()) continue;
         if (isComputedSpineLayout(infile[i])) return;
+        // The lyrics (**text) sit after the voices; the tools insert the spines they compute after each **kern.
         for (int j = 0; j < infile[i].getTokenCount(); ++j) {
-            if (*infile[i].token(j) != "**kern") {
+            if (*infile[i].token(j) != "**kern" && *infile[i].token(j) != "**text") {
                 throw std::runtime_error("The score has a spine other than **kern (" + *infile[i].token(j) +
                                          ") but not all the computed spines in the order they are computed in");
             }

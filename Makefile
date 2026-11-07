@@ -171,6 +171,7 @@ fixtures: build
 	mkdir -p chorale-search/tests/fixtures
 	$(CHORALE_GENERATE) $(SOURCE_KERN) chorale-search/tests/fixtures \
 		--modulations $(MODULATIONS) \
+		--lyrics $(LYRICS) \
 		$(FIXTURE_CHORALES)
 
 test: build

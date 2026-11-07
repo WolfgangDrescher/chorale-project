@@ -28,6 +28,7 @@ add_library(chorale_core STATIC
     src/ChoraleInfo.cpp
     src/ChoraleFilter.cpp
     src/HumdrumChorale.cpp
+    src/ChoraleLyrics.cpp
     src/KeyContext.cpp
     src/VoiceMap.cpp
     src/VoiceReference.cpp
@@ -114,6 +115,11 @@ if(BUILD_TESTS)
     add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
     target_include_directories(test_queryvalidation PRIVATE src tests)
     add_test(NAME queryvalidation COMMAND test_queryvalidation)
+
+    add_executable(test_choralelyrics tests/test_choralelyrics.cpp)
+    target_include_directories(test_choralelyrics PRIVATE tests)
+    target_link_libraries(test_choralelyrics PRIVATE chorale_core)
+    add_test(NAME choralelyrics COMMAND test_choralelyrics)
 
     add_executable(test_humdrumchorale tests/test_humdrumchorale.cpp)
     target_include_directories(test_humdrumchorale PRIVATE tests)

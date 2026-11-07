@@ -50,9 +50,12 @@ TEST_CASE(available_features_lists_kern_and_the_computed_spines) {
     auto features = chorale.availableFeatures();
     // std::map-backed storage, so this comes back key-sorted rather than in
     // file order -- "deg" < "fb" < "hint-12" < ... < "hint-34" < "kern" <
-    // "metweight" < "mint".
+    // "metweight" < "mint". The lyrics are the **text spines, and word and syl read from them.
     CHECK_EQ(features, (std::vector<std::string>{"deg", "fb", "hint-12", "hint-13", "hint-14", "hint-23", "hint-24",
-                                                  "hint-34", "kern", "metweight", "mint"}));
+                                                  "hint-34", "kern", "metweight", "mint", "syl", "text", "word"}));
+    HumdrumChorale withoutLyrics(FIXTURE_CHORALE("chor006"));
+    CHECK_EQ(withoutLyrics.availableFeatures(), (std::vector<std::string>{"deg", "fb", "hint-12", "hint-13", "hint-14", "hint-23",
+                                                                           "hint-24", "hint-34", "kern", "metweight", "mint"}));
 }
 
 TEST_CASE(has_feature_is_true_for_present_and_false_for_absent) {
@@ -259,7 +262,8 @@ TEST_CASE(collect_info_decodes_the_html_entities_of_a_title_and_reads_a_church_m
 
 TEST_CASE(the_computed_spines_are_added_in_the_order_the_corpus_has_them) {
     hum::HumdrumFile infile;
-    infile.read(FIXTURE_CHORALE("chor029"));
+    // chor006 has no lyrics: the tools would put the computed spines after the **text spines.
+    infile.read(FIXTURE_CHORALE("chor006"));
     choralesearch::addComputedSpines(infile);
     std::stringstream text;
     text << infile;
@@ -269,11 +273,11 @@ TEST_CASE(the_computed_spines_are_added_in_the_order_the_corpus_has_them) {
 
 TEST_CASE(a_chorale_with_the_computed_spines_is_read_as_it_is) {
     hum::HumdrumFile infile;
-    infile.read(FIXTURE_CHORALE("chor029"));
+    infile.read(FIXTURE_CHORALE("chor006"));
     choralesearch::addComputedSpines(infile);
     std::stringstream contents;
     contents << infile;
-    HumdrumChorale chorale(contents, "chor029");
+    HumdrumChorale chorale(contents, "chor006");
     CHECK_EQ(chorale.voiceCount(), std::size_t{4});
     CHECK(chorale.spine("mint", 4) != nullptr);
     CHECK(chorale.spine("mint", 5) == nullptr);
@@ -281,7 +285,7 @@ TEST_CASE(a_chorale_with_the_computed_spines_is_read_as_it_is) {
 
 TEST_CASE(a_chorale_with_only_some_of_the_computed_spines_is_rejected) {
     hum::HumdrumFile infile;
-    infile.read(FIXTURE_CHORALE("chor029"));
+    infile.read(FIXTURE_CHORALE("chor006"));
     choralesearch::addComputedSpines(infile);
     std::stringstream text;
     text << infile;

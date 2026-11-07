@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "CorpusSearch.hpp"
+#include "HumdrumChorale.hpp"
 #include "JsonIO.hpp"
 #include "Query.hpp"
 
@@ -821,6 +822,110 @@ TEST_CASE(deg_soprano_2_1_onto_a_fermata_in_a_minor_key_from_every_position) {
     CHECK_RESULT(results[0], "chor009", 4, "22", "23");
     CHECK_RESULT(results[1], "chor039", 4, "21+1/2", "22");
     CHECK_RESULT(results[2], "chor039", 4, "45+1/2", "46");
+}
+
+// The lyrics: chor001, chor029 (two verses each, the second only under the repeat), chor005 and chor009
+// (four), chor008, chor039 and chor103 (one); chor006 has none.
+TEST_CASE(lyrics_the_words_of_each_verse) {
+    const auto wordCounts = [](const char* id) {
+        choralesearch::HumdrumChorale chorale(FIXTURE_CHORALE(id));
+        std::vector<std::size_t> counts;
+        for (std::size_t n = 1; n <= chorale.verseCount(); ++n) counts.push_back(chorale.lyrics().verse(n)->words().size());
+        return counts;
+    };
+    CHECK_EQ(wordCounts("chor001"), (std::vector<std::size_t>{28, 6}));
+    CHECK_EQ(wordCounts("chor005"), (std::vector<std::size_t>{42, 45, 12, 10}));
+    CHECK_EQ(wordCounts("chor006"), (std::vector<std::size_t>{}));
+    CHECK_EQ(wordCounts("chor008"), (std::vector<std::size_t>{48}));
+    CHECK_EQ(wordCounts("chor009"), (std::vector<std::size_t>{32, 31, 9, 11}));
+    CHECK_EQ(wordCounts("chor029"), (std::vector<std::size_t>{28, 10}));
+    CHECK_EQ(wordCounts("chor039"), (std::vector<std::size_t>{29}));
+    CHECK_EQ(wordCounts("chor103"), (std::vector<std::size_t>{27}));
+}
+
+TEST_CASE(word_herr_jesu_christ) {
+    Query q;
+    q.feature = "word";
+    q.pattern = {AttributeMap{{"word", {"Herr"}}}, AttributeMap{{"word", {"Jesu"}}}, AttributeMap{{"word", {"Christ"}}}};
+    q.voices = "soprano";
+
+    CorpusSearch search(FIXTURES_DIR);
+    auto results = search.run(q);
+
+    // The third verse of chor009, "Du Lebensfürst, Herr Jesu Christ".
+    REQUIRE(results.size() == 1u);
+    CHECK_RESULT(results[0], "chor009", 4, "4", "7");
+    CHECK_EQ(results[0].startLineNumber, std::size_t{30});
+    CHECK_EQ(results[0].endLineNumber, std::size_t{36});
+    CHECK_EQ(results[0].verses, (std::vector<std::size_t>{3}));
+}
+
+TEST_CASE(word_schmerz_and_what_follows) {
+    Query q;
+    q.feature = "word";
+    q.pattern = {AttributeMap{{"word", {"Schmerz*"}}}};
+    q.voices = "soprano";
+
+    CorpusSearch search(FIXTURES_DIR);
+    auto results = search.run(q);
+
+    // "Schmerzen" in the first verse of chor005, "Schmer-" over three notes and "-zen," on the fermata.
+    REQUIRE(results.size() == 1u);
+    CHECK_RESULT(results[0], "chor005", 4, "13", "15");
+    CHECK_EQ(results[0].startLineNumber, std::size_t{47});
+    CHECK_EQ(results[0].endLineNumber, std::size_t{50});
+    CHECK_EQ(results[0].verses, (std::vector<std::size_t>{1}));
+
+    // Without the star only the word itself.
+    q.pattern = {AttributeMap{{"word", {"Schmerz"}}}};
+    CHECK(search.run(q).empty());
+}
+
+TEST_CASE(word_sung_on_the_same_notes_in_every_verse) {
+    Query q;
+    q.feature = "word";
+    q.pattern = {AttributeMap{{"word", {"wir"}}}};
+    q.voices = "soprano";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor005"));
+    auto results = search.run(q);
+
+    // "wir" three times in verse 1 ("da sassen wir", "wir hingen", "mussten wir") and twice in verse 2 ("als
+    // wir", "weinten wir"), once on the same note in both.
+    REQUIRE(results.size() == 4u);
+    CHECK_RESULT(results[0], "chor005", 4, "1", "1");
+    CHECK_EQ(results[0].verses, (std::vector<std::size_t>{2}));
+    CHECK_RESULT(results[1], "chor005", 4, "11", "11");
+    CHECK_EQ(results[1].verses, (std::vector<std::size_t>{1, 2}));
+    CHECK_RESULT(results[2], "chor005", 4, "16", "16");
+    CHECK_EQ(results[2].verses, (std::vector<std::size_t>{1}));
+    CHECK_RESULT(results[3], "chor005", 4, "51", "51");
+    CHECK_EQ(results[3].verses, (std::vector<std::size_t>{1}));
+}
+
+TEST_CASE(fb_7_under_a_syllable) {
+    Query q;
+    q.feature = "fb";
+    q.pattern = {AttributeMap{{"fb", {"7"}}, {"word", {"*"}}}};
+    q.voices = "bass";
+
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    auto results = search.run(q);
+
+    // Every seventh of chor029 is under a syllable: the three under the repeat in both verses, the rest in
+    // verse 1 only, whose text goes on after it.
+    REQUIRE(results.size() == 12u);
+    CHECK_RESULT(results[0], "chor029", 1, "4", "4");
+    CHECK_EQ(results[0].verses, (std::vector<std::size_t>{1, 2}));
+    CHECK_RESULT(results[1], "chor029", 1, "5+1/2", "5+1/2");
+    CHECK_EQ(results[1].verses, (std::vector<std::size_t>{1, 2}));
+    CHECK_RESULT(results[2], "chor029", 1, "12+1/2", "12+1/2");
+    CHECK_EQ(results[2].verses, (std::vector<std::size_t>{1, 2}));
+    CHECK_RESULT(results[3], "chor029", 1, "19+1/2", "19+1/2");
+    CHECK_EQ(results[3].verses, (std::vector<std::size_t>{1}));
+    CHECK_RESULT(results[11], "chor029", 1, "49+1/2", "49+1/2");
+    CHECK_EQ(results[11].verses, (std::vector<std::size_t>{1}));
+    for (const auto& r : results) CHECK(!r.verses.empty());
 }
 
 TEST_MAIN()
