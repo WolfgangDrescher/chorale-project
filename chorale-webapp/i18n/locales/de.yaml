@@ -26,6 +26,7 @@ query: Query
 showQueryResults: Ergebnis dieses Queries anzeigen
 searchResults: Suchergebnisse
 editQuery: Query bearbeiten
+openInSearch: In der Suche öffnen
 searchError: Die Suche ist fehlgeschlagen.
 choraleAnalysis: Choralanalyse
 segmentAnalysis: Segmente

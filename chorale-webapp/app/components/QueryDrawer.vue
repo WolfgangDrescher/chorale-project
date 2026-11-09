@@ -9,6 +9,7 @@ const props = defineProps({
 const open = defineModel('open', { type: Boolean, default: false });
 
 const { t } = useI18n();
+const searchLink = useSearchLink();
 const search = useChoraleSearch(props.query, { sortBy: props.sortBy });
 
 watch(open, (isOpen) => {
@@ -30,6 +31,17 @@ watch(open, (isOpen) => {
         :title="t('searchResults')"
         :ui="{ content: 'w-full max-w-4xl select-text!', container: 'min-w-0 overflow-x-hidden' }"
     >
+        <template #actions>
+            <UButton
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                icon="lucide:external-link"
+                :label="t('openInSearch')"
+                :to="searchLink(search.query.value)"
+                @click="open = false"
+            />
+        </template>
         <template #body>
             <UCollapsible class="mb-4">
                 <UButton
