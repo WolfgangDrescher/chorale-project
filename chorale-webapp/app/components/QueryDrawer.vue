@@ -12,6 +12,9 @@ const { t } = useI18n();
 const searchLink = useSearchLink();
 const search = useChoraleSearch(props.query, { sortBy: props.sortBy });
 
+// Returning focus to the opening button would reopen its tooltip.
+const content = { onCloseAutoFocus: (event) => event.preventDefault() };
+
 watch(open, (isOpen) => {
     if (!isOpen || search.pending.value) return;
     search.query.value = props.query;
@@ -29,6 +32,7 @@ watch(open, (isOpen) => {
         handle-only
         close
         :title="t('searchResults')"
+        :content="content"
         :ui="{ content: 'w-full max-w-4xl select-text!', container: 'min-w-0 overflow-x-hidden' }"
     >
         <template #actions>
