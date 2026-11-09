@@ -82,8 +82,8 @@ function isoDate(date) {
                                         class="sm:justify-self-end sm:self-start sm:mt-0.5"
                                     />
                                     <div class="min-w-0">
-                                        <ULink v-if="change.to" :to="$localePath(change.to)" class="text-default hover:text-primary">{{ change.text }}<UIcon name="i-lucide-arrow-up-right" class="size-4 align-middle ms-0.5 text-dimmed" /></ULink>
-                                        <span v-else>{{ change.text }}</span>
+                                        <ULink v-if="change.to" :to="$localePath(change.to)" class="text-default hover:text-primary"><MDC :value="change.text" tag="span" unwrap="p" /><UIcon name="i-lucide-arrow-up-right" class="size-4 align-middle ms-0.5 text-dimmed" /></ULink>
+                                        <MDC v-else :value="change.text" tag="span" unwrap="p" />
                                     </div>
                                     <div class="flex flex-wrap items-center gap-1 -mx-2 sm:mx-0 sm:justify-end sm:self-start sm:mt-0.5">
                                         <UButton
