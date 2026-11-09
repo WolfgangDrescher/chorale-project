@@ -212,8 +212,8 @@ const modulationLines = computed(() => [{
 }]);
 
 // The modulations are annotated on the page, see useModulationAnnotator; the development server
-// writes them to the file.
-const annotating = ref(false);
+// writes them to the file. The state carries over to the next chorale.
+const annotating = useState('annotating', () => false);
 const annotator = useModulationAnnotator(id, player, annotating, import.meta.dev);
 
 useChoraleKeyboardShortcuts({ prevChorale, nextChorale, keysTaken: () => annotator.active });
