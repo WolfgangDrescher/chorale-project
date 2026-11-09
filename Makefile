@@ -81,11 +81,15 @@
 # make test
 #     run the chorale-search test suite (after `build`, via its run-tests
 #     target -- so it does not configure and build a second time)
+#
+# make test-if-changed
+#     the same, but only if a test binary or fixture changed since the last
+#     passing run. This is what `make all` runs
 
 # Single source of truth for "this is a target, not a chorale id". The catch-all
 # rule at the bottom means anything missing from this list would silently be
 # passed to chorale-generate as a chorale id instead.
-TARGETS := all build kern corpus webapp analyses clean clean-build clean-deps distclean fixtures test
+TARGETS := all build kern corpus webapp analyses clean clean-build clean-deps distclean fixtures test test-if-changed
 
 .PHONY: $(TARGETS)
 .DEFAULT_GOAL := all
@@ -105,7 +109,7 @@ MODULATIONS := annotations/bach-modulations.json
 LYRICS := annotations/bach-lyrics.json
 SOURCE_KERN := bach-370-chorales/kern
 
-all: build corpus kern webapp analyses test
+all: build corpus kern webapp analyses test-if-changed
 
 build:
 	$(MAKE) -C chorale-search
@@ -196,6 +200,9 @@ fixtures: build
 
 test: build
 	$(MAKE) -C chorale-search run-tests
+
+test-if-changed: build
+	$(MAKE) -C chorale-search run-tests-if-changed
 
 # lets chorale IDs passed after `kern` (e.g. `make kern chor001`) be picked up
 # as $(CHORALES) above instead of make trying to build them as targets.

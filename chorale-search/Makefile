@@ -30,6 +30,10 @@
 #     the same test run, but without building first -- for when you know
 #     build/ is current and want to skip the cmake round trip
 #
+# make run-tests-if-changed
+#     run-tests, but only if a test binary, chorale-search or a fixture
+#     is newer than the last passing run (build/.tests-passed)
+#
 # make clean
 #     remove build/. Leaves external/ alone on purpose, so the next build
 #     needs no network -- fetch-deps.sh sees its .fetched marker and skips
@@ -46,7 +50,7 @@ SHELL     := /bin/bash
 BUILD_DIR := build
 JOBS      ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: all deps debug clean clean-deps distclean run-cli run-segment run-check test run-tests
+.PHONY: all deps debug clean clean-deps distclean run-cli run-segment run-check test run-tests run-tests-if-changed
 .DEFAULT_GOAL := all
 
 deps:
@@ -84,8 +88,23 @@ test: all
 # it can do its single `make -C chorale-search` up front and still run the
 # suite, instead of triggering a second configure+build through `test`.
 run-tests:
-	@status=0; \
-	while IFS= read -r cmd; do \
-		(cd $(BUILD_DIR) && eval "$$cmd") || status=1; \
-	done < <(ctest --test-dir $(BUILD_DIR) --show-only=json-v1 | jq -r '.tests[] | (.command | join(" "))'); \
-	exit $$status
+	$(run_test_suite)
+
+TESTS_PASSED := $(BUILD_DIR)/.tests-passed
+
+# Evaluated in the sub-make after the build, so the binaries it lists are the fresh ones.
+TEST_INPUTS = $(wildcard $(BUILD_DIR)/test_* $(BUILD_DIR)/chorale-search) tests/fixtures $(wildcard tests/fixtures/*)
+
+run-tests-if-changed: $(TESTS_PASSED)
+
+$(TESTS_PASSED): $(TEST_INPUTS)
+	$(run_test_suite)
+
+define run_test_suite
+@status=0; \
+while IFS= read -r cmd; do \
+	(cd $(BUILD_DIR) && eval "$$cmd") || status=1; \
+done < <(ctest --test-dir $(BUILD_DIR) --show-only=json-v1 | jq -r '.tests[] | (.command | join(" "))'); \
+if [ $$status -eq 0 ]; then touch $(TESTS_PASSED); fi; \
+exit $$status
+endef
