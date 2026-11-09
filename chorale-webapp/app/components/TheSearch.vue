@@ -1,6 +1,6 @@
 <script setup>
 // The search palette (meta+K, or the button in the header): the full text of the docs and the
-// lessons, and the chorales by their number, title, ID or BWV number.
+// lessons, and the chorales by their number, title, ID, BWV number or starting key.
 const { t } = useI18n();
 const localePath = useLocalePath();
 const { open } = useContentSearch();
@@ -28,7 +28,7 @@ const { data: navigation, execute: loadNavigation } = useLazyAsyncData('search-n
 }, lazy);
 
 const { data: chorales, execute: loadChorales } = useLazyAsyncData('search-chorales', () => {
-    return queryCollection('chorales').select('choraleId', 'title', 'number', 'bwv').order('stem', 'ASC').all();
+    return queryCollection('chorales').select('choraleId', 'title', 'number', 'bwv', 'key', 'mode').order('stem', 'ASC').all();
 }, lazy);
 
 watch(open, (isOpen) => {
@@ -50,7 +50,7 @@ function withLessonNumbers(items) {
 
 const choraleItems = computed(() => chorales.value.map((chorale) => ({
     label: chorale.title ? [chorale.number, chorale.title].filter(Boolean).join('. ') : chorale.choraleId,
-    suffix: [chorale.choraleId, chorale.bwv].filter(Boolean).join(' · '),
+    suffix: [chorale.choraleId, chorale.bwv, [chorale.key, chorale.mode].filter(Boolean).join(' ')].filter(Boolean).join(' · '),
     icon: 'lucide:music',
     to: localePath({ name: 'chorale-id', params: { id: chorale.choraleId } }),
     choraleNumber: chorale.number,
