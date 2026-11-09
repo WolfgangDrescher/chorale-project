@@ -73,16 +73,27 @@ bool hasChurchMode(hum::HumdrumLine& line) {
     return false;
 }
 
+// The time of the data line at the position. The beat is counted from the last numbered barline,
+// so the pickup after a repeat sign (an unnumbered barline like "=:|!") has the beats after the
+// measure before it, as it is written: "7/3" for the quarter before measure 8 in 3/4. humlib's
+// getBeat() would label it (7, 1), which the first beat of measure 7 has too.
 hum::HumNum findTimestamp(hum::HumdrumFile& infile, int measure, hum::HumNum beat) {
-    std::vector<int> measureNumbers = infile.getMeasureNumbers();
+    int currentMeasure = -1;
+    hum::HumNum quarters = 0;
     for (int i = 0; i < infile.getLineCount(); ++i) {
-        // An unnumbered barline (e.g. "=:|!") resets the beat count without advancing the
-        // measure number, so the anacrusis after it is labeled (old measure, beat 1) instead
-        // of (old measure, last beat) -- only the barline itself still carries that combination.
-        if (!infile[i].isData() && !infile[i].isBarline()) continue;
-        if (measureNumbers[i] == measure && infile[i].getBeat() == beat) {
+        if (infile[i].isBarline()) {
+            int number = infile.getMeasureNumber(i);
+            if (number >= 0) {
+                currentMeasure = number;
+                quarters = 0;
+            }
+            continue;
+        }
+        if (!infile[i].isData()) continue;
+        if (currentMeasure == measure && quarters + 1 == beat) {
             return infile[i].getDurationFromStart();
         }
+        quarters += infile[i].getDuration();
     }
     return hum::HumNum(-1);
 }
