@@ -3,8 +3,8 @@ import theme from '#build/ui/prose/pre';
 </script>
 
 <script setup>
-// Nuxt UI's code block, plus a button next to the copy button that runs the block's query and
-// shows the matches in a drawer, for blocks that hold a complete query.
+// Nuxt UI's code block, plus buttons next to the copy button that run the block's query in a
+// drawer or open it in the search page, for blocks that hold a complete query.
 import { useClipboard } from '@vueuse/core';
 import UCodeIcon from '@nuxt/ui/components/prose/CodeIcon.vue';
 import { tv } from '@nuxt/ui/runtime/utils/tv';
@@ -23,6 +23,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const searchLink = useSearchLink();
 const { t: tUi } = useLocale();
 const { copy: copyToClipboard, copied } = useClipboard();
 const appConfig = useAppConfig();
@@ -61,6 +62,17 @@ const drawerOpen = ref(false);
 
             <span :class="ui.filename({ class: props.ui?.filename })">{{ props.filename }}</span>
         </div>
+
+        <UButton
+            v-if="isRunnable"
+            icon="lucide:external-link"
+            color="neutral"
+            variant="outline"
+            size="sm"
+            :aria-label="t('openInSearch')"
+            :to="searchLink(query)"
+            :class="ui.copy({ class: ['end-[91px]', props.ui?.copy] })"
+        />
 
         <UButton
             v-if="isRunnable"
