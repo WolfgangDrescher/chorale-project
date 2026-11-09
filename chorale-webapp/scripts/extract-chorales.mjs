@@ -6,9 +6,14 @@ import { dump } from 'js-yaml';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// The corpus `make kern` generates in the project root, or another directory given as the first
+// --only-changed leaves unchanged files alone, for `make webapp` while the dev server runs.
+const args = process.argv.slice(2);
+const onlyChanged = args.includes('--only-changed');
+const [kernDirArg] = args.filter((arg) => !arg.startsWith('--'));
+
+// The corpus `make kern` generates in the project root, or another directory given as an
 // argument (e.g. the plain bach-370-chorales/kern sources).
-const pathToKernScores = resolve(process.argv[2] ?? `${__dirname}/../../kern/bach-370-chorales`);
+const pathToKernScores = resolve(kernDirArg ?? `${__dirname}/../../kern/bach-370-chorales`);
 // What the scores state about themselves as a whole (the key, the meter, the length) comes from
 // the chorale-search build, so it is read the same way the search reads it.
 const choraleInfoBinary = `${__dirname}/../../chorale-search/build/chorale-info`;
@@ -72,8 +77,17 @@ const infosById = Object.fromEntries(
     JSON.parse(execFileSync(choraleInfoBinary, [pathToKernScores], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })).map((info) => [info.id, info]),
 );
 
-fs.rmSync(choralesYamlPath, { recursive: true, force: true });
+// Nuxt Content's dev server rebuilds its database for every file that changes.
+function writeIfChanged(path, content) {
+    if (fs.existsSync(path) && fs.readFileSync(path, 'utf8') === content) return false;
+    fs.writeFileSync(path, content);
+    return true;
+}
+
+if (!onlyChanged) fs.rmSync(choralesYamlPath, { recursive: true, force: true });
 fs.mkdirSync(choralesYamlPath, { recursive: true });
+const currentYamlFiles = new Set();
+let changedCount = 0;
 
 const files = fs.readdirSync(pathToKernScores).filter((file) => file.endsWith('.krn')).sort();
 
@@ -105,11 +119,20 @@ for (const file of files) {
         if (config[name] === null) delete config[name];
     }
 
-    fs.writeFileSync(`${choralesYamlPath}${id}.yaml`, dump(config, {
+    const yaml = dump(config, {
         indent: 4,
         lineWidth: -1,
         sortKeys: true,
-    }));
+    });
+    currentYamlFiles.add(`${id}.yaml`);
+    if (writeIfChanged(`${choralesYamlPath}${id}.yaml`, yaml)) changedCount++;
 }
 
-console.log(`✅ Extract metadata for all ${files.length} chorales`);
+for (const file of fs.readdirSync(choralesYamlPath)) {
+    if (file.endsWith('.yaml') && !currentYamlFiles.has(file)) {
+        fs.rmSync(`${choralesYamlPath}${file}`);
+        changedCount++;
+    }
+}
+
+console.log(`✅ Extract metadata for all ${files.length} chorales (${changedCount} files changed)`);

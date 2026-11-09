@@ -39,15 +39,22 @@
 #     with the metadata for the chorale pages. The key, the meter and the
 #     length come from chorale-info. Installs the webapp's npm
 #     dependencies first if chorale-webapp/node_modules is missing or older
-#     than its package-lock.json. Never committed
+#     than its package-lock.json. Runs only if one of its inputs changed and
+#     writes only changed files (see Nuxt Content below). Never committed
 #
 # make analyses
 #     generate chorale-webapp/content/analysis-results from ./corpus with chorale-group:
 #     one JSON file for each analysis in chorale-webapp/analyses,
 #     the tables the lessons show. Every group is checked against its own query
 #     (--verify), so a table only ever states what its queries find. A table is
-#     generated again only if its analysis, the corpus or chorale-group is newer;
+#     generated again only if its analysis, the corpus or chorale-group is newer,
+#     and replaced only if it differs (see Nuxt Content below);
 #     `make -j analyses` generates them side by side. Never committed
+#
+# Nuxt Content
+#     its dev server rebuilds its whole database for every file in content/ that
+#     changes, so the targets above leave unchanged files alone. The .generated
+#     markers record when they last ran
 #
 # make clean
 #     remove the generated ./kern, ./corpus and chorale-webapp/content/chorales
@@ -91,7 +98,9 @@ CHORALE_GENERATE := ./chorale-search/build/chorale-generate
 CHORALE_GROUP := ./chorale-search/build/chorale-group
 CHORALE_INFO := ./chorale-search/build/chorale-info
 ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
-ANALYSIS_RESULTS := $(patsubst chorale-webapp/analyses/%.json,chorale-webapp/content/analysis-results/%.json,$(ANALYSES))
+ANALYSIS_RESULTS_DIR := chorale-webapp/content/analysis-results
+ANALYSIS_MARKERS := $(patsubst chorale-webapp/analyses/%.json,$(ANALYSIS_RESULTS_DIR)/.%.generated,$(ANALYSES))
+CHORALES_MARKER := chorale-webapp/content/chorales/.generated
 MODULATIONS := annotations/bach-modulations.json
 LYRICS := annotations/bach-lyrics.json
 SOURCE_KERN := bach-370-chorales/kern
@@ -150,15 +159,20 @@ chorale-webapp/node_modules: chorale-webapp/package-lock.json
 	npm ci --prefix chorale-webapp
 	touch chorale-webapp/node_modules
 
-webapp: kern chorale-webapp/node_modules
-	node chorale-webapp/scripts/extract-chorales.mjs
+webapp: kern $(CHORALES_MARKER)
 
-analyses: $(ANALYSIS_RESULTS)
+$(CHORALES_MARKER): kern/.generated chorale-webapp/scripts/extract-chorales.mjs $(CHORALE_INFO) chorale-webapp/node_modules
+	node chorale-webapp/scripts/extract-chorales.mjs --only-changed
+	@touch $@
+
+analyses: $(ANALYSIS_MARKERS)
 
 # Written to a temporary file first, so a failing analysis leaves no table behind.
-chorale-webapp/content/analysis-results/%.json: chorale-webapp/analyses/%.json corpus/.generated $(CHORALE_GROUP)
+$(ANALYSIS_RESULTS_DIR)/.%.generated: chorale-webapp/analyses/%.json corpus/.generated $(CHORALE_GROUP)
 	@mkdir -p $(@D)
-	$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $< > $@.tmp && mv $@.tmp $@ || { rm -f $@.tmp; exit 1; }
+	$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $< > $(@D)/$*.json.tmp || { rm -f $(@D)/$*.json.tmp; exit 1; }
+	@if cmp -s $(@D)/$*.json.tmp $(@D)/$*.json; then rm $(@D)/$*.json.tmp; else mv $(@D)/$*.json.tmp $(@D)/$*.json; fi
+	@touch $@
 
 clean:
 	rm -rf kern positions corpus chorale-webapp/content/chorales chorale-webapp/content/analysis-results
