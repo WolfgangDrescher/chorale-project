@@ -13,6 +13,8 @@ const KEY_GROUPS = [
     [
         { keys: ['space'], action: 'annotatorPlay' },
         { keys: ['arrowleft', 'arrowright'], action: 'annotatorMoveFrame' },
+        { modifiers: ['alt'], keys: ['arrowleft', 'arrowright'], action: 'annotatorJumpByPhrase' },
+        { modifiers: ['meta'], keys: ['arrowleft', 'arrowright'], action: 'annotatorJumpToEitherEnd' },
     ],
     [
         { keys: ['enter'], action: 'annotatorMark' },

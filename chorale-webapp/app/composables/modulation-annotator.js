@@ -65,6 +65,8 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
     let lines = null;
     // The first data line, where the key the score starts in is.
     let firstLine = null;
+    // The first line of every phrase.
+    let phraseStarts = [];
 
     // The positions and the key changes of the score the page shows, generated with it by `make kern`.
     async function loadScore() {
@@ -75,6 +77,7 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
             if (!lines.has(position)) lines.set(position, line);
         }
         firstLine = positions.keys().next().value ?? null;
+        phraseStarts = score.phrases;
         annotator.modulations = score.modulations;
         return annotator.modulations;
     }
@@ -195,14 +198,18 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
         playsOnAfterStepping = false;
     }, 300);
 
-    // Goes to the previous or the next sonority. With withEntry, an entry at the framed one moves
-    // along, except the key the score starts in, which stays at its start.
-    async function step(direction, withEntry) {
+    function holdPlayback() {
         if (player.isPlaying) {
             player.pause();
             playsOnAfterStepping = true;
         }
         if (playsOnAfterStepping) playOnSoon();
+    }
+
+    // Goes to the previous or the next sonority. With withEntry, an entry at the framed one moves
+    // along, except the key the score starts in, which stays at its start.
+    async function step(direction, withEntry) {
+        holdPlayback();
         const entry = withEntry && annotator.line !== firstLine ? entryAt(annotator.line) : null;
         const drawnLine = await player.step(direction);
         if (drawnLine === null || !entry) return;
@@ -271,10 +278,35 @@ export function useModulationAnnotator(choraleId, player, active, saves = false)
         event.preventDefault();
         goToNeighbour(event.shiftKey ? -1 : 1);
     });
+    // The last attacked line of every phrase, its fermata.
+    function phraseEnds() {
+        const attacked = [...player.lineStarts.keys()].map((line) => line - lineShift.value).sort((a, b) => a - b);
+        return phraseStarts.map((_, index) => attacked.findLast((line) => line < (phraseStarts[index + 1] ?? Infinity)));
+    }
+
+    // Back to the start of a phrase, forward to the end of one, as Alt with the arrows does with words.
+    function jumpByPhrase(direction) {
+        const line = annotator.line ?? 0;
+        const target = direction > 0 ? phraseEnds().find((end) => end > line) : phraseStarts.findLast((start) => start < line);
+        if (target === undefined) return;
+        holdPlayback();
+        player.goToLine(target + lineShift.value);
+    }
+
+    function jumpToEitherEnd(direction) {
+        const starts = [...player.lineStarts.values()];
+        if (!starts.length) return;
+        holdPlayback();
+        player.seek(direction > 0 ? Math.max(...starts) : Math.min(...starts));
+    }
+
     onKeyStroke(['ArrowLeft', 'ArrowRight'], (event) => {
         if (!takesKeys()) return;
         event.preventDefault();
-        step(event.key === 'ArrowRight' ? 1 : -1, event.shiftKey);
+        const direction = event.key === 'ArrowRight' ? 1 : -1;
+        if (event.metaKey || event.ctrlKey) jumpToEitherEnd(direction);
+        else if (event.altKey) jumpByPhrase(direction);
+        else step(direction, event.shiftKey);
     });
 
     return annotator;

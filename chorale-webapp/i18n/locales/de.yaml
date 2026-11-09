@@ -172,6 +172,8 @@ annotatorKeyNames: "G ist G-Dur, g ist g-Moll; - erniedrigt, # erhöht: E- ist E
 annotatorSpace: Leertaste
 annotatorPlay: Abspielen oder anhalten
 annotatorMoveFrame: Position bewegen
+annotatorJumpByPhrase: Zum Anfang oder Ende der Phrase
+annotatorJumpToEitherEnd: Zum Anfang oder Ende
 annotatorMark: Stelle markieren
 annotatorSetKey: Tonart setzen
 annotatorLeaveKeyOpen: Tonart offen lassen

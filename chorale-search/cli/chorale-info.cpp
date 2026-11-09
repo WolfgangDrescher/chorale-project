@@ -36,7 +36,8 @@ void printUsage(const char* argv0) {
         "\n"
         "Options:\n"
         "    --positions-dir DIR   write DIR/<id>.json per score, with the position (\"measure/beat\")\n"
-        "                          of every data line and of every key change, and print nothing\n"
+        "                          of every data line and of every key change and the first line\n"
+        "                          of every phrase, and print nothing\n"
         "    --help, -h            show this help\n"
         "\n"
         "Exit codes:\n"
@@ -82,7 +83,22 @@ nlohmann::json infoToJson(const ChoraleInfo& info) {
     return j;
 }
 
-nlohmann::json positionsToJson(const ChoraleInfo& info, hum::HumdrumFile& infile) {
+// The first data line of every phrase, the phrases ending where phraseEndings says.
+nlohmann::json phraseStartsToJson(hum::HumdrumFile& infile, const std::vector<hum::HumNum>& phraseEndings) {
+    nlohmann::json lines = nlohmann::json::array();
+    std::size_t ending = 0;
+    for (int i = 0; i < infile.getLineCount(); ++i) {
+        if (!infile[i].isData()) continue;
+        if (lines.empty() || (ending < phraseEndings.size() && infile[i].getDurationFromStart() >= phraseEndings[ending])) {
+            if (!lines.empty()) ++ending;
+            lines.push_back(infile[i].getLineNumber());
+        }
+    }
+    return lines;
+}
+
+nlohmann::json positionsToJson(const HumdrumChorale& chorale, hum::HumdrumFile& infile) {
+    const ChoraleInfo info = chorale.collectInfo();
     nlohmann::json j = {{"positions", nlohmann::json::object()}, {"modulations", nlohmann::json::array()}};
     std::map<int, std::string> positionOfLine;
     for (const choralesearch::LinePosition& position : choralesearch::linePositions(infile)) {
@@ -94,6 +110,7 @@ nlohmann::json positionsToJson(const ChoraleInfo& info, hum::HumdrumFile& infile
         modulation["position"] = positionOfLine[change.line];
         j["modulations"].push_back(modulation);
     }
+    j["phrases"] = phraseStartsToJson(infile, chorale.phraseEndings());
     return j;
 }
 
@@ -126,8 +143,8 @@ void writePositions(const std::vector<fs::path>& files, const fs::path& dir) {
     for (const fs::path& file : files) {
         hum::HumdrumFile infile;
         if (!infile.read(file.string())) throw std::runtime_error("could not read " + file.string());
-        const ChoraleInfo info = HumdrumChorale(file.string(), false).collectInfo();
-        std::ofstream(dir / (info.id + ".json")) << positionsToJson(info, infile).dump(1, '\t') << '\n';
+        const HumdrumChorale chorale(file.string(), false);
+        std::ofstream(dir / (chorale.id() + ".json")) << positionsToJson(chorale, infile).dump(1, '\t') << '\n';
     }
 }
 
