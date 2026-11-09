@@ -27,6 +27,7 @@ const searchLink = useSearchLink();
 const { t: tUi } = useLocale();
 const { copy: copyToClipboard, copied } = useClipboard();
 const appConfig = useAppConfig();
+const rootRef = useTemplateRef('rootRef');
 const baseRef = useTemplateRef('baseRef');
 const ui = computed(() => tv({ extend: theme, ...appConfig.ui?.prose?.pre || {} })());
 
@@ -53,47 +54,61 @@ const isRunnable = computed(() => {
 // The code of a block ends with a line break, which the editor would show as an empty last line.
 const query = computed(() => props.code?.trimEnd());
 const drawerOpen = ref(false);
+// The tooltips shift to stay within the block. Its bottom edge is moved far down, so a tooltip
+// of a short block does not flip above its button. Rendered within the block, a closing tooltip
+// under the pointer keeps the block hovered and its buttons visible.
+const tooltipProps = computed(() => ({
+    delayDuration: 0,
+    disableHoverableContent: true,
+    arrow: true,
+    content: { side: 'bottom', sideOffset: 4, collisionBoundary: rootRef.value, collisionPadding: { left: 8, right: 8, bottom: -1000 } },
+    portal: false,
+}));
 </script>
 
 <template>
-    <div :class="ui.root({ class: [props.ui?.root], filename: !!props.filename })">
+    <div ref="rootRef" :class="ui.root({ class: [props.ui?.root], filename: !!props.filename })">
         <div v-if="props.filename && !props.hideHeader" :class="ui.header({ class: props.ui?.header })">
             <UCodeIcon :icon="props.icon" :filename="props.filename" :class="ui.icon({ class: props.ui?.icon })" />
 
             <span :class="ui.filename({ class: props.ui?.filename })">{{ props.filename }}</span>
         </div>
 
-        <UButton
-            v-if="isRunnable"
-            icon="lucide:external-link"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            :aria-label="t('openInSearch')"
-            :to="searchLink(query)"
-            :class="ui.copy({ class: ['end-[91px]', props.ui?.copy] })"
-        />
+        <UTooltip v-if="isRunnable" v-bind="tooltipProps" :text="t('openInSearch')">
+            <UButton
+                icon="lucide:external-link"
+                color="neutral"
+                variant="outline"
+                size="sm"
+                :aria-label="t('openInSearch')"
+                :to="searchLink(query)"
+                :class="ui.copy({ class: ['end-[91px]', props.ui?.copy] })"
+            />
+        </UTooltip>
 
-        <UButton
-            v-if="isRunnable"
-            icon="lucide:search"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            :aria-label="t('showQueryResults')"
-            :class="ui.copy({ class: ['end-[51px]', props.ui?.copy] })"
-            @click="drawerOpen = true"
-        />
+        <UTooltip v-if="isRunnable" v-bind="tooltipProps" :text="t('showQueryResults')">
+            <UButton
+                icon="lucide:search"
+                color="neutral"
+                variant="outline"
+                size="sm"
+                :aria-label="t('showQueryResults')"
+                :class="ui.copy({ class: ['end-[51px]', props.ui?.copy] })"
+                @click="drawerOpen = true"
+            />
+        </UTooltip>
 
-        <UButton
-            :icon="copied ? appConfig.ui.icons.copyCheck : appConfig.ui.icons.copy"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            :aria-label="tUi('prose.pre.copy')"
-            :class="ui.copy({ class: props.ui?.copy })"
-            @click="copyCode"
-        />
+        <UTooltip v-bind="tooltipProps" :text="tUi('prose.pre.copy')">
+            <UButton
+                :icon="copied ? appConfig.ui.icons.copyCheck : appConfig.ui.icons.copy"
+                color="neutral"
+                variant="outline"
+                size="sm"
+                :aria-label="tUi('prose.pre.copy')"
+                :class="ui.copy({ class: props.ui?.copy })"
+                @click="copyCode"
+            />
+        </UTooltip>
 
         <pre ref="baseRef" :class="ui.base({ class: [props.ui?.base, props.class] })" v-bind="$attrs"><slot /></pre>
 
