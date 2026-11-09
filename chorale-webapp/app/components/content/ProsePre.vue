@@ -35,12 +35,6 @@ function copyCode() {
     copyToClipboard(props.code ?? baseRef.value?.textContent ?? '');
 }
 
-// A complete query has a feature and a pattern. Snippets of a pattern, of a single step or of
-// options alone do not, and are not run.
-function isCompleteQuery(query) {
-    return query !== null && typeof query === 'object' && 'feature' in query && 'pattern' in query;
-}
-
 const isRunnable = computed(() => {
     if (props.language !== 'json' || !props.code) return false;
     try {

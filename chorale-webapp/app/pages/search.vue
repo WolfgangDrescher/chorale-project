@@ -64,7 +64,7 @@ onMounted(() => {
     if (!query.value.trim()) query.value = DEMO_QUERY;
     if (typeof route.query.query !== 'string') return;
     const parsed = parseQueryParameter(route.query.query);
-    query.value = parsed === undefined ? route.query.query : JSON.stringify(parsed, null, 4);
+    query.value = parsed === undefined ? route.query.query : formatQuery(parsed);
     router.replace({ query: { ...route.query, query: undefined } });
     fetchSearchResults();
 });
