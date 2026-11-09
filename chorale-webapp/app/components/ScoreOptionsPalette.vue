@@ -212,7 +212,7 @@ const groups = computed(() => {
                     </span>
                 </template>
                 <template #item-trailing="{ item }">
-                    <div v-if="item.cmd" class="font-mono text-[0.55rem] text-gray-500 translate-y-1">{{ item.cmd }}</div>
+                    <div v-if="item.cmd" class="font-mono text-[0.55rem] text-gray-500" :class="{ 'translate-y-1': !item.children?.length }">{{ item.cmd }}</div>
                     <template v-if="item.kbd">
                         <UKbd v-for="kbd in Array.isArray(item.kbd) ? item.kbd : [item.kbd]" :key="kbd" :value="kbd" size="sm" class="font-mono translate-y-0.5" />
                     </template>
