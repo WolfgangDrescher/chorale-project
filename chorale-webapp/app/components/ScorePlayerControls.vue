@@ -39,7 +39,7 @@ function formatTime(time) {
         <div class="group relative shrink-0" :class="compact ? 'size-7' : 'size-10'">
             <button
                 type="button"
-                class="relative z-10 size-full inline-flex items-center justify-center rounded-full bg-primary text-inverted hover:bg-primary/85 cursor-pointer disabled:cursor-default disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-colors"
+                class="relative z-10 size-full inline-flex items-center justify-center rounded-full bg-primary text-inverted hover:bg-primary/85 cursor-pointer disabled:cursor-default disabled:opacity-50 transition-colors"
                 :disabled="!player.hasScore"
                 :aria-label="player.isPlaying ? $t('playerPause') : $t('playerPlay')"
                 @click="player.toggle()"
