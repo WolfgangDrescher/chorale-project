@@ -15,12 +15,7 @@ export function useChoraleSearch(initialQuery = '', { sortBy: initialSortBy = 'i
     // The query the current results are for, once a search has succeeded.
     const searchedQuery = ref(null);
 
-    // Each chorale by its id: its title and BWV number for the results, and its length in quarter
-    // notes for their density, from the metadata extract-chorales.mjs wrote.
-    const { data: chorales } = useAsyncData('chorales-by-id', async () => {
-        const entries = await queryCollection('chorales').select('choraleId', 'title', 'bwv', 'duration').all();
-        return Object.fromEntries(entries.map((chorale) => [chorale.choraleId, chorale]));
-    });
+    const chorales = useChoraleMetadata();
 
     // The order of the chorales: by their id (ascending is the natural one), by how many matches
     // each has (most first), or by how many matches fall on each quarter note of it (most first), so
