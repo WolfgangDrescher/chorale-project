@@ -818,7 +818,7 @@ function onSubmit() {
                 </span>
             </template>
             <template #body>
-                <pre class="text-xs overflow-auto max-h-[60vh] rounded-md bg-elevated p-4">{{ JSON.stringify(jsonData, null, 4) }}</pre>
+                <pre class="text-xs overflow-auto max-h-[60vh] rounded-md bg-elevated p-4">{{ formatQuery(jsonData) }}</pre>
             </template>
             <template #footer>
                 <UButton
@@ -826,7 +826,7 @@ function onSubmit() {
                     :label="jsonCopied ? $t('copied') : $t('copy')"
                     color="neutral"
                     variant="subtle"
-                    @click="copyToClipboard(JSON.stringify(jsonData, null, 4))"
+                    @click="copyToClipboard(formatQuery(jsonData))"
                 />
             </template>
         </UModal>
