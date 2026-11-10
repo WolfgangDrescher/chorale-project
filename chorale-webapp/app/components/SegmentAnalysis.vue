@@ -336,6 +336,9 @@ const pagedMatches = computed(() => {
     return activeMatches.value.slice(start, start + MATCHES_PER_PAGE);
 });
 
+const chorales = useChoraleMetadata();
+const matchPlayers = useScorePlayers(() => pagedMatches.value.map(([choraleId]) => choraleId));
+
 async function loadMatches(segment) {
     if (matchesBySegmentId[segment.id]) return;
     matchesPending.value = true;
@@ -389,6 +392,7 @@ const pagedBassLineMatches = computed(() => {
     const start = (bassLineMatchesPage.value - 1) * MATCHES_PER_PAGE;
     return bassLineMatches.value.slice(start, start + MATCHES_PER_PAGE);
 });
+const bassLineMatchPlayers = useScorePlayers(() => pagedBassLineMatches.value.map(([choraleId]) => choraleId));
 
 function showBassLineMatches(bassLine) {
     shownBassLine.value = bassLine;
@@ -422,6 +426,12 @@ function sectionsForMatchItems(items) {
     ];
 }
 
+// The format of matches is read in pages/chorale/[id].vue.
+function choraleLink(choraleId, items) {
+    const matches = items.map(({ voice, startLine, endLine }) => `${voice}:${startLine}-${endLine}`).join(',');
+    return { path: localePath(`/chorale/${choraleId}`), query: { matches } };
+}
+
 // The segment's query or stats as JSON in a modal, so they don't take up room on the page.
 const jsonOpen = ref(false);
 const jsonTitle = ref('');
@@ -442,6 +452,7 @@ function goToSegment(n) {
 }
 
 const player = useScorePlayer();
+const choralePlayer = useScorePlayer();
 
 // A clicked note selects the segment starting on its line. A note that opens no segment (an
 // unclassified one, say) takes the latest segment that started before it.
@@ -692,14 +703,17 @@ function onSubmit() {
             </template>
             <template #body>
                 <div v-if="activeSegment" class="flex flex-col gap-4">
-                    <UCard v-for="[choraleId, items] in pagedMatches" :key="`${activeSegment.id}-${choraleId}`">
-                        <template #header>
-                            <div class="flex items-center justify-between gap-4">
-                                <span>{{ choraleId }}</span>
-                                <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
-                            </div>
-                        </template>
-                        <HighlightedScore
+                    <ChoraleCard
+                        v-for="[choraleId, items] in pagedMatches"
+                        :key="`${activeSegment.id}-${choraleId}`"
+                        :chorale-id="choraleId"
+                        :chorale="chorales?.[choraleId]"
+                        :match-count="items.length"
+                        :to="choraleLink(choraleId, items)"
+                        :player="matchPlayers.get(choraleId)"
+                    >
+                        <PlayableHighlightedScore
+                            :player="matchPlayers.get(choraleId)"
                             :horizontal="true"
                             :piece-id="choraleId"
                             :verovio-options="{
@@ -709,7 +723,7 @@ function onSubmit() {
                             :sections="sectionsForMatchItems(items)"
                             :scroll-to-first-section="true"
                         />
-                    </UCard>
+                    </ChoraleCard>
                     <UPagination
                         v-if="activeMatches.length > MATCHES_PER_PAGE"
                         v-model:page="matchesPage"
@@ -727,22 +741,29 @@ function onSubmit() {
                 <span class="inline-flex flex-wrap items-center gap-2">
                     <span>{{ $t('matchesInCorpus') }}</span>
                     <UBadge color="neutral" variant="subtle" :label="activeSegment?.id" />
-                    <UBadge color="neutral" variant="subtle" :label="shownChoraleId" />
-                    <span class="text-sm font-normal text-dimmed">{{ $t('matchCount', shownChoraleMatches.length) }}</span>
                 </span>
             </template>
             <template #body>
-                <HighlightedScore
+                <ChoraleCard
                     v-if="shownChoraleId"
-                    :horizontal="true"
-                    :piece-id="shownChoraleId"
-                    :verovio-options="{
-                        scale: 35,
-                        pageMarginLeft: 42,
-                    }"
-                    :sections="sectionsForMatchItems(shownChoraleMatches)"
-                    :scroll-to-first-section="true"
-                />
+                    :chorale-id="shownChoraleId"
+                    :chorale="chorales?.[shownChoraleId]"
+                    :match-count="shownChoraleMatches.length"
+                    :player="choralePlayer"
+                    :to="choraleLink(shownChoraleId, shownChoraleMatches)"
+                >
+                    <PlayableHighlightedScore
+                        :player="choralePlayer"
+                        :horizontal="true"
+                        :piece-id="shownChoraleId"
+                        :verovio-options="{
+                            scale: 35,
+                            pageMarginLeft: 42,
+                        }"
+                        :sections="sectionsForMatchItems(shownChoraleMatches)"
+                        :scroll-to-first-section="true"
+                    />
+                </ChoraleCard>
             </template>
         </UModal>
 
@@ -756,14 +777,17 @@ function onSubmit() {
             </template>
             <template #body>
                 <div class="flex flex-col gap-4">
-                    <UCard v-for="[choraleId, items] in pagedBassLineMatches" :key="`${activeSegment.id}-${choraleId}`">
-                        <template #header>
-                            <div class="flex items-center justify-between gap-4">
-                                <span>{{ choraleId }}</span>
-                                <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
-                            </div>
-                        </template>
-                        <HighlightedScore
+                    <ChoraleCard
+                        v-for="[choraleId, items] in pagedBassLineMatches"
+                        :key="`${activeSegment.id}-${choraleId}`"
+                        :chorale-id="choraleId"
+                        :chorale="chorales?.[choraleId]"
+                        :match-count="items.length"
+                        :to="choraleLink(choraleId, items)"
+                        :player="bassLineMatchPlayers.get(choraleId)"
+                    >
+                        <PlayableHighlightedScore
+                            :player="bassLineMatchPlayers.get(choraleId)"
                             :horizontal="true"
                             :piece-id="choraleId"
                             :verovio-options="{
@@ -773,7 +797,7 @@ function onSubmit() {
                             :sections="sectionsForMatchItems(items)"
                             :scroll-to-first-section="true"
                         />
-                    </UCard>
+                    </ChoraleCard>
                     <UPagination
                         v-if="bassLineMatches.length > MATCHES_PER_PAGE"
                         v-model:page="bassLineMatchesPage"
