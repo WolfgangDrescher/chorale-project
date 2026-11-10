@@ -661,27 +661,16 @@ function onSubmit() {
                                     arrows
                                     class="w-full"
                                 >
-                                    <div class="flex flex-col gap-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <UButton
-                                                color="neutral"
-                                                variant="outline"
-                                                size="xs"
-                                                class="tabular-nums"
-                                                :label="$t('segmentStats', { matches: bassLine.matches, count: bassLine.choraleCount }, bassLine.choraleCount)"
-                                                @click="showBassLineMatches(bassLine)"
-                                            />
-                                        </div>
-                                        <HighlightedScore
-                                            :horizontal="true"
-                                            :piece-id="bassLine.example.choraleId"
-                                            :filters="bassLineFilters(bassLine.example)"
-                                            :verovio-options="{
-                                                scale: 35,
-                                                pageMarginLeft: 42,
-                                            }"
+                                    <CompactPlayableScore :piece-id="bassLine.example.choraleId" :filters="bassLineFilters(bassLine.example)">
+                                        <UButton
+                                            color="neutral"
+                                            variant="outline"
+                                            size="xs"
+                                            class="tabular-nums"
+                                            :label="$t('segmentStats', { matches: bassLine.matches, count: bassLine.choraleCount }, bassLine.choraleCount)"
+                                            @click="showBassLineMatches(bassLine)"
                                         />
-                                    </div>
+                                    </CompactPlayableScore>
                                 </UCarousel>
                                 </div>
                                 </template>
