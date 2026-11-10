@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core';
+
 const props = withDefaults(defineProps<{
     // Where the score comes from: a piece served by the app (pieceId), or -- for a score that
     // only exists as text, like an upload -- the **kern data itself. scoreData wins when both
@@ -292,12 +294,18 @@ function updateMarkerWidth() {
     }
 }
 
-async function mutationObserverEvent() {
+async function redrawMarkers() {
     scoreKey.value = Date.now();
     await nextTick();
     updateMarkerWidth();
     updateStickySystemStart();
 }
+
+// The markers are measured on screen, so an animation that moves or scales the score, like a modal
+// opening, leaves them out of place until it ends.
+useEventListener(document, ['animationend', 'transitionend'], (event) => {
+    if (event.target instanceof Element && wrapperElem.value && event.target.contains(wrapperElem.value)) redrawMarkers();
+});
 
 const mutationObserver = ref<MutationObserver | null>(null);
 
@@ -305,7 +313,7 @@ function setupMutationObserver() {
     if (mutationObserver.value) {
         mutationObserver.value.disconnect();
     }
-    mutationObserver.value = new MutationObserver(mutationObserverEvent);
+    mutationObserver.value = new MutationObserver(redrawMarkers);
     if (scoreContainer.value) {
         mutationObserver.value.observe(scoreContainer.value, {
             // attributes: true,
