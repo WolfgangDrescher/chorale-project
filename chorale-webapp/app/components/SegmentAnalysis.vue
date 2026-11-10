@@ -17,7 +17,7 @@ const props = defineProps({
 // Whole quarter notes, which is all --length takes. Anything shorter than 2 makes the query a
 // single note, anything past 8 rarely survives a phrase ending (no segment reaches across a
 // fermata), so the ends of this list are already where the tool stops being interesting.
-const SEGMENT_LENGTHS = [2, 3, 4, 6, 8];
+const SEGMENT_LENGTHS = [2, 3, 4, 5, 6, 7, 8];
 
 // The options sent along with the score, rendered as one form field each. To add one: add an
 // entry here (type 'select' with `items`, or 'switch'), its two translations, and handle its
