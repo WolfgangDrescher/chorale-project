@@ -181,22 +181,15 @@ function choraleLink(choraleId, items) {
                 </div>
             </div>
             <div class="flex flex-col gap-4">
-                <UCard v-for="([choraleId, items]) in pagedChoraleEntries" :key="choraleId">
-                    <template #header>
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="flex flex-wrap items-baseline gap-x-2">
-                                <NuxtLink :to="choraleLink(choraleId, items)" class="flex flex-wrap items-baseline gap-x-2 hover:text-primary">
-                                    <span class="font-semibold">{{ choraleId }}</span>
-                                    <span v-if="chorales?.[choraleId]?.title">{{ chorales[choraleId].title }}</span>
-                                </NuxtLink>
-                                <span v-if="chorales?.[choraleId]?.bwv" class="text-sm text-muted">{{ chorales[choraleId].bwv }}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <UBadge color="neutral" variant="subtle" :label="$t('matchCount', items.length)" />
-                                <ScorePlayerControls :player="players.get(choraleId)" compact />
-                            </div>
-                        </div>
-                    </template>
+                <ChoraleCard
+                    v-for="([choraleId, items]) in pagedChoraleEntries"
+                    :key="choraleId"
+                    :chorale-id="choraleId"
+                    :chorale="chorales?.[choraleId]"
+                    :match-count="items.length"
+                    :player="players.get(choraleId)"
+                    :to="choraleLink(choraleId, items)"
+                >
                     <PlayableHighlightedScore
                         :player="players.get(choraleId)"
                         :horizontal="scoreOptions.showHorizontalViewMode"
@@ -210,7 +203,7 @@ function choraleLink(choraleId, items) {
                         :sections="sectionsForItems(items)"
                         :scroll-to-first-section="scoreOptions.showHorizontalViewMode"
                     />
-                </UCard>
+                </ChoraleCard>
             </div>
             <div class="flex justify-center my-4">
                 <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" v-bind="paginationProps" />
