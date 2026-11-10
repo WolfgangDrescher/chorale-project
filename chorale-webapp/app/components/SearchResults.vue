@@ -103,26 +103,7 @@ function sectionsForItems(items) {
     }));
 }
 
-// A player for each chorale of the page, each in a scope of its own that ends when its chorale
-// leaves the page.
-const playerScopes = new Map();
-const players = shallowRef(new Map());
-watch(pagedChoraleEntries, (entries) => {
-    const choraleIds = entries.map(([choraleId]) => choraleId);
-    for (const [choraleId, scope] of playerScopes) {
-        if (!choraleIds.includes(choraleId)) {
-            scope.stop();
-            playerScopes.delete(choraleId);
-        }
-    }
-    players.value = new Map(choraleIds.map((choraleId) => {
-        if (!playerScopes.has(choraleId)) playerScopes.set(choraleId, effectScope());
-        return [choraleId, playerScopes.get(choraleId).run(useScorePlayer)];
-    }));
-}, { immediate: true });
-onScopeDispose(() => {
-    for (const scope of playerScopes.values()) scope.stop();
-});
+const players = useScorePlayers(() => pagedChoraleEntries.value.map(([choraleId]) => choraleId));
 
 // Falls back to the first chorale of the page.
 useScorePlayerKeyboardShortcuts(() => {
