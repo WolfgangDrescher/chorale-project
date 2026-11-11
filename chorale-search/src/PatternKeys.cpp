@@ -130,6 +130,11 @@ bool isValidHintComparisonValue(const std::string& v) {
     return isValidIntervalFigure(v);
 }
 
+// A lone "!" is no negation.
+bool isNegatedKey(const std::string& rawKey) {
+    return rawKey.size() > 1 && rawKey[0] == '!';
+}
+
 constexpr ValueSpec kHintValues{
     .comparable = true,
     .isValidValue = isValidIntervalFigure, .isValidComparisonValue = isValidHintComparisonValue,
@@ -269,24 +274,17 @@ const std::vector<PatternKey>& patternKeys() {
 
 PatternKeyLookup findPatternKey(const std::string& rawKey) {
     PatternKeyLookup lookup;
+    lookup.rawKey = rawKey;
     lookup.negated = isNegatedKey(rawKey);
-    const std::string queryKey = stripNegationPrefix(rawKey);
+    lookup.baseKey = lookup.negated ? rawKey.substr(1) : rawKey;
     for (const PatternKey& patternKey : patternKeys()) {
-        const bool found = patternKey.coversQueryKey ? patternKey.coversQueryKey(queryKey) : patternKey.name == queryKey;
+        const bool found = patternKey.coversQueryKey ? patternKey.coversQueryKey(lookup.baseKey) : patternKey.name == lookup.baseKey;
         if (found) {
             lookup.patternKey = &patternKey;
             break;
         }
     }
     return lookup;
-}
-
-bool isNegatedKey(const std::string& rawKey) {
-    return rawKey.size() > 1 && rawKey[0] == '!';
-}
-
-std::string stripNegationPrefix(const std::string& rawKey) {
-    return isNegatedKey(rawKey) ? rawKey.substr(1) : rawKey;
 }
 
 std::optional<std::string> normalizeMetweightValue(const std::string& value) {

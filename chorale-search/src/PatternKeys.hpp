@@ -56,20 +56,19 @@ struct PatternKey {
 
 // What a key of the query names: "!mint" is the key mint, negated.
 struct PatternKeyLookup {
+    std::string rawKey;                     // as the query writes it: "!hint-14"
+    std::string baseKey;                    // without the negation: "hint-14"
     const PatternKey* patternKey = nullptr; // nullptr for an unknown key
     bool negated = false;
+
+    bool is(PatternKeyId id) const { return patternKey && patternKey->id == id; }
+    bool readsLyrics() const { return patternKey && patternKey->perVerse; }
 };
 
 // Every key: the driving features first.
 const std::vector<PatternKey>& patternKeys();
 
 PatternKeyLookup findPatternKey(const std::string& rawKey);
-
-// Whether `rawKey` is negated ("!deg"). A lone "!" is no negation.
-bool isNegatedKey(const std::string& rawKey);
-
-// `rawKey` without its negation: "deg" for "!deg".
-std::string stripNegationPrefix(const std::string& rawKey);
 
 // A value as the score spells it, or nullopt for no such value.
 std::optional<std::string> normalizeMetweightValue(const std::string& value); // "strong", "1": "s"

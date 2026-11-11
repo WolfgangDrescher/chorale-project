@@ -7,11 +7,19 @@
 
 #include "HumdrumChorale.hpp"
 #include "Intervals.hpp"
+#include "PatternKeys.hpp"
 #include "Query.hpp"
 #include "Result.hpp"
 #include "VerseSet.hpp"
 
 namespace choralesearch {
+
+// A key of a position of the pattern with its values, looked up in the table of keys once.
+struct PositionKey : PatternKeyLookup {
+    std::vector<PatternValue> values;
+};
+
+using PatternPosition = std::vector<PositionKey>;
 
 struct AttributeMatch {
     std::size_t voice;           // 1-indexed voice (spine) the match was found in
@@ -85,7 +93,7 @@ private:
     // judged at all because the spine or token it needs isn't there -- that fails the
     // position outright, negation included.
     std::optional<bool> matchKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
-                                  const std::string& rawKey, const std::vector<PatternValue>& allowed) const;
+                                  const PositionKey& positionKey) const;
 
     // Consumes one or more consecutive onsets starting at onsets[onsetIndex] that together
     // make up one "logical note" for this pattern position, until their summed duration hits
@@ -95,7 +103,7 @@ private:
     // MatcherOptions::durationAllowSplitNotes is set.
     std::optional<std::size_t> matchSplitPosition(const HumdrumChorale& chorale, std::size_t voice,
                                                    const std::vector<Onset>& onsets, std::size_t onsetIndex,
-                                                   const AttributeMap& position) const;
+                                                   const PatternPosition& position) const;
 
     // Judges a "mint" or "kern" key (possibly "!"-negated) that a merged run's later position
     // states about the re-attack the merged onset doesn't have, against what that re-attack
@@ -103,7 +111,7 @@ private:
     // helpers. Same contract as matchKey otherwise: negation applied, nullopt when the key
     // can't be judged at all.
     std::optional<bool> matchReAttackKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
-                                          const std::string& rawKey, const std::vector<PatternValue>& allowed) const;
+                                          const PositionKey& positionKey) const;
 
     // The converse of matchSplitPosition: consumes one or more consecutive pattern positions
     // starting at m_pattern[patternIndex] that together describe the single onset `tok`,
@@ -117,10 +125,11 @@ private:
                                                      const Onset& onset, std::size_t patternIndex,
                                                      hum::HumNum remaining, bool isContinuation) const;
 
-    static void normalizePatternValue(const std::string& key, PatternValue& value);
+    bool isDrivenByLyrics() const { return m_drivingFeatureId == PatternKeyId::Word || m_drivingFeatureId == PatternKeyId::Syl; }
 
     std::string m_drivingFeature;
-    std::vector<AttributeMap> m_pattern;
+    std::optional<PatternKeyId> m_drivingFeatureId; // nullopt for an unknown feature
+    std::vector<PatternPosition> m_pattern;
     MatcherOptions m_options;
     bool m_readsLyrics = false; // driven by word or syl, or with a lyrics key in the pattern
 };
