@@ -9,6 +9,7 @@
 #include <fstream>
 #include <map>
 #include <sstream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -117,6 +118,11 @@ std::string toDebugString(const T& v) {
     std::ostringstream oss;
     oss << v;
     return oss.str();
+}
+
+template <class T>
+std::string toDebugString(const std::optional<T>& v) {
+    return v ? toDebugString(*v) : "nullopt";
 }
 
 template <class T>

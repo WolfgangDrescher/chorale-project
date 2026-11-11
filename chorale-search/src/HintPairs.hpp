@@ -37,10 +37,16 @@ inline std::optional<std::size_t> otherVoiceOfHintPair(const std::string& featur
     return std::nullopt;
 }
 
-// A pairwise-interval key that uses "*" for one or both digits, e.g. "hint-*4", "hint-1*",
-// "hint-**", to mean "any pair matching this digit pattern".
+// "hint-2": the interval between the voice searched and voice 2, at every position of the pattern.
+inline bool isHintRelativeKey(const std::string& key) {
+    return key.rfind("hint-", 0) == 0 && key.size() == 6 && key[5] >= '1' && key[5] <= '4';
+}
+
+// "hint-**", "hint-1*", "hint-*4": a voice or "*" twice, at least one "*", for any pair that fits.
 inline bool isHintPairWildcardKey(const std::string& key) {
-    return key.rfind("hint-", 0) == 0 && key.size() == 7 && key.find('*') != std::string::npos;
+    if (key.rfind("hint-", 0) != 0 || key.size() != 7 || key.find('*') == std::string::npos) return false;
+    const auto isVoiceOrStar = [](char c) { return c == '*' || (c >= '1' && c <= '4'); };
+    return isVoiceOrStar(key[5]) && isVoiceOrStar(key[6]);
 }
 
 // Expands a (possibly wildcarded) pairwise-interval key's two-character suffix against the

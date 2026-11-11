@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "HumdrumChorale.hpp"
+#include "Intervals.hpp"
 #include "Query.hpp"
 #include "Result.hpp"
 #include "VerseSet.hpp"
@@ -29,16 +30,6 @@ std::string mintIntervalToken(hum::HTp from, hum::HTp to);
 
 // A hint interval ("M10") folded back within an octave ("M3"); a unison and an octave stay distinct.
 std::string reduceHintInterval(const std::string& value);
-
-// An interval as a mint token or a pattern value writes it: [direction][quality]number.
-struct IntervalParts {
-    std::string direction; // "+", "-" or empty
-    std::string quality;   // "M", "P", ... or empty
-    std::string number;    // the diatonic number
-};
-
-// Splits a **mint interval ("+M2") into its IntervalParts; nullopt for what is no interval.
-std::optional<IntervalParts> parseMintValue(const std::string& s);
 
 // The complement within the octave in the opposite direction ("-P5" -> "+P4"); nullopt for a value
 // without a simple interval.

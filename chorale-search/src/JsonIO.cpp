@@ -134,7 +134,7 @@ std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const 
             checkVoiceReference(key, value.text, context);
             continue;
         }
-        if (value.hasRelationalOperator()) continue; // already checked above
+        if (value.hasComparisonOperator()) continue; // already checked above
         if (value.text == "*") continue; // universal wildcard, valid for any key
         if (value.text.empty() || !isValidPatternValue(key, value.text)) {
             throw std::invalid_argument(context + ": '" + value.text + "' is not a valid '" + key + "' value");

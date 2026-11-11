@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(chorale-search CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -37,6 +37,8 @@ add_library(chorale_core STATIC
     src/SplitScoreIntoVoices.cpp
     src/JsonIO.cpp
     src/QueryValidation.cpp
+    src/PatternKeys.cpp
+    src/Intervals.cpp
     src/ScoreImport.cpp
     src/Segmentation.cpp
     src/Grouping.cpp
@@ -93,12 +95,12 @@ if(BUILD_TESTS)
     target_include_directories(test_voicereference PRIVATE src tests)
     add_test(NAME voicereference COMMAND test_voicereference)
 
-    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/QueryValidation.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
+    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
     target_include_directories(test_jsonio PRIVATE src tests external/json/single_include)
     target_link_libraries(test_jsonio PRIVATE humlib)
     add_test(NAME jsonio COMMAND test_jsonio)
 
-    add_executable(test_choralefilter tests/test_choralefilter.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/JsonIO.cpp src/QueryValidation.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
+    add_executable(test_choralefilter tests/test_choralefilter.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/JsonIO.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
     target_include_directories(test_choralefilter PRIVATE src tests external/json/single_include)
     target_link_libraries(test_choralefilter PRIVATE humlib)
     add_test(NAME choralefilter COMMAND test_choralefilter)
@@ -113,7 +115,11 @@ if(BUILD_TESTS)
     target_link_libraries(test_lyricsspines PRIVATE humlib)
     add_test(NAME lyricsspines COMMAND test_lyricsspines)
 
-    add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
+    add_executable(test_patternkeys tests/test_patternkeys.cpp src/PatternKeys.cpp src/Intervals.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
+    target_include_directories(test_patternkeys PRIVATE src tests)
+    add_test(NAME patternkeys COMMAND test_patternkeys)
+
+    add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/ChoraleInfo.cpp)
     target_include_directories(test_queryvalidation PRIVATE src tests)
     add_test(NAME queryvalidation COMMAND test_queryvalidation)
 

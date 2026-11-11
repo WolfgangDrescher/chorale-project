@@ -162,7 +162,7 @@ std::vector<std::size_t> voicesOfFbFigures(const HumdrumChorale& chorale, std::s
         if (!token) continue;
         const std::string interval = *token;
         const bool figured = std::any_of(values.begin(), values.end(), [&](const PatternValue& value) {
-            if (value.hasRelationalOperator()) return false;
+            if (value.hasComparisonOperator()) return false;
             std::istringstream figures(value.text);
             for (std::string figure; figures >> figure;) {
                 if (fbFigureMatchesInterval(figure, interval)) return true;

@@ -30,9 +30,8 @@ struct PatternValue {
     PatternValue(std::string value) : text(std::move(value)) {}
     PatternValue(ComparisonOperator o, std::string value) : comparisonOperator(o), text(std::move(value)) {}
 
-    // Whether the value is held against the score with a relational operator (greater than "4", at most
-    // "g"), rather than being matched by the feature's own rules as EqualTo is.
-    bool hasRelationalOperator() const { return comparisonOperator != ComparisonOperator::EqualTo; }
+    // Whether the value is compared (greater than "4", at most "g") rather than matched as EqualTo is.
+    bool hasComparisonOperator() const { return comparisonOperator != ComparisonOperator::EqualTo; }
     // Whether the value names a voice ("@2", "@below", see VoiceReference.hpp) instead of stating one:
     // what it is held against is whatever that voice has at the same position in the score.
     bool isVoiceReference() const { return !text.empty() && text[0] == '@'; }
@@ -54,7 +53,7 @@ inline const char* comparisonOperatorName(ComparisonOperator comparisonOperator)
 
 // For diagnostics (test failure messages): the plain string, or "greaterThan 4" for an order comparison.
 inline std::ostream& operator<<(std::ostream& os, const PatternValue& value) {
-    if (value.hasRelationalOperator()) os << comparisonOperatorName(value.comparisonOperator) << " ";
+    if (value.hasComparisonOperator()) os << comparisonOperatorName(value.comparisonOperator) << " ";
     return os << value.text;
 }
 
@@ -198,7 +197,7 @@ struct Query {
 
 // A plain string for an EqualTo value, the {"operator", "value"} object for an order comparison.
 inline nlohmann::json patternValueToJson(const PatternValue& value) {
-    if (!value.hasRelationalOperator()) return value.text;
+    if (!value.hasComparisonOperator()) return value.text;
     return {{"operator", comparisonOperatorName(value.comparisonOperator)}, {"value", value.text}};
 }
 

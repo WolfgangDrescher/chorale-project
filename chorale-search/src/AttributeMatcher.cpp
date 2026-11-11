@@ -2,7 +2,10 @@
 #include "ChoraleInfo.hpp"
 #include "HintPairs.hpp"
 #include "HumdrumUtils.hpp"
+#include "Intervals.hpp"
+#include "PatternKeys.hpp"
 #include "QueryValidation.hpp"
+#include "ValueScanner.hpp"
 #include "VoiceReference.hpp"
 
 #include <algorithm>
@@ -19,22 +22,6 @@ namespace choralesearch {
 
 namespace {
 
-const std::string kDurationKey = "duration";
-const std::string kFermataKey = "fermata";
-const std::string kPhraseKey = "phrase";
-const std::string kModeKey = "mode";
-const std::string kKeyKey = "key";
-const std::string kKeyDegKey = "keyDeg";
-const std::string kKernFeature = "kern";
-const std::string kMintFeature = "mint";
-const std::string kDegFeature = "deg";
-const std::string kFbFeature = "fb";
-const std::string kMetweightFeature = "metweight";
-const std::string kWordFeature = "word";
-const std::string kSylFeature = "syl";
-const std::string kSylposKey = "sylpos";
-const std::string kMelismaKey = "melisma";
-
 // How Tool_metweight abbreviates a metrically unclassified position -- an onset that falls
 // between the beats the meter classifies, which in these chorales is where the diminution sits.
 const std::string kUnclassifiedMetweight = "u";
@@ -48,16 +35,7 @@ bool isHintPairKey(const std::string& key) {
 // one per voice -- so any lookup against it always uses voice 1, regardless of which voice
 // is actually being searched.
 std::size_t effectiveVoice(const std::string& feature, std::size_t voice) {
-    return (feature == kFbFeature || isHintPairKey(feature)) ? 1 : voice;
-}
-
-// A single-digit interval key, e.g. "hint-2" -- the interval between whichever voice is
-// currently being searched and this specific other voice. Unlike "hint-*4"/etc, the digit
-// here is never a wildcard: both sides of the pair need to stay fixed for the whole pattern
-// (the walked voice by construction, this digit by being a literal) for a match across
-// several positions to actually mean "the same two voices," e.g. genuine parallel motion.
-bool isHintRelativeKey(const std::string& key) {
-    return key.rfind("hint-", 0) == 0 && key.size() == 6 && key[5] >= '1' && key[5] <= '4';
+    return (feature == kFbKey || isHintPairKey(feature)) ? 1 : voice;
 }
 
 // Resolves "hint-<other>" against whichever voice is currently being walked into the
@@ -106,7 +84,7 @@ bool durationInList(const std::vector<PatternValue>& allowed, hum::HumNum durati
     std::string recip;
     for (const PatternValue& v : allowed) {
         if (v.isVoiceReference()) continue; // judged against the other voice, see voiceReferenceInList()
-        if (v.hasRelationalOperator()) {
+        if (v.hasComparisonOperator()) {
             if (evaluateComparison(v.comparisonOperator, duration, hum::Convert::recipToDuration(v.text))) return true;
             continue;
         }
@@ -124,7 +102,7 @@ bool hasOnlyExactDurations(const AttributeMap& position) {
     auto it = position.find(kDurationKey);
     return it != position.end() && !isWildcard(it->second) &&
            std::none_of(it->second.begin(), it->second.end(), [](const PatternValue& v) {
-               return v.hasRelationalOperator() || v.isVoiceReference();
+               return v.hasComparisonOperator() || v.isVoiceReference();
            });
 }
 
@@ -142,45 +120,6 @@ std::string kernToPitch(const std::string& kerndata) {
     }
     return pitch;
 }
-
-// Reads a value from left to right, one kind of character after the other, the way the grammar
-// of the value is written down. The pattern and token values the parsers below take apart are
-// short and simple, and they are taken apart for every onset a pattern is held against, which a
-// std::regex did far too slowly. It only holds a reference to the text, so the text has to
-// outlive the scanner.
-class ValueScanner {
-public:
-    explicit ValueScanner(const std::string& text) : m_text(text) {}
-
-    std::string digits() { return readWhile(isDigit); }
-    std::string letters() { return readWhile(isLetter); }
-    // The longest run of characters that are all one of `chars`.
-    std::string anyOf(const std::string& chars) {
-        return readWhile([&](char c) { return chars.find(c) != std::string::npos; });
-    }
-    // Moves past `c` and answers true if it is what comes next, otherwise stays and answers false.
-    bool accept(char c) {
-        if (m_position >= m_text.size() || m_text[m_position] != c) return false;
-        ++m_position;
-        return true;
-    }
-    bool atEnd() const { return m_position == m_text.size(); }
-
-private:
-    // ASCII only, like the \d and [A-Za-z] of the grammars: the current locale has no say.
-    static bool isDigit(char c) { return c >= '0' && c <= '9'; }
-    static bool isLetter(char c) { return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'); }
-
-    template <typename Accept>
-    std::string readWhile(Accept accept) {
-        std::size_t begin = m_position;
-        while (m_position < m_text.size() && accept(m_text[m_position])) ++m_position;
-        return m_text.substr(begin, m_position - begin);
-    }
-
-    const std::string& m_text;
-    std::size_t m_position = 0;
-};
 
 // Whether `text` is one character repeated ("#", "##", "--", "+"). An accidental or alteration
 // mixed of both directions ("#-", "+-") alters nothing as a whole, so it is none to search for.
@@ -271,27 +210,11 @@ bool kernInList(const std::vector<PatternValue>& allowed, hum::HTp actualTok, bo
                  hum::HumNum duration) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) {
         if (v.isVoiceReference()) return false; // judged against the other voice, see voiceReferenceInList()
-        if (v.hasRelationalOperator()) return kernComparisonMatches(v, actualTok);
+        if (v.hasComparisonOperator()) return kernComparisonMatches(v, actualTok);
         return kernValueMatches(v.text, actualTok, ignoreOctave, duration);
     });
 }
 
-} // namespace
-
-// Sign, quality, and number each come back empty when the string has none (e.g. a bare "2", or a
-// bare "+"), which mintValueMatches() below treats as "matches any".
-std::optional<IntervalParts> parseMintValue(const std::string& s) {
-    ValueScanner scan(s);
-    std::string direction;
-    if (scan.accept('+')) direction = "+";
-    else if (scan.accept('-')) direction = "-";
-    std::string quality = scan.letters();
-    std::string number = scan.digits();
-    if (!scan.atEnd()) return std::nullopt;
-    return IntervalParts{std::move(direction), std::move(quality), std::move(number)};
-}
-
-namespace {
 
 // A pattern value may omit sign, quality, and/or number to match any of them -- "+2"
 // matches "+M2"/"+m2"/..., a bare "2" any sign/quality, a bare "+" any interval at all
@@ -407,7 +330,7 @@ bool mintComparisonMatches(const PatternValue& v, const std::string& actual) {
 // complement is another size by definition. Only an equal value can be complemented or folded.
 bool mintPatternValueMatches(const PatternValue& entry, const std::string& actual, const std::string& seen,
                       const std::vector<std::string>& allowComplementationFor, bool reduceCompound) {
-    if (entry.hasRelationalOperator()) return mintComparisonMatches(entry, actual);
+    if (entry.hasComparisonOperator()) return mintComparisonMatches(entry, actual);
 
     const std::string& v = entry.text;
     if (mintValueMatches(reduceCompound ? reduceMintValue(v) : v, seen)) return true;
@@ -423,23 +346,6 @@ bool mintInList(const std::vector<PatternValue>& allowed, const std::string& act
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& entry) {
         return mintPatternValueMatches(entry, actual, seen, allowComplementationFor, reduceCompound);
     });
-}
-
-// A figured-bass interval taken apart, as parseFbValue() does.
-struct FbValue {
-    std::string quality; // "M", "P", ... or empty
-    std::string figure;  // the interval number
-};
-
-// Splits a figured-bass interval ("m6", "P5", ...) into its FbValue. A bare
-// figure like "6" comes back with an empty quality, which fbValueMatches() treats
-// as "any quality" for that figure.
-std::optional<FbValue> parseFbValue(const std::string& s) {
-    ValueScanner scan(s);
-    std::string quality = scan.letters();
-    std::string figure = scan.digits();
-    if (figure.empty() || !scan.atEnd()) return std::nullopt;
-    return FbValue{std::move(quality), std::move(figure)};
 }
 
 bool fbIntervalMatches(const std::string& patternValue, const std::string& actual) {
@@ -529,23 +435,12 @@ bool hintComparisonMatches(const PatternValue& v, const std::string& actual) {
 
 bool hintInList(const std::vector<PatternValue>& allowed, const std::string& actual, bool reduceCompound) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) {
-        if (v.hasRelationalOperator()) return hintComparisonMatches(v, actual);
+        if (v.hasComparisonOperator()) return hintComparisonMatches(v, actual);
         return hintValueMatches(v.text, actual, reduceCompound);
     });
 }
 
 namespace {
-
-// Tool_metweight writes the **metweight spine in abbreviated form ("s"/"hs"/"w"/"u",
-// but a pattern value may spell a weight class out as an abbreviation, a full word,
-// or a numeric rank
-std::string normalizeMetweightValue(const std::string& value) {
-    if (value == "s" || value == "strong" || value == "1") return "s";
-    if (value == "hs" || value == "half-strong" || value == "2") return "hs";
-    if (value == "w" || value == "weak" || value == "3") return "w";
-    if (value == "u" || value == "unclassified" || value == "4") return "u";
-    return value;
-}
 
 // A **deg pattern value is a scale degree ("4+", "7", "r") compared literally, or an alteration
 // alone ("+", "--"): every degree raised or lowered by exactly as much against the local key, the
@@ -603,19 +498,11 @@ hum::HTp lookupToken(const HumdrumChorale& chorale, std::size_t voice, int lineN
     return chorale.tokenAtLine(feature, voice, lineNumber);
 }
 
-// A sylpos or melisma value by its name: MEI's wordpos letters stand for them ("i" for "initial").
-std::string positionNameFromLetter(const std::string& value) {
-    static const std::map<std::string, std::string> names = {
-        {"s", "single"}, {"i", "initial"}, {"m", "medial"}, {"t", "terminal"}, {"n", "none"}};
-    const auto name = names.find(value);
-    return name == names.end() ? value : name->second;
-}
-
 // Whether `key` matches `syllable` at the soprano note on `lineNumber`. word and syl are compared normalized,
 // their values as globs.
 bool lyricsInList(const std::string& key, const std::vector<PatternValue>& allowed, const LyricsSyllable& syllable, int lineNumber) {
-    if (key == kWordFeature || key == kSylFeature) {
-        const std::string& actual = key == kWordFeature ? syllable.word->normalizedText : syllable.normalizedText;
+    if (key == kWordKey || key == kSylKey) {
+        const std::string& actual = key == kWordKey ? syllable.word->normalizedText : syllable.normalizedText;
         return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& v) { return matchesLyricsGlob(v.text, actual); });
     } else if (key == kSylposKey) {
         return inList(allowed, syllablePositionName(syllable.position));
@@ -632,8 +519,8 @@ bool lyricsInList(const std::string& key, const std::vector<PatternValue>& allow
 void addLyricsOnset(std::vector<AttributeMatcher::Onset>& onsets, const HumdrumChorale& chorale, std::size_t verse,
                     int firstLine, int lastLine, hum::HumNum duration) {
     const std::size_t soprano = chorale.voiceCount();
-    hum::HTp firstTok = chorale.tokenAtLine(kKernFeature, soprano, firstLine);
-    hum::HTp lastTok = chorale.tokenAtLine(kKernFeature, soprano, lastLine);
+    hum::HTp firstTok = chorale.tokenAtLine(kKernKey, soprano, firstLine);
+    hum::HTp lastTok = chorale.tokenAtLine(kKernKey, soprano, lastLine);
     if (!firstTok || !lastTok) return;
     for (AttributeMatcher::Onset& onset : onsets) {
         if (onset.token == firstTok && onset.lastToken == lastTok) {
@@ -681,16 +568,6 @@ std::vector<AttributeMatcher::Onset> wordOnsets(const HumdrumChorale& chorale, s
     return onsets;
 }
 
-// Strips the "!" negation prefix (see the pattern loop below). A lone "!" isn't a prefix --
-// there'd be nothing left to negate.
-bool isNegatedKey(const std::string& rawKey) {
-    return rawKey.size() > 1 && rawKey[0] == '!';
-}
-
-std::string stripNegationPrefix(const std::string& rawKey) {
-    return isNegatedKey(rawKey) ? rawKey.substr(1) : rawKey;
-}
-
 // The verses a lyrics key matches at the soprano note on `lineNumber`, negation included: "!word": "gott" matches
 // a verse where the note has no gott, one without a syllable there too. A chorale without lyrics has no verse,
 // so no key matches it, a negated one and the wildcard included.
@@ -723,8 +600,8 @@ bool mintOctaveIsReAttack(const std::vector<std::string>& mintAllowComplementati
 bool continuesLogicalNote(const std::string& drivingFeature, hum::HTp first, hum::HTp tok,
                            const std::string& mint,
                            const std::vector<std::string>& mintAllowComplementation) {
-    if (drivingFeature == kKernFeature) return kernToPitch(std::string(*first)) == kernToPitch(std::string(*tok));
-    if (drivingFeature == kMintFeature) {
+    if (drivingFeature == kKernKey) return kernToPitch(std::string(*first)) == kernToPitch(std::string(*tok));
+    if (drivingFeature == kMintKey) {
         if (mintValueMatches("P1", mint)) return true;
         return mintOctaveIsReAttack(mintAllowComplementation) && mintValueMatches("P8", mint);
     }
@@ -740,7 +617,7 @@ bool mintReAttackInList(const std::vector<PatternValue>& allowed,
                          const std::vector<std::string>& mintAllowComplementation) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
         auto matches = [&](const char* interval) {
-            return value.hasRelationalOperator() ? mintComparisonMatches(value, interval)
+            return value.hasComparisonOperator() ? mintComparisonMatches(value, interval)
                                              : mintValueMatches(value.text, interval);
         };
         if (matches("P1")) return true;
@@ -760,7 +637,7 @@ bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, 
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
         if (value.isVoiceReference()) return false; // judged against the other voice, see voiceReferenceInList()
         // A comparison is of the pitch, which a re-attack has: the merged note's.
-        if (value.hasRelationalOperator()) return kernComparisonMatches(value, tok);
+        if (value.hasComparisonOperator()) return kernComparisonMatches(value, tok);
         const std::string& v = value.text;
         auto parsed = parseKernValue(v);
         if (!parsed) return kernValueMatches(v, tok, ignoreOctave, duration); // literal markup -- no rhythm to drop
@@ -810,7 +687,7 @@ bool voiceReferenceInList(const HumdrumChorale& chorale, std::size_t voice, cons
         if (!reference || reference->voices.empty()) continue;
 
         auto holdsFor = [&](std::size_t other) {
-            hum::HTp note = tokenBesideOnLine(lineToken, chorale.spine(kKernFeature, other), true);
+            hum::HTp note = tokenBesideOnLine(lineToken, chorale.spine(kKernKey, other), true);
             if (!note) return false;
             if (key == kDurationKey) {
                 // A tied note is one note, and its duration is counted from where it was struck.
@@ -887,7 +764,7 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
                     }
                     continue;
                 }
-                if (!value.hasRelationalOperator()) continue;
+                if (!value.hasComparisonOperator()) continue;
                 if (!supportsComparison(key) || !isValidComparisonValue(key, value.text)) {
                     throw std::invalid_argument("'" + key + "' cannot be compared with '" + value.text + "'");
                 }
@@ -913,17 +790,18 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
 // by their canonical name, sylpos and melisma by name ("i" is "initial"), word and syl like the lyrics
 // (see normalizeLyricsText: "Jesu" finds "jesu"). A wildcard and a comparison stay as they are.
 void AttributeMatcher::normalizePatternValue(const std::string& key, PatternValue& value) {
-    if (value.text == "*" || value.hasRelationalOperator() || value.isVoiceReference()) return;
-    if (key == kMetweightFeature) value.text = normalizeMetweightValue(value.text);
+    if (value.text == "*" || value.hasComparisonOperator() || value.isVoiceReference()) return;
+    if (key == kMetweightKey) value.text = normalizeMetweightValue(value.text).value_or(value.text);
     else if (key == kModeKey) value.text = normalizeModeName(value.text).value_or(value.text);
-    else if (key == kSylposKey || key == kMelismaKey) value.text = positionNameFromLetter(value.text);
-    else if (key == kWordFeature || key == kSylFeature) value.text = normalizeLyricsText(value.text);
+    else if (key == kSylposKey) value.text = normalizeSylposValue(value.text).value_or(value.text);
+    else if (key == kMelismaKey) value.text = normalizeMelismaValue(value.text).value_or(value.text);
+    else if (key == kWordKey || key == kSylKey) value.text = normalizeLyricsText(value.text);
 }
 
 std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const HumdrumChorale& chorale,
                                                                     std::size_t voice) const {
-    if (m_drivingFeature == kWordFeature) return wordOnsets(chorale, voice);
-    if (m_drivingFeature == kSylFeature) return syllableOnsets(chorale, voice);
+    if (m_drivingFeature == kWordKey) return wordOnsets(chorale, voice);
+    if (m_drivingFeature == kSylKey) return syllableOnsets(chorale, voice);
 
     std::vector<Onset> onsets;
     hum::HTp drivingStart = chorale.spine(m_drivingFeature, effectiveVoice(m_drivingFeature, voice));
@@ -943,8 +821,8 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
     // What makes an onset an ornament is where the *voice* attacks, so both spines are read for
     // the voice being walked -- the same one "fermata" is looked up in, not the (shared) spine
     // the driving feature may happen to live in.
-    hum::HTp kernSpine = chorale.spine(kKernFeature, voice);
-    hum::HTp metweightSpine = chorale.spine(kMetweightFeature, voice);
+    hum::HTp kernSpine = chorale.spine(kKernKey, voice);
+    hum::HTp metweightSpine = chorale.spine(kMetweightKey, voice);
 
     // The last kept note that actually sounds: what a skipped ornament's successor measures its
     // interval from, rests being transparent to **mint the same way Tool_mint treats them.
@@ -1019,8 +897,8 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         hum::HTp valTok = pairFeature ? lookupToken(chorale, 1, lineNumber, *pairFeature) : nullptr;
         matched = valTok && hintInList(allowed, std::string(*valTok), m_options.hintReduceCompound);
     } else if (key == kPhraseKey) {
-        hum::HTp noteTok = lookupToken(chorale, voice, lineNumber, kKernFeature);
-        hum::HTp lastNoteTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernFeature);
+        hum::HTp noteTok = lookupToken(chorale, voice, lineNumber, kKernKey);
+        hum::HTp lastNoteTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernKey);
         if (!noteTok || !lastNoteTok) return std::nullopt;
         matched = phraseInList(allowed, notePhraseRoles(noteTok, lastNoteTok));
     } else if (key == kModeKey || key == kKeyKey || key == kKeyDegKey) {
@@ -1033,10 +911,10 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         if (key == kDurationKey) {
             actual = hum::Convert::durationToRecip(onset.duration);
         } else if (key == kFermataKey) {
-            hum::HTp fermataTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernFeature);
+            hum::HTp fermataTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernKey);
             if (!fermataTok) return std::nullopt;
             actual = fermataTok->hasFermata() ? "true" : "false";
-        } else if (key == kMintFeature && onset.mint) {
+        } else if (key == kMintKey && onset.mint) {
             // An ornament was skipped in front of this onset, so the spine's own token states
             // the interval out of that ornament rather than out of the note the pattern is
             // stepping off -- see buildOnsets().
@@ -1050,18 +928,18 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
             actual = std::string(*valTok);
             kernTok = valTok;
         }
-        if (key == kMintFeature) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation, m_options.hintReduceCompound);
-        else if (key == kFbFeature) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
+        if (key == kMintKey) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation, m_options.hintReduceCompound);
+        else if (key == kFbKey) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
         else if (isHintPairKey(key)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
-        else if (key == kKernFeature) {
+        else if (key == kKernKey) {
             matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave, onset.duration) ||
                       voiceReferenceInList(chorale, voice, key, allowed, tok, kernTok, onset.duration, m_options.kernIgnoreOctave);
         } else if (key == kDurationKey) {
             matched = durationInList(allowed, onset.duration) ||
                       voiceReferenceInList(chorale, voice, key, allowed, tok, nullptr, onset.duration, m_options.kernIgnoreOctave);
         }
-        else if (key == kMetweightFeature) matched = inList(allowed, actual);
-        else if (key == kDegFeature) matched = degInList(allowed, actual);
+        else if (key == kMetweightKey) matched = inList(allowed, actual);
+        else if (key == kDegKey) matched = degInList(allowed, actual);
         else matched = inList(allowed, actual);
     }
     return negate ? !matched : matched;
@@ -1114,8 +992,8 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
                     auto matched = matchKey(chorale, voice, onset, rawKey, allowed);
                     if (!matched || !*matched) return std::nullopt;
                 } else if (key == kPhraseKey) {
-                    hum::HTp first = lookupToken(chorale, voice, onsets[onsetIndex].token->getLineNumber(), kKernFeature);
-                    hum::HTp last = lookupToken(chorale, voice, onset.token->getLineNumber(), kKernFeature);
+                    hum::HTp first = lookupToken(chorale, voice, onsets[onsetIndex].token->getLineNumber(), kKernKey);
+                    hum::HTp last = lookupToken(chorale, voice, onset.token->getLineNumber(), kKernKey);
                     if (!first || !last) return std::nullopt;
                     bool matched = isWildcard(allowed) || phraseInList(allowed, notePhraseRoles(first, last));
                     if (matched == isNegatedKey(rawKey)) return std::nullopt;
@@ -1143,25 +1021,25 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
     bool matched;
     if (isWildcard(allowed)) {
         matched = true;
-    } else if (key == kMintFeature) {
+    } else if (key == kMintKey) {
         matched = mintReAttackInList(allowed, m_options.mintAllowIntervalComplementation);
     } else if (key == kPhraseKey) {
         // A re-attack inside a note can't open a phrase or the chorale, and closes either only with the note.
-        hum::HTp noteTok = m_drivingFeature == kKernFeature
+        hum::HTp noteTok = m_drivingFeature == kKernKey
                                ? tok
-                               : lookupToken(chorale, voice, tok->getLineNumber(), kKernFeature);
+                               : lookupToken(chorale, voice, tok->getLineNumber(), kKernKey);
         if (!noteTok) return std::nullopt;
         PhraseRoles roles;
         roles.endsPhrase = noteTok->hasFermata();
         roles.endsChorale = endsChorale(noteTok);
         matched = phraseInList(allowed, roles);
     } else {
-        hum::HTp kernTok = m_drivingFeature == kKernFeature
+        hum::HTp kernTok = m_drivingFeature == kKernKey
                                 ? tok
-                                : lookupToken(chorale, voice, tok->getLineNumber(), kKernFeature);
+                                : lookupToken(chorale, voice, tok->getLineNumber(), kKernKey);
         if (!kernTok) return std::nullopt;
         matched = kernReAttackInList(allowed, kernTok, m_options.kernIgnoreOctave) ||
-                  voiceReferenceInList(chorale, voice, kKernFeature, allowed, tok, kernTok, kernTok->getTiedDuration(),
+                  voiceReferenceInList(chorale, voice, kKernKey, allowed, tok, kernTok, kernTok->getTiedDuration(),
                                        m_options.kernIgnoreOctave);
     }
     return negate ? !matched : matched;
@@ -1186,7 +1064,7 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
         // answer, and each is judged against what the re-attack *would* have been instead --
         // see matchReAttackKey. Which feature drives the walk has nothing to do with it:
         // asking for the same repetition has to mean the same thing either way.
-        if (isContinuation && (key == kMintFeature || key == kKernFeature || key == kPhraseKey)) {
+        if (isContinuation && (key == kMintKey || key == kKernKey || key == kPhraseKey)) {
             auto matched = matchReAttackKey(chorale, voice, onset, rawKey, allowed);
             if (!matched || !*matched) return std::nullopt;
             continue;
