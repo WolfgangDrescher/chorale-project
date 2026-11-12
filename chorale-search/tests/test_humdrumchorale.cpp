@@ -210,6 +210,9 @@ TEST_CASE(collect_info_reads_the_key_changes_with_the_line_they_take_effect_on) 
     const std::vector<choralesearch::KeyChange> changes = HumdrumChorale(score, "keys", false).collectInfo().keyChanges;
     REQUIRE(changes.size() == 3u);
     CHECK_EQ(changes[0].line, 4);
+    CHECK_EQ(changes[0].durationFromStart, 0.0);
+    CHECK_EQ(changes[1].durationFromStart, 1.0);
+    CHECK_EQ(changes[2].durationFromStart, 2.0);
     CHECK_EQ(changes[0].keyContext.key, std::string("a"));
     CHECK_EQ(changes[0].keyContext.mode, std::string("minor"));
     CHECK_EQ(changes[0].keyContext.keyDeg, std::string("1"));

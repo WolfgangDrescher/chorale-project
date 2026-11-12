@@ -154,14 +154,15 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
             beforeFirstNote = false;
             if (pendingKeyChange) {
                 pendingKeyChange->line = token->getLineNumber();
+                pendingKeyChange->durationFromStart = token->getDurationFromStart().getFloat();
                 info.keyChanges.push_back(*pendingKeyChange);
                 pendingKeyChange.reset();
             }
         }
         if (const std::optional<KeyContext> key = keyContextFromDesignation(*token)) {
-            pendingKeyChange = KeyChange{0, *key, keySignature(key->key, key->mode)};
+            pendingKeyChange = KeyChange{0, 0.0, *key, keySignature(key->key, key->mode)};
         } else if (token->isUndefinedKey()) {
-            pendingKeyChange = KeyChange{0, KeyContext{"?", "", ""}, 0};
+            pendingKeyChange = KeyChange{0, 0.0, KeyContext{"?", "", ""}, 0};
         }
         if (token->isTimeSignature()) {
             const std::string meter = token->substr(2);

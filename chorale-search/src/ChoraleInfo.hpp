@@ -9,10 +9,12 @@
 
 namespace choralesearch {
 
-// A key designation and the first data line after it, where it takes effect. keyDeg is that of the
-// first key. A key left open, *?:, has the key "?" and neither a mode nor a degree.
+// A key designation and the first data line after it, where it takes effect, and the time of that
+// line in quarter notes from the start. keyDeg is that of the first key. A key left open, *?:, has
+// the key "?" and neither a mode nor a degree.
 struct KeyChange {
     int line = 0;
+    double durationFromStart = 0.0;
     KeyContext keyContext;
     int signature = 0;
 };
