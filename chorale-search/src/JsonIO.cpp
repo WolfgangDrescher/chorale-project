@@ -1,5 +1,6 @@
 #include "JsonIO.hpp"
 #include "HintPairs.hpp"
+#include "PositionReference.hpp"
 #include "QueryValidation.hpp"
 #include "VoiceMap.hpp"
 #include "VoiceReference.hpp"
@@ -105,6 +106,8 @@ PatternValue comparisonFromJson(const nlohmann::json& v, const std::string& key,
         checkVoiceReference(key, text, context);
         return PatternValue(*comparisonOperator, text);
     }
+    // Checked against the whole pattern, see patternFromJson.
+    if (PatternValue(text).isPositionReference()) return PatternValue(*comparisonOperator, text);
     if (!isValidComparisonValue(key, text)) {
         throw std::invalid_argument(context + ": '" + text + "' is not a valid value to compare '" + key + "' with");
     }
@@ -136,6 +139,7 @@ std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const 
             continue;
         }
         if (value.hasComparisonOperator()) continue; // already checked above
+        if (value.isPositionReference()) continue; // checked against the whole pattern, see patternFromJson
         if (value.text == "*") continue; // universal wildcard, valid for any key
         if (value.text.empty() || !isValidPatternValue(key, value.text)) {
             throw std::invalid_argument(context + ": '" + value.text + "' is not a valid '" + key + "' value");
@@ -154,6 +158,14 @@ AttributeMap positionFromJson(const nlohmann::json& posJson, const std::string& 
         if (!isKnownPatternKey(rawKey)) {
             throw std::invalid_argument(name + "' has an unknown key '" + rawKey + "'");
         }
+        if (rawKey == kPositionNameKey) {
+            if (!it.value().is_string() || !isValidPositionName(it.value().get<std::string>())) {
+                throw std::invalid_argument(name + "[" + kPositionNameKey + "]' must be a name: '$', a letter, then letters, "
+                                            "digits or underscores (got " + it.value().dump() + ")");
+            }
+            pos[rawKey] = {PatternValue(it.value().get<std::string>())};
+            continue;
+        }
         pos[rawKey] = attributeValueFromJson(it.value(), rawKey, name + "[" + rawKey + "]'");
     }
     return pos;
@@ -167,7 +179,8 @@ std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
         result.push_back(positionFromJson(posJson, "'pattern[...]"));
     }
     if (result.empty()) throw std::invalid_argument("'pattern' must not be empty");
-    return result;
+    // References are checked once every position and name is known.
+    return resolvePositionReferences(result);
 }
 
 // A position keeps its own value of a key, negated or not.
@@ -318,7 +331,17 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         if (!j["everyPosition"].is_object()) {
             throw std::invalid_argument("'everyPosition' in " + context + " must be an object");
         }
-        applyEveryPosition(target.pattern, positionFromJson(j["everyPosition"], "'everyPosition"));
+        const AttributeMap everyPosition = positionFromJson(j["everyPosition"], "'everyPosition");
+        if (everyPosition.count(kPositionNameKey)) {
+            throw std::invalid_argument("'everyPosition' in " + context + " cannot name the positions: a name belongs to one position");
+        }
+        applyEveryPosition(target.pattern, everyPosition);
+        // The pattern as written is resolved already, so what fails now is a reference of everyPosition.
+        try {
+            target.pattern = resolvePositionReferences(target.pattern);
+        } catch (const std::invalid_argument& e) {
+            throw std::invalid_argument("'everyPosition' in " + context + ", applied to " + e.what());
+        }
     }
     checkPairSearchedKeys(target.pattern, pairSet, context);
 

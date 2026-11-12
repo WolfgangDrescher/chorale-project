@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <regex>
 
 namespace choralesearch {
 
@@ -66,7 +67,12 @@ bool isPairWildcardFeature(const std::string& feature) {
 }
 
 bool isKnownPatternKey(const std::string& rawKey) {
-    return findPatternKey(rawKey).patternKey != nullptr;
+    return rawKey == kPositionNameKey || findPatternKey(rawKey).patternKey != nullptr;
+}
+
+bool isValidPositionName(const std::string& text) {
+    static const std::regex re(R"(^\$[A-Za-z]\w*$)");
+    return std::regex_match(text, re);
 }
 
 std::optional<int> intervalSizeInSemitones(const std::string& quality, int number) {
@@ -120,6 +126,7 @@ bool isValidMintComplementationValue(const std::string& value) {
 }
 
 bool isValidPatternValue(const std::string& rawKey, const std::string& value) {
+    if (rawKey == kPositionNameKey) return isValidPositionName(value);
     const PatternKeyLookup lookup = findPatternKey(rawKey);
     if (!lookup.patternKey) return true; // unreachable once isKnownPatternKey has already checked the key
     return lookup.valueSpec().isValidValue(value);

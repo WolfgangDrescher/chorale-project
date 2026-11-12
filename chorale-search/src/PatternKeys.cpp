@@ -160,35 +160,45 @@ bool isValidFigureNumbers(const std::string& v) {
 }
 
 constexpr ValueSpec kHintValues{
+    .comparable = true, .positionReference = true,
+    .isValidValue = isValidIntervalFigure, .isValidComparisonValue = isValidHintComparisonValue,
+};
+// "hint-*4" stands for several spines, none a reference could read.
+constexpr ValueSpec kHintPairWildcardValues{
     .comparable = true,
     .isValidValue = isValidIntervalFigure, .isValidComparisonValue = isValidHintComparisonValue,
 };
 
 constexpr ValueSpec kPitchPart{
-    .comparable = true, .voiceReference = true,
+    .comparable = true, .voiceReference = true, .positionReference = true,
     .isValidValue = isValidKernPitchValue, .isValidComparisonValue = isValidKernPitchValue,
 };
 constexpr ValueSpec kNumberPart{
+    .comparable = true, .positionReference = true,
+    .isValidValue = isValidIntervalNumber, .isValidComparisonValue = isValidIntervalNumber,
+};
+constexpr ValueSpec kNumberOfPairWildcardPart{
     .comparable = true,
     .isValidValue = isValidIntervalNumber, .isValidComparisonValue = isValidIntervalNumber,
 };
 constexpr ValueSpec kIntervalPart{
-    .comparable = true,
+    .comparable = true, .positionReference = true,
     .isValidValue = isValidIntervalWithQuality, .isValidComparisonValue = isValidIntervalWithQuality,
 };
-constexpr ValueSpec kDirectionPart{.isValidValue = isValidDirection};
-constexpr ValueSpec kFigureNumbersPart{.isValidValue = isValidFigureNumbers};
+constexpr ValueSpec kDirectionPart{.positionReference = true, .isValidValue = isValidDirection};
+constexpr ValueSpec kFigureNumbersPart{.positionReference = true, .isValidValue = isValidFigureNumbers};
 
 std::vector<PatternKey> buildPatternKeys() {
     using Id = PatternKeyId;
     const std::vector<PatternKeyPart> hintParts = {{"number", kNumberPart}};
+    const std::vector<PatternKeyPart> hintPairWildcardParts = {{"number", kNumberOfPairWildcardPart}};
     return {
         {
             .id = Id::Kern,
             .name = kKernKey,
             .driving = true,
             .valueSpec = {
-                .comparable = true, .voiceReference = true,
+                .comparable = true, .voiceReference = true, .positionReference = true,
                 .isValidValue = isAnyValue, .isValidComparisonValue = isValidKernPitchValue,
             },
             .parts = {
@@ -199,14 +209,14 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::Deg,
             .name = kDegKey,
             .driving = true,
-            .valueSpec = {.isValidValue = isValidDegValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidDegValue},
         },
         {
             .id = Id::Mint,
             .name = kMintKey,
             .driving = true,
             .valueSpec = {
-                .comparable = true,
+                .comparable = true, .positionReference = true,
                 .isValidValue = isValidMintValue, .isValidComparisonValue = isValidMintComparisonValue,
             },
             .parts = {
@@ -219,7 +229,7 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::Fb,
             .name = kFbKey,
             .driving = true,
-            .valueSpec = {.isValidValue = isValidFbValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidFbValue},
             .parts = {
                 {"numbers", kFigureNumbersPart},
             },
@@ -228,21 +238,21 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::Metweight,
             .name = kMetweightKey,
             .driving = true,
-            .valueSpec = {.isValidValue = isValidMetweightValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidMetweightValue},
         },
         {
             .id = Id::Word,
             .name = kWordKey,
             .driving = true,
             .perVerse = true,
-            .valueSpec = {.isValidValue = isValidLyricsText},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidLyricsText},
         },
         {
             .id = Id::Syl,
             .name = kSylKey,
             .driving = true,
             .perVerse = true,
-            .valueSpec = {.isValidValue = isValidLyricsText},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidLyricsText},
         },
         {
             .id = Id::HintPair,
@@ -256,14 +266,14 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::Duration,
             .name = kDurationKey,
             .valueSpec = {
-                .comparable = true, .voiceReference = true,
+                .comparable = true, .voiceReference = true, .positionReference = true,
                 .isValidValue = isValidDurationValue, .isValidComparisonValue = isValidDurationValue,
             },
         },
         {
             .id = Id::Fermata,
             .name = kFermataKey,
-            .valueSpec = {.isValidValue = isValidFermataValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidFermataValue},
         },
         {
             .id = Id::Phrase,
@@ -273,29 +283,29 @@ std::vector<PatternKey> buildPatternKeys() {
         {
             .id = Id::Mode,
             .name = kModeKey,
-            .valueSpec = {.isValidValue = isValidModeValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidModeValue},
         },
         {
             .id = Id::Key,
             .name = kKeyKey,
-            .valueSpec = {.isValidValue = isValidKeyValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidKeyValue},
         },
         {
             .id = Id::KeyDeg,
             .name = kKeyDegKey,
-            .valueSpec = {.isValidValue = isValidKeyDegValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidKeyDegValue},
         },
         {
             .id = Id::Sylpos,
             .name = kSylposKey,
             .perVerse = true,
-            .valueSpec = {.isValidValue = isValidSylposValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidSylposValue},
         },
         {
             .id = Id::Melisma,
             .name = kMelismaKey,
             .perVerse = true,
-            .valueSpec = {.isValidValue = isValidMelismaValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidMelismaValue},
         },
         {
             .id = Id::HintVoice,
@@ -308,8 +318,8 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::HintPairWildcard,
             .name = "hint-<pairWildcard>",
             .coversQueryKey = isHintPairWildcardKey,
-            .valueSpec = kHintValues,
-            .parts = hintParts,
+            .valueSpec = kHintPairWildcardValues,
+            .parts = hintPairWildcardParts,
         },
         {
             .id = Id::HintPairCurrent,

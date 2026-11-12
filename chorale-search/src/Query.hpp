@@ -18,10 +18,26 @@ namespace choralesearch {
 // value against the one given. Named after Symfony's comparison constraints.
 enum class ComparisonOperator { EqualTo, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual };
 
+// What a position reference ("#1", "$start.hint-14.number") reads, see PositionReference.hpp: a key, or a part of
+// one, at a position of the pattern.
+struct PositionReference {
+    std::size_t position = 0; // counted from 0, like the pattern array
+    std::string key;          // "kern", "mint.number", "hint-14"
+
+    bool operator==(const PositionReference& other) const { return position == other.position && key == other.key; }
+};
+
+// For test failure messages: "#2.mint.number".
+inline std::ostream& operator<<(std::ostream& os, const PositionReference& reference) {
+    return os << '#' << reference.position + 1 << '.' << reference.key;
+}
+
 // One acceptable value of a pattern key, and how it is held against the score.
 struct PatternValue {
     ComparisonOperator comparisonOperator = ComparisonOperator::EqualTo;
     std::string text;
+    // Set by resolvePositionReferences() for a position reference, see PositionReference.hpp.
+    std::optional<PositionReference> positionReference;
 
     PatternValue() = default;
     // Both string types, because a braced list of string literals, {"4", "8"}, would otherwise need
@@ -35,6 +51,12 @@ struct PatternValue {
     // Whether the value names a voice ("@2", "@below", see VoiceReference.hpp) instead of stating one:
     // what it is held against is whatever that voice has at the same position in the score.
     bool isVoiceReference() const { return !text.empty() && text[0] == '@'; }
+    // Whether the value names a position of the pattern ("#2", "$start"), see PositionReference.hpp. "#" and
+    // "##" are kern accidentals, not references.
+    bool isPositionReference() const {
+        return text.size() >= 2 && ((text[0] == '#' && text[1] >= '0' && text[1] <= '9') ||
+                                    (text[0] == '$' && ((text[1] >= 'A' && text[1] <= 'Z') || (text[1] >= 'a' && text[1] <= 'z'))));
+    }
     bool operator==(const PatternValue& other) const {
         return comparisonOperator == other.comparisonOperator && text == other.text;
     }

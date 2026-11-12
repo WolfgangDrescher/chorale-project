@@ -1855,6 +1855,375 @@ TEST_CASE(matcher_a_kern_voice_reference_reads_the_whole_note_and_kern_pitch_the
     CHECK(AttributeMatcher("kern", {AttributeMap{{"kern.pitch", {"@2"}}, {"kern", {"r"}}}}).findAll(rests, 3).empty());
 }
 
+// Position references: a value that names an earlier position of the pattern ("#1", "$start") and stands for what
+// the score has there, see PositionReference.hpp.
+namespace {
+
+// The pitch of the note the kern spine of `voice` has on `line`, register included; empty for a rest.
+std::string pitchAt(const HumdrumChorale& chorale, std::size_t voice, std::size_t line) {
+    hum::HTp tok = chorale.tokenAtLine("kern", voice, static_cast<int>(line));
+    if (!tok || tok->isRest()) return "";
+    std::string pitch;
+    for (char c : std::string(*tok)) {
+        if ((c >= 'A' && c <= 'G') || (c >= 'a' && c <= 'g') || c == '#' || c == '-' || c == 'n') pitch += c;
+    }
+    return pitch;
+}
+
+} // namespace
+
+TEST_CASE(matcher_reference_holds_a_note_against_the_note_of_an_earlier_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // A neighbour note on any pitch: a step away and a step back to the note it started from.
+    AttributeMatcher steps("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"mint", {"2"}}}, AttributeMap{{"mint", {"2"}}}});
+    AttributeMatcher back("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"mint", {"2"}}}, AttributeMap{{"kern.pitch", {"#1"}}, {"mint", {"2"}}}});
+    AttributeMatcher away("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"mint", {"2"}}}, AttributeMap{{"!kern.pitch", {"#1"}}, {"mint", {"2"}}}});
+    const auto all = steps.findAll(chorale, 4);
+    const auto neighbours = back.findAll(chorale, 4);
+    REQUIRE(!neighbours.empty());
+    std::size_t expected = 0;
+    for (const auto& m : all) {
+        if (pitchAt(chorale, 4, m.positionOnsets[0].line) == pitchAt(chorale, 4, m.positionOnsets[2].line)) ++expected;
+    }
+    CHECK_EQ(neighbours.size(), expected);
+    for (const auto& m : neighbours) {
+        CHECK_EQ(pitchAt(chorale, 4, m.positionOnsets[0].line), pitchAt(chorale, 4, m.positionOnsets[2].line));
+    }
+    // Negated, it is a different note than at the first position, and together they are every two steps.
+    CHECK_EQ(neighbours.size() + away.findAll(chorale, 4).size(), all.size());
+}
+
+TEST_CASE(matcher_reference_to_kern_reads_the_rhythm_and_the_pitch) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    AttributeMatcher pairs("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}});
+    AttributeMatcher sameNote("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"#1"}}}});
+    AttributeMatcher samePitch("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern.pitch", {"#1"}}}});
+    std::size_t notes = 0;
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        // The same pitch, or both rests, and as long as the first.
+        std::size_t expectedNote = 0;
+        std::size_t expectedPitch = 0;
+        for (const auto& m : pairs.findAll(chorale, voice)) {
+            std::string first = pitchAt(chorale, voice, m.positionOnsets[0].line);
+            std::string second = pitchAt(chorale, voice, m.positionOnsets[1].line);
+            if (first == second && m.positionOnsets[0].duration == m.positionOnsets[1].duration) ++expectedNote;
+            if (!first.empty() && first == second) ++expectedPitch;
+        }
+        CHECK_EQ(sameNote.findAll(chorale, voice).size(), expectedNote);
+        CHECK_EQ(samePitch.findAll(chorale, voice).size(), expectedPitch);
+        notes += expectedNote;
+    }
+    CHECK(notes > 0);
+}
+
+TEST_CASE(matcher_reference_by_name_is_the_reference_by_number) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher byNumber("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"mint", {"2"}}}, AttributeMap{{"kern", {"#1"}}}});
+    AttributeMatcher byName("kern", {AttributeMap{{"as", {"$start"}}, {"kern", {"*"}}}, AttributeMap{{"mint", {"2"}}}, AttributeMap{{"kern", {"$start"}}}});
+    const auto numbered = byNumber.findAll(chorale, 4);
+    const auto named = byName.findAll(chorale, 4);
+    REQUIRE(!numbered.empty());
+    REQUIRE(numbered.size() == named.size());
+    for (std::size_t i = 0; i < numbered.size(); ++i) CHECK_EQ(numbered[i].startLineNumber, named[i].startLineNumber);
+}
+
+TEST_CASE(matcher_reference_reads_a_harmonic_interval_into_the_figures_of_fb) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // The chord at the second position has the interval soprano and bass formed at the first, within the octave.
+    AttributeMatcher pairs("kern", {AttributeMap{{"hint-14", {"*"}}}, AttributeMap{{"fb", {"*"}}}});
+    AttributeMatcher inChord("kern", {AttributeMap{{"hint-14", {"*"}}}, AttributeMap{{"fb", {"#1.hint-14"}}}});
+    std::size_t expected = 0;
+    for (const auto& m : pairs.findAll(chorale, 1)) {
+        hum::HTp hint = chorale.tokenAtLine("hint-14", 1, static_cast<int>(m.positionOnsets[0].line));
+        hum::HTp fb = chorale.tokenAtLine("fb", 1, static_cast<int>(m.positionOnsets[1].line));
+        REQUIRE(hint && fb);
+        std::istringstream figures{std::string(*fb)};
+        const std::string interval = choralesearch::reduceHintInterval(std::string(*hint));
+        for (std::string figure; figures >> figure;) {
+            if (figure == interval) { ++expected; break; }
+        }
+    }
+    std::size_t found = inChord.findAll(chorale, 1).size();
+    CHECK(found > 0);
+    CHECK_EQ(found, expected);
+    // The number alone finds the figure of any quality.
+    AttributeMatcher number("kern", {AttributeMap{{"hint-14", {"*"}}}, AttributeMap{{"fb.numbers", {"#1.hint-14.number"}}}});
+    CHECK(number.findAll(chorale, 1).size() >= found);
+}
+
+TEST_CASE(matcher_reference_reads_the_figures_of_fb_with_or_without_their_quality) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto figuresAt = [&](std::size_t line, bool numbersOnly) {
+        std::vector<std::string> figures;
+        std::istringstream tokens{std::string(*chorale.tokenAtLine("fb", 1, static_cast<int>(line)))};
+        for (std::string figure; tokens >> figure;) {
+            figures.push_back(numbersOnly ? figure.substr(figure.find_first_of("0123456789")) : figure);
+        }
+        return figures;
+    };
+    // A value of fb asks for figures the chord has at least, so the second chord has every figure of the first.
+    auto expected = [&](bool numbersOnly) {
+        std::size_t count = 0;
+        for (const auto& m : AttributeMatcher("kern", {AttributeMap{{"fb", {"*"}}}, AttributeMap{{"fb", {"*"}}}}).findAll(chorale, 1)) {
+            std::vector<std::string> first = figuresAt(m.positionOnsets[0].line, numbersOnly);
+            std::vector<std::string> second = figuresAt(m.positionOnsets[1].line, numbersOnly);
+            if (std::all_of(first.begin(), first.end(), [&](const std::string& f) {
+                    return std::find(second.begin(), second.end(), f) != second.end();
+                })) ++count;
+        }
+        return count;
+    };
+    auto count = [&](const char* key) {
+        return AttributeMatcher("kern", {AttributeMap{{"fb", {"*"}}}, AttributeMap{{key, {"#1"}}}}).findAll(chorale, 1).size();
+    };
+    REQUIRE(expected(false) > 0);
+    CHECK_EQ(count("fb"), expected(false));
+    CHECK_EQ(count("fb.numbers"), expected(true));
+    CHECK(count("fb.numbers") > count("fb"));
+}
+
+TEST_CASE(matcher_reference_reads_the_key_the_mode_and_the_degree_of_the_key) {
+    // chor009 modulates from G major to D major, A minor, E minor and back.
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
+    AttributeMatcher pairs("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}});
+    for (const char* key : {"key", "mode", "keyDeg"}) {
+        AttributeMatcher same("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{key, {"#1"}}}});
+        AttributeMatcher other("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{std::string("!") + key, {"#1"}}}});
+        std::size_t expected = 0;
+        const auto all = pairs.findAll(chorale, 4);
+        for (const auto& m : all) {
+            const auto* first = chorale.keyContextAtLine(static_cast<int>(m.positionOnsets[0].line));
+            const auto* second = chorale.keyContextAtLine(static_cast<int>(m.positionOnsets[1].line));
+            REQUIRE(first && second);
+            const std::string k = key;
+            auto value = [&](const auto* c) { return k == "key" ? c->key : k == "mode" ? c->mode : c->keyDeg; };
+            if (value(first) == value(second)) ++expected;
+        }
+        std::size_t found = same.findAll(chorale, 4).size();
+        CHECK_EQ(found, expected);
+        CHECK(found < all.size()); // the soprano crosses a modulation
+        CHECK_EQ(found + other.findAll(chorale, 4).size(), all.size());
+    }
+}
+
+TEST_CASE(matcher_reference_reads_the_pitch_class_with_the_octave_ignored) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    MatcherOptions ignoreOctave;
+    ignoreOctave.kernIgnoreOctave = true;
+    std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern.pitch", {"#1"}}}};
+    std::size_t sameNote = AttributeMatcher("kern", pattern).findAll(chorale, 1).size();
+    std::size_t samePitchClass = AttributeMatcher("kern", pattern, ignoreOctave).findAll(chorale, 1).size();
+    REQUIRE(sameNote > 0);
+    // The bass leaps to the octave of a note it just left more than once.
+    CHECK(samePitchClass > sameNote);
+}
+
+TEST_CASE(matcher_reference_compares_the_duration_with_an_earlier_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher pairs("kern", {AttributeMap{{"duration", {"*"}}}, AttributeMap{{"duration", {"*"}}}});
+    AttributeMatcher longer("kern", {AttributeMap{{"duration", {"*"}}}, AttributeMap{{"duration", {{ComparisonOperator::GreaterThan, "#1"}}}}});
+    AttributeMatcher shorter("kern", {AttributeMap{{"duration", {"*"}}}, AttributeMap{{"duration", {{ComparisonOperator::LessThan, "#1"}}}}});
+    AttributeMatcher same("kern", {AttributeMap{{"duration", {"*"}}}, AttributeMap{{"duration", {"#1"}}}});
+    const auto all = pairs.findAll(chorale, 2);
+    std::size_t expectedLonger = 0;
+    for (const auto& m : all) {
+        if (m.positionOnsets[1].duration > m.positionOnsets[0].duration) ++expectedLonger;
+    }
+    REQUIRE(expectedLonger > 0);
+    CHECK_EQ(longer.findAll(chorale, 2).size(), expectedLonger);
+    CHECK_EQ(longer.findAll(chorale, 2).size() + shorter.findAll(chorale, 2).size() + same.findAll(chorale, 2).size(), all.size());
+}
+
+TEST_CASE(matcher_reference_reads_a_part_of_a_melodic_interval) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& second) {
+        return AttributeMatcher("mint", {AttributeMap{{"mint", {"*"}}}, second}).findAll(chorale, 1).size();
+    };
+    std::size_t all = count({{"mint", {"*"}}});
+    // The same direction as the step before, or another one: every pair of intervals is one or the other,
+    // except where the first has no direction to read (the first note of the voice), which fails the plain
+    // reference and holds under the negation.
+    std::size_t sameDirection = count({{"mint.direction", {"#1"}}});
+    REQUIRE(sameDirection > 0);
+    CHECK_EQ(sameDirection + count({{"!mint.direction", {"#1"}}}), all);
+    // The same number is wider than the same interval, which is wider than the same directed interval.
+    std::size_t sameNumber = count({{"mint.number", {"#1"}}});
+    std::size_t sameInterval = count({{"mint.interval", {"#1"}}});
+    std::size_t sameStep = count({{"mint", {"#1"}}});
+    CHECK(sameNumber >= sameInterval);
+    CHECK(sameInterval >= sameStep);
+    CHECK(sameStep > 0);
+    // Direction and number together are the directed number.
+    std::size_t directedNumber = count({{"mint.direction", {"#1"}}, {"mint.number", {"#1"}}});
+    CHECK(directedNumber >= sameStep);
+    CHECK(directedNumber <= sameNumber);
+    // And the interval with the direction of the first, the other way round: the same interval back.
+    CHECK(count({{"mint.interval", {"#1"}}, {"!mint.direction", {"#1"}}}) <= sameInterval);
+}
+
+TEST_CASE(matcher_reference_compares_an_interval_with_the_interval_of_an_earlier_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& second) {
+        return AttributeMatcher("mint", {AttributeMap{{"mint", {"*"}}}, second}).findAll(chorale, 4).size();
+    };
+    std::size_t withInterval = count({{"mint.number", {"#1"}}}) + count({{"!mint.number", {"#1"}}});
+    std::size_t wider = count({{"mint.interval", {{ComparisonOperator::GreaterThan, "#1"}}}});
+    std::size_t narrower = count({{"mint.interval", {{ComparisonOperator::LessThan, "#1"}}}});
+    std::size_t asWide = count({{"mint.interval", {"#1"}}});
+    REQUIRE(wider > 0);
+    // Where both have an interval, the second is wider, narrower or as wide as the first.
+    CHECK_EQ(wider + narrower + asWide, withInterval - count({{"!mint.number", {"#1"}}}) + count({{"!mint.number", {"#1"}}}) - 1);
+}
+
+TEST_CASE(matcher_reference_reads_a_harmonic_interval_at_an_earlier_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& second, std::size_t voice = 1) {
+        return AttributeMatcher("kern", {AttributeMap{{"hint-14", {"*"}}}, second}, {}).findAll(chorale, voice).size();
+    };
+    std::size_t all = count({{"hint-14", {"*"}}});
+    std::size_t same = count({{"hint-14", {"#1"}}});
+    REQUIRE(same > 0);
+    CHECK_EQ(same + count({{"!hint-14", {"#1"}}}), all);
+    CHECK(count({{"hint-14.number", {"#1"}}}) >= same);
+    // The number of a melodic interval is a harmonic interval's number too.
+    CHECK(count({{"hint-14.number", {"#1.mint.number"}}}) <= count({{"hint-14", {"*"}}}));
+    // hint-<voice> is the pair the walked voice makes with that voice.
+    AttributeMatcher relative("kern", {AttributeMap{{"hint-1", {"*"}}}, AttributeMap{{"hint-1", {"#1"}}}});
+    CHECK_EQ(relative.findAll(chorale, 4).size(), same);
+}
+
+TEST_CASE(matcher_reference_reads_the_other_spines_too) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const std::string& key) {
+        std::size_t same = AttributeMatcher("kern", {AttributeMap{{key, {"*"}}}, AttributeMap{{key, {"#1"}}}}).findAll(chorale, 3).size();
+        std::size_t other = AttributeMatcher("kern", {AttributeMap{{key, {"*"}}}, AttributeMap{{"!" + key, {"#1"}}}}).findAll(chorale, 3).size();
+        std::size_t all = AttributeMatcher("kern", {AttributeMap{{key, {"*"}}}, AttributeMap{{key, {"*"}}}}).findAll(chorale, 3).size();
+        CHECK_EQ(same + other, all);
+        return same;
+    };
+    CHECK(count("deg") > 0);
+    CHECK(count("fermata") > 0);
+    CHECK(count("fb") > 0);
+    // Two notes in a row on the same metric weight are rare in a chorale of quarters, but the two halves add up.
+    count("metweight");
+}
+
+TEST_CASE(matcher_reference_may_read_its_own_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    auto count = [&](const AttributeMap& position) { return AttributeMatcher("kern", {position}).findAll(chorale, 4).size(); };
+    // The note of the position itself, which every note is; a rest has no pitch to read.
+    // The whole note too; a rest is no note and reads nothing.
+    CHECK_EQ(count({{"duration", {"4"}}, {"kern", {"#1"}}}), count({{"duration", {"4"}}, {"!kern", {"r"}}}));
+    CHECK_EQ(count({{"duration", {"4"}}, {"kern.pitch", {"#1"}}}), count({{"duration", {"4"}}, {"!kern", {"r"}}}));
+    CHECK_EQ(count({{"duration", {"4"}}, {"!kern.pitch", {"#1"}}}), count({{"duration", {"4"}}, {"kern", {"r"}}}));
+}
+
+TEST_CASE(matcher_reference_to_nothing_matches_nothing_and_holds_negated) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
+    auto count = [&](const std::vector<AttributeMap>& pattern) { return AttributeMatcher("kern", pattern).findAll(chorale, 4).size(); };
+    std::size_t afterRest = count({AttributeMap{{"kern", {"r"}}}, AttributeMap{{"kern", {"*"}}}});
+    REQUIRE(afterRest > 0);
+    // A rest has no pitch: the note after it is not that pitch, and so it is "not that pitch".
+    CHECK_EQ(count({AttributeMap{{"kern", {"r"}}}, AttributeMap{{"kern.pitch", {"#1"}}}}), std::size_t{0});
+    CHECK_EQ(count({AttributeMap{{"kern", {"r"}}}, AttributeMap{{"!kern.pitch", {"#1"}}}}), afterRest);
+    // A literal next to the reference is still a choice of its own.
+    CHECK_EQ(count({AttributeMap{{"kern", {"r"}}}, AttributeMap{{"kern.pitch", {"#1", "*"}}}}), afterRest);
+}
+
+TEST_CASE(matcher_reference_to_a_duration_is_judged_on_the_single_note) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // A reference names no length to divide notes up by or add them up to, so the options leave it alone.
+    std::vector<AttributeMap> pattern = {AttributeMap{{"duration", {"*"}}}, AttributeMap{{"duration", {"#1"}}}};
+    MatcherOptions split;
+    split.durationAllowSplitNotes = true;
+    MatcherOptions merged;
+    merged.durationAllowMergedNotes = true;
+    std::size_t plain = AttributeMatcher("kern", pattern).findAll(chorale, 2).size();
+    CHECK_EQ(AttributeMatcher("kern", pattern, split).findAll(chorale, 2).size(), plain);
+    CHECK_EQ(AttributeMatcher("kern", pattern, merged).findAll(chorale, 2).size(), plain);
+}
+
+TEST_CASE(matcher_reference_reads_the_length_a_split_run_took) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    MatcherOptions split;
+    split.durationAllowSplitNotes = true;
+    // The second note is as long as the first one, which may be written as repeated shorter notes: a half note of
+    // two quarters is a half note to the reference, as it is to the pattern.
+    AttributeMatcher halves("kern", {AttributeMap{{"duration", {"2"}}}, AttributeMap{{"duration", {"2"}}}}, split);
+    AttributeMatcher asLong("kern", {AttributeMap{{"duration", {"2"}}}, AttributeMap{{"duration", {"#1"}}}}, split);
+    const auto expected = halves.findAll(chorale, 1);
+    const auto found = asLong.findAll(chorale, 1);
+    // The reference does not split the second note, so it finds the written half notes among them.
+    std::size_t written = 0;
+    for (const auto& m : expected) {
+        hum::HTp second = chorale.tokenAtLine("kern", 1, static_cast<int>(m.positionOnsets[1].line));
+        if (second && second->getTiedDuration() == 2) ++written;
+    }
+    CHECK_EQ(found.size(), written);
+    REQUIRE(!found.empty());
+    for (const auto& m : found) CHECK(m.positionOnsets[0].duration == 2);
+}
+
+TEST_CASE(matcher_reference_reads_a_merged_run_as_the_re_attacks_it_describes) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    MatcherOptions merged;
+    merged.durationAllowMergedNotes = true;
+    // Two quarters on the same note, also written as one half note: the second re-attacks the first, which is the
+    // note's pitch again and a unison, and a reference to the first position reads that note.
+    AttributeMatcher samePitch("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"4"}}, {"kern", {"#1"}}}}, merged);
+    AttributeMatcher unison("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"4"}}, {"mint", {"P1"}}}}, merged);
+    CHECK_EQ(samePitch.findAll(chorale, 2).size(), unison.findAll(chorale, 2).size());
+    // A later position reads the share of the note the merged position claimed, and the unison into it: the bass
+    // of chor001 holds a half note from quarter 19 and repeats it as a quarter at 21, which is two quarters on the
+    // note, then a third one as long as the second and a unison like the second.
+    HumdrumChorale chor001(FIXTURE_CHORALE("chor001"));
+    AttributeMatcher shares("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"#2"}}, {"mint", {"#2.mint"}}}}, merged);
+    const auto found = shares.findAll(chor001, 1);
+    bool foundTheHalf = std::any_of(found.begin(), found.end(), [](const auto& m) {
+        return m.startPosition == 19 && m.positionOnsets[1].position == 19 && m.positionOnsets[2].position == 21;
+    });
+    CHECK(foundTheHalf);
+    // Without the option the half note is one onset, and the pattern finds nothing there.
+    AttributeMatcher unmerged("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"#2"}}, {"mint", {"#2.mint"}}}});
+    const auto plain = unmerged.findAll(chor001, 1);
+    CHECK(std::none_of(plain.begin(), plain.end(), [](const auto& m) { return m.startPosition == 19; }));
+}
+
+TEST_CASE(matcher_reference_reads_what_the_walk_sees_across_a_skipped_ornament) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    MatcherOptions skip;
+    skip.metweightSkipUnclassified = true;
+    // With ornaments skipped, the duration and the interval read are the ones the walk measures: the pattern
+    // reading them finds what the pattern writing them out finds.
+    AttributeMatcher read("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"#1"}}, {"mint.number", {"#1"}}}}, skip);
+    AttributeMatcher written("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"4"}}, {"mint.number", {"#1"}}}}, skip);
+    CHECK_EQ(read.findAll(chorale, 4).size(), written.findAll(chorale, 4).size());
+    CHECK(read.findAll(chorale, 4).size() > 0);
+}
+
+TEST_CASE(matcher_leaves_the_name_of_a_position_out_of_the_match) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    AttributeMatcher named("kern", {AttributeMap{{"as", {"$a"}}}, AttributeMap{{"as", {"$b"}}, {"kern", {"*"}}}});
+    AttributeMatcher plain("kern", {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}});
+    CHECK_EQ(named.findAll(chorale, 4).size(), plain.findAll(chorale, 4).size());
+}
+
+TEST_CASE(matcher_refuses_a_position_reference_it_cannot_read) {
+    auto build = [](const std::vector<AttributeMap>& pattern) { return AttributeMatcher("kern", pattern); };
+    CHECK_NOTHROW(build({AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"#1"}}}}));
+    CHECK_NOTHROW(build({AttributeMap{{"as", {"$a"}}, {"kern", {"*"}}}, AttributeMap{{"kern", {"$a"}}}}));
+    CHECK_THROWS(build({AttributeMap{{"kern", {"#2"}}}, AttributeMap{{"kern", {"*"}}}}));           // a later position
+    CHECK_THROWS(build({AttributeMap{{"kern", {"#0"}}}}));                                          // counted from 1
+    CHECK_THROWS(build({AttributeMap{{"kern", {"$a"}}}}));                                          // no such name
+    CHECK_THROWS(build({AttributeMap{{"as", {"a"}}, {"kern", {"*"}}}}));                            // no name
+    CHECK_THROWS(build({AttributeMap{{"as", {"$a"}}}, AttributeMap{{"as", {"$a"}}}}));              // a name once
+    CHECK_THROWS(build({AttributeMap{{"kern", {"*"}}}, AttributeMap{{"phrase", {"#1"}}}}));         // no value to read
+    CHECK_THROWS(build({AttributeMap{{"kern", {"*"}}}, AttributeMap{{"deg", {"#1.mint"}}}}));       // another kind
+    CHECK_THROWS(build({AttributeMap{{"mint", {"*"}}}, AttributeMap{{"mint", {"#1.mint.number"}}}})); // a part under its whole key
+    CHECK_THROWS(build({AttributeMap{{"kern", {"*"}}}, AttributeMap{{"deg", {{ComparisonOperator::GreaterThan, "#1"}}}}})); // not ordered
+    CHECK_THROWS(build({AttributeMap{{"mint", {"*"}}}, AttributeMap{{"mint.direction", {{ComparisonOperator::GreaterThan, "#1"}}}}})); // no size
+}
+
 TEST_MAIN()
 
 
@@ -2802,4 +3171,66 @@ TEST_CASE(lyrics_a_word_cannot_be_divided_up_or_compared) {
     CHECK_THROWS(AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}}, skip));
     CHECK_NOTHROW(AttributeMatcher("kern", {AttributeMap{{"word", {"*"}}}}, skip));
     CHECK_THROWS(AttributeMatcher("kern", {AttributeMap{{"word", {PatternValue(ComparisonOperator::GreaterThan, "a")}}}}));
+}
+
+TEST_CASE(lyrics_a_reference_reads_the_lyrics_of_its_position_in_the_verse_being_matched) {
+    // chor005 has four verses, chor008 one with words repeated.
+    for (const char* id : {"chor005", "chor008"}) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(id));
+        auto wordAt = [&](std::size_t verse, std::size_t line) -> std::string {
+            const auto* syllable = chorale.lyrics().verse(verse)->syllableAtLine(static_cast<int>(line));
+            return syllable ? syllable->word->normalizedText : "";
+        };
+        // The verses in which both positions have a word, and the same one.
+        auto versesWithTheSameWord = [&](const choralesearch::AttributeMatch& m) {
+            std::vector<std::size_t> verses;
+            for (std::size_t verse = 1; verse <= chorale.verseCount(); ++verse) {
+                const std::string first = wordAt(verse, m.positionOnsets[0].line);
+                if (!first.empty() && first == wordAt(verse, m.positionOnsets[1].line)) verses.push_back(verse);
+            }
+            return verses;
+        };
+        for (const char* feature : {"word", "kern"}) {
+            std::size_t expected = 0;
+            for (const auto& m : AttributeMatcher(feature, {AttributeMap{{"word", {"*"}}}, AttributeMap{{"word", {"*"}}}}).findAll(chorale, 4)) {
+                // Driven by word a match is one verse walking its own words; by kern, any verse with both notes.
+                std::vector<std::size_t> same = versesWithTheSameWord(m);
+                std::vector<std::size_t> matched = versesOf(m);
+                if (std::any_of(same.begin(), same.end(), [&](std::size_t v) { return std::find(matched.begin(), matched.end(), v) != matched.end(); })) ++expected;
+            }
+            const auto found = AttributeMatcher(feature, {AttributeMap{{"word", {"*"}}}, AttributeMap{{"word", {"#1"}}}}).findAll(chorale, 4);
+            CHECK_EQ(found.size(), expected);
+            // Every verse of a match has the same word at both positions: no verse lends its word to another.
+            for (const auto& m : found) {
+                const std::vector<std::size_t> same = versesWithTheSameWord(m);
+                for (std::size_t verse : versesOf(m)) CHECK(std::find(same.begin(), same.end(), verse) != same.end());
+            }
+        }
+    }
+    // The word under the notes of a melisma is the word of the note before: chor008 has melismas.
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CHECK(!AttributeMatcher("kern", {AttributeMap{{"word", {"*"}}}, AttributeMap{{"word", {"#1"}}}}).findAll(chorale, 4).empty());
+    CHECK(!AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}, AttributeMap{{"word", {"#1"}}}}).findAll(chorale, 4).empty());
+}
+
+TEST_CASE(lyrics_a_reference_reads_the_syllable_its_place_in_the_word_and_the_melisma) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
+    for (const char* key : {"syl", "sylpos", "melisma"}) {
+        auto count = [&](const AttributeMap& second) {
+            return AttributeMatcher("kern", {AttributeMap{{key, {"*"}}}, second}).findAll(chorale, 4).size();
+        };
+        // Two notes in a row with the same value in some verse, with another in some verse, or both.
+        std::size_t same = count({{key, {"#1"}}});
+        std::size_t other = count({{std::string("!") + key, {"#1"}}});
+        std::size_t all = count({{key, {"*"}}});
+        CHECK(same > 0);
+        CHECK(same <= all);
+        CHECK(same + other >= all);
+    }
+    // Negated, a reference holds in a verse that has no syllable at its position: nothing is read there.
+    HumdrumChorale oneVerse(FIXTURE_CHORALE("chor008"));
+    auto afterRest = AttributeMatcher("kern", {AttributeMap{{"kern", {"r"}}}, AttributeMap{{"!word", {"#1"}}}}).findAll(oneVerse, 4);
+    auto afterRestPlain = AttributeMatcher("kern", {AttributeMap{{"kern", {"r"}}}, AttributeMap{{"word", {"*"}}}}).findAll(oneVerse, 4);
+    CHECK_EQ(afterRest.size(), afterRestPlain.size());
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"kern", {"r"}}}, AttributeMap{{"word", {"#1"}}}}).findAll(oneVerse, 4).empty());
 }

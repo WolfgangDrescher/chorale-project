@@ -167,6 +167,39 @@ TEST_CASE(a_query_over_all_voice_pairs_finds_what_a_query_for_each_pair_finds_an
     CHECK_EQ(found.size(), expected);
 }
 
+// A value may read the pair a query over voice pairs searches at an earlier position ("#1" under hint-@pair, or
+// "#1.hint-@pair"): it is the pair's spine for each pair, as the key is.
+TEST_CASE(a_query_over_all_voice_pairs_reads_the_pair_it_searches_at_an_earlier_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    CorpusSearch search(chorale.path());
+
+    struct Reading { const char* key; const char* reference; const char* keyOfPair; };
+    for (const Reading& reading : {Reading{"hint-@pair", "#1", ""}, Reading{"hint-@pair", "#1.hint-@pair", ""},
+                                   Reading{"hint-@pair.number", "#1.hint-@pair.number", ".number"}}) {
+        Query all;
+        all.feature = "hint-**";
+        all.voices = "@lower";
+        all.hintReduceCompound = true;
+        all.pattern = {AttributeMap{{"hint-@pair", {"P5", "P8"}}}, AttributeMap{{reading.key, {reading.reference}}}};
+        const auto found = search.runOne(chorale, all);
+        REQUIRE(!found.empty());
+
+        std::size_t expected = 0;
+        for (const std::string pair : {"12", "13", "14", "23", "24", "34"}) {
+            Query one = all;
+            one.feature = "hint-" + pair;
+            one.voices = pair.substr(0, 1);
+            one.pattern = {AttributeMap{{one.feature, {"P5", "P8"}}}, AttributeMap{{one.feature + reading.keyOfPair, {"#1"}}}};
+            const auto expectedForPair = search.runOne(chorale, one);
+            const auto foundForPair = std::count_if(found.begin(), found.end(),
+                                                    [&](const Result& r) { return r.feature == one.feature; });
+            CHECK_EQ(static_cast<std::size_t>(foundForPair), expectedForPair.size());
+            expected += expectedForPair.size();
+        }
+        CHECK_EQ(found.size(), expected);
+    }
+}
+
 TEST_CASE(a_query_over_a_set_of_voice_pairs_only_searches_the_pairs_of_the_set_and_honours_the_limit) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
     CorpusSearch search(chorale.path());

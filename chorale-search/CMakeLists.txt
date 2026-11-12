@@ -39,6 +39,7 @@ add_library(chorale_core STATIC
     src/QueryValidation.cpp
     src/PatternKeys.cpp
     src/Intervals.cpp
+    src/PositionReference.cpp
     src/ScoreImport.cpp
     src/Segmentation.cpp
     src/Grouping.cpp
@@ -95,12 +96,12 @@ if(BUILD_TESTS)
     target_include_directories(test_voicereference PRIVATE src tests)
     add_test(NAME voicereference COMMAND test_voicereference)
 
-    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
+    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/PositionReference.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
     target_include_directories(test_jsonio PRIVATE src tests external/json/single_include)
     target_link_libraries(test_jsonio PRIVATE humlib)
     add_test(NAME jsonio COMMAND test_jsonio)
 
-    add_executable(test_choralefilter tests/test_choralefilter.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/JsonIO.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
+    add_executable(test_choralefilter tests/test_choralefilter.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/JsonIO.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/PositionReference.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
     target_include_directories(test_choralefilter PRIVATE src tests external/json/single_include)
     target_link_libraries(test_choralefilter PRIVATE humlib)
     add_test(NAME choralefilter COMMAND test_choralefilter)
@@ -114,6 +115,11 @@ if(BUILD_TESTS)
     target_include_directories(test_lyricsspines PRIVATE src tests external/json/single_include)
     target_link_libraries(test_lyricsspines PRIVATE humlib)
     add_test(NAME lyricsspines COMMAND test_lyricsspines)
+
+    add_executable(test_positionreference tests/test_positionreference.cpp src/PositionReference.cpp src/PatternKeys.cpp src/Intervals.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
+    target_include_directories(test_positionreference PRIVATE src tests external/json/single_include)
+    target_link_libraries(test_positionreference PRIVATE humlib)
+    add_test(NAME positionreference COMMAND test_positionreference)
 
     add_executable(test_patternkeys tests/test_patternkeys.cpp src/PatternKeys.cpp src/Intervals.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
     target_include_directories(test_patternkeys PRIVATE src tests)

@@ -1083,6 +1083,110 @@ TEST_CASE(query_from_json_reads_a_part_of_the_pair_a_query_over_voice_pairs_sear
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-**","voices":"@lower","pattern":[{"hint-@pair.number":"5","hint-14.number":"8"}]})")));
 }
 
+TEST_CASE(query_from_json_reads_a_position_name_and_a_reference_to_it) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[
+        {"as":"$first","kern":"*"},
+        {"mint":"2"},
+        {"kern":["$first","#1"],"mint.direction":"#2","duration":{"operator":"gt","value":"#1"}}
+    ]})"));
+    REQUIRE(q.pattern.size() == 3u);
+    CHECK_EQ(q.pattern[0]["as"], (std::vector<PatternValue>{"$first"}));
+    CHECK_EQ(q.pattern[2]["kern"], (std::vector<PatternValue>{"$first", "#1"}));
+    CHECK_EQ(q.pattern[2]["duration"], (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "#1"}}));
+    CHECK(q.pattern[2]["kern"][0].isPositionReference());
+    CHECK(!q.pattern[0]["kern"][0].isPositionReference());
+    // Resolved against the pattern as read: the name is the first position, the part is the direction.
+    REQUIRE(q.pattern[2]["kern"][0].positionReference.has_value());
+    CHECK_EQ(q.pattern[2]["kern"][0].positionReference->position, std::size_t{0});
+    CHECK_EQ(q.pattern[2]["mint.direction"][0].positionReference->key, std::string("mint.direction"));
+
+    // Written back out as it was read, the name included.
+    json out = choralesearch::queryToJson(q);
+    CHECK_EQ(out["pattern"][0]["as"], json("$first"));
+    CHECK_EQ(out["pattern"][2]["kern"], json::parse(R"(["$first","#1"])"));
+    CHECK_EQ(choralesearch::queryToJson(queryFromJson(out)), out);
+}
+
+TEST_CASE(query_from_json_rejects_a_position_name_that_is_no_name) {
+    auto parse = [](const std::string& position) {
+        return [position] { return queryFromJson(json::parse(R"({"feature":"kern","pattern":[)" + position + "]}")); };
+    };
+    CHECK_NOTHROW(parse(R"({"as":"$a","kern":"*"})")());
+    CHECK_NOTHROW(parse(R"({"as":"$a"})")()); // a name alone takes any onset
+    CHECK_THROWS(parse(R"({"as":"a","kern":"*"})")());
+    CHECK_THROWS(parse(R"({"as":"$1","kern":"*"})")());
+    CHECK_THROWS(parse(R"({"as":["$a"],"kern":"*"})")());
+    CHECK_THROWS(parse(R"({"as":true,"kern":"*"})")());
+    CHECK_THROWS(parse(R"({"!as":"$a","kern":"*"})")());
+    CHECK_THROWS(parse(R"({"as":"start","kern":"*"})")());
+}
+
+TEST_CASE(query_from_json_rejects_a_position_reference_it_cannot_read) {
+    auto parse = [](const std::string& positions) {
+        return [positions] { return queryFromJson(json::parse(R"({"feature":"kern","pattern":[)" + positions + "]}")); };
+    };
+    CHECK_THROWS(parse(R"({"kern":"#2"},{"kern":"*"})")());                               // a later position
+    CHECK_THROWS(parse(R"({"kern":"#0"})")());                                            // counted from 1
+    CHECK_THROWS(parse(R"({"kern":"$b"})")());                                            // no such name
+    CHECK_THROWS(parse(R"({"kern":"*"},{"phrase":"#1"})")());                             // a phrase is no value
+    CHECK_THROWS(parse(R"({"kern":"*"},{"deg":"#1.mint"})")());                           // another kind of value
+    CHECK_THROWS(parse(R"({"kern":"*"},{"kern":"#1.mint.sign"})")());                    // no such key
+    CHECK_THROWS(parse(R"({"mint":"*"},{"mint":"#1.mint.number"})")());                  // a part under its whole key
+    CHECK_THROWS(parse(R"({"mint":"*"},{"mint.direction":{"operator":"gt","value":"#1"}})")()); // no size
+    CHECK_THROWS(parse(R"({"kern":"*"},{"deg":{"operator":"gt","value":"#1"}})")());     // deg is not ordered
+    CHECK_THROWS(parse(R"({"as":"$a","kern":"*"},{"as":"$a","kern":"*"})")());           // a name once
+    CHECK_NOTHROW(parse(R"({"as":"$a","kern":"*"},{"as":"$b","kern":"$a"})")());
+    CHECK_THROWS(parse(R"({"kern":"*"},{"kern":"#3"})")());
+}
+
+TEST_CASE(query_from_json_applies_a_reference_of_every_position_to_every_position) {
+    Query q = queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"key":"#1"},
+        "pattern":[{"deg":"3"},{"deg":"2"},{"deg":"1","key":"G"}]})"));
+    REQUIRE(q.pattern.size() == 3u);
+    // Every position reads the key of the first; the first reads itself, and the last keeps its own value.
+    for (std::size_t position = 0; position < 2; ++position) {
+        REQUIRE(q.pattern[position]["key"].size() == 1u);
+        REQUIRE(q.pattern[position]["key"][0].positionReference.has_value());
+        CHECK_EQ(q.pattern[position]["key"][0].positionReference->position, std::size_t{0});
+    }
+    CHECK_EQ(q.pattern[2]["key"], (std::vector<PatternValue>{"G"}));
+    // By name too.
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"mode":"$a"},
+        "pattern":[{"as":"$a","deg":"3"},{"deg":"2"}]})")));
+}
+
+TEST_CASE(query_from_json_rejects_a_reference_of_every_position_that_not_every_position_can_read) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"key":"#2"},"pattern":[{"deg":"3"},{"deg":"2"}]})")));
+    // A name belongs to one position.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"as":"$a"},"pattern":[{"deg":"3"}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"key":"$b"},"pattern":[{"deg":"3"}]})")));
+}
+
+TEST_CASE(query_from_json_reads_a_position_name_within_its_own_pattern) {
+    // The query and a group may give the same name, each to a position of its own pattern.
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({
+        "feature":"kern","pattern":[{"as":"$a","kern":"*"},{"kern":"$a"}],
+        "simultaneousWith":[{"feature":"kern","voices":"bass","pattern":[{"as":"$a","kern":"*"},{"kern":"$a"}]}]
+    })")));
+    // A name of the query is unknown to a group.
+    CHECK_THROWS(queryFromJson(json::parse(R"({
+        "feature":"kern","pattern":[{"as":"$a","kern":"*"}],
+        "simultaneousWith":[{"feature":"kern","voices":"bass","pattern":[{"kern":"$a"}]}]
+    })")));
+}
+
+TEST_CASE(query_from_json_reads_a_reference_to_the_pair_a_query_over_voice_pairs_searches) {
+    Query q = queryFromJson(json::parse(R"({"feature":"hint-**","voices":"@lower","pattern":[
+        {"hint-@pair":["P5","P8"]},{"hint-@pair":"#1"},{"hint-@pair.number":"#1"}
+    ]})"));
+    REQUIRE(q.pattern.size() == 3u);
+    CHECK_EQ(q.pattern[1]["hint-@pair"][0].positionReference->key, std::string("hint-@pair"));
+    CHECK_EQ(q.pattern[2]["hint-@pair.number"][0].positionReference->key, std::string("hint-@pair.number"));
+    // A part does not stand under its whole key.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-**","voices":"@lower","pattern":[
+        {"hint-@pair":"*"},{"hint-@pair":"#1.hint-@pair.number"}]})")));
+}
+
 TEST_CASE(query_from_json_rejects_a_voice_reference_it_cannot_judge) {
     auto parse = [](const std::string& position) {
         return [position] { return queryFromJson(json::parse(R"({"feature":"kern","pattern":[)" + position + "]}")); };

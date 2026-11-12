@@ -36,6 +36,12 @@ bool isLyricsPatternKey(const std::string& key);
 // "*", with at least one "*". A query can be driven by it, it is then searched pair by pair (see Query::feature).
 bool isPairWildcardFeature(const std::string& feature);
 
+// The key that names a position of a pattern ("as": "$start"), see PositionReference.hpp. It checks nothing.
+inline const std::string kPositionNameKey = "as";
+
+// True if `text` is a position name: "$", a letter, then letters, digits or underscores ("$start").
+bool isValidPositionName(const std::string& text);
+
 // True if `key` is something a pattern position can check: any driving feature,
 // "duration"/"fermata" (read off the underlying kern token rather than being spines of their
 // own), or a hint-<voice>/hint-<pair> relative or wildcard form (e.g. "hint-2", "hint-*4",

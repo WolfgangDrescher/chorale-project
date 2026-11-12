@@ -4,6 +4,7 @@
 #include "HumdrumUtils.hpp"
 #include "Intervals.hpp"
 #include "PatternKeys.hpp"
+#include "PositionReference.hpp"
 #include "QueryValidation.hpp"
 #include "ValueScanner.hpp"
 #include "VoiceReference.hpp"
@@ -51,6 +52,10 @@ std::optional<std::string> resolveHintRelativeKey(const std::string& key, std::s
 
 bool isWildcard(const std::vector<PatternValue>& allowed) {
     return std::any_of(allowed.begin(), allowed.end(), [](const PatternValue& v) { return v.text == "*"; });
+}
+
+bool hasPositionReference(const std::vector<PatternValue>& allowed) {
+    return std::any_of(allowed.begin(), allowed.end(), [](const PatternValue& v) { return v.isPositionReference(); });
 }
 
 bool inList(const std::vector<PatternValue>& allowed, const std::string& actual) {
@@ -559,13 +564,51 @@ std::vector<AttributeMatcher::Onset> wordOnsets(const HumdrumChorale& chorale, s
 // The verses a lyrics key matches at the soprano note on `lineNumber`, negation included: "!word": "gott" matches
 // a verse where the note has no gott, one without a syllable there too. A chorale without lyrics has no verse,
 // so no key matches it, a negated one and the wildcard included.
-VerseSet versesMatchingKey(const HumdrumChorale& chorale, const PositionKey& positionKey, int lineNumber) {
-    const std::vector<PatternValue>& allowed = positionKey.values;
+// What a lyrics key has at the soprano note on `lineNumber` in `verse`, spelled as its value. nullopt where the
+// verse has no syllable there.
+std::optional<std::string> lyricsValueAt(const HumdrumChorale& chorale, std::size_t verse, PatternKeyId id, int lineNumber) {
+    const LyricsSyllable* syllable = chorale.lyrics().verse(verse)->syllableAtLine(lineNumber);
+    if (!syllable) return std::nullopt;
+    if (id == PatternKeyId::Word) return syllable->word->normalizedText;
+    if (id == PatternKeyId::Syl) return syllable->normalizedText;
+    if (id == PatternKeyId::Sylpos) return syllablePositionName(syllable->position);
+    if (id == PatternKeyId::Melisma) return melismaRoleName(syllable->melismaRoleAtLine(lineNumber));
+    return std::nullopt;
+}
+
+// `allowed` with each position reference replaced by what its position has in `verse`, on the line `positionLines`
+// has for it, or dropped where the verse has no syllable there. A lyrics key only reads its own key.
+std::vector<PatternValue> lyricsReferencesRead(const HumdrumChorale& chorale, std::size_t verse, PatternKeyId id,
+                                               const std::vector<PatternValue>& allowed, const std::vector<int>& positionLines) {
+    std::vector<PatternValue> read;
+    for (const PatternValue& value : allowed) {
+        if (!value.positionReference) {
+            read.push_back(value);
+            continue;
+        }
+        const std::size_t position = value.positionReference->position;
+        if (position >= positionLines.size()) continue;
+        if (auto text = lyricsValueAt(chorale, verse, id, positionLines[position])) read.emplace_back(*text);
+    }
+    return read;
+}
+
+// The verses a lyrics key matches at the soprano note on `lineNumber`, negation included: "!word": "gott" matches
+// a verse where the note has no gott, one without a syllable there too. A chorale without lyrics has no verse,
+// so no key matches it, a negated one and the wildcard included. A position reference reads its position in the
+// verse being judged, on the line `positionLines` has for it.
+VerseSet versesMatchingKey(const HumdrumChorale& chorale, const PositionKey& positionKey, int lineNumber,
+                           const std::vector<int>& positionLines = {}) {
+    const PatternKeyId id = positionKey.patternKey->id;
+    const bool hasReference = hasPositionReference(positionKey.values);
     VerseSet verses = VerseSet::none();
     for (std::size_t n = 1; n <= chorale.verseCount(); ++n) {
         const LyricsSyllable* syllable = chorale.lyrics().verse(n)->syllableAtLine(lineNumber);
+        const std::vector<PatternValue> read = hasReference ? lyricsReferencesRead(chorale, n, id, positionKey.values, positionLines)
+                                                            : std::vector<PatternValue>();
+        const std::vector<PatternValue>& allowed = hasReference ? read : positionKey.values;
         // The wildcard asks for a syllable to sound: none does at a rest or where the verse has run out of text.
-        const bool holds = syllable && (isWildcard(allowed) || lyricsInList(positionKey.patternKey->id, allowed, *syllable, lineNumber));
+        const bool holds = syllable && (isWildcard(allowed) || lyricsInList(id, allowed, *syllable, lineNumber));
         if (holds != positionKey.negated) verses |= VerseSet::of(n);
     }
     return verses;
@@ -585,15 +628,16 @@ bool hasOnlyExactDurations(const PatternPosition& position) {
     const PositionKey* duration = findPositionKey(position, PatternKeyId::Duration, false);
     return duration && !isWildcard(duration->values) &&
            std::none_of(duration->values.begin(), duration->values.end(), [](const PatternValue& v) {
-               return v.hasComparisonOperator() || v.isVoiceReference();
+               return v.hasComparisonOperator() || v.isVoiceReference() || v.isPositionReference();
            });
 }
 
 // The value as the score spells what it is compared with, so the comparison is literal: metweight and mode
 // by their canonical name, sylpos and melisma by name ("i" is "initial"), word and syl like the lyrics
-// (see normalizeLyricsText: "Jesu" finds "jesu"), mint.direction "none" as "P1". A wildcard and a comparison stay as they are.
+// (see normalizeLyricsText: "Jesu" finds "jesu"), mint.direction "none" as "P1". A wildcard, a comparison and a
+// reference stay as they are.
 void normalizePatternValue(const PositionKey& positionKey, PatternValue& value) {
-    if (value.text == "*" || value.hasComparisonOperator() || value.isVoiceReference()) return;
+    if (value.text == "*" || value.hasComparisonOperator() || value.isVoiceReference() || value.isPositionReference()) return;
     // mint.direction "none" is a unison, which goes nowhere.
     if (positionKey.is(PatternKeyId::Mint) && positionKey.patternKeyPart && value.text == kNoDirection) value.text = "P1";
     if (positionKey.is(PatternKeyId::Metweight)) value.text = normalizeMetweightValue(value.text).value_or(value.text);
@@ -780,6 +824,13 @@ namespace {
 void checkValues(const PositionKey& positionKey, const MatcherOptions& options) {
     const std::string& key = positionKey.rawKey;
     for (const PatternValue& value : positionKey.values) {
+        if (value.isPositionReference()) {
+            // resolvePositionReferences checked what it reads; only the comparison is left.
+            if (value.hasComparisonOperator() && !supportsComparison(key)) {
+                throw std::invalid_argument("'" + key + "' cannot be compared with '" + value.text + "'");
+            }
+            continue;
+        }
         if (value.isVoiceReference()) {
             if (!supportsVoiceReference(key) || !isValidVoiceReference(value.text)) {
                 throw std::invalid_argument("'" + key + "' cannot be held against '" + value.text + "'");
@@ -801,11 +852,12 @@ void checkValues(const PositionKey& positionKey, const MatcherOptions& options) 
 
 } // namespace
 
-AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern, MatcherOptions options)
+AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> writtenPattern, MatcherOptions options)
     : m_drivingFeature(std::move(drivingFeature)), m_options(std::move(options)) {
     // An unknown feature finds nothing.
     const PatternKeyLookup driving = findPatternKey(m_drivingFeature);
     if (driving.patternKey && driving.patternKey->driving && !driving.negated) m_drivingFeatureId = driving.patternKey->id;
+    const std::vector<AttributeMap> pattern = resolvePositionReferences(writtenPattern);
     // A word or a syllable is matched as a whole, with all its notes: these options have nothing to work on.
     if (isDrivenByLyrics() &&
         (m_options.durationAllowSplitNotes || m_options.durationAllowMergedNotes || m_options.metweightSkipUnclassified)) {
@@ -815,15 +867,18 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
     m_readsLyrics = isDrivenByLyrics();
     for (const AttributeMap& position : pattern) {
         PatternPosition& patternPosition = m_pattern.emplace_back();
+        bool hasReferences = false;
         for (const auto& [rawKey, values] : position) {
+            if (rawKey == kPositionNameKey) continue; // only needed to resolve the references
+            hasReferences = hasReferences || hasPositionReference(values);
             PositionKey& positionKey = patternPosition.emplace_back(PositionKey{findPatternKey(rawKey), values});
             checkValues(positionKey, m_options);
             for (PatternValue& value : positionKey.values) normalizePatternValue(positionKey, value);
             if (positionKey.readsLyrics()) m_readsLyrics = true;
         }
+        m_hasReferences.push_back(hasReferences);
     }
 }
-
 
 std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const HumdrumChorale& chorale,
                                                                     std::size_t voice) const {
@@ -883,6 +938,99 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
     return onsets;
 }
 
+std::optional<AttributeMatcher::KeyValue> AttributeMatcher::valueOfKey(const HumdrumChorale& chorale, std::size_t voice,
+                                                                   const Onset& onset, PatternKeyId id,
+                                                                   const std::string& key) const {
+    hum::HTp tok = onset.token;
+    const int lineNumber = tok->getLineNumber();
+    if (id == PatternKeyId::Duration) return KeyValue{hum::Convert::durationToRecip(onset.duration)};
+    if (id == PatternKeyId::Fermata) {
+        // On the last note of a word or a syllable.
+        hum::HTp note = lookupToken(chorale, voice, onset.lastToken->getLineNumber(), kKernKey);
+        if (!note) return std::nullopt;
+        return KeyValue{note->hasFermata() ? "true" : "false", note};
+    }
+    if (id == PatternKeyId::Mode || id == PatternKeyId::Key || id == PatternKeyId::KeyDeg) {
+        const KeyContext* context = chorale.keyContextAtLine(lineNumber);
+        if (!context) return std::nullopt;
+        return KeyValue{id == PatternKeyId::Mode ? context->mode : id == PatternKeyId::Key ? context->key : context->keyDeg};
+    }
+    // An ornament was skipped in front of this onset, so the spine's own token states the interval out of that
+    // ornament rather than out of the note the pattern is stepping off -- see buildOnsets().
+    if (id == PatternKeyId::Mint && onset.mint) return KeyValue{*onset.mint};
+    if (key == m_drivingFeature) return KeyValue{std::string(*tok), tok};
+    // "hint-2": the interval between whichever voice is currently being searched and voice 2 specifically.
+    const std::optional<std::string> spine = id == PatternKeyId::HintVoice ? resolveHintRelativeKey(key, voice) : key;
+    hum::HTp valTok = spine ? lookupToken(chorale, effectiveVoice(*spine, voice), lineNumber, *spine) : nullptr;
+    if (!valTok) return std::nullopt;
+    return KeyValue{std::string(*valTok), valTok};
+}
+
+std::optional<std::string> AttributeMatcher::readPositionReference(const HumdrumChorale& chorale, std::size_t voice,
+                                                                   const PositionReference& reference,
+                                                                   const MatchedOnsets& matched) const {
+    if (reference.position >= matched.size() || !matched[reference.position]) return std::nullopt;
+    const Onset& onset = *matched[reference.position];
+    const PatternKeyLookup lookup = findPatternKey(reference.key);
+    const PatternKeyId id = lookup.patternKey->id;
+    const std::string part = lookup.partName();
+    const std::optional<KeyValue> read = valueOfKey(chorale, voice, onset, id, lookup.baseKey);
+    if (!read) return std::nullopt;
+    const std::string& value = read->text;
+
+    if (id == PatternKeyId::Kern) {
+        // The note with its rhythm, or its pitch; a rest is no note.
+        std::string pitch = kernToPitch(value);
+        if (pitch.empty() || pitch == "r") return std::nullopt;
+        return part == "pitch" ? pitch : hum::Convert::durationToRecip(onset.duration) + pitch;
+    }
+    if (id == PatternKeyId::Mint) {
+        // A rest ("r") and the first note of a voice ("[gg]") have no interval.
+        auto parsed = parseMintValue(value);
+        if (!parsed || parsed->number.empty()) return std::nullopt;
+        if (part == "direction") return parsed->direction.empty() ? "P1" : parsed->direction; // a unison goes nowhere
+        if (part == "number") return parsed->number;
+        if (part == "interval") return parsed->quality + parsed->number;
+        return value;
+    }
+    if (id == PatternKeyId::Fb && part == "numbers") {
+        std::string numbers;
+        for (const std::string& figure : splitFbComponents(value)) {
+            if (auto parsed = parseFbValue(figure)) numbers += (numbers.empty() ? "" : " ") + parsed->figure;
+        }
+        if (numbers.empty()) return std::nullopt;
+        return numbers;
+    }
+    if (part == "number") { // the hint keys
+        auto parsed = parseFbValue(value);
+        if (!parsed) return std::nullopt;
+        return parsed->figure;
+    }
+    if (id == PatternKeyId::Deg && value == "r") return std::nullopt; // a rest has no degree
+    return value;
+}
+
+PatternPosition AttributeMatcher::withReferencesRead(const HumdrumChorale& chorale, std::size_t voice,
+                                                     const PatternPosition& position, const MatchedOnsets& matched) const {
+    PatternPosition read = position;
+    for (PositionKey& positionKey : read) {
+        if (positionKey.readsLyrics()) continue;
+        const bool intoOctave = positionKey.is(PatternKeyId::Fb); // fb has its figures within the octave
+        std::vector<PatternValue> values;
+        for (PatternValue& value : positionKey.values) {
+            if (!value.positionReference) {
+                values.push_back(std::move(value));
+                continue;
+            }
+            std::optional<std::string> text = readPositionReference(chorale, voice, *value.positionReference, matched);
+            if (!text) continue;
+            values.emplace_back(value.comparisonOperator, intoOctave ? reduceHintInterval(*text) : *text);
+        }
+        positionKey.values = std::move(values);
+    }
+    return read;
+}
+
 std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
                                                 const PositionKey& positionKey) const {
     // A "!" prefix negates the whole position's result (De Morgan's over the OR-list:
@@ -898,7 +1046,10 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
 
     // Some verse has to match the key here; that one verse matches every key of the pattern is checked once
     // the walk is through, see walkPattern.
-    if (positionKey.readsLyrics()) return !versesMatchingKey(chorale, positionKey, lineNumber).empty();
+    // A reference reads its position in each verse, which is left to that check.
+    if (positionKey.readsLyrics()) {
+        return hasPositionReference(allowed) || !versesMatchingKey(chorale, positionKey, lineNumber).empty();
+    }
 
     bool matched;
     if (isWildcard(allowed)) {
@@ -920,9 +1071,8 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         // voice 2 specifically -- both sides fixed, so this stays correct across several
         // pattern positions (unlike wildcarding this digit would, see isHintRelativeKey's
         // comment).
-        auto pairFeature = resolveHintRelativeKey(key, voice);
-        hum::HTp valTok = pairFeature ? lookupToken(chorale, 1, lineNumber, *pairFeature) : nullptr;
-        matched = valTok && hintInList(allowed, std::string(*valTok), m_options.hintReduceCompound);
+        auto value = valueOfKey(chorale, voice, onset, PatternKeyId::HintVoice, key);
+        matched = value && hintInList(allowed, value->text, m_options.hintReduceCompound);
     } else if (positionKey.is(PatternKeyId::Phrase)) {
         hum::HTp noteTok = lookupToken(chorale, voice, lineNumber, kKernKey);
         hum::HTp lastNoteTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernKey);
@@ -933,28 +1083,11 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         if (!context) return std::nullopt;
         matched = keyContextInList(positionKey.patternKey->id, allowed, *context);
     } else {
-        std::string actual;
-        hum::HTp kernTok = nullptr;
-        if (positionKey.is(PatternKeyId::Duration)) {
-            actual = hum::Convert::durationToRecip(onset.duration);
-        } else if (positionKey.is(PatternKeyId::Fermata)) {
-            hum::HTp fermataTok = lookupToken(chorale, voice, lastTok->getLineNumber(), kKernKey);
-            if (!fermataTok) return std::nullopt;
-            actual = fermataTok->hasFermata() ? "true" : "false";
-        } else if (positionKey.is(PatternKeyId::Mint) && onset.mint) {
-            // An ornament was skipped in front of this onset, so the spine's own token states
-            // the interval out of that ornament rather than out of the note the pattern is
-            // stepping off -- see buildOnsets().
-            actual = *onset.mint;
-        } else if (key == m_drivingFeature) {
-            actual = std::string(*tok);
-            kernTok = tok;
-        } else {
-            hum::HTp valTok = lookupToken(chorale, effectiveVoice(key, voice), lineNumber, key);
-            if (!valTok) return std::nullopt;
-            actual = std::string(*valTok);
-            kernTok = valTok;
-        }
+        if (!positionKey.patternKey) return std::nullopt; // a key the table does not know
+        std::optional<KeyValue> value = valueOfKey(chorale, voice, onset, positionKey.patternKey->id, key);
+        if (!value) return std::nullopt;
+        const std::string& actual = value->text;
+        hum::HTp kernTok = value->token;
         if (positionKey.is(PatternKeyId::Mint)) matched = mintInList(allowed, actual, m_options.mintAllowIntervalComplementation, m_options.hintReduceCompound);
         else if (positionKey.is(PatternKeyId::Fb)) matched = fbInList(allowed, actual, m_options.fbCompareExactChord);
         else if (positionKey.is(PatternKeyId::HintPair)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
@@ -1076,12 +1209,20 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
 
 std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumChorale& chorale, std::size_t voice,
                                                                    const Onset& onset, std::size_t patternIndex,
-                                                                   hum::HumNum remaining, bool isContinuation) const {
+                                                                   hum::HumNum remaining, bool isContinuation,
+                                                                   MatchedOnsets& matched) const {
     if (patternIndex >= m_pattern.size()) return std::nullopt;
-    const PatternPosition& position = m_pattern[patternIndex];
     // Without a concrete duration there is no share of the onset this position could claim,
     // so the run cannot reach across it.
-    if (!hasOnlyExactDurations(position)) return std::nullopt;
+    if (!hasOnlyExactDurations(m_pattern[patternIndex])) return std::nullopt;
+    // What a reference to this position reads: a later position of the run is the unison of a re-attack. The
+    // share it claims is set below.
+    Onset& matchedOnset = matched[patternIndex].emplace(onset);
+    matchedOnset.duration = remaining;
+    if (isContinuation) matchedOnset.mint = "P1";
+    const PatternPosition read = m_hasReferences[patternIndex] ? withReferencesRead(chorale, voice, m_pattern[patternIndex], matched)
+                                                               : PatternPosition();
+    const PatternPosition& position = m_hasReferences[patternIndex] ? read : m_pattern[patternIndex];
     const PositionKey* duration = findPositionKey(position, PatternKeyId::Duration, false);
 
     for (const PositionKey& positionKey : position) {
@@ -1112,8 +1253,9 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
         // A negated duration excludes the very share this position would be claiming, so
         // "!duration" keeps excluding exactly what "duration" would have matched.
         if (negatedDuration && (isWildcard(negatedDuration->values) || durationInList(negatedDuration->values, value))) continue;
+        matched[patternIndex]->duration = value;
         if (value == remaining) return 1;
-        auto rest = matchMergedPositions(chorale, voice, onset, patternIndex + 1, remaining - value, true);
+        auto rest = matchMergedPositions(chorale, voice, onset, patternIndex + 1, remaining - value, true, matched);
         if (rest) return *rest + 1;
     }
     return std::nullopt;
@@ -1178,9 +1320,14 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
         std::size_t offset = 0;
         bool ok = true;
         std::vector<PositionOnset> positionOnsets(n);
+        // Entered before a position is checked, so it can read its own onset.
+        MatchedOnsets matched(n);
         while (offset < n) {
-            const PatternPosition& position = m_pattern[offset];
-            bool concreteDuration = hasOnlyExactDurations(position);
+            bool concreteDuration = hasOnlyExactDurations(m_pattern[offset]);
+            if (idx < onsets.size()) matched[offset] = onsets[idx];
+            const PatternPosition read = m_hasReferences[offset] ? withReferencesRead(chorale, voice, m_pattern[offset], matched)
+                                                                 : PatternPosition();
+            const PatternPosition& position = m_hasReferences[offset] ? read : m_pattern[offset];
 
             if (concreteDuration && m_options.durationAllowSplitNotes) {
                 auto consumed = matchSplitPosition(chorale, voice, onsets, idx, position);
@@ -1189,6 +1336,7 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
                     for (std::size_t i = idx; i < idx + *consumed; ++i) duration += onsets[i].duration;
                     positionOnsets[offset] = {static_cast<std::size_t>(onsets[idx].token->getLineNumber()),
                                               onsets[idx].token->getDurationFromStart(), duration};
+                    matched[offset]->duration = duration;
                     idx += *consumed;
                     ++offset;
                     continue;
@@ -1203,7 +1351,7 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
             const Onset& onset = onsets[idx];
 
             if (concreteDuration && m_options.durationAllowMergedNotes) {
-                auto consumed = matchMergedPositions(chorale, voice, onset, offset, onset.duration, false);
+                auto consumed = matchMergedPositions(chorale, voice, onset, offset, onset.duration, false, matched);
                 if (!consumed) { ok = false; break; }
                 for (std::size_t covered = offset; covered < offset + *consumed && covered < n; ++covered) {
                     positionOnsets[covered] = {static_cast<std::size_t>(onset.token->getLineNumber()), onset.token->getDurationFromStart(),
@@ -1228,9 +1376,11 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
 
         // One verse in which every lyrics key of every position holds, else the match is none.
         VerseSet verses = VerseSet::all();
+        std::vector<int> positionLines;
+        for (const PositionOnset& positionOnset : positionOnsets) positionLines.push_back(static_cast<int>(positionOnset.line));
         for (std::size_t p = 0; p < n; ++p) {
             for (const PositionKey& positionKey : m_pattern[p]) {
-                if (positionKey.readsLyrics()) verses &= versesMatchingKey(chorale, positionKey, static_cast<int>(positionOnsets[p].line));
+                if (positionKey.readsLyrics()) verses &= versesMatchingKey(chorale, positionKey, positionLines[p], positionLines);
             }
         }
         if (verses.empty()) continue;

@@ -84,6 +84,11 @@ public:
     // word or syl, the words or syllables of every verse of the soprano, each span once; another voice has none.
     std::vector<Onset> buildOnsets(const HumdrumChorale& chorale, std::size_t voice) const;
 
+    // What a position of the pattern was matched on, for the position references that read it: a copy of the
+    // onset, with the duration the position took (the sum of a split run, the share of a merged one) and, for
+    // a later position of a merged run, the unison of the re-attack it describes as its mint.
+    using MatchedOnsets = std::vector<std::optional<Onset>>;
+
 private:
     // Walks the pattern along `onsets`, the matches in their order.
     std::vector<AttributeMatch> walkPattern(const HumdrumChorale& chorale, std::size_t voice, const std::vector<Onset>& onsets) const;
@@ -94,6 +99,26 @@ private:
     // position outright, negation included.
     std::optional<bool> matchKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
                                   const PositionKey& positionKey) const;
+
+    // What the score has for a key at `onset`: the text a value is held against, and the token it is read from
+    // where there is one. nullopt where the spine has no token there.
+    struct KeyValue {
+        std::string text;
+        hum::HTp token = nullptr;
+    };
+    std::optional<KeyValue> valueOfKey(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset, PatternKeyId id,
+                                       const std::string& key) const;
+
+    // What a position reference reads at the onset its position was matched on, spelled as a value of the key
+    // it reads ("4f#", "-M2", "+", "6 3"). nullopt where there is nothing to read: a rest, the first note of a
+    // voice for mint, a missing spine.
+    std::optional<std::string> readPositionReference(const HumdrumChorale& chorale, std::size_t voice,
+                                                     const PositionReference& reference, const MatchedOnsets& matched) const;
+
+    // `position` with each position reference replaced by what it reads, or dropped where it reads nothing. The
+    // lyrics are left as they are: they are read verse by verse, see walkPattern.
+    PatternPosition withReferencesRead(const HumdrumChorale& chorale, std::size_t voice, const PatternPosition& position,
+                                       const MatchedOnsets& matched) const;
 
     // Consumes one or more consecutive onsets starting at onsets[onsetIndex] that together
     // make up one "logical note" for this pattern position, until their summed duration hits
@@ -123,13 +148,14 @@ private:
     // MatcherOptions::durationAllowMergedNotes is set.
     std::optional<std::size_t> matchMergedPositions(const HumdrumChorale& chorale, std::size_t voice,
                                                      const Onset& onset, std::size_t patternIndex,
-                                                     hum::HumNum remaining, bool isContinuation) const;
+                                                     hum::HumNum remaining, bool isContinuation, MatchedOnsets& matched) const;
 
     bool isDrivenByLyrics() const { return m_drivingFeatureId == PatternKeyId::Word || m_drivingFeatureId == PatternKeyId::Syl; }
 
     std::string m_drivingFeature;
     std::optional<PatternKeyId> m_drivingFeatureId; // nullopt for an unknown feature
     std::vector<PatternPosition> m_pattern;
+    std::vector<bool> m_hasReferences; // per position: whether it has a position reference
     MatcherOptions m_options;
     bool m_readsLyrics = false; // driven by word or syl, or with a lyrics key in the pattern
 };

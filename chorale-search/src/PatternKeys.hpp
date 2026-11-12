@@ -36,8 +36,9 @@ using ValueCheck = bool (*)(const std::string& value);
 
 // What the values of a key are like.
 struct ValueSpec {
-    bool comparable = false;     // { "operator": "gt", "value": "4" }
-    bool voiceReference = false; // "@2", "@below"
+    bool comparable = false;        // { "operator": "gt", "value": "4" }
+    bool voiceReference = false;    // "@2", "@below"
+    bool positionReference = false; // "#1", "$start", and a reference can read it
     ValueCheck isValidValue = nullptr;           // "+M2", "+", "3"
     ValueCheck isValidComparisonValue = nullptr; // the value of a comparison: "+3", "m6"
 };
@@ -72,6 +73,7 @@ struct PatternKeyLookup {
 
     bool is(PatternKeyId id) const { return patternKey && patternKey->id == id; }
     bool readsLyrics() const { return patternKey && patternKey->perVerse; }
+    std::string partName() const { return patternKeyPart ? patternKeyPart->name : ""; } // "" for the whole key
     // The part's values, or the key's own.
     const ValueSpec& valueSpec() const { return patternKeyPart ? patternKeyPart->valueSpec : patternKey->valueSpec; }
 };
