@@ -23,7 +23,8 @@ function inline(value) {
 function format(value, indent, key) {
     const prefix = key ? `${JSON.stringify(key)}: ` : '';
     const oneLine = inline(value);
-    const mustExpand = isCompleteQuery(value) || (Array.isArray(value) && (key === 'pattern' || value.some(isCompleteQuery)));
+    const isPattern = key === 'pattern' || key === 'subPattern';
+    const mustExpand = isCompleteQuery(value) || (Array.isArray(value) && (isPattern || value.some(isCompleteQuery)));
     const fits = indent.length + prefix.length + oneLine.length + 1 <= MAX_LINE_LENGTH;
     if (value === null || typeof value !== 'object' || (!mustExpand && fits)) return prefix + oneLine;
 

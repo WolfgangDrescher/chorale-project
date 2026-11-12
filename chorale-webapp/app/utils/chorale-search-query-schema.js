@@ -204,20 +204,75 @@ const positionFeaturesSchema = {
     },
 };
 
-// One position of a pattern: what it checks, and its name.
-export const patternPositionSchema = {
+// How often a position matches in a row: "*", "+", a number of times, or a range.
+const repeatSchema = {
+    description: 'Lets the position match several onsets in a row, each of which checks the other keys of the position: "*" any number, none included, "+" at least one, "?" one if there is one, a number exactly as many, or { "min", "max", "greedy" }. Without other keys it is a gap where anything may come. A repeat goes on up to where the rest of the pattern matches; with "greedy" it takes as many onsets as it may. No other position can refer to it.',
+    oneOf: [
+        {
+            type: 'string',
+            enum: ['*', '+', '?'],
+            enumDescriptions: [
+                'Any number of onsets, none included.',
+                'At least one onset.',
+                'One onset if there is one, else none: { "max": 1, "greedy": true }.',
+            ],
+        },
+        { type: 'integer', minimum: 1, description: 'Exactly this many repeats.' },
+        {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+                min: { type: 'integer', minimum: 0, default: 0, description: 'At least this many repeats: onsets, or with a subPattern repeats of all of it.' },
+                max: { type: 'integer', minimum: 1, description: 'At most this many repeats; no limit without it.' },
+                greedy: {
+                    type: 'boolean',
+                    default: true,
+                    description: 'As many onsets as it may instead of as few, giving some back only where the rest of the pattern would not match otherwise.',
+                },
+            },
+        },
+    ],
+};
+
+const subPatternSchema = {
+    type: 'array',
+    minItems: 1,
+    description: 'A pattern this position repeats instead of a single onset: each repeat matches all of its positions in order, and each of them checks the other keys of this position too, unless it checks the same key itself. Needs a "repeat".',
+    items: { $ref: '#/definitions/subPatternPosition' },
+};
+
+// A position of a subPattern: what it checks and how often it repeats, without a name.
+const subPatternPositionSchema = {
     ...positionFeaturesSchema,
+    dependencies: { subPattern: ['repeat'] },
+    properties: {
+        repeat: repeatSchema,
+        subPattern: subPatternSchema,
+        ...positionFeaturesSchema.properties,
+    },
+    propertyNames: {
+        ...positionFeaturesSchema.propertyNames,
+        pattern: `^(repeat|subPattern)$|${positionKeyPattern}|${voiceReferenceKeyPattern}`,
+    },
+};
+
+// What a schema that holds a pattern needs to define: the positions of a subPattern refer to themselves.
+export const searchQueryDefinitions = { subPatternPosition: subPatternPositionSchema };
+
+// One position of a pattern: what it checks, its name, and how often it repeats.
+export const patternPositionSchema = {
+    ...subPatternPositionSchema,
     properties: {
         as: {
             type: 'string',
             pattern: '^\\$[A-Za-z][A-Za-z0-9_]*$',
             description: 'The name of this position, "$" and a word, so that a later position can refer to it by name ("$start" instead of "#1"). Checks nothing against the score; a name is given to one position of its pattern.',
         },
-        ...positionFeaturesSchema.properties,
+        ...subPatternPositionSchema.properties,
     },
     propertyNames: {
         ...positionFeaturesSchema.propertyNames,
-        pattern: `^as$|${positionKeyPattern}|${voiceReferenceKeyPattern}`,
+        pattern: `^(as|repeat|subPattern)$|${positionKeyPattern}|${voiceReferenceKeyPattern}`,
     },
 };
 
@@ -426,6 +481,12 @@ export const singleQuerySchema = {
             suggestSortText: '3',
         },
         choraleFilter: choraleFilterSchema,
+        skipOverlappingMatches: {
+            type: 'boolean',
+            default: true,
+            description: 'Leaves out a match that begins on an onset of the match found before it in the same voice, so a sequence that repeats as often as it goes is found once.',
+            suggestSortText: '7.5',
+        },
         simultaneousWith: {
             type: 'array',
             description: 'Additional patterns (typically in other voices) that must each have a match at the same musical position as a match of this query\'s own pattern, for that match to be kept.',
@@ -444,6 +505,7 @@ export const singleQuerySchema = {
 export const choraleSearchQuerySchema = {
     $schema: 'http://json-schema.org/draft-07/schema#',
     title: 'Chorale Search Query',
+    definitions: searchQueryDefinitions,
     oneOf: [
         singleQuerySchema,
         {

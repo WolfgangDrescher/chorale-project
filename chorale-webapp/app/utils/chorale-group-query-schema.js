@@ -1,4 +1,4 @@
-import { patternPositionSchema, searchRequestFieldSchemas, singleQuerySchema } from './chorale-search-query-schema.js';
+import { patternPositionSchema, searchQueryDefinitions, searchRequestFieldSchemas, singleQuerySchema } from './chorale-search-query-schema.js';
 
 // Schema of a group query for the editor, following GroupingJson.cpp.
 
@@ -136,6 +136,7 @@ const groupQueryQuerySchema = {
 export const choraleGroupQuerySchema = {
     $schema: 'http://json-schema.org/draft-07/schema#',
     title: 'Chorale Group Query',
+    definitions: searchQueryDefinitions,
     type: 'object',
     required: ['query', 'groupBy'],
     additionalProperties: false,
