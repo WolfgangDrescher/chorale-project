@@ -243,6 +243,28 @@ noChoralesFoundDescription: Die Choräle werden aus dem Korpus extrahiert. Führ
 choraleCount: "ein Choral | {count} Choräle"
 key: Tonart
 mode: Modus
+number: Nr.
+modulations: Modulationen
+incipit: Incipit
+startingKey: Grundtonart
+cantusFirmus: Cantus firmus
+choraleListShow: Anzeigen
+tableView: Tabelle
+gridView: Karten
+sortDirection: Sortierrichtung umkehren
+keyWithMode: "{key}-{mode}"
+modeMajor: Dur
+modeMinor: Moll
+modeDorian: dorisch
+modeDorianShort: dor.
+modePhrygian: phrygisch
+modePhrygianShort: phryg.
+modeLydian: lydisch
+modeLydianShort: lyd.
+modeMixolydian: mixolydisch
+modeMixolydianShort: mixolyd.
+modeLocrian: lokrisch
+modeLocrianShort: lokr.
 text: Text
 playerPlay: Abspielen
 playerPause: Pause

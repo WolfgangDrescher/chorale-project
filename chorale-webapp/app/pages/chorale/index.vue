@@ -1,4 +1,6 @@
 <script setup>
+import { breakpointsTailwind, useBreakpoints, useMounted } from '@vueuse/core';
+
 const { t } = useI18n();
 const localePath = useLocalePath();
 
@@ -6,36 +8,114 @@ useHead({
     title: t('chorales'),
 });
 
+const UButton = resolveComponent('UButton');
+
 const { data: allChorales } = await useAsyncData('all-chorales', () => queryCollection('chorales').order('stem', 'ASC').all());
 
 const { filter, listFilter } = useChoraleListFilter();
+const { view, visibleColumns, coloring } = useChoraleListSettings();
 const page = ref(1);
 const PAGE_SIZE = 20;
+// Phones have room for only one page on either side of the current one. Known only once mounted,
+// so the page hydrates as the server rendered it.
+const isPhone = useBreakpoints(breakpointsTailwind).smaller('sm');
+const isMounted = useMounted();
+const paginationSiblingCount = computed(() => (isMounted.value && isPhone.value ? 1 : 2));
 
-watch(filter, () => (page.value = 1));
+// What each sortable column sorts by. The number decides between equal values.
+const SORT_VALUES = {
+    number: (chorale) => chorale.number ?? Infinity,
+    title: (chorale) => chorale.title ?? '',
+    key: (chorale) => {
+        const start = startKeyOf(chorale);
+        return start?.signature === undefined ? Infinity : start.signature * 2 + (isMinorKey(start.key) ? 1 : 0);
+    },
+    meter: (chorale) => chorale.meter ?? '',
+};
+
+const sorting = ref([{ id: 'number', desc: false }]);
+
+watch([filter, sorting], () => (page.value = 1));
+
+function compareBy(id) {
+    const valueOf = SORT_VALUES[id];
+    return (a, b) => {
+        const [valueA, valueB] = [valueOf(a), valueOf(b)];
+        return typeof valueA === 'string' ? valueA.localeCompare(valueB, 'de') : valueA - valueB;
+    };
+}
 
 const chorales = computed(() => {
-    return (allChorales.value ?? [])
-        .filter((item) => matchesChoraleListFilter(item, listFilter.value))
-        .map((item) => ({
-            choraleId: item.choraleId,
-            number: item.number,
-            bwv: item.bwv,
-            title: item.title,
-            key: [item.key, item.mode].filter(Boolean).join(' '),
-            meter: item.meter,
-        }));
+    const filtered = (allChorales.value ?? []).filter((item) => matchesChoraleListFilter(item, listFilter.value));
+    const { id, desc } = sorting.value[0] ?? { id: 'number', desc: false };
+    const [compare, compareNumbers] = [compareBy(id), compareBy('number')];
+    return filtered.sort((a, b) => (desc ? -1 : 1) * compare(a, b) || compareNumbers(a, b));
 });
 
 const pagedChorales = computed(() => chorales.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
 
+const linkTo = (chorale) => localePath({ name: 'chorale-id', params: { id: chorale.choraleId } });
+
+const SORT_ICONS = { asc: 'lucide:arrow-up-narrow-wide', desc: 'lucide:arrow-down-wide-narrow' };
+
+function sortableHeader(label) {
+    return ({ column }) => h(UButton, {
+        color: 'neutral',
+        variant: 'ghost',
+        size: 'sm',
+        label,
+        trailingIcon: SORT_ICONS[column.getIsSorted()] ?? 'lucide:arrow-up-down',
+        // Pulled out by its own padding, so the label lines up with the cells below.
+        class: '-mx-1 px-1 sm:-mx-2.5 sm:px-2.5 font-semibold',
+        onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
+    });
+}
+
+// The smaller the screen, the fewer columns, the ones that need the most room first gone. The
+// widths of the headers lay out the table, not the chorales of a page, so sorting or paging leaves
+// the columns where they are. The title takes what is left.
 const columns = [
-    { accessorKey: 'choraleId', header: t('id') },
-    { accessorKey: 'bwv', header: t('bwv') },
-    { accessorKey: 'title', header: t('title') },
-    { accessorKey: 'key', header: t('key') },
-    { accessorKey: 'meter', header: t('meter') },
+    { id: 'number', header: sortableHeader(t('number')), meta: { class: { th: 'w-14 sm:w-16' } } },
+    { id: 'title', header: sortableHeader(t('title')), meta: { class: { td: 'whitespace-normal' } } },
+    { id: 'key', header: sortableHeader(t('key')), meta: { class: { th: 'w-24 sm:w-44' } } },
+    { id: 'meter', header: sortableHeader(t('meter')), meta: { class: { th: 'hidden sm:table-cell w-28', td: 'hidden sm:table-cell text-center' } } },
+    { id: 'incipit', header: t('incipit'), meta: { class: { th: 'hidden lg:table-cell w-80', td: 'hidden lg:table-cell py-0' } } },
 ];
+
+// The modulations run along the bottom of a row and have no column of their own.
+const columnVisibility = computed(() => {
+    const { key, meter, incipit } = visibleColumns.value;
+    return { key, meter, incipit };
+});
+
+const displayMenuItems = computed(() => [
+    [
+        { type: 'label', label: t('choraleListShow') },
+        ...['key', 'meter', 'modulations', 'incipit'].map((name) => ({
+            type: 'checkbox',
+            label: t(name),
+            checked: visibleColumns.value[name],
+            onUpdateChecked: (checked) => (visibleColumns.value[name] = checked),
+            onSelect: (event) => event.preventDefault(),
+        })),
+    ],
+    [
+        {
+            type: 'checkbox',
+            label: t('keyColoringRelative'),
+            checked: coloring.value === 'relative',
+            onUpdateChecked: (checked) => (coloring.value = checked ? 'relative' : 'absolute'),
+            onSelect: (event) => event.preventDefault(),
+        },
+    ],
+]);
+
+const sortItems = computed(() => Object.keys(SORT_VALUES).map((id) => ({ label: t(id), value: id })));
+const sortId = computed({
+    get: () => sorting.value[0]?.id ?? 'number',
+    set: (id) => (sorting.value = [{ id, desc: false }]),
+});
+const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !sorting.value[0]?.desc }]);
 </script>
 
 <template>
@@ -53,23 +133,99 @@ const columns = [
         </div>
 
         <template v-else>
-            <ChoraleListFilter :count="chorales.length" class="mb-4" />
+            <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 mb-4">
+                <ChoraleListFilter :count="chorales.length" class="grow" />
+                <div class="flex items-center gap-2">
+                    <USelect v-model="sortId" :items="sortItems" size="sm" class="w-36" :aria-label="$t('sortBy')" />
+                    <UButton
+                        :icon="SORT_ICONS[sorting[0]?.desc ? 'desc' : 'asc']"
+                        color="neutral"
+                        variant="outline"
+                        size="sm"
+                        :aria-label="$t('sortDirection')"
+                        @click="toggleSortDirection"
+                    />
+                    <!-- The room of a check mark stays when it is unchecked, so the menu keeps its width. -->
+                    <UDropdownMenu :items="displayMenuItems" :content="{ align: 'end' }" :ui="{ itemTrailing: 'min-w-5' }">
+                        <UButton icon="lucide:settings-2" color="neutral" variant="outline" size="sm" :aria-label="$t('choraleListShow')" />
+                    </UDropdownMenu>
+                    <UFieldGroup size="sm">
+                        <UButton
+                            icon="lucide:list"
+                            color="neutral"
+                            :variant="view === 'table' ? 'subtle' : 'outline'"
+                            :aria-label="$t('tableView')"
+                            :aria-pressed="view === 'table'"
+                            @click="view = 'table'"
+                        />
+                        <UButton
+                            icon="lucide:layout-grid"
+                            color="neutral"
+                            :variant="view === 'grid' ? 'subtle' : 'outline'"
+                            :aria-label="$t('gridView')"
+                            :aria-pressed="view === 'grid'"
+                            @click="view = 'grid'"
+                        />
+                    </UFieldGroup>
+                </div>
+            </div>
 
-            <UTable :data="pagedChorales" :columns="columns">
-                <template #choraleId-cell="{ row }">
-                    <ULink :to="localePath({ name: 'chorale-id', params: { id: row.original.choraleId } })" class="font-mono text-primary">
-                        {{ row.original.choraleId }}
-                    </ULink>
+            <UTable
+                v-if="view === 'table'"
+                v-model:sorting="sorting"
+                :column-visibility="columnVisibility"
+                :sorting-options="{ manualSorting: true }"
+                :get-row-id="(chorale) => chorale.choraleId"
+                :data="pagedChorales"
+                :columns="columns"
+                :ui="{ root: 'rounded-lg border border-default', base: 'w-full table-fixed', thead: 'bg-elevated/50', th: 'px-2 sm:px-4', td: 'px-2 sm:px-4 py-2.5', tr: 'group relative cursor-pointer' }"
+                @select="(_, row) => navigateTo(linkTo(row.original))"
+            >
+                <template #number-cell="{ row }">
+                    <span class="text-2xl font-light tabular-nums text-dimmed group-hover:text-primary">{{ row.original.number }}</span>
                 </template>
                 <template #title-cell="{ row }">
-                    <ULink :to="localePath({ name: 'chorale-id', params: { id: row.original.choraleId } })">
+                    <ULink :to="linkTo(row.original)" class="block font-medium text-highlighted group-hover:text-primary">
                         {{ row.original.title }}
                     </ULink>
+                    <ChoraleListItemDetails :chorale="row.original" />
+                    <!-- Along the bottom of the whole row, which is its positioned ancestor. -->
+                    <ChoraleModulationMap
+                        v-if="visibleColumns.modulations && row.original.modulations && row.original.duration"
+                        :modulations="row.original.modulations"
+                        :duration="row.original.duration"
+                        :relative="coloring === 'relative'"
+                        class="absolute inset-x-0 bottom-0 h-1"
+                    />
+                </template>
+                <template #key-cell="{ row }">
+                    <ChoraleKeyBadge
+                        v-if="startKeyOf(row.original)"
+                        :key-context="startKeyOf(row.original)"
+                        :cantus-firmus="differingCantusFirmusKeyOf(row.original)"
+                    />
+                </template>
+                <template #meter-cell="{ row }">
+                    <ChoraleMeter v-if="row.original.meter" :meter="row.original.meter" class="text-toned" />
+                </template>
+                <template #incipit-cell="{ row }">
+                    <ChoraleIncipit :chorale-id="row.original.choraleId" class="h-14 w-72" />
                 </template>
             </UTable>
 
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                <ChoraleGridItem
+                    v-for="chorale in pagedChorales"
+                    :key="chorale.choraleId"
+                    :chorale="chorale"
+                    :to="linkTo(chorale)"
+                    :visible-columns="visibleColumns"
+                    :relative-coloring="coloring === 'relative'"
+                />
+            </div>
+
             <div class="flex justify-center mt-4">
-                <UPagination v-model:page="page" :items-per-page="PAGE_SIZE" :total="chorales.length" />
+                <UPagination v-model:page="page" :items-per-page="PAGE_SIZE" :total="chorales.length" :sibling-count="paginationSiblingCount" />
             </div>
         </template>
     </UContainer>

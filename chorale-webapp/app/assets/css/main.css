@@ -28,6 +28,13 @@
 }
 
 @theme {
+    /* A highlight sweeping across a placeholder, see the incipits of the chorale list. */
+    --animate-shimmer: shimmer 1.5s linear infinite;
+    @keyframes shimmer {
+        from { background-position: 100% 0; }
+        to { background-position: -100% 0; }
+    }
+
     --font-sans: 'Alegreya Sans', 'Bravura', sans-serif;
     --font-serif: 'Alegreya',  sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', 'Bravura', monospace;
