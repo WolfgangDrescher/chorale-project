@@ -15,7 +15,8 @@ const { data: allChorales } = await useAsyncData('all-chorales', () => queryColl
 const { filter, listFilter } = useChoraleListFilter();
 const { view, visibleColumns, coloring } = useChoraleListSettings();
 const page = ref(1);
-const PAGE_SIZE = 20;
+// Fewer chorales on a page when each comes with its whole score.
+const pageSize = computed(() => (view.value === 'score' ? 10 : 20));
 // Phones have room for only one page on either side of the current one. Known only once mounted,
 // so the page hydrates as the server rendered it.
 const isPhone = useBreakpoints(breakpointsTailwind).smaller('sm');
@@ -35,7 +36,7 @@ const SORT_VALUES = {
 
 const sorting = ref([{ id: 'number', desc: false }]);
 
-watch([filter, sorting], () => (page.value = 1));
+watch([filter, sorting, view], () => (page.value = 1));
 
 function compareBy(id) {
     const valueOf = SORT_VALUES[id];
@@ -52,9 +53,15 @@ const chorales = computed(() => {
     return filtered.sort((a, b) => (desc ? -1 : 1) * compare(a, b) || compareNumbers(a, b));
 });
 
-const pagedChorales = computed(() => chorales.value.slice((page.value - 1) * PAGE_SIZE, page.value * PAGE_SIZE));
+const pagedChorales = computed(() => chorales.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value));
 
 const linkTo = (chorale) => localePath({ name: 'chorale-id', params: { id: chorale.choraleId } });
+
+const VIEWS = [
+    { value: 'table', icon: 'lucide:list', label: 'tableView' },
+    { value: 'grid', icon: 'lucide:layout-grid', label: 'gridView' },
+    { value: 'score', icon: 'lucide:list-music', label: 'scoreView' },
+];
 
 const SORT_ICONS = { asc: 'lucide:arrow-up-narrow-wide', desc: 'lucide:arrow-down-wide-narrow' };
 
@@ -136,7 +143,7 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
             <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 mb-4">
                 <ChoraleListFilter :count="chorales.length" class="grow" />
                 <div class="flex items-center gap-2">
-                    <USelect v-model="sortId" :items="sortItems" size="sm" class="w-36" :aria-label="$t('sortBy')" />
+                    <USelect v-model="sortId" :items="sortItems" size="sm" class="w-28 sm:w-36" :aria-label="$t('sortBy')" />
                     <UButton
                         :icon="SORT_ICONS[sorting[0]?.desc ? 'desc' : 'asc']"
                         color="neutral"
@@ -151,20 +158,14 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
                     </UDropdownMenu>
                     <UFieldGroup size="sm">
                         <UButton
-                            icon="lucide:list"
+                            v-for="{ value, icon, label } in VIEWS"
+                            :key="value"
+                            :icon="icon"
                             color="neutral"
-                            :variant="view === 'table' ? 'subtle' : 'outline'"
-                            :aria-label="$t('tableView')"
-                            :aria-pressed="view === 'table'"
-                            @click="view = 'table'"
-                        />
-                        <UButton
-                            icon="lucide:layout-grid"
-                            color="neutral"
-                            :variant="view === 'grid' ? 'subtle' : 'outline'"
-                            :aria-label="$t('gridView')"
-                            :aria-pressed="view === 'grid'"
-                            @click="view = 'grid'"
+                            :variant="view === value ? 'subtle' : 'outline'"
+                            :aria-label="$t(label)"
+                            :aria-pressed="view === value"
+                            @click="view = value"
                         />
                     </UFieldGroup>
                 </div>
@@ -213,6 +214,17 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
                 </template>
             </UTable>
 
+            <div v-else-if="view === 'score'" class="flex flex-col gap-4">
+                <ChoraleScoreItem
+                    v-for="chorale in pagedChorales"
+                    :key="chorale.choraleId"
+                    :chorale="chorale"
+                    :to="linkTo(chorale)"
+                    :visible-columns="visibleColumns"
+                    :relative-coloring="coloring === 'relative'"
+                />
+            </div>
+
             <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <ChoraleGridItem
                     v-for="chorale in pagedChorales"
@@ -225,7 +237,7 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
             </div>
 
             <div class="flex justify-center mt-4">
-                <UPagination v-model:page="page" :items-per-page="PAGE_SIZE" :total="chorales.length" :sibling-count="paginationSiblingCount" />
+                <UPagination v-model:page="page" :items-per-page="pageSize" :total="chorales.length" :sibling-count="paginationSiblingCount" />
             </div>
         </template>
     </UContainer>

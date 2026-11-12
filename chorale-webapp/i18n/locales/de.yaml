@@ -269,6 +269,7 @@ cantusFirmus: Cantus firmus
 choraleListShow: Anzeigen
 tableView: Tabelle
 gridView: Karten
+scoreView: Partituren
 sortDirection: Sortierrichtung umkehren
 keyWithMode: "{key}-{mode}"
 modeMajor: Dur
