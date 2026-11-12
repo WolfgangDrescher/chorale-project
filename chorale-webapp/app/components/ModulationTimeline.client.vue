@@ -29,28 +29,7 @@ const labelingItems = computed(() => [
     { label: t('keyLabelingDegrees'), value: 'degrees' },
 ]);
 
-// Tailwind colors around the color wheel, one per fifth, starting at the signature of C. --key-color
-// marks the bar of a minor key and the outline of the starting key.
-const COLORS_BY_SIGNATURE = [
-    { major: 'bg-cyan-500 text-white [--key-color:var(--color-cyan-500)]', minor: 'bg-cyan-100 text-cyan-800 [--key-color:var(--color-cyan-500)]' },
-    { major: 'bg-blue-500 text-white [--key-color:var(--color-blue-500)]', minor: 'bg-blue-100 text-blue-800 [--key-color:var(--color-blue-500)]' },
-    { major: 'bg-indigo-500 text-white [--key-color:var(--color-indigo-500)]', minor: 'bg-indigo-100 text-indigo-800 [--key-color:var(--color-indigo-500)]' },
-    { major: 'bg-violet-500 text-white [--key-color:var(--color-violet-500)]', minor: 'bg-violet-100 text-violet-800 [--key-color:var(--color-violet-500)]' },
-    { major: 'bg-pink-500 text-white [--key-color:var(--color-pink-500)]', minor: 'bg-pink-100 text-pink-800 [--key-color:var(--color-pink-500)]' },
-    { major: 'bg-red-500 text-white [--key-color:var(--color-red-500)]', minor: 'bg-red-100 text-red-800 [--key-color:var(--color-red-500)]' },
-    { major: 'bg-orange-500 text-white [--key-color:var(--color-orange-500)]', minor: 'bg-orange-100 text-orange-800 [--key-color:var(--color-orange-500)]' },
-    { major: 'bg-amber-500 text-amber-800 [--key-color:var(--color-amber-500)]', minor: 'bg-amber-100 text-amber-800 [--key-color:var(--color-amber-500)]' },
-    { major: 'bg-yellow-500 text-yellow-800 [--key-color:var(--color-yellow-500)]', minor: 'bg-yellow-100 text-yellow-800 [--key-color:var(--color-yellow-500)]' },
-    { major: 'bg-lime-500 text-lime-800 [--key-color:var(--color-lime-500)]', minor: 'bg-lime-100 text-lime-800 [--key-color:var(--color-lime-500)]' },
-    { major: 'bg-green-500 text-white [--key-color:var(--color-green-500)]', minor: 'bg-green-100 text-green-800 [--key-color:var(--color-green-500)]' },
-    { major: 'bg-teal-500 text-white [--key-color:var(--color-teal-500)]', minor: 'bg-teal-100 text-teal-800 [--key-color:var(--color-teal-500)]' },
-];
-
 const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-
-// Humdrum writes the tonic of a mode with a minor third in lower case.
-const isMinor = (key) => key === key.toLowerCase();
-const isChurchMode = (mode) => !['major', 'minor'].includes(mode);
 
 // "D", "f dor", or as a degree of the starting key: "V", "ii", "♭III"; "?" for a key left open.
 function labelOf(modulation) {
@@ -60,22 +39,9 @@ function labelOf(modulation) {
     if (labeling.value === 'degrees' && keyDeg) {
         const [, number, alteration] = keyDeg.match(/^(\d)([-+]*)$/);
         const roman = ROMAN_NUMERALS[number - 1];
-        label = alteration.replaceAll('-', '♭').replaceAll('+', '♯') + (isMinor(key) ? roman.toLowerCase() : roman);
+        label = alteration.replaceAll('-', '♭').replaceAll('+', '♯') + (isMinorKey(key) ? roman.toLowerCase() : roman);
     }
     return isChurchMode(mode) ? `${label} ${mode.slice(0, 3)}` : label;
-}
-
-// Major solid, minor light with a bar of its color, church modes hatched, a key left open gray.
-function appearanceOf({ key, mode, signature }, homeSignature) {
-    if (key === '?') return { class: 'bg-accented text-muted', style: {} };
-    const minor = isMinor(key);
-    const colors = COLORS_BY_SIGNATURE[(((signature - homeSignature) % 12) + 12) % 12];
-    const style = {};
-    if (isChurchMode(mode)) {
-        const stripe = minor ? 'color-mix(in srgb, var(--key-color) 35%, transparent)' : 'rgb(255 255 255 / 0.3)';
-        style.backgroundImage = `repeating-linear-gradient(135deg, ${stripe} 0 3px, transparent 3px 7px)`;
-    }
-    return { class: minor ? [colors.minor, 'shadow-[inset_0_-4px_0_var(--key-color)]'] : colors.major, style };
 }
 
 // The key the score starts in, unless it is left open.
@@ -96,7 +62,7 @@ const segments = computed(() => {
         line: modulation.line,
         start,
         label: labelOf(modulation),
-        appearance: appearanceOf(modulation, homeSignature.value),
+        appearance: keyAppearance(modulation, homeSignature.value),
         width: ((changes[index + 1]?.start ?? player.duration) - start) / player.duration,
     }));
 });
@@ -133,7 +99,7 @@ const legend = computed(() => {
         entries: Array.from({ length: 13 }, (_, index) => {
             const fifths = signature + index - 6 - MODE_FIFTHS[mode];
             const key = { ...keyAt(fifths, mode), keyDeg: keyDegAt(fifths - startFifths, startMode) };
-            return { label: labelOf(key), isHome: index === 6 && mode === startMode, appearance: appearanceOf(key, homeSignature.value) };
+            return { label: labelOf(key), isHome: index === 6 && mode === startMode, appearance: keyAppearance(key, homeSignature.value) };
         }),
     }));
 });
@@ -145,7 +111,7 @@ const cantusFirmus = computed(() => {
     if (!key || !start.value || (key.key === start.value.key && key.mode === start.value.mode)) return null;
     const column = key.signature - start.value.signature + 6;
     if (column < 0 || column > 12) return null;
-    return { label: labelOf(key), appearance: appearanceOf(key, homeSignature.value), column };
+    return { label: labelOf(key), appearance: keyAppearance(key, homeSignature.value), column };
 });
 
 // The field as wide as the chosen item, its menu as wide as the longest.
