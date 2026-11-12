@@ -25,9 +25,10 @@ export default defineContentConfig({
                 mode: z.enum(['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']).optional(),
                 meter: z.string().optional(),
                 duration: z.number().optional(),
+                phraseCount: z.number().optional(),
                 modulations: z.array(z.union([
-                    keySchema.extend({ line: z.number() }),
-                    z.object({ line: z.number(), key: z.literal('?') }),
+                    keySchema.extend({ line: z.number(), durationFromStart: z.number() }),
+                    z.object({ line: z.number(), durationFromStart: z.number(), key: z.literal('?') }),
                 ])).optional(),
                 cantusFirmus: keySchema.optional(),
             }),

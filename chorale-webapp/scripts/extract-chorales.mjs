@@ -109,6 +109,7 @@ for (const file of files) {
         meter: info?.meters?.[0] ?? null,
         // The length in quarter notes, which the search results are ranked by.
         duration: info?.duration ?? null,
+        phraseCount: info?.phraseCount ?? null,
         modulations: info?.modulations ?? null,
         cantusFirmus: info?.cantusFirmus ?? null,
     };
