@@ -1,5 +1,5 @@
 <script setup>
-import { useMediaQuery } from '@vueuse/core';
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core';
 
 // The outcome of a search made with useChoraleSearch: the error or progress while it runs, and
 // afterwards the matches per chorale. The empty slot replaces what is shown before the first
@@ -31,7 +31,7 @@ const {
 
 // Few page buttons and no jump to the first and last page on a narrow screen, where the
 // pagination would otherwise be wider than the screen.
-const isWideScreen = useMediaQuery('(min-width: 640px)');
+const isWideScreen = useBreakpoints(breakpointsTailwind).greaterOrEqual('sm');
 const paginationProps = computed(() => ({
     siblingCount: isWideScreen.value ? 2 : 1,
     ui: { first: 'hidden sm:inline-flex', last: 'hidden sm:inline-flex' },
