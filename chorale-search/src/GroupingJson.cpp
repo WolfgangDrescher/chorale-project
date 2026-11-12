@@ -32,13 +32,17 @@ std::size_t countFromJson(const nlohmann::json& value, const std::string& where)
     return value.get<std::size_t>();
 }
 
-std::vector<std::size_t> positionsFromJson(const nlohmann::json& j, std::size_t positionCount, const std::string& where) {
+std::vector<std::size_t> positionsFromJson(const nlohmann::json& j, const std::vector<PatternPosition>& pattern, const std::string& where) {
     if (!j.is_array() || j.empty()) throw std::invalid_argument(where + " must be a non-empty array");
     std::vector<std::size_t> positions;
     for (const auto& position : j) {
         positions.push_back(countFromJson(position, where));
-        if (positions.back() >= positionCount) {
-            throw std::invalid_argument(where + " must be positions of the pattern, from 0 to " + std::to_string(positionCount - 1));
+        if (positions.back() >= pattern.size()) {
+            throw std::invalid_argument(where + " must be positions of the pattern, from 0 to " + std::to_string(pattern.size() - 1));
+        }
+        if (pattern[positions.back()].repeat) {
+            throw std::invalid_argument(where + " names position " + std::to_string(positions.back()) +
+                                        ", which repeats and has no single value to read");
         }
     }
     return positions;
@@ -76,7 +80,7 @@ Categories categoriesFromJson(const nlohmann::json& j, const std::string& contex
     return categories;
 }
 
-FeatureRead featureReadFromJson(const nlohmann::json& j, std::size_t positionCount, const std::string& context) {
+FeatureRead featureReadFromJson(const nlohmann::json& j, const std::vector<PatternPosition>& pattern, const std::string& context) {
     rejectUnknownKeys(j, {"feature", "positions", "notesOfVoice", "voice", "ignoreQuality", "mintAllowIntervalComplementation", "categories"}, context);
     FeatureRead read;
     if (!j.contains("feature") || !j["feature"].is_string()) throw std::invalid_argument(fieldLocation("feature", context) + " must be a string");
@@ -87,7 +91,7 @@ FeatureRead featureReadFromJson(const nlohmann::json& j, std::size_t positionCou
         throw std::invalid_argument(fieldLocation("feature", context) + " must be deg, mint, metweight, duration or a hint pair, got '" +
                                     read.feature + "'");
     }
-    if (j.contains("positions")) read.positions = positionsFromJson(j["positions"], positionCount, fieldLocation("positions", context));
+    if (j.contains("positions")) read.positions = positionsFromJson(j["positions"], pattern, fieldLocation("positions", context));
     if (j.contains("notesOfVoice")) {
         const std::string where = fieldLocation("notesOfVoice", context);
         const std::vector<std::size_t> voices =
@@ -112,14 +116,14 @@ FeatureRead featureReadFromJson(const nlohmann::json& j, std::size_t positionCou
     return read;
 }
 
-GroupingLevel groupingLevelFromJson(const nlohmann::json& j, std::size_t positionCount, const std::string& context) {
+GroupingLevel groupingLevelFromJson(const nlohmann::json& j, const std::vector<PatternPosition>& pattern, const std::string& context) {
     rejectUnknownKeys(j, {"reads", "maxGroupCount", "minMatchCount"}, context);
     if (!j.contains("reads") || !j["reads"].is_array() || j["reads"].empty()) {
         throw std::invalid_argument(fieldLocation("reads", context) + " must be a non-empty array");
     }
     GroupingLevel level;
     for (std::size_t i = 0; i < j["reads"].size(); ++i) {
-        level.reads.push_back(featureReadFromJson(j["reads"][i], positionCount, "'reads[" + std::to_string(i) + "]' of " + context));
+        level.reads.push_back(featureReadFromJson(j["reads"][i], pattern, "'reads[" + std::to_string(i) + "]' of " + context));
     }
     if (j.contains("maxGroupCount")) level.maxGroupCount = countFromJson(j["maxGroupCount"], fieldLocation("maxGroupCount", context));
     if (j.contains("minMatchCount")) level.minMatchCount = countFromJson(j["minMatchCount"], fieldLocation("minMatchCount", context));
@@ -169,8 +173,9 @@ GroupQuery groupQueryFromJson(const nlohmann::json& j) {
     }
     const std::size_t positionCount = groupQuery.query.pattern.size();
     for (std::size_t i = 0; i < j["groupBy"].size(); ++i) {
-        groupQuery.levels.push_back(groupingLevelFromJson(j["groupBy"][i], positionCount, "'groupBy[" + std::to_string(i) + "]'"));
+        groupQuery.levels.push_back(groupingLevelFromJson(j["groupBy"][i], groupQuery.query.pattern, "'groupBy[" + std::to_string(i) + "]'"));
     }
+    validateReadPositions(groupQuery);
     if (j.contains("examples")) groupQuery.examples = exampleSettingsFromJson(j["examples"], fieldLocation("examples", context));
     if (j.contains("variants")) {
         if (!j["variants"].is_object()) throw std::invalid_argument(fieldLocation("variants", context) + " must be an object");

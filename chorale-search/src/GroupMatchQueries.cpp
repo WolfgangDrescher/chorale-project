@@ -4,11 +4,19 @@
 #include <map>
 #include <utility>
 
+#include "PatternRepeat.hpp"
+
 namespace choralesearch {
 
 GroupMatchQueryBuilder::GroupMatchQueryBuilder(const Query& searchQuery, const MatchNotes& notes)
     : m_searchQuery(searchQuery), m_notes(notes), m_query(searchQuery), m_keepsPositions(searchQuery.durationAllowSplitNotes) {
     m_query.id.reset();
+    // Asked for more, a repeat of varying length may end elsewhere and skipOverlappingMatches leave out other
+    // matches: the query would find more than the group.
+    if (searchQuery.skipOverlappingMatches || hasRepeatWithoutFixedCount(searchQuery.pattern)) {
+        m_askable = false;
+        return;
+    }
     if (m_keepsPositions) {
         askForNotesAtPositions();
     } else {
@@ -44,6 +52,7 @@ void GroupMatchQueryBuilder::askForNotesAtPositions() {
     }
     for (std::size_t p = 1; p < m_query.pattern.size(); ++p) {
         if (!m_searchQuery.pattern[p - 1].keys.count("duration") || !m_searchQuery.pattern[p].keys.count("duration")) continue;
+        if (m_notes.repeatsAtPosition[p - 1] || m_notes.repeatsAtPosition[p]) continue;
         const bool sameNote = m_notes.noteIndexOfPosition[p] == m_notes.noteIndexOfPosition[p - 1];
         m_query.pattern[p].keys[sameNote ? "mint" : "!mint"] = {PatternValue("P1")};
     }
@@ -55,6 +64,10 @@ void GroupMatchQueryBuilder::askForOneNotePerPosition() {
     m_query.pattern.assign(m_notes.noteDurations.size(), PatternPosition{});
     for (std::size_t p = 0; p < m_searchQuery.pattern.size(); ++p) {
         const std::size_t note = m_notes.noteIndexOfPosition[p];
+        if (m_notes.repeatsAtPosition[p]) {
+            m_query.pattern[note] = m_searchQuery.pattern[p];
+            continue;
+        }
         for (const auto& [key, patternValues] : m_searchQuery.pattern[p].keys) {
             if (key != "duration") {
                 m_query.pattern[note].keys.emplace(key, patternValues);
@@ -84,7 +97,7 @@ void GroupMatchQueryBuilder::askForNotesOfVoice(const FeatureRead& read, const s
 }
 
 void GroupMatchQueryBuilder::askForPatternPositions(const FeatureRead& read, const std::vector<std::string>& values) {
-    const std::vector<std::size_t> positions = positionsStartingANote(read, m_notes.noteIndexOfPosition);
+    const std::vector<std::size_t> positions = positionsStartingANote(read, m_notes);
     // With the positions kept, the pattern already asks for the durations where it has them.
     if (m_keepsPositions && read.feature == "duration") {
         for (std::size_t position : positions) {

@@ -22,8 +22,10 @@ struct MatchNotes {
     // [0, 0, 1] where one note answers the first two positions: on one line
     // (durationAllowMergedNotes), or as repeated notes whose durations the query asks for
     // (durationAllowSplitNotes).
+    // A position that repeats is a note of its own, whose run has neither a value nor a duration.
     std::vector<std::size_t> noteIndexOfPosition;
     std::vector<std::string> noteDurations; // one per note; empty where the query asks for no duration
+    std::vector<bool> repeatsAtPosition;
 
     bool operator==(const MatchNotes& other) const {
         return std::tie(noteIndexOfPosition, noteDurations) == std::tie(other.noteIndexOfPosition, other.noteDurations);
@@ -41,7 +43,7 @@ struct FoundMatch {
 
     std::size_t lineAt(std::size_t position) const { return result.positionOnsets.at(position).line; }
     std::size_t firstLine() const { return lineAt(0); }
-    std::size_t lastLine() const { return result.positionOnsets.back().line; }
+    std::size_t lastLine() const;
 
     // The duration of the note at `position`, over all the positions it answers.
     std::string durationOfNoteAt(std::size_t position) const;
@@ -56,8 +58,11 @@ struct MatchReading {
     GroupExample example;
 };
 
-// The positions `read` reads that begin a note, so a note is read once.
-std::vector<std::size_t> positionsStartingANote(const FeatureRead& read, const std::vector<std::size_t>& noteIndexOfPosition);
+// The positions `read` reads that begin a note, so a note is read once, and do not repeat.
+std::vector<std::size_t> positionsStartingANote(const FeatureRead& read, const MatchNotes& notes);
+
+// Throws for a read of a position that repeats, or of every position where all repeat: none has a single value.
+void validateReadPositions(const GroupQuery& groupQuery);
 
 // `group query` as `variant` reads it.
 GroupQuery applyVariant(const GroupQuery& groupQuery, const GroupQueryVariant& variant);

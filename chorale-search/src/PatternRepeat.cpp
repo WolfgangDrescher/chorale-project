@@ -42,6 +42,12 @@ void validateNestedRepeats(const std::vector<PatternPosition>& positions, const 
 
 } // namespace
 
+bool hasRepeatWithoutFixedCount(const std::vector<PatternPosition>& pattern) {
+    return std::any_of(pattern.begin(), pattern.end(), [](const PatternPosition& position) {
+        return position.repeat && (position.repeat->max != position.repeat->min || hasRepeatWithoutFixedCount(position.subPattern));
+    });
+}
+
 std::size_t minimumOnsets(const std::vector<PatternPosition>& pattern) {
     std::size_t onsets = 0;
     for (const PatternPosition& position : pattern) {

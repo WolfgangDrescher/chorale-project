@@ -130,7 +130,7 @@ std::vector<std::string> valuesOf(const FeatureRead& read, const FoundMatch& mat
         values = intervalsInOwnRhythm(read, match, asWritten);
         if (!asWritten) values = withoutHeldNotes(values);
     } else {
-        for (std::size_t position : positionsStartingANote(read, match.notes.noteIndexOfPosition)) values.push_back(valueAt(read, match, position));
+        for (std::size_t position : positionsStartingANote(read, match.notes)) values.push_back(valueAt(read, match, position));
     }
     for (std::string& value : values) {
         if (value.empty() || value == kHeldNoteValue) continue; // a held note has no value
@@ -198,15 +198,14 @@ std::string labelByRead(const std::vector<FeatureRead>& reads, const LevelValues
 
 // The values note by note as a melody reads, the interval into a note before its duration:
 // "(quarter note) -M2 (half note)".
-std::string labelFollowingNotes(const std::vector<FeatureRead>& reads, const LevelValues& values,
-                                const std::vector<std::size_t>& noteIndexOfPosition) {
+std::string labelFollowingNotes(const std::vector<FeatureRead>& reads, const LevelValues& values, const MatchNotes& notes) {
     std::map<std::size_t, std::vector<std::string>> shownByNote;
     for (const bool durations : {false, true}) {
         for (std::size_t r = 0; r < reads.size(); ++r) {
             if ((reads[r].feature == "duration") != durations) continue;
-            const std::vector<std::size_t> positions = positionsStartingANote(reads[r], noteIndexOfPosition);
+            const std::vector<std::size_t> positions = positionsStartingANote(reads[r], notes);
             for (std::size_t i = 0; i < values[r].size() && i < positions.size(); ++i) {
-                shownByNote[noteIndexOfPosition[positions[i]]].push_back(valueAsShown(reads[r], values[r][i]));
+                shownByNote[notes.noteIndexOfPosition[positions[i]]].push_back(valueAsShown(reads[r], values[r][i]));
             }
         }
     }
@@ -215,14 +214,13 @@ std::string labelFollowingNotes(const std::vector<FeatureRead>& reads, const Lev
     return joinedValues(shownValues);
 }
 
-// The label of a group: its values as shown, following the notes of `noteIndexOfPosition` where a
-// read of the durations lets them.
-std::string labelOf(const std::vector<FeatureRead>& reads, const LevelValues& values, const std::vector<std::size_t>& noteIndexOfPosition) {
+// The label of a group: its values as shown, following `notes` where a read of the durations lets them.
+std::string labelOf(const std::vector<FeatureRead>& reads, const LevelValues& values, const MatchNotes& notes) {
     const auto readsDurations = [](const FeatureRead& read) { return read.feature == "duration"; };
     const auto readsNotesOfVoice = [](const FeatureRead& read) { return read.notesOfVoice.has_value(); };
-    const bool followsNotes = !noteIndexOfPosition.empty() && std::any_of(reads.begin(), reads.end(), readsDurations) &&
+    const bool followsNotes = !notes.noteIndexOfPosition.empty() && std::any_of(reads.begin(), reads.end(), readsDurations) &&
                               std::none_of(reads.begin(), reads.end(), readsNotesOfVoice);
-    return followsNotes ? labelFollowingNotes(reads, values, noteIndexOfPosition) : labelByRead(reads, values);
+    return followsNotes ? labelFollowingNotes(reads, values, notes) : labelByRead(reads, values);
 }
 
 // ---- Building the groups ----
@@ -351,7 +349,7 @@ Group buildGroup(const GroupQuery& groupQuery, const Matches& matches, std::size
         const GroupingLevel& ownLevel = groupQuery.levels[level - 1];
         const MatchReading& first = *matches.front();
         group.values = first.valuesByLevel[level - 1];
-        group.label = labelOf(ownLevel.reads, group.values, first.notes.noteIndexOfPosition);
+        group.label = labelOf(ownLevel.reads, group.values, first.notes);
         group.query = queryOfGroup(groupQuery, matches, level);
         if (anyReadGroupsSeveralValues(ownLevel.reads)) addMembers(group, groupQuery, matches, level);
     }
@@ -364,6 +362,7 @@ Group buildGroup(const GroupQuery& groupQuery, const Matches& matches, std::size
 FoundMatch::FoundMatch(const HumdrumChorale& chorale, const Query& query, const Result& result)
     : chorale(chorale), query(query), result(result) {
     std::vector<std::size_t>& noteIndex = notes.noteIndexOfPosition;
+    for (std::size_t p = 0; p < result.positionOnsets.size(); ++p) notes.repeatsAtPosition.push_back(query.pattern[p].repeat.has_value());
     for (std::size_t p = 0; p < result.positionOnsets.size(); ++p) {
         if (p == 0) {
             noteIndex.push_back(0);
@@ -373,17 +372,31 @@ FoundMatch::FoundMatch(const HumdrumChorale& chorale, const Query& query, const 
         const std::size_t line = lineAt(p);
         const bool splitNote = query.durationAllowSplitNotes && query.pattern[p - 1].keys.count("duration") &&
                                query.pattern[p].keys.count("duration") && repeatsPitch(chorale, result.voice, previousLine, line);
-        const bool sameNote = line == previousLine || splitNote;
+        const bool besideARun = notes.repeatsAtPosition[p - 1] || notes.repeatsAtPosition[p];
+        const bool sameNote = !besideARun && (line == previousLine || splitNote);
         noteIndex.push_back(noteIndex.back() + (sameNote ? 0 : 1));
     }
     for (std::size_t p = 0; p < noteIndex.size(); ++p) {
         if (p > 0 && noteIndex[p] == noteIndex[p - 1]) continue;
+        if (notes.repeatsAtPosition[p]) {
+            notes.noteDurations.push_back("");
+            continue;
+        }
         bool durationAsked = false;
         for (std::size_t q = p; q < noteIndex.size() && noteIndex[q] == noteIndex[p]; ++q) {
             durationAsked = durationAsked || query.pattern[q].keys.count("duration");
         }
         notes.noteDurations.push_back(durationAsked ? durationOfNoteAt(p) : "");
     }
+}
+
+std::size_t FoundMatch::lastLine() const {
+    for (std::size_t p = result.positionOnsets.size(); p-- > 0;) {
+        const PositionOnset& onset = result.positionOnsets[p];
+        if (onset.onsetCount == 0) continue;
+        return notes.repeatsAtPosition[p] ? onset.endLine : onset.line;
+    }
+    return lineAt(0);
 }
 
 std::string FoundMatch::durationOfNoteAt(std::size_t position) const {
@@ -395,15 +408,32 @@ std::string FoundMatch::durationOfNoteAt(std::size_t position) const {
     return duration > 0 ? hum::Convert::durationToRecip(duration) : "";
 }
 
-std::vector<std::size_t> positionsStartingANote(const FeatureRead& read, const std::vector<std::size_t>& noteIndexOfPosition) {
+std::vector<std::size_t> positionsStartingANote(const FeatureRead& read, const MatchNotes& notes) {
+    const std::vector<std::size_t>& noteIndexOfPosition = notes.noteIndexOfPosition;
     std::vector<std::size_t> positions;
     for (std::size_t position = 0; position < noteIndexOfPosition.size(); ++position) {
         const bool readHere = read.positions.empty() ||
                               std::find(read.positions.begin(), read.positions.end(), position) != read.positions.end();
         const bool startsNote = position == 0 || noteIndexOfPosition[position] != noteIndexOfPosition[position - 1];
-        if (readHere && startsNote) positions.push_back(position);
+        if (readHere && startsNote && !notes.repeatsAtPosition[position]) positions.push_back(position);
     }
     return positions;
+}
+
+void validateReadPositions(const GroupQuery& groupQuery) {
+    const std::vector<PatternPosition>& pattern = groupQuery.query.pattern;
+    for (const GroupingLevel& level : groupQuery.levels) {
+        for (const FeatureRead& read : level.reads) {
+            if (read.notesOfVoice) continue;
+            for (std::size_t position : read.positions) {
+                if (pattern[position].repeat) {
+                    throw std::invalid_argument("a read of position " + std::to_string(position) + ", which repeats and has no single value");
+                }
+            }
+            const bool allRepeat = std::all_of(pattern.begin(), pattern.end(), [](const PatternPosition& p) { return p.repeat.has_value(); });
+            if (read.positions.empty() && allRepeat) throw std::invalid_argument("a read of every position, all of which repeat");
+        }
+    }
 }
 
 GroupQuery applyVariant(const GroupQuery& groupQuery, const GroupQueryVariant& variant) {
@@ -415,6 +445,7 @@ GroupQuery applyVariant(const GroupQuery& groupQuery, const GroupQueryVariant& v
             for (const auto& [key, value] : variant.pattern[position].items()) query["pattern"][position][key] = value;
         }
         varied.query = queryFromJson(query);
+        validateReadPositions(varied);
     }
     if (variant.ignoreQuality) {
         for (GroupingLevel& level : varied.levels) {

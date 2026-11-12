@@ -159,3 +159,50 @@ TEST_CASE(the_bass_in_its_own_rhythm_is_asked_for_as_a_simultaneous_group) {
 }
 
 TEST_MAIN()
+
+TEST_CASE(a_position_that_repeats_is_read_by_no_read_and_asked_for_as_it_is) {
+    const auto groupQuery = [](const char* reads) {
+        return choralesearch::groupQueryFromJson(nlohmann::json::parse(std::string(R"({
+            "query": {
+                "feature": "deg",
+                "voices": "soprano",
+                "pattern": [{ "deg": "*" }, { "repeat": 2, "!fermata": true }, { "deg": "*", "fermata": true }]
+            },
+            "groupBy": [{ "reads": )") + reads + R"( }]
+        })"));
+    };
+    CorpusSearch search(FIXTURES_DIR);
+    const Group root = choralesearch::groupMatchesInCorpus(search, groupQuery(R"([{ "feature": "deg" }, { "feature": "duration" }])"));
+    REQUIRE(!root.groups.empty());
+    // The degree and the duration of the first and the last note, not of the notes in between.
+    for (const Group& group : root.groups) {
+        CHECK_EQ(group.values[0].size(), std::size_t{2});
+        CHECK_EQ(group.values[1].size(), std::size_t{2});
+        REQUIRE(group.query.has_value());
+        CHECK(group.query->pattern[1].repeat.has_value());
+    }
+    CHECK(choralesearch::verifyGroupMatchQueries(search, root).empty());
+    CHECK_THROWS(groupQuery(R"([{ "feature": "deg", "positions": [1] }])"));
+    // Nor where a variant lets it repeat, or where every position repeats.
+    CHECK_THROWS(choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
+        "query": { "feature": "deg", "pattern": [{ "deg": "1" }, { "deg": "*" }, { "fermata": true }] },
+        "groupBy": [{ "reads": [{ "feature": "deg", "positions": [1] }] }],
+        "variants": { "gap": { "pattern": [{}, { "repeat": "*" }] } }
+    })")));
+    CHECK_THROWS(choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
+        "query": { "feature": "deg", "pattern": [{ "repeat": { "min": 2, "greedy": true }, "deg": "*" }] },
+        "groupBy": [{ "reads": [{ "feature": "deg" }] }]
+    })")));
+}
+
+TEST_CASE(a_repeat_of_varying_length_or_skipped_overlaps_leave_the_groups_without_a_query) {
+    CorpusSearch search(FIXTURES_DIR);
+    for (const char* query : {
+             R"({ "feature": "deg", "voices": "soprano", "pattern": [{ "deg": "1" }, { "repeat": "*" }, { "fermata": true }] })",
+             R"({ "feature": "mint", "voices": "bass", "skipOverlappingMatches": true, "pattern": [{ "mint": "-2" }, { "mint": "-2" }] })"}) {
+        const Group root = choralesearch::groupMatchesInCorpus(search, choralesearch::groupQueryFromJson(nlohmann::json::parse(
+            std::string(R"({ "query": )") + query + R"(, "groupBy": [{ "reads": [{ "feature": "deg", "positions": [0] }] }] })")));
+        REQUIRE(!root.groups.empty());
+        for (const Group& group : root.groups) CHECK(!group.query.has_value());
+    }
+}
