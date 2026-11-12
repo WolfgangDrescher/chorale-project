@@ -125,3 +125,40 @@ TEST_CASE(reference_rejects_a_position_the_pattern_does_not_have_or_a_later_one)
 }
 
 TEST_MAIN()
+
+TEST_CASE(position_reference_cannot_read_a_position_that_repeats) {
+    PatternPosition run{.keys = {{"as", {"$run"}}}};
+    run.repeat = choralesearch::PatternRepeat{.min = 1};
+    CHECK_THROWS(resolvePositionReferences({run, PatternPosition{.keys = {{"kern", {"#1"}}}}}));
+    try {
+        resolvePositionReferences({run, PatternPosition{.keys = {{"kern", {"$run"}}}}});
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'pattern[1][kern]'") != std::string::npos);
+        CHECK(std::string(e.what()).find("names a position that repeats") != std::string::npos);
+    }
+    // Its own onset a repeated position reads like any other.
+    PatternPosition readsItself{.keys = {{"kern", {"*"}}, {"kern.pitch", {"#1"}}}};
+    readsItself.repeat = choralesearch::PatternRepeat{.min = 1};
+    CHECK_NOTHROW(resolvePositionReferences({readsItself}));
+}
+
+TEST_CASE(position_reference_in_a_sub_pattern_reads_the_positions_before_it) {
+    const PatternPosition any{.keys = {{"kern", {"*"}}}};
+    PatternPosition repeated;
+    repeated.repeat = choralesearch::PatternRepeat{.min = 1};
+    repeated.subPattern = {any, PatternPosition{.keys = {{"kern", {"#1"}}}}};
+    const auto resolved = resolvePositionReferences({any, repeated});
+    CHECK_EQ(*resolved[1].subPattern[1].keys.at("kern").at(0).positionReference, (PositionReference{0, "kern"}));
+
+    repeated.subPattern = {PatternPosition{.keys = {{"kern", {"#2"}}}}};
+    try {
+        resolvePositionReferences({any, repeated});
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'pattern[1][subPattern][0][kern]'") != std::string::npos);
+        CHECK(std::string(e.what()).find("its own subPattern") != std::string::npos);
+    }
+    repeated.subPattern = {PatternPosition{.keys = {{"as", {"$inner"}}, {"kern", {"*"}}}}};
+    CHECK_THROWS(resolvePositionReferences({repeated}));
+}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -27,6 +28,16 @@ struct PositionKey : PatternKeyLookup {
 
 using PositionKeys = std::vector<PositionKey>;
 
+// A position of the pattern as the matcher holds it.
+struct CompiledPosition {
+    PositionKeys keys;
+    bool hasReferences = false;
+    std::optional<PatternRepeat> repeat;
+    std::vector<CompiledPosition> subPattern;
+    // Where it stands in the written pattern, as RepeatedOnset has it.
+    std::vector<std::size_t> path;
+};
+
 struct AttributeMatch {
     std::size_t voice;           // 1-indexed voice (spine) the match was found in
     std::size_t startLineNumber; // 1-indexed line in the compiled Humdrum file; 0 = not set
@@ -35,6 +46,8 @@ struct AttributeMatch {
     hum::HumNum endPosition;     // same, for the last matched position without the duration of that slice
     // Where each position of the pattern matched, see PositionOnset.
     std::vector<PositionOnset> positionOnsets;
+    // The onsets of the positions that repeat, in order.
+    std::vector<RepeatedOnset> repeatedOnsets;
     VerseSet verses = VerseSet::all(); // the verses the match holds in
 };
 
@@ -99,6 +112,41 @@ private:
     // Walks the pattern along `onsets`, the matches in their order.
     std::vector<AttributeMatch> walkPattern(const HumdrumChorale& chorale, std::size_t voice, const std::vector<Onset>& onsets) const;
 
+    // The pattern matched from one start onset on, position by position. A repeat tries its counts one after the
+    // other, and the states the rest of the pattern failed from are kept for the starts after it.
+    struct Walk {
+        const HumdrumChorale& chorale;
+        std::size_t voice;
+        const std::vector<Onset>& onsets;
+        std::vector<PositionOnset> positionOnsets;
+        // The onsets the positions that repeat took so far, each with the position that took it.
+        std::vector<std::pair<const CompiledPosition*, std::size_t>> repeatedOnsets;
+        MatchedOnsets matched;
+        VerseSet verses = VerseSet::all();
+        std::size_t end = 0; // the index after the last onset of the match
+    };
+    using Continuation = std::function<bool(std::size_t onsetIndex)>;
+
+    // Whether the positions from `offset` on match from the onset `onsetIndex` on.
+    bool matchFrom(Walk& walk, std::size_t offset, std::size_t onsetIndex) const;
+    // The same for a position without repeat, with durationAllowSplitNotes and durationAllowMergedNotes.
+    bool matchSinglePosition(Walk& walk, std::size_t offset, std::size_t onsetIndex) const;
+    // A repeat that has matched `count` times from the onset `runStart` on: stops and hands the onset after its
+    // run to `next`, or matches once more. `offset` is its place in the pattern, none in a subPattern.
+    bool matchRepeat(Walk& walk, const CompiledPosition& position, std::optional<std::size_t> offset, std::size_t count,
+                     std::size_t runStart, std::size_t onsetIndex, const Continuation& next) const;
+    // Matches `position` once, its keys on one onset or its subPattern, then `next`.
+    bool matchOnce(Walk& walk, const CompiledPosition& position, std::optional<std::size_t> offset, std::size_t onsetIndex,
+                   const Continuation& next) const;
+    // The positions of a subPattern from `index` on, then `next`.
+    bool matchSubPattern(Walk& walk, const std::vector<CompiledPosition>& positions, std::size_t index, std::size_t onsetIndex,
+                         const Continuation& next) const;
+    bool matchesAllKeys(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset, const PositionKeys& position) const;
+    // Whether the lyrics keys of `position` hold in some verse at `line`, narrowing the verses of the walk.
+    bool narrowVerses(Walk& walk, const PositionKeys& position, int line) const;
+
+    CompiledPosition compilePosition(const PatternPosition& position, std::vector<std::size_t> path);
+
     // Judges a single pattern key (possibly "!"-negated) against a single onset, with the
     // negation already applied to the returned value. nullopt means the key couldn't be
     // judged at all because the spine or token it needs isn't there -- that fails the
@@ -160,8 +208,8 @@ private:
 
     std::string m_drivingFeature;
     std::optional<PatternKeyId> m_drivingFeatureId; // nullopt for an unknown feature
-    std::vector<PositionKeys> m_pattern;
-    std::vector<bool> m_hasReferences; // per position: whether it has a position reference
+    std::vector<CompiledPosition> m_pattern;
+    std::size_t m_minimumOnsets = 0;
     MatcherOptions m_options;
     bool m_readsLyrics = false; // driven by word or syl, or with a lyrics key in the pattern
 };

@@ -3432,3 +3432,351 @@ TEST_CASE(lyrics_a_reference_reads_the_syllable_its_place_in_the_word_and_the_me
     CHECK(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"r"}}}},
                                     PatternPosition{.keys = {{"word", {"#1"}}}}}).findAll(oneVerse, 4).empty());
 }
+
+// Repeats. The scores are one voice, mostly of quarter notes, so a position is the index of a note.
+
+using choralesearch::PatternRepeat;
+
+TEST_CASE(repeat_any_times_is_a_gap_that_may_be_empty) {
+    std::istringstream score("**kern\n4c\n4d\n4e\n4f\n4g\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.min = 0};
+    const auto toD = AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, gap,
+                                               PatternPosition{.keys = {{"kern", {"d"}}}}}).findAll(chorale, 1);
+    REQUIRE(toD.size() == 1u);
+    CHECK(toD[0].endPosition == 1);
+    const auto toG = AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, gap,
+                                               PatternPosition{.keys = {{"kern", {"g"}}}}}).findAll(chorale, 1);
+    REQUIRE(toG.size() == 1u);
+    CHECK(toG[0].startPosition == 0);
+    CHECK(toG[0].endPosition == 4);
+}
+
+TEST_CASE(repeat_at_least_once_needs_an_onset) {
+    std::istringstream score("**kern\n4c\n4d\n4e\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    PatternPosition atLeastOne;
+    atLeastOne.repeat = PatternRepeat{.min = 1};
+    CHECK(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, atLeastOne,
+                                    PatternPosition{.keys = {{"kern", {"d"}}}}}).findAll(chorale, 1).empty());
+    const auto toE = AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, atLeastOne,
+                                               PatternPosition{.keys = {{"kern", {"e"}}}}}).findAll(chorale, 1);
+    REQUIRE(toE.size() == 1u);
+    CHECK(toE[0].endPosition == 2);
+}
+
+TEST_CASE(repeat_counts_between_its_min_and_max) {
+    std::istringstream score("**kern\n4c\n4d\n4e\n4f\n4g\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    auto countFromCTo = [&](const char* last, PatternRepeat repeat) {
+        PatternPosition gap;
+        gap.repeat = repeat;
+        return AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, gap,
+                                         PatternPosition{.keys = {{"kern", {last}}}}}).findAll(chorale, 1).size();
+    };
+    // Three notes lie between c and g, two between c and f.
+    CHECK_EQ(countFromCTo("g", {.min = 0, .max = 2}), std::size_t{0});
+    CHECK_EQ(countFromCTo("g", {.min = 0, .max = 3}), std::size_t{1});
+    CHECK_EQ(countFromCTo("g", {.min = 3, .max = 3}), std::size_t{1});
+    CHECK_EQ(countFromCTo("f", {.min = 3, .max = 3}), std::size_t{0});
+    CHECK_EQ(countFromCTo("e", {.min = 2}), std::size_t{0});
+}
+
+TEST_CASE(repeat_holds_the_keys_of_its_position_on_every_onset) {
+    std::istringstream score("**kern\n4c\n4d\n4e\n4f\n4g\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    PatternPosition withoutE{.keys = {{"!kern", {"e"}}}};
+    withoutE.repeat = PatternRepeat{.min = 0};
+    PatternPosition withoutA{.keys = {{"!kern", {"a"}}}};
+    withoutA.repeat = PatternRepeat{.min = 0};
+    CHECK(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, withoutE,
+                                    PatternPosition{.keys = {{"kern", {"g"}}}}}).findAll(chorale, 1).empty());
+    CHECK_EQ(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, withoutA,
+                                       PatternPosition{.keys = {{"kern", {"g"}}}}}).findAll(chorale, 1).size(),
+             std::size_t{1});
+}
+
+TEST_CASE(repeat_goes_to_the_next_place_the_rest_of_the_pattern_matches_unless_greedy) {
+    std::istringstream score("**kern\n4c\n4d\n4c\n4d\n4c\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.min = 0};
+    PatternPosition greedyGap;
+    greedyGap.repeat = PatternRepeat{.min = 0, .greedy = true};
+    // One match for every start: the first c finds the next c, the second c the last one.
+    const auto toTheNext = AttributeMatcher("kern", {c, gap, c}).findAll(chorale, 1);
+    REQUIRE(toTheNext.size() == 2u);
+    CHECK(toTheNext[0].endPosition == 2);
+    CHECK(toTheNext[1].endPosition == 4);
+    const auto toTheLast = AttributeMatcher("kern", {c, greedyGap, c}).findAll(chorale, 1);
+    REQUIRE(toTheLast.size() == 2u);
+    CHECK(toTheLast[0].endPosition == 4);
+    CHECK(toTheLast[1].endPosition == 4);
+
+    // At the end of a pattern only greedy takes what it may.
+    PatternPosition optionalD{.keys = {{"kern", {"d"}}}};
+    optionalD.repeat = PatternRepeat{.min = 0, .max = 1};
+    const auto withoutD = AttributeMatcher("kern", {c, optionalD}).findAll(chorale, 1);
+    REQUIRE(withoutD.size() == 3u);
+    CHECK(withoutD[0].endPosition == 0);
+    optionalD.repeat->greedy = true;
+    const auto withD = AttributeMatcher("kern", {c, optionalD}).findAll(chorale, 1);
+    REQUIRE(withD.size() == 3u);
+    CHECK(withD[0].endPosition == 1);
+    CHECK(withD[2].endPosition == 4);
+}
+
+TEST_CASE(repeat_reports_where_its_run_began_and_ended) {
+    std::istringstream score("**kern\n4c\n4d\n2e\n4f\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.min = 0};
+    const auto matches = AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, gap,
+                                                   PatternPosition{.keys = {{"kern", {"f"}}}}}).findAll(chorale, 1);
+    REQUIRE(matches.size() == 1u);
+    const auto& run = matches[0].positionOnsets[1];
+    CHECK_EQ(run.onsetCount, std::size_t{2});
+    // d and e, up to the f.
+    CHECK(run.position == 1);
+    CHECK(run.duration == 3);
+    CHECK(run.position + run.duration == matches[0].positionOnsets[2].position);
+
+    // A run of no onset is where the position after it begins, and takes no time.
+    const auto empty = AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"e"}}}}, gap,
+                                                 PatternPosition{.keys = {{"kern", {"f"}}}}}).findAll(chorale, 1);
+    REQUIRE(empty.size() == 1u);
+    CHECK_EQ(empty[0].positionOnsets[1].onsetCount, std::size_t{0});
+    CHECK(empty[0].positionOnsets[1].position == empty[0].positionOnsets[2].position);
+    CHECK(empty[0].positionOnsets[1].duration == 0);
+}
+
+TEST_CASE(repeat_once_or_twice_is_the_same_as_one_or_two_positions) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    const PatternPosition any{.keys = {{"kern", {"*"}}}};
+    const PatternPosition step{.keys = {{"mint", {"2"}}}};
+    PatternPosition stepOnce = step;
+    stepOnce.repeat = PatternRepeat{.min = 1, .max = 1};
+    PatternPosition stepTwice = step;
+    stepTwice.repeat = PatternRepeat{.min = 2, .max = 2};
+    PatternPosition stepAndAnyTwice;
+    stepAndAnyTwice.repeat = PatternRepeat{.min = 2, .max = 2};
+    stepAndAnyTwice.subPattern = {step, any};
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto endLines = [&](const std::vector<PatternPosition>& pattern) {
+            std::vector<std::size_t> lines;
+            for (const auto& m : AttributeMatcher("kern", pattern).findAll(chorale, voice)) lines.push_back(m.endLineNumber);
+            return lines;
+        };
+        CHECK_EQ(endLines({any, stepOnce}), endLines({any, step}));
+        CHECK_EQ(endLines({any, stepTwice}), endLines({any, step, step}));
+        CHECK_EQ(endLines({any, stepAndAnyTwice}), endLines({any, step, any, step, any}));
+    }
+}
+
+TEST_CASE(repeat_of_a_sub_pattern_takes_the_options_of_the_query) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // Two steps down, twice: with their complements, and driven by mint from the note before.
+    const PatternPosition stepDown{.keys = {{"mint", {"-2"}}}};
+    PatternPosition twice;
+    twice.repeat = PatternRepeat{.min = 2, .max = 2};
+    twice.subPattern = {stepDown, stepDown};
+    const MatcherOptions options{.mintStartAtPreviousToken = true, .mintAllowIntervalComplementation = {"2"}};
+    std::size_t found = 0;
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        const auto repeated = AttributeMatcher("mint", {twice}, options).findAll(chorale, voice);
+        const auto written = AttributeMatcher("mint", {stepDown, stepDown, stepDown, stepDown}, options).findAll(chorale, voice);
+        REQUIRE(repeated.size() == written.size());
+        for (std::size_t i = 0; i < repeated.size(); ++i) {
+            CHECK_EQ(repeated[i].startLineNumber, written[i].startLineNumber);
+            CHECK_EQ(repeated[i].endLineNumber, written[i].endLineNumber);
+        }
+        found += repeated.size();
+    }
+    CHECK(found > 0);
+}
+
+TEST_CASE(repeat_reads_the_positions_before_it_on_every_onset) {
+    std::istringstream score("**kern\n4c\n4d\n4e\n4c\n4f\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    // Away from the first note and back to it.
+    PatternPosition away{.keys = {{"!kern.pitch", {"$first"}}}};
+    away.repeat = PatternRepeat{.min = 1};
+    const auto matches = AttributeMatcher("kern", {PatternPosition{.keys = {{"as", {"$first"}}, {"kern", {"*"}}}}, away,
+                                                   PatternPosition{.keys = {{"kern.pitch", {"$first"}}}}}).findAll(chorale, 1);
+    REQUIRE(matches.size() == 1u);
+    CHECK(matches[0].startPosition == 0);
+    CHECK(matches[0].endPosition == 3);
+}
+
+TEST_CASE(repeat_has_no_value_a_reference_could_read) {
+    PatternPosition run;
+    run.repeat = PatternRepeat{.min = 1};
+    CHECK_THROWS(AttributeMatcher("kern", {run, PatternPosition{.keys = {{"kern", {"#1"}}}}}));
+    PatternPosition namedRun{.keys = {{"as", {"$run"}}}};
+    namedRun.repeat = PatternRepeat{.min = 1};
+    CHECK_THROWS(AttributeMatcher("kern", {namedRun, PatternPosition{.keys = {{"kern", {"$run"}}}}}));
+    // Its own onset it reads like any position, a subPattern only what comes before it.
+    PatternPosition readsItself{.keys = {{"kern", {"*"}}, {"kern.pitch", {"#1"}}}};
+    readsItself.repeat = PatternRepeat{.min = 1};
+    CHECK_NOTHROW(AttributeMatcher("kern", {readsItself}));
+    PatternPosition readsTheFirst;
+    readsTheFirst.repeat = PatternRepeat{.min = 1};
+    readsTheFirst.subPattern = {PatternPosition{.keys = {{"kern", {"#1"}}}}};
+    CHECK_NOTHROW(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"*"}}}}, readsTheFirst}));
+    PatternPosition readsItsOwnPosition = readsTheFirst;
+    readsItsOwnPosition.subPattern = {PatternPosition{.keys = {{"kern", {"#2"}}}}};
+    CHECK_THROWS(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"*"}}}}, readsItsOwnPosition}));
+    PatternPosition readsItsOwnPositionBesideIt = readsTheFirst;
+    readsItsOwnPositionBesideIt.keys["kern.pitch"] = {"#2"};
+    CHECK_THROWS(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"*"}}}}, readsItsOwnPositionBesideIt}));
+    PatternPosition namesAPosition = readsTheFirst;
+    namesAPosition.subPattern = {PatternPosition{.keys = {{"as", {"$inner"}}, {"kern", {"*"}}}}};
+    CHECK_THROWS(AttributeMatcher("kern", {namesAPosition}));
+}
+
+TEST_CASE(repeat_refuses_what_it_cannot_match) {
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    PatternPosition repeat;
+    repeat.repeat = PatternRepeat{.min = 0, .max = 0};
+    CHECK_THROWS(AttributeMatcher("kern", {c, repeat}));
+    repeat.repeat = PatternRepeat{.min = 3, .max = 2};
+    CHECK_THROWS(AttributeMatcher("kern", {c, repeat}));
+    // A pattern that matches nothing, and a subPattern whose repeats match nothing.
+    repeat.repeat = PatternRepeat{.min = 0};
+    CHECK_THROWS(AttributeMatcher("kern", {repeat, repeat}));
+    PatternPosition ofNothing;
+    ofNothing.repeat = PatternRepeat{.min = 1};
+    ofNothing.subPattern = {repeat};
+    CHECK_THROWS(AttributeMatcher("kern", {c, ofNothing}));
+    // A subPattern is there to repeat.
+    PatternPosition once;
+    once.subPattern = {c};
+    CHECK_THROWS(AttributeMatcher("kern", {once}));
+    // Split and merged notes are no business of a repeat.
+    PatternPosition quarters{.keys = {{"duration", {"4"}}}};
+    quarters.repeat = PatternRepeat{.min = 1};
+    PatternPosition quartersInside;
+    quartersInside.repeat = PatternRepeat{.min = 1};
+    quartersInside.subPattern = {PatternPosition{.keys = {{"duration", {"4"}}}}};
+    PatternPosition longerNotes{.keys = {{"duration", {PatternValue(ComparisonOperator::GreaterThan, "4")}}}};
+    longerNotes.repeat = PatternRepeat{.min = 1};
+    for (MatcherOptions options : {MatcherOptions{.durationAllowSplitNotes = true}, MatcherOptions{.durationAllowMergedNotes = true}}) {
+        CHECK_THROWS(AttributeMatcher("kern", {c, quarters}, options));
+        CHECK_THROWS(AttributeMatcher("kern", {c, quartersInside}, options));
+        CHECK_NOTHROW(AttributeMatcher("kern", {c, longerNotes}, options));
+    }
+}
+
+TEST_CASE(repeat_of_a_sub_pattern_matches_all_of_it_each_time) {
+    std::istringstream score("**kern\n4c\n4e\n4c\n4e\n4c\n4e\n4c\n4g\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    PatternPosition pendulum;
+    pendulum.repeat = PatternRepeat{.min = 2};
+    pendulum.subPattern = {PatternPosition{.keys = {{"kern", {"e"}}}}, c};
+    // From the first and from the second c there are two more e and c, from the third only one.
+    const auto twice = AttributeMatcher("kern", {c, pendulum}).findAll(chorale, 1);
+    REQUIRE(twice.size() == 2u);
+    CHECK(twice[0].endPosition == 4);
+    CHECK(twice[1].endPosition == 6);
+    pendulum.repeat->greedy = true;
+    const auto asOftenAsItGoes = AttributeMatcher("kern", {c, pendulum}).findAll(chorale, 1);
+    REQUIRE(asOftenAsItGoes.size() == 2u);
+    CHECK(asOftenAsItGoes[0].endPosition == 6);
+    CHECK_EQ(asOftenAsItGoes[0].positionOnsets[1].onsetCount, std::size_t{6});
+
+    // A repeat begun and not finished is not matched: no g follows a c e, an e and a g do after the c.
+    std::istringstream unfinishedScore("**kern\n4c\n4e\n4c\n4e\n4c\n4e\n4g\n*-\n");
+    HumdrumChorale unfinished(unfinishedScore, "melody", false);
+    CHECK(AttributeMatcher("kern", {c, pendulum, PatternPosition{.keys = {{"kern", {"g"}}}}}).findAll(unfinished, 1).empty());
+    const auto finished = AttributeMatcher("kern", {c, pendulum, PatternPosition{.keys = {{"kern", {"e"}}}},
+                                                                 PatternPosition{.keys = {{"kern", {"g"}}}}}).findAll(unfinished, 1);
+    REQUIRE(finished.size() == 1u);
+    CHECK_EQ(finished[0].positionOnsets[1].onsetCount, std::size_t{4});
+}
+
+TEST_CASE(repeat_of_a_sub_pattern_holds_its_own_keys_on_every_onset) {
+    std::istringstream score("**kern\n4c\n4e\n4c\n2e\n4c\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    PatternPosition quarters{.keys = {{"duration", {"4"}}}};
+    quarters.repeat = PatternRepeat{.min = 2};
+    quarters.subPattern = {PatternPosition{.keys = {{"kern", {"e"}}}}, c};
+    PatternPosition quartersAndHalves = quarters;
+    quartersAndHalves.keys["duration"] = {"4", "2"};
+    CHECK(AttributeMatcher("kern", {c, quarters}).findAll(chorale, 1).empty());
+    CHECK_EQ(AttributeMatcher("kern", {c, quartersAndHalves}).findAll(chorale, 1).size(), std::size_t{1});
+    // A position of the subPattern keeps its own value of a key, negated or not: the e of any length but an eighth.
+    quarters.subPattern = {PatternPosition{.keys = {{"kern", {"e"}}, {"!duration", {"8"}}}}, c};
+    CHECK_EQ(AttributeMatcher("kern", {c, quarters}).findAll(chorale, 1).size(), std::size_t{1});
+}
+
+TEST_CASE(repeat_of_a_sub_pattern_begins_where_its_first_position_does) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    // The first position names the note the first interval is measured from, so the match is not shifted to it.
+    const PatternPosition from{.keys = {{"mint", {"*"}}}};
+    const PatternPosition stepDown{.keys = {{"mint", {"-2"}}}};
+    PatternPosition once;
+    once.repeat = PatternRepeat{.min = 1, .max = 1};
+    once.subPattern = {from, stepDown};
+    const MatcherOptions options{.mintStartAtPreviousToken = true};
+    const auto repeated = AttributeMatcher("mint", {once}, options).findAll(chorale, 1);
+    const auto written = AttributeMatcher("mint", {from, stepDown}, options).findAll(chorale, 1);
+    REQUIRE(!written.empty());
+    REQUIRE(repeated.size() == written.size());
+    for (std::size_t i = 0; i < repeated.size(); ++i) CHECK_EQ(repeated[i].startLineNumber, written[i].startLineNumber);
+}
+
+TEST_CASE(repeat_finds_a_phrase_that_touches_another_key) {
+    // A phrase in G that reaches D, a phrase that stays in G.
+    std::istringstream score("**kern\n*G:\n4g\n4a\n*D:\n4a\n4c#\n*G:\n4b\n4g;\n4d\n4e\n4f#\n4g;\n*-\n");
+    HumdrumChorale chorale(score, "keys", false);
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.min = 0};
+    PatternPosition inAnotherKey{.keys = {{"!key", {"$start"}}}};
+    inAnotherKey.repeat = PatternRepeat{.min = 1};
+    const auto matches = AttributeMatcher("kern", {PatternPosition{.keys = {{"as", {"$start"}}, {"phrase", {"start"}}}}, gap, inAnotherKey, gap,
+                                                   PatternPosition{.keys = {{"phrase", {"end"}}, {"key", {"$start"}}}}}).findAll(chorale, 1);
+    REQUIRE(matches.size() == 1u);
+    CHECK(matches[0].startPosition == 0);
+    CHECK(matches[0].endPosition == 5);
+}
+
+TEST_CASE(repeat_stays_within_a_phrase_with_a_negated_phrase_end) {
+    // The first phrase stays in G, the second reaches D.
+    std::istringstream score("**kern\n*G:\n4g\n4a\n4g;\n4b\n*D:\n4a\n*G:\n4g;\n*-\n");
+    HumdrumChorale chorale(score, "keys", false);
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.min = 0};
+    PatternPosition gapInThePhrase{.keys = {{"!phrase", {"end"}}}};
+    gapInThePhrase.repeat = PatternRepeat{.min = 0};
+    PatternPosition inAnotherKey{.keys = {{"!key", {"$start"}}}};
+    inAnotherKey.repeat = PatternRepeat{.min = 1};
+    const PatternPosition start{.keys = {{"as", {"$start"}}, {"phrase", {"start"}}}};
+    const PatternPosition end{.keys = {{"phrase", {"end"}}, {"key", {"$start"}}}};
+    // The first phrase reaches on into the second.
+    const auto acrossPhrases = AttributeMatcher("kern", {start, gap, inAnotherKey, gap, end}).findAll(chorale, 1);
+    REQUIRE(acrossPhrases.size() == 2u);
+    CHECK(acrossPhrases[0].startPosition == 0);
+    CHECK(acrossPhrases[0].endPosition == 5);
+    const auto inOnePhrase = AttributeMatcher("kern", {start, gapInThePhrase, inAnotherKey, gapInThePhrase, end}).findAll(chorale, 1);
+    REQUIRE(inOnePhrase.size() == 1u);
+    CHECK(inOnePhrase[0].startPosition == 3);
+}
+
+TEST_CASE(repeat_holds_its_lyrics_keys_in_one_verse_with_the_rest) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
+    const PatternPosition word{.keys = {{"word", {"*"}}}};
+    const PatternPosition initial{.keys = {{"sylpos", {"initial"}}}};
+    PatternPosition wordOnce = word;
+    wordOnce.repeat = PatternRepeat{.min = 1, .max = 1};
+    PatternPosition initialTwice = initial;
+    initialTwice.repeat = PatternRepeat{.min = 2, .max = 2};
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto count = [&](const std::vector<PatternPosition>& pattern) { return AttributeMatcher("kern", pattern).findAll(chorale, voice).size(); };
+        CHECK_EQ(count({word, wordOnce}), count({word, word}));
+        CHECK_EQ(count({word, initialTwice}), count({word, initial, initial}));
+    }
+}

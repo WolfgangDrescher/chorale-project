@@ -10,13 +10,25 @@
 
 namespace choralesearch {
 
-// Where a position of the pattern matched. A position that took several onsets (durationAllowSplitNotes) has
+// Where a position of the pattern matched. A position that took several onsets (durationAllowSplitNotes, repeat) has
 // its first one, their durations added up; several positions matched by one onset (durationAllowMergedNotes)
 // have that one, the whole duration at the first of them and 0 at the later ones, which attack nothing.
+// A repeat that matched no onset is at the onset after it, with no duration.
 struct PositionOnset {
     std::size_t line;
     hum::HumNum position; // quarter notes from the start of the piece, as startPosition below
     hum::HumNum duration; // what the position attacks, as the search measured it
+    std::size_t endLine = line; // of the last onset the position took
+    std::size_t onsetCount = 1;
+};
+
+// An onset a position took that repeats, by the position of the written pattern that took it: its index, then its
+// index in each subPattern down to it.
+struct RepeatedOnset {
+    std::vector<std::size_t> path;
+    std::size_t onsetIndex; // among the onsets the search walks, to tell neighbours apart
+    std::size_t line;
+    hum::HumNum position;
 };
 
 // A stretch of the notes of one voice that a result is made of, from one note to another or a single note. A line

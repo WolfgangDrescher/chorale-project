@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -85,15 +86,38 @@ inline std::vector<PatternValue> toPatternValues(const std::vector<std::string>&
     return std::vector<PatternValue>(texts.begin(), texts.end());
 }
 
+// How often a position of the pattern is matched in a row, see docs/repetitions.
+struct PatternRepeat {
+    std::size_t min = 0;
+    std::optional<std::size_t> max; // nullopt: as often as the voice allows
+    bool greedy = false;            // as often as possible instead of as rarely as possible
+
+    bool operator==(const PatternRepeat&) const = default;
+};
+
 // feature name -> OR-list of acceptable values ("*" anywhere in the list = wildcard)
 using AttributeMap = std::map<std::string, std::vector<PatternValue>>;
 
-// A position of a pattern: the keys it checks.
+// A position of a pattern: the keys it checks, and how often it repeats, with its keys or with a pattern of its own.
 struct PatternPosition {
     AttributeMap keys;
+    std::optional<PatternRepeat> repeat;
+    // Matched as a whole on every repeat. Its positions take the keys above that they do not check themselves.
+    std::vector<PatternPosition> subPattern;
 
     bool operator==(const PatternPosition&) const = default;
 };
+
+// Gives `keys` each of `defaults` it has no value of its own for, negated or not.
+inline void addMissingKeys(AttributeMap& keys, const AttributeMap& defaults) {
+    AttributeMap missing;
+    for (const auto& [rawKey, values] : defaults) {
+        const std::string key = unnegatedKey(rawKey);
+        const bool hasOwn = std::any_of(keys.begin(), keys.end(), [&](const auto& own) { return unnegatedKey(own.first) == key; });
+        if (!hasOwn) missing[rawKey] = values;
+    }
+    keys.insert(missing.begin(), missing.end());
+}
 
 // What AttributeMatcher is allowed to treat as equal beyond a literal comparison
 struct MatcherOptions {

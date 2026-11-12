@@ -4,6 +4,7 @@
 #include "HumdrumUtils.hpp"
 #include "Intervals.hpp"
 #include "PatternKeys.hpp"
+#include "PatternRepeat.hpp"
 #include "PositionReference.hpp"
 #include "QueryValidation.hpp"
 #include "ValueScanner.hpp"
@@ -941,6 +942,26 @@ void validateValues(const PositionKey& positionKey, const MatcherOptions& option
     }
 }
 
+// How long the onsets [first, end) last together.
+hum::HumNum totalDuration(const std::vector<AttributeMatcher::Onset>& onsets, std::size_t first, std::size_t end) {
+    hum::HumNum duration(0);
+    for (std::size_t i = first; i < end; ++i) duration += onsets[i].duration;
+    return duration;
+}
+
+// Where a position matched the onsets [first, end). No onset: the one after, with no duration.
+PositionOnset buildPositionOnset(const std::vector<AttributeMatcher::Onset>& onsets, std::size_t first, std::size_t end) {
+    const hum::HTp token = onsets[std::min(first, onsets.size() - 1)].token;
+    const hum::HTp last = end > first ? onsets[end - 1].token : token;
+    return PositionOnset{
+        .line = static_cast<std::size_t>(token->getLineNumber()),
+        .position = token->getDurationFromStart(),
+        .duration = totalDuration(onsets, first, end),
+        .endLine = static_cast<std::size_t>(last->getLineNumber()),
+        .onsetCount = end - first,
+    };
+}
+
 } // namespace
 
 AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<PatternPosition> writtenPattern, MatcherOptions options)
@@ -956,34 +977,47 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Patte
                                     "durationAllowMergedNotes or metweightSkipUnclassified");
     }
     m_readsLyrics = isDrivenByLyrics();
-    for (const PatternPosition& position : pattern) {
-        PositionKeys& positionKeys = m_pattern.emplace_back();
-        bool hasReferences = false;
-        for (const auto& [rawKey, values] : position.keys) {
-            if (rawKey == kPositionNameKey) continue; // only needed to resolve the references
-            if (isOtherVoiceKey(rawKey)) {
-                const auto [voiceReference, key] = splitOtherVoiceKey(rawKey);
-                PositionKey otherVoiceKey{findPatternKey(key), values};
-                validateValues(otherVoiceKey, m_options);
-                for (PatternValue& value : otherVoiceKey.values) normalizePatternValue(otherVoiceKey, value);
-                auto group = std::find_if(positionKeys.begin(), positionKeys.end(),
-                                          [&](const PositionKey& positionKey) { return positionKey.otherVoice == voiceReference; });
-                if (group == positionKeys.end()) {
-                    group = positionKeys.emplace(positionKeys.end());
-                    group->rawKey = voiceReference;
-                    group->otherVoice = voiceReference;
-                }
-                group->otherVoiceKeys.push_back(std::move(otherVoiceKey));
-                continue;
+    validateRepeats(pattern, m_options.durationAllowSplitNotes || m_options.durationAllowMergedNotes);
+    for (std::size_t offset = 0; offset < pattern.size(); ++offset) m_pattern.push_back(compilePosition(pattern[offset], {offset}));
+    m_minimumOnsets = minimumOnsets(pattern);
+}
+
+CompiledPosition AttributeMatcher::compilePosition(const PatternPosition& position, std::vector<std::size_t> path) {
+    CompiledPosition compiled;
+    compiled.repeat = position.repeat;
+    for (const auto& [rawKey, values] : position.keys) {
+        if (rawKey == kPositionNameKey) continue; // only needed to resolve the references
+        if (isOtherVoiceKey(rawKey)) {
+            const auto [voiceReference, key] = splitOtherVoiceKey(rawKey);
+            PositionKey otherVoiceKey{findPatternKey(key), values};
+            validateValues(otherVoiceKey, m_options);
+            for (PatternValue& value : otherVoiceKey.values) normalizePatternValue(otherVoiceKey, value);
+            auto group = std::find_if(compiled.keys.begin(), compiled.keys.end(),
+                                      [&](const PositionKey& positionKey) { return positionKey.otherVoice == voiceReference; });
+            if (group == compiled.keys.end()) {
+                group = compiled.keys.emplace(compiled.keys.end());
+                group->rawKey = voiceReference;
+                group->otherVoice = voiceReference;
             }
-            hasReferences = hasReferences || hasPositionReference(values);
-            PositionKey& positionKey = positionKeys.emplace_back(PositionKey{findPatternKey(rawKey), values});
-            validateValues(positionKey, m_options);
-            for (PatternValue& value : positionKey.values) normalizePatternValue(positionKey, value);
-            if (positionKey.readsLyrics()) m_readsLyrics = true;
+            group->otherVoiceKeys.push_back(std::move(otherVoiceKey));
+            continue;
         }
-        m_hasReferences.push_back(hasReferences);
+        compiled.hasReferences = compiled.hasReferences || hasPositionReference(values);
+        PositionKey& positionKey = compiled.keys.emplace_back(PositionKey{findPatternKey(rawKey), values});
+        validateValues(positionKey, m_options);
+        for (PatternValue& value : positionKey.values) normalizePatternValue(positionKey, value);
+        if (positionKey.readsLyrics()) m_readsLyrics = true;
     }
+    // The positions of a subPattern check the keys of the position around them, as everyPosition has it.
+    for (std::size_t index = 0; index < position.subPattern.size(); ++index) {
+        PatternPosition inner = position.subPattern[index];
+        addMissingKeys(inner.keys, position.keys);
+        std::vector<std::size_t> innerPath = path;
+        innerPath.push_back(index);
+        compiled.subPattern.push_back(compilePosition(inner, std::move(innerPath)));
+    }
+    compiled.path = std::move(path);
+    return compiled;
 }
 
 std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const HumdrumChorale& chorale,
@@ -1318,15 +1352,15 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
     if (patternIndex >= m_pattern.size()) return std::nullopt;
     // Without a concrete duration there is no share of the onset this position could claim,
     // so the run cannot reach across it.
-    if (!hasOnlyExactDurations(m_pattern[patternIndex])) return std::nullopt;
+    if (!hasOnlyExactDurations(m_pattern[patternIndex].keys)) return std::nullopt;
     // What a reference to this position reads: a later position of the run is the unison of a re-attack. The
     // share it claims is set below.
     Onset& matchedOnset = matched[patternIndex].emplace(onset);
     matchedOnset.duration = remaining;
     if (isContinuation) matchedOnset.mint = "P1";
-    const PositionKeys read = m_hasReferences[patternIndex] ? withReferencesRead(chorale, voice, m_pattern[patternIndex], matched)
-                                                            : PositionKeys();
-    const PositionKeys& position = m_hasReferences[patternIndex] ? read : m_pattern[patternIndex];
+    const CompiledPosition& compiled = m_pattern[patternIndex];
+    const PositionKeys read = compiled.hasReferences ? withReferencesRead(chorale, voice, compiled.keys, matched) : PositionKeys();
+    const PositionKeys& position = compiled.hasReferences ? read : compiled.keys;
     const PositionKey* duration = findPositionKey(position, PatternKeyId::Duration, false);
 
     for (const PositionKey& positionKey : position) {
@@ -1402,120 +1436,195 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
     std::size_t n = m_pattern.size();
     if (onsets.empty()) return matches;
 
-    // A pattern normally needs one onset per position, but a merged run covers several
-    // positions with a single onset (see matchMergedPositions), so with that option on even a
-    // single remaining onset can still carry the rest of the pattern.
-    std::size_t minOnsets = m_options.durationAllowMergedNotes ? 1 : n;
+    // A merged run covers several positions with a single onset (see matchMergedPositions), so with that option
+    // on even a single remaining onset can still carry the rest of the pattern.
+    std::size_t minOnsets = m_options.durationAllowMergedNotes ? 1 : m_minimumOnsets;
     if (onsets.size() < minOnsets) return matches;
 
     // An explicit {"mint": "*"} first position already includes the note before, and so does a
     // word or syllable, which is matched with all its notes.
     bool shiftStartToPreviousToken = false;
     if (m_options.mintStartAtPreviousToken && !isDrivenByLyrics()) {
-        bool firstPositionIsExplicitWildcard = std::any_of(m_pattern[0].begin(), m_pattern[0].end(), [&](const PositionKey& positionKey) {
+        // The first onset of a subPattern is that of its first position.
+        const CompiledPosition* firstPosition = &m_pattern[0];
+        while (!firstPosition->subPattern.empty()) firstPosition = &firstPosition->subPattern[0];
+        const PositionKeys& first = firstPosition->keys;
+        bool firstPositionIsExplicitWildcard = std::any_of(first.begin(), first.end(), [&](const PositionKey& positionKey) {
             return positionKey.rawKey == kMintKey && isWildcard(positionKey.values);
         });
         shiftStartToPreviousToken = !firstPositionIsExplicitWildcard;
     }
     hum::HTp walkedKernSpine = chorale.spine(kKernKey, voice);
 
-    for (std::size_t start = 0; start + minOnsets <= onsets.size(); ++start) {
-        // A position may consume more than one onset (matchSplitPosition) and an onset may
-        // cover more than one position (matchMergedPositions), so how far the pattern has
-        // walked is tracked separately from how many positions it has checked.
-        std::size_t idx = start;
-        std::size_t offset = 0;
-        bool ok = true;
-        std::vector<PositionOnset> positionOnsets(n);
-        // Entered before a position is checked, so it can read its own onset.
-        MatchedOnsets matched(n);
-        while (offset < n) {
-            bool concreteDuration = hasOnlyExactDurations(m_pattern[offset]);
-            if (idx < onsets.size()) matched[offset] = onsets[idx];
-            const PositionKeys read = m_hasReferences[offset] ? withReferencesRead(chorale, voice, m_pattern[offset], matched)
-                                                              : PositionKeys();
-            const PositionKeys& position = m_hasReferences[offset] ? read : m_pattern[offset];
-
-            if (concreteDuration && m_options.durationAllowSplitNotes) {
-                auto consumed = matchSplitPosition(chorale, voice, onsets, idx, position);
-                if (consumed) {
-                    hum::HumNum duration(0);
-                    for (std::size_t i = idx; i < idx + *consumed; ++i) duration += onsets[i].duration;
-                    positionOnsets[offset] = {static_cast<std::size_t>(onsets[idx].token->getLineNumber()),
-                                              onsets[idx].token->getDurationFromStart(), duration};
-                    matched[offset]->duration = duration;
-                    idx += *consumed;
-                    ++offset;
-                    continue;
-                }
-                // With both options on, a position the pattern splits notes for may still be
-                // the start of a merged run instead -- the two describe opposite mismatches
-                // between pattern and score and never the same one.
-                if (!m_options.durationAllowMergedNotes) { ok = false; break; }
-            }
-
-            if (idx >= onsets.size()) { ok = false; break; }
-            const Onset& onset = onsets[idx];
-
-            if (concreteDuration && m_options.durationAllowMergedNotes) {
-                auto consumed = matchMergedPositions(chorale, voice, onset, offset, onset.duration, false, matched);
-                if (!consumed) { ok = false; break; }
-                for (std::size_t covered = offset; covered < offset + *consumed && covered < n; ++covered) {
-                    positionOnsets[covered] = {static_cast<std::size_t>(onset.token->getLineNumber()), onset.token->getDurationFromStart(),
-                                               covered == offset ? onset.duration : hum::HumNum(0)};
-                }
-                offset += *consumed;
-                ++idx;
-                continue;
-            }
-
-            for (const PositionKey& positionKey : position) {
-                auto matched = matchKey(chorale, voice, onset, positionKey);
-                if (!matched || !*matched) { ok = false; break; }
-            }
-            if (!ok) break;
-            positionOnsets[offset] = {static_cast<std::size_t>(onset.token->getLineNumber()), onset.token->getDurationFromStart(),
-                                      onset.duration};
-            ++idx;
-            ++offset;
-        }
-        if (!ok) continue;
-
-        // One verse in which every lyrics key of every position holds, else the match is none.
-        VerseSet verses = VerseSet::all();
-        std::vector<int> positionLines;
-        for (const PositionOnset& positionOnset : positionOnsets) positionLines.push_back(static_cast<int>(positionOnset.line));
-        for (std::size_t p = 0; p < n; ++p) {
-            for (const PositionKey& positionKey : m_pattern[p]) {
-                if (positionKey.readsLyrics()) verses &= versesMatchingKey(chorale, positionKey, positionLines[p], positionLines);
-            }
-        }
-        if (verses.empty()) continue;
-
-        // Back to the nearest earlier note of the walked voice, rests skipped as **mint does.
-        hum::HTp startTok = onsets[start].token;
+    // Back to the nearest earlier note of the walked voice, rests skipped as **mint does.
+    const auto reportedStartToken = [&](std::size_t start) {
         if (shiftStartToPreviousToken) {
             for (std::size_t i = start; i-- > 0;) {
                 hum::HTp walkedNote = tokenBesideOnLine(onsets[i].token, walkedKernSpine, true);
-                if (walkedNote && !walkedNote->isRest()) {
-                    startTok = onsets[i].token;
-                    break;
-                }
+                if (walkedNote && !walkedNote->isRest()) return onsets[i].token;
             }
         }
+        return onsets[start].token;
+    };
 
-        hum::HTp endTok = onsets[idx - 1].lastToken;
+    Walk walk{.chorale = chorale, .voice = voice, .onsets = onsets};
+    for (std::size_t start = 0; start + minOnsets <= onsets.size(); ++start) {
+        hum::HTp startTok = reportedStartToken(start);
+        walk.positionOnsets.assign(n, PositionOnset{});
+        walk.matched.assign(n, std::nullopt);
+        walk.repeatedOnsets.clear();
+        walk.verses = VerseSet::all();
+        if (!matchFrom(walk, 0, start)) continue;
+
+        std::vector<RepeatedOnset> repeatedOnsets;
+        for (const auto& [position, index] : walk.repeatedOnsets) {
+            const Onset& onset = onsets[index];
+            repeatedOnsets.push_back({.path = position->path,
+                                      .onsetIndex = index,
+                                      .line = static_cast<std::size_t>(onset.token->getLineNumber()),
+                                      .position = onset.token->getDurationFromStart()});
+        }
+
+        hum::HTp endTok = onsets[walk.end - 1].lastToken;
         matches.push_back(AttributeMatch{
             .voice = voice,
             .startLineNumber = static_cast<std::size_t>(startTok->getLineNumber()),
             .endLineNumber = static_cast<std::size_t>(endTok->getLineNumber()),
             .startPosition = startTok->getDurationFromStart(),
             .endPosition = endTok->getDurationFromStart(),
-            .positionOnsets = std::move(positionOnsets),
-            .verses = verses,
+            .positionOnsets = walk.positionOnsets,
+            .repeatedOnsets = std::move(repeatedOnsets),
+            .verses = walk.verses,
         });
     }
     return matches;
+}
+
+bool AttributeMatcher::matchFrom(Walk& walk, std::size_t offset, std::size_t onsetIndex) const {
+    if (offset == m_pattern.size()) {
+        walk.end = onsetIndex;
+        return true;
+    }
+    const VerseSet verses = walk.verses;
+    const CompiledPosition& position = m_pattern[offset];
+    const auto rest = [&](std::size_t after) { return matchFrom(walk, offset + 1, after); };
+    const bool matched = position.repeat ? matchRepeat(walk, position, offset, 0, onsetIndex, onsetIndex, rest)
+                                         : matchSinglePosition(walk, offset, onsetIndex);
+    if (matched) return true;
+    walk.verses = verses;
+    return false;
+}
+
+bool AttributeMatcher::matchesAllKeys(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset,
+                                      const PositionKeys& position) const {
+    return std::all_of(position.begin(), position.end(), [&](const PositionKey& positionKey) {
+        auto matched = matchKey(chorale, voice, onset, positionKey);
+        return matched && *matched;
+    });
+}
+
+bool AttributeMatcher::narrowVerses(Walk& walk, const PositionKeys& position, int line) const {
+    if (!m_readsLyrics) return true;
+    std::vector<int> positionLines;
+    for (const PositionOnset& positionOnset : walk.positionOnsets) positionLines.push_back(static_cast<int>(positionOnset.line));
+    for (const PositionKey& positionKey : position) {
+        if (positionKey.readsLyrics()) walk.verses &= versesMatchingKey(walk.chorale, positionKey, line, positionLines);
+    }
+    return !walk.verses.empty();
+}
+
+bool AttributeMatcher::matchSinglePosition(Walk& walk, std::size_t offset, std::size_t onsetIndex) const {
+    const HumdrumChorale& chorale = walk.chorale;
+    const std::size_t voice = walk.voice;
+    const std::vector<Onset>& onsets = walk.onsets;
+    const CompiledPosition& compiled = m_pattern[offset];
+    const bool concreteDuration = hasOnlyExactDurations(compiled.keys);
+    // Entered before the position is checked, so it can read its own onset.
+    if (onsetIndex < onsets.size()) walk.matched[offset] = onsets[onsetIndex];
+    const PositionKeys read = compiled.hasReferences ? withReferencesRead(chorale, voice, compiled.keys, walk.matched)
+                                                     : PositionKeys();
+    const PositionKeys& position = compiled.hasReferences ? read : compiled.keys;
+
+    if (concreteDuration && m_options.durationAllowSplitNotes) {
+        auto consumed = matchSplitPosition(chorale, voice, onsets, onsetIndex, position);
+        if (consumed) {
+            walk.positionOnsets[offset] = buildPositionOnset(onsets, onsetIndex, onsetIndex + *consumed);
+            walk.matched[offset]->duration = walk.positionOnsets[offset].duration;
+            return narrowVerses(walk, compiled.keys, onsets[onsetIndex].token->getLineNumber()) &&
+                   matchFrom(walk, offset + 1, onsetIndex + *consumed);
+        }
+        // With both options on, a position the pattern splits notes for may still be
+        // the start of a merged run instead -- the two describe opposite mismatches
+        // between pattern and score and never the same one.
+        if (!m_options.durationAllowMergedNotes) return false;
+    }
+
+    if (onsetIndex >= onsets.size()) return false;
+    const Onset& onset = onsets[onsetIndex];
+    const int line = onset.token->getLineNumber();
+
+    if (concreteDuration && m_options.durationAllowMergedNotes) {
+        auto consumed = matchMergedPositions(chorale, voice, onset, offset, onset.duration, false, walk.matched);
+        if (!consumed) return false;
+        for (std::size_t covered = offset; covered < offset + *consumed && covered < m_pattern.size(); ++covered) {
+            walk.positionOnsets[covered] = {static_cast<std::size_t>(line), onset.token->getDurationFromStart(),
+                                            covered == offset ? onset.duration : hum::HumNum(0)};
+            if (!narrowVerses(walk, m_pattern[covered].keys, line)) return false;
+        }
+        return matchFrom(walk, offset + *consumed, onsetIndex + 1);
+    }
+
+    if (!matchesAllKeys(chorale, voice, onset, position)) return false;
+    walk.positionOnsets[offset] = buildPositionOnset(onsets, onsetIndex, onsetIndex + 1);
+    return narrowVerses(walk, compiled.keys, line) && matchFrom(walk, offset + 1, onsetIndex + 1);
+}
+
+bool AttributeMatcher::matchRepeat(Walk& walk, const CompiledPosition& position, std::optional<std::size_t> offset,
+                                   std::size_t count, std::size_t runStart, std::size_t onsetIndex, const Continuation& next) const {
+    const PatternRepeat& repeat = *position.repeat;
+    const auto stop = [&] {
+        if (count < repeat.min) return false;
+        if (offset) walk.positionOnsets[*offset] = buildPositionOnset(walk.onsets, runStart, onsetIndex);
+        return next(onsetIndex);
+    };
+    const auto matchOnceMore = [&] {
+        if (repeat.max && count >= *repeat.max) return false;
+        return matchOnce(walk, position, offset, onsetIndex, [&](std::size_t after) {
+            return matchRepeat(walk, position, offset, count + 1, runStart, after, next);
+        });
+    };
+    return repeat.greedy ? matchOnceMore() || stop() : stop() || matchOnceMore();
+}
+
+bool AttributeMatcher::matchOnce(Walk& walk, const CompiledPosition& position, std::optional<std::size_t> offset,
+                                 std::size_t onsetIndex, const Continuation& next) const {
+    if (!position.subPattern.empty()) {
+        // Each time it moves on, else a repeat of nothing would go on for ever.
+        return matchSubPattern(walk, position.subPattern, 0, onsetIndex,
+                               [&](std::size_t after) { return after > onsetIndex && next(after); });
+    }
+    if (onsetIndex >= walk.onsets.size()) return false;
+    const Onset& onset = walk.onsets[onsetIndex];
+    // Entered before the position is checked, so it can read its own onset.
+    if (offset) walk.matched[*offset] = onset;
+    const PositionKeys read = position.hasReferences ? withReferencesRead(walk.chorale, walk.voice, position.keys, walk.matched)
+                                                     : PositionKeys();
+    if (!matchesAllKeys(walk.chorale, walk.voice, onset, position.hasReferences ? read : position.keys)) return false;
+    const VerseSet verses = walk.verses;
+    walk.repeatedOnsets.emplace_back(&position, onsetIndex);
+    if (narrowVerses(walk, position.keys, onset.token->getLineNumber()) && next(onsetIndex + 1)) return true;
+    walk.repeatedOnsets.pop_back();
+    walk.verses = verses;
+    return false;
+}
+
+bool AttributeMatcher::matchSubPattern(Walk& walk, const std::vector<CompiledPosition>& positions, std::size_t index,
+                                       std::size_t onsetIndex, const Continuation& next) const {
+    if (index == positions.size()) return next(onsetIndex);
+    const CompiledPosition& position = positions[index];
+    const Continuation rest = [&](std::size_t after) { return matchSubPattern(walk, positions, index + 1, after, next); };
+    return position.repeat ? matchRepeat(walk, position, std::nullopt, 0, onsetIndex, onsetIndex, rest)
+                           : matchOnce(walk, position, std::nullopt, onsetIndex, rest);
 }
 
 } // namespace choralesearch

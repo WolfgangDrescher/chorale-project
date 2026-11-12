@@ -10,9 +10,10 @@ namespace choralesearch {
 
 namespace {
 
-// Where an error is: "'pattern[1][kern]' (position 2)", the array counted from 0, the positions from 1.
-std::string patternKeyLocation(std::size_t position, const std::string& rawKey) {
-    return "'pattern[" + std::to_string(position) + "][" + rawKey + "]' (position " + std::to_string(position + 1) + ")";
+// Where an error is: "'pattern[1][kern]' (position 2)", the array counted from 0, the positions from 1. `path` leads
+// into a subPattern: "[subPattern][0]".
+std::string patternKeyLocation(std::size_t position, const std::string& rawKey, const std::string& path = "") {
+    return "'pattern[" + std::to_string(position) + "]" + path + "[" + rawKey + "]' (position " + std::to_string(position + 1) + ")";
 }
 
 bool isHintKey(const PatternKey& patternKey) {
@@ -38,9 +39,18 @@ bool acceptsValueOf(const PatternKeyLookup& own, const PatternKeyLookup& read) {
     return false;
 }
 
-PositionReference resolve(const PatternValue& value, std::size_t ownPosition, const std::string& rawKey,
-                          const std::vector<std::optional<std::string>>& positionNames) {
-    const std::string here = patternKeyLocation(ownPosition, rawKey) + ": '" + value.text + "'";
+// The positions of a pattern a reference can name, and where the reference is.
+struct ReferenceScope {
+    const std::vector<std::optional<std::string>>& positionNames;
+    const std::vector<PatternPosition>& pattern;
+    std::size_t ownPosition;
+    std::string path; // into the subPattern of the own position, empty at the position itself
+};
+
+PositionReference resolve(const PatternValue& value, const std::string& rawKey, const ReferenceScope& scope) {
+    const std::vector<std::optional<std::string>>& positionNames = scope.positionNames;
+    const std::size_t ownPosition = scope.ownPosition;
+    const std::string here = patternKeyLocation(ownPosition, rawKey, scope.path) + ": '" + value.text + "'";
     const PatternKeyLookup own = findPatternKey(rawKey);
     const std::string ownKey = own.negated ? rawKey.substr(1) : rawKey; // "hint-14.number"
     // The position, then the key it reads, if another than the own: "#1", "$start.hint-14.number".
@@ -72,6 +82,12 @@ PositionReference resolve(const PatternValue& value, std::size_t ownPosition, co
     if (reference.position > ownPosition) {
         throw std::invalid_argument(here + " names a later position, a position can only read the positions before it and itself");
     }
+    if (reference.position == ownPosition && !scope.pattern[ownPosition].subPattern.empty()) {
+        throw std::invalid_argument(here + " names the position of its own subPattern, which repeats and has no single value");
+    }
+    if (reference.position != ownPosition && scope.pattern[reference.position].repeat) {
+        throw std::invalid_argument(here + " names a position that repeats and has no single value");
+    }
 
     if (!own.patternKey || !own.valueSpec().positionReference) {
         throw std::invalid_argument(here + ": '" + rawKey + "' cannot be held against a position of the pattern");
@@ -84,6 +100,26 @@ PositionReference resolve(const PatternValue& value, std::size_t ownPosition, co
         throw std::invalid_argument(here + ": a '" + readKey + "' value is no '" + ownKey + "' value");
     }
     return reference;
+}
+
+void resolveReferencesInPosition(PatternPosition& position, const ReferenceScope& scope) {
+    for (auto& [rawKey, values] : position.keys) {
+        if (rawKey == kPositionNameKey) {
+            if (!scope.path.empty()) {
+                throw std::invalid_argument(patternKeyLocation(scope.ownPosition, kPositionNameKey, scope.path) +
+                                            ": a position of a subPattern has no name");
+            }
+            continue;
+        }
+        for (PatternValue& value : values) {
+            if (value.isPositionReference()) value.positionReference = resolve(value, rawKey, scope);
+        }
+    }
+    for (std::size_t inner = 0; inner < position.subPattern.size(); ++inner) {
+        ReferenceScope innerScope = scope;
+        innerScope.path += "[subPattern][" + std::to_string(inner) + "]";
+        resolveReferencesInPosition(position.subPattern[inner], innerScope);
+    }
 }
 
 } // namespace
@@ -110,12 +146,7 @@ std::vector<PatternPosition> resolvePositionReferences(const std::vector<Pattern
     const std::vector<std::optional<std::string>> names = positionNames(pattern);
     std::vector<PatternPosition> resolved = pattern;
     for (std::size_t position = 0; position < resolved.size(); ++position) {
-        for (auto& [rawKey, values] : resolved[position].keys) {
-            if (rawKey == kPositionNameKey) continue;
-            for (PatternValue& value : values) {
-                if (value.isPositionReference()) value.positionReference = resolve(value, position, rawKey, names);
-            }
-        }
+        resolveReferencesInPosition(resolved[position], ReferenceScope{names, pattern, position, ""});
     }
     return resolved;
 }

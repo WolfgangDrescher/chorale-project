@@ -1351,3 +1351,15 @@ TEST_CASE(result_to_json_writes_the_verses_only_where_the_match_has_some) {
     r.verses = {1, 2};
     CHECK_EQ(resultToJson(r)["verses"], json::parse("[1, 2]"));
 }
+
+TEST_CASE(query_from_json_adds_a_key_of_every_position_and_the_same_key_negated) {
+    // A range: at least a third, and no more than a fifth.
+    Query q = queryFromJson(json::parse(R"({"feature":"mint","pattern":[{"mint":"*"},{"mint":"-2"}],
+        "everyPosition":{"mint":{"operator":"gte","value":"3"},"!mint":{"operator":"gt","value":"5"},"mode":"minor"}})"));
+    CHECK_EQ(q.pattern[0].keys.count("!mint"), std::size_t{0});
+    CHECK_EQ(q.pattern[1].keys.count("!mint"), std::size_t{0});
+    q = queryFromJson(json::parse(R"({"feature":"mint","pattern":[{"deg":"1"}],
+        "everyPosition":{"mint":{"operator":"gte","value":"3"},"!mint":{"operator":"gt","value":"5"}}})"));
+    CHECK_EQ(q.pattern[0].keys.count("mint"), std::size_t{1});
+    CHECK_EQ(q.pattern[0].keys.count("!mint"), std::size_t{1});
+}

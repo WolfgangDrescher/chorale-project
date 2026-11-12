@@ -214,13 +214,7 @@ std::vector<PatternPosition> patternFromJson(const nlohmann::json& j) {
 
 // A position keeps its own value of a key, negated or not.
 void applyEveryPosition(std::vector<PatternPosition>& pattern, const AttributeMap& everyPosition) {
-    for (PatternPosition& position : pattern) {
-        for (const auto& [rawKey, values] : everyPosition) {
-            const std::string key = unnegatedKey(rawKey);
-            const bool hasOwn = std::any_of(position.keys.begin(), position.keys.end(), [&](const auto& own) { return unnegatedKey(own.first) == key; });
-            if (!hasOwn) position.keys[rawKey] = values;
-        }
-    }
+    for (PatternPosition& position : pattern) addMissingKeys(position.keys, everyPosition);
 }
 
 // The diatonic numbers "mintAllowIntervalComplementation" opts in: a single value or an array

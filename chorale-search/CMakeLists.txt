@@ -45,6 +45,7 @@ add_library(chorale_query STATIC
     src/PatternKeys.cpp
     src/Intervals.cpp
     src/PositionReference.cpp
+    src/PatternRepeat.cpp
 )
 target_include_directories(chorale_query PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
