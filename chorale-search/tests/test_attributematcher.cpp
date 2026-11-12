@@ -1793,6 +1793,68 @@ TEST_CASE(matcher_mode_fails_a_score_without_key_designation) {
     CHECK(AttributeMatcher("kern", {AttributeMap{{"!mode", {"major"}}}}).findAll(chorale, 1).empty());
 }
 
+// A part key checks a part of the value of its key: "mint.number": "2" is "mint": "2".
+TEST_CASE(matcher_a_part_key_matches_like_its_whole_key_with_the_same_value) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const std::string& feature, const AttributeMap& position, MatcherOptions options = {}) {
+        return AttributeMatcher(feature, {position}, options).findAll(chorale, 4).size();
+    };
+    struct Same { const char* part; const char* partValue; const char* whole; const char* wholeValue; };
+    for (const Same& same : {Same{"mint.direction", "+", "mint", "+"}, Same{"mint.direction", "-", "mint", "-"},
+                             Same{"mint.direction", "none", "mint", "P1"}, Same{"mint.number", "2", "mint", "2"},
+                             Same{"mint.interval", "M2", "mint", "M2"}, Same{"kern.pitch", "g", "kern", "g"},
+                             Same{"fb.numbers", "6 3", "fb", "6 3"}, Same{"hint-14.number", "10", "hint-14", "10"}}) {
+        std::size_t whole = count("kern", {{same.whole, {same.wholeValue}}});
+        CHECK(whole > 0);
+        CHECK_EQ(count("kern", {{same.part, {same.partValue}}}), whole);
+        CHECK_EQ(count("kern", {{std::string("!") + same.part, {same.partValue}}}), count("kern", {{std::string("!") + same.whole, {same.wholeValue}}}));
+    }
+    // The options of the key hold for its parts.
+    MatcherOptions reduce;
+    reduce.hintReduceCompound = true;
+    CHECK_EQ(count("kern", {{"hint-14.number", {"3"}}}, reduce), count("kern", {{"hint-14", {"3"}}}, reduce));
+    MatcherOptions ignoreOctave;
+    ignoreOctave.kernIgnoreOctave = true;
+    CHECK_EQ(count("kern", {{"kern.pitch", {"g"}}}, ignoreOctave), count("kern", {{"kern", {"g"}}}, ignoreOctave));
+    // And so do comparisons.
+    CHECK_EQ(count("mint", {{"mint.number", {{ComparisonOperator::GreaterThan, "3"}}}}),
+             count("mint", {{"mint", {{ComparisonOperator::GreaterThan, "3"}}}}));
+    CHECK_EQ(count("kern", {{"kern.pitch", {{ComparisonOperator::LessThan, "g"}}}}),
+             count("kern", {{"kern", {{ComparisonOperator::LessThan, "g"}}}}));
+}
+
+TEST_CASE(matcher_part_keys_of_one_key_all_hold) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) { return AttributeMatcher("mint", {position}).findAll(chorale, 4).size(); };
+    // A step up is up, and a step.
+    CHECK_EQ(count({{"mint.direction", {"+"}}, {"mint.number", {"2"}}}), count({{"mint", {"+2"}}}));
+    // Up, and wider than a third: two conditions on the interval that one mint value cannot have both of.
+    std::size_t upAndWide = count({{"mint.direction", {"+"}}, {"mint.number", {{ComparisonOperator::GreaterThan, "3"}}}});
+    CHECK_EQ(upAndWide, count({{"mint", {{ComparisonOperator::GreaterThan, "+3"}}}}));
+    // A part next to its negated whole key.
+    CHECK_EQ(count({{"mint.number", {"2"}}, {"!mint", {"+2"}}}), count({{"mint", {"-2"}}}));
+}
+
+TEST_CASE(matcher_a_kern_voice_reference_reads_the_whole_note_and_kern_pitch_the_pitch) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    auto count = [&](const AttributeMap& position) { return AttributeMatcher("kern", {position}).findAll(chorale, 3).size(); };
+    // kern: the same pitch as long as the tenor's note; kern.pitch: the same pitch alone, as kern did before.
+    std::size_t sameNote = count({{"kern", {"@2"}}});
+    std::size_t samePitch = count({{"kern.pitch", {"@2"}}});
+    REQUIRE(samePitch > 0);
+    CHECK(sameNote < samePitch);
+    CHECK_EQ(sameNote, count({{"kern.pitch", {"@2"}}, {"duration", {"@2"}}}));
+    // A comparison is of the pitch under both.
+    PatternValue higher(ComparisonOperator::GreaterThan, "@2");
+    CHECK_EQ(count({{"kern", {higher}}}), count({{"kern.pitch", {higher}}}));
+    // A rest is no note: two voices resting together are not the same note, under kern or kern.pitch.
+    HumdrumChorale rests(FIXTURE_CHORALE("chor006"));
+    REQUIRE(!AttributeMatcher("kern", {AttributeMap{{"kern", {"r"}}}}).findAll(rests, 3).empty());
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"kern", {"@2"}}}}).findAll(rests, 3).size() ==
+          AttributeMatcher("kern", {AttributeMap{{"kern", {"@2"}}, {"!kern", {"r"}}}}).findAll(rests, 3).size());
+    CHECK(AttributeMatcher("kern", {AttributeMap{{"kern.pitch", {"@2"}}, {"kern", {"r"}}}}).findAll(rests, 3).empty());
+}
+
 TEST_MAIN()
 
 

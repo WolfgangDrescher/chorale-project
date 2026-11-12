@@ -11,6 +11,7 @@ using choralesearch::drivingFeatureNames;
 using choralesearch::findPatternKey;
 using choralesearch::PatternKey;
 using choralesearch::PatternKeyId;
+using choralesearch::PatternKeyPart;
 using choralesearch::patternKeys;
 
 namespace {
@@ -26,7 +27,45 @@ TEST_CASE(every_key_checks_its_values_and_is_comparable_exactly_with_a_check_for
     for (const PatternKey& patternKey : patternKeys()) {
         CHECK(patternKey.valueSpec.isValidValue != nullptr);
         CHECK_EQ(patternKey.valueSpec.comparable, patternKey.valueSpec.isValidComparisonValue != nullptr);
+        for (const PatternKeyPart& part : patternKey.parts) {
+            CHECK(part.valueSpec.isValidValue != nullptr);
+            CHECK_EQ(part.valueSpec.comparable, part.valueSpec.isValidComparisonValue != nullptr);
+            // A part is comparable or has voice references only where its whole key does.
+            CHECK(!part.valueSpec.comparable || patternKey.valueSpec.comparable);
+            CHECK(!part.valueSpec.voiceReference || patternKey.valueSpec.voiceReference);
+        }
     }
+}
+
+TEST_CASE(find_pattern_key_finds_a_part_after_the_dot) {
+    auto lookup = findPatternKey("!mint.direction");
+    REQUIRE(lookup.patternKey != nullptr);
+    REQUIRE(lookup.patternKeyPart != nullptr);
+    CHECK(lookup.patternKey->id == PatternKeyId::Mint);
+    CHECK_EQ(lookup.patternKeyPart->name, std::string("direction"));
+    CHECK(lookup.negated);
+    CHECK(&lookup.valueSpec() == &lookup.patternKeyPart->valueSpec);
+    CHECK(&findPatternKey("mint").valueSpec() == &findPatternKey("mint").patternKey->valueSpec);
+    for (const char* key : {"kern.pitch", "fb.numbers", "mint.number", "mint.interval", "hint-14.number", "hint-2.number",
+                            "hint-*4.number", "hint-@pair.number"}) {
+        CHECK(findPatternKey(key).patternKeyPart != nullptr);
+    }
+    // No such part, or no part at all.
+    for (const char* key : {"mint.pitch", "deg.number", "mint.", ".direction", "mint.direction.x", "mint.directedNumber",
+                            "kern.accid", "hint-14.interval"}) {
+        CHECK(patternKeyOf(key) == nullptr);
+    }
+    CHECK_EQ(findPatternKey("!mint.direction").baseKey, std::string("mint"));
+    CHECK_EQ(findPatternKey("hint-@pair.number").baseKey, std::string("hint-@pair"));
+    CHECK_EQ(findPatternKey("!deg").baseKey, std::string("deg"));
+    CHECK_EQ(findPatternKey("!mint.direction").rawKey, std::string("!mint.direction"));
+}
+
+TEST_CASE(a_part_drives_no_search) {
+    CHECK(choralesearch::isKnownDrivingFeature("mint"));
+    CHECK(!choralesearch::isKnownDrivingFeature("mint.number"));
+    CHECK(!choralesearch::isKnownDrivingFeature("kern.pitch"));
+    CHECK(!choralesearch::isPairWildcardFeature("hint-**.number"));
 }
 
 TEST_CASE(find_pattern_key_finds_a_key_by_its_name_and_takes_its_negation_off) {

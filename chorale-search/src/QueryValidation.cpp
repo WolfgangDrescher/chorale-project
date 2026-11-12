@@ -45,12 +45,13 @@ const std::vector<std::string>& drivingFeatureNames() {
 
 bool isKnownDrivingFeature(const std::string& feature) {
     const PatternKeyLookup lookup = findPatternKey(feature);
-    return lookup.patternKey && lookup.patternKey->driving && !lookup.negated;
+    return lookup.patternKey && !lookup.patternKeyPart && lookup.patternKey->driving && !lookup.negated;
 }
 
 bool isLyricsDrivingFeature(const std::string& feature) {
     const PatternKeyLookup lookup = findPatternKey(feature);
-    return lookup.patternKey && lookup.patternKey->driving && lookup.patternKey->perVerse && !lookup.negated;
+    return lookup.patternKey && !lookup.patternKeyPart && lookup.patternKey->driving && lookup.patternKey->perVerse &&
+           !lookup.negated;
 }
 
 bool isLyricsPatternKey(const std::string& rawKey) {
@@ -60,7 +61,7 @@ bool isLyricsPatternKey(const std::string& rawKey) {
 
 bool isPairWildcardFeature(const std::string& feature) {
     const PatternKeyLookup lookup = findPatternKey(feature);
-    return lookup.patternKey && lookup.patternKey->id == PatternKeyId::HintPairWildcard && !lookup.negated &&
+    return lookup.patternKey && !lookup.patternKeyPart && lookup.patternKey->id == PatternKeyId::HintPairWildcard && !lookup.negated &&
            !expandHintPairKey(feature).empty();
 }
 
@@ -97,18 +98,18 @@ bool isValidIntervalQuality(const std::string& quality, int number) {
 
 bool supportsComparison(const std::string& rawKey) {
     const PatternKeyLookup lookup = findPatternKey(rawKey);
-    return lookup.patternKey && lookup.patternKey->valueSpec.comparable;
+    return lookup.patternKey && lookup.valueSpec().comparable;
 }
 
 bool supportsVoiceReference(const std::string& rawKey) {
     const PatternKeyLookup lookup = findPatternKey(rawKey);
-    return lookup.patternKey && lookup.patternKey->valueSpec.voiceReference;
+    return lookup.patternKey && lookup.valueSpec().voiceReference;
 }
 
 bool isValidComparisonValue(const std::string& rawKey, const std::string& value) {
     const PatternKeyLookup lookup = findPatternKey(rawKey);
-    if (!lookup.patternKey || !lookup.patternKey->valueSpec.isValidComparisonValue) return false;
-    return lookup.patternKey->valueSpec.isValidComparisonValue(value);
+    if (!lookup.patternKey || !lookup.valueSpec().isValidComparisonValue) return false;
+    return lookup.valueSpec().isValidComparisonValue(value);
 }
 
 bool isValidMintComplementationValue(const std::string& value) {
@@ -121,7 +122,7 @@ bool isValidMintComplementationValue(const std::string& value) {
 bool isValidPatternValue(const std::string& rawKey, const std::string& value) {
     const PatternKeyLookup lookup = findPatternKey(rawKey);
     if (!lookup.patternKey) return true; // unreachable once isKnownPatternKey has already checked the key
-    return lookup.patternKey->valueSpec.isValidValue(value);
+    return lookup.valueSpec().isValidValue(value);
 }
 
 } // namespace choralesearch

@@ -69,9 +69,11 @@ inline std::vector<std::string> expandHintPairKey(const std::string& key) {
 // "@lower" and "@upper" name its voices.
 inline const std::string kPairSearchedKey = "hint-@pair";
 
-// Whether `key`, possibly negated ("!hint-@pair"), is kPairSearchedKey.
+// Whether `key`, possibly negated or with a part ("!hint-@pair", "hint-@pair.number"), is kPairSearchedKey.
 inline bool isPairSearchedKey(const std::string& key) {
-    return key.substr(!key.empty() && key[0] == '!' ? 1 : 0) == kPairSearchedKey;
+    const std::string bare = key.substr(!key.empty() && key[0] == '!' ? 1 : 0);
+    return bare.compare(0, kPairSearchedKey.size(), kPairSearchedKey) == 0 &&
+           (bare.size() == kPairSearchedKey.size() || bare[kPairSearchedKey.size()] == '.');
 }
 
 } // namespace choralesearch

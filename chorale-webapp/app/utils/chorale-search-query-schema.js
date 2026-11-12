@@ -119,6 +119,22 @@ const melismaPatternSchema = {
 };
 
 // One position of a pattern, and the keys of everyPosition.
+// The keys a position can check, negated or not, and the parts of their values: "mint", "!mint.direction", "hint-14.number".
+const positionKeyPattern =
+    '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
+
+// The direction of a melodic interval; a unison has none.
+const directionValueSchema = {
+    type: 'string',
+    enum: ['+', '-', 'none'],
+    enumDescriptions: ['Upwards.', 'Downwards.', 'A unison, which goes nowhere.'],
+};
+
+const directionPatternSchema = {
+    description: 'The direction of the interval into the note: "+", "-", or "none" for a unison. An OR-list of these or a single one.',
+    oneOf: [directionValueSchema, { type: 'array', items: directionValueSchema, minItems: 1 }],
+};
+
 const patternPositionSchema = {
     type: 'object',
     minProperties: 1,
@@ -136,10 +152,12 @@ const patternPositionSchema = {
         '!sylpos': sylposPatternSchema,
         melisma: melismaPatternSchema,
         '!melisma': melismaPatternSchema,
+        'mint.direction': directionPatternSchema,
+        '!mint.direction': directionPatternSchema,
     },
     patternProperties: {
-        '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$': {
-            description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), the note another voice sounds at the same time. word and syl are the word and the syllable the soprano sings at the note, compared in small letters without the punctuation around them; a "*" in the value stands for any characters ("Her*", "*zen"), without one the whole word has to be the value. Prefix the key with "!" to negate the whole position.',
+        [positionKeyPattern]: {
+            description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern, kern.pitch and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), what another voice sounds at the same time. A key with a part, like mint.number, checks only that part of the value, with the values the whole key takes for it. word and syl are the word and the syllable the soprano sings at the note, compared in small letters without the punctuation around them; a "*" in the value stands for any characters ("Her*", "*zen"), without one the whole word has to be the value. Prefix the key with "!" to negate the whole position.',
             oneOf: [
                 { type: 'string' },
                 { type: 'boolean' },
@@ -149,8 +167,8 @@ const patternPositionSchema = {
         },
     },
     propertyNames: {
-        pattern: '^!?(kern|deg|mint|fb|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair))$',
-        description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked. word, syl, sylpos and melisma read the lyrics the soprano sings at the note.',
+        pattern: positionKeyPattern,
+        description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position, and optionally a part of its value after a dot: kern.pitch, fb.numbers, mint.direction, mint.number, mint.interval, hint-<pair>.number. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked. word, syl, sylpos and melisma read the lyrics the soprano sings at the note.',
     },
 };
 

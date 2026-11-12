@@ -444,6 +444,35 @@ TEST_CASE(is_known_pattern_key_knows_the_interval_of_the_pair_searched) {
     CHECK(!isKnownPatternKey("hint-@lower"));
 }
 
+TEST_CASE(a_part_key_takes_the_values_of_its_part) {
+    for (const char* v : {"+", "-", "none"}) CHECK(isValidPatternValue("mint.direction", v));
+    for (const char* v : {"P1", "+2", "", "up"}) CHECK(!isValidPatternValue("mint.direction", v));
+    for (const char* v : {"1", "2", "10"}) CHECK(isValidPatternValue("mint.number", v));
+    for (const char* v : {"+2", "M2", "0", ""}) CHECK(!isValidPatternValue("mint.number", v));
+    for (const char* v : {"M2", "P5", "A4", "m10"}) CHECK(isValidPatternValue("mint.interval", v));
+    for (const char* v : {"2", "+M2", "P3", "M"}) CHECK(!isValidPatternValue("mint.interval", v));
+    for (const char* v : {"g", "f#", "BB-"}) CHECK(isValidPatternValue("kern.pitch", v));
+    for (const char* v : {"4g", "g;", "r", "#"}) CHECK(!isValidPatternValue("kern.pitch", v));
+    for (const char* v : {"6 3", "8", "6 4 3"}) CHECK(isValidPatternValue("fb.numbers", v));
+    for (const char* v : {"m6 3", "6 x", ""}) CHECK(!isValidPatternValue("fb.numbers", v));
+    CHECK(isValidPatternValue("!hint-14.number", "10"));
+    CHECK(!isValidPatternValue("hint-14.number", "M10"));
+}
+
+TEST_CASE(a_part_key_is_comparable_and_takes_a_voice_reference_where_its_part_is) {
+    for (const char* key : {"mint.number", "mint.interval", "kern.pitch", "hint-14.number", "!hint-2.number"}) {
+        CHECK(supportsComparison(key));
+    }
+    for (const char* key : {"mint.direction", "fb.numbers"}) CHECK(!supportsComparison(key));
+    CHECK(isValidComparisonValue("mint.number", "3"));
+    CHECK(!isValidComparisonValue("mint.number", "+3"));
+    CHECK(isValidComparisonValue("mint.interval", "m6"));
+    CHECK(!isValidComparisonValue("mint.interval", "6"));
+    CHECK(isValidComparisonValue("kern.pitch", "g"));
+    CHECK(supportsVoiceReference("kern.pitch"));
+    for (const char* key : {"mint.number", "mint.direction", "fb.numbers", "hint-14.number"}) CHECK(!supportsVoiceReference(key));
+}
+
 TEST_MAIN()
 
 TEST_CASE(the_lyrics_keys_are_known_and_word_and_syl_drive_a_search) {

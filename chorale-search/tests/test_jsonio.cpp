@@ -1049,6 +1049,40 @@ TEST_CASE(query_from_json_reads_a_voice_reference_in_a_comparison) {
               (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "@2"}, "@3"}));
 }
 
+TEST_CASE(query_from_json_reads_part_keys) {
+    Query q = queryFromJson(json::parse(R"({"feature":"mint","pattern":[
+        {"mint.direction":"+","mint.number":{"operator":"gt","value":"2"},"!mint.interval":"P5"},
+        {"kern.pitch":"@4","fb.numbers":"6 3"}
+    ]})"));
+    REQUIRE(q.pattern.size() == 2u);
+    CHECK_EQ(q.pattern[0]["mint.direction"], (std::vector<PatternValue>{"+"}));
+    CHECK_EQ(q.pattern[0]["mint.number"], (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "2"}}));
+    CHECK_EQ(q.pattern[1]["kern.pitch"], (std::vector<PatternValue>{"@4"}));
+}
+
+TEST_CASE(query_from_json_rejects_a_part_key_it_does_not_know_and_a_value_its_part_does_not_take) {
+    auto parse = [](const std::string& position) {
+        return [position] { return queryFromJson(json::parse(R"({"feature":"mint","pattern":[)" + position + "]}")); };
+    };
+    CHECK_THROWS(parse(R"({"mint.pitch":"g"})")());
+    CHECK_THROWS(parse(R"({"mint.directedNumber":"+2"})")());
+    CHECK_THROWS(parse(R"({"deg.number":"1"})")());
+    CHECK_THROWS(parse(R"({"mint.direction":"P1"})")());
+    CHECK_THROWS(parse(R"({"mint.number":"+2"})")());
+    CHECK_THROWS(parse(R"({"mint.direction":{"operator":"gt","value":"+"}})")()); // a direction has no order
+    CHECK_THROWS(parse(R"({"mint.number":"@4"})")());                            // no voice reference
+    CHECK_THROWS(parse(R"({"kern.pitch":"4g"})")());                             // a pitch without a rhythm
+    CHECK_NOTHROW(parse(R"({"mint.direction":"none"})")());
+}
+
+TEST_CASE(query_from_json_reads_a_part_of_the_pair_a_query_over_voice_pairs_searches) {
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"hint-**","voices":"@lower","pattern":[{"hint-@pair.number":"5"}]})")));
+    // Only in a query over voice pairs.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-14","pattern":[{"hint-@pair.number":"5"}]})")));
+    // Not next to the same part of one of the pairs, which it is while that pair is searched.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-**","voices":"@lower","pattern":[{"hint-@pair.number":"5","hint-14.number":"8"}]})")));
+}
+
 TEST_CASE(query_from_json_rejects_a_voice_reference_it_cannot_judge) {
     auto parse = [](const std::string& position) {
         return [position] { return queryFromJson(json::parse(R"({"feature":"kern","pattern":[)" + position + "]}")); };

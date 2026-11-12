@@ -42,6 +42,13 @@ struct ValueSpec {
     ValueCheck isValidComparisonValue = nullptr; // the value of a comparison: "+3", "m6"
 };
 
+// A part of a value, checked under a key of its own: "mint.direction". Its values are values of the whole
+// key too, with the same meaning: "mint.number": "2" is "mint": "2".
+struct PatternKeyPart {
+    std::string name; // "pitch", "direction", "number", "interval", "numbers"
+    ValueSpec valueSpec;
+};
+
 // A key a position can check.
 struct PatternKey {
     PatternKeyId id = PatternKeyId::Kern;
@@ -52,17 +59,21 @@ struct PatternKey {
     bool driving = false;  // can be the feature of a query
     bool perVerse = false; // the lyrics, read verse by verse
     ValueSpec valueSpec;
+    std::vector<PatternKeyPart> parts = {};
 };
 
-// What a key of the query names: "!mint" is the key mint, negated.
+// What a key of the query names: "!mint.direction" is the part direction of the key mint, negated.
 struct PatternKeyLookup {
-    std::string rawKey;                     // as the query writes it: "!hint-14"
-    std::string baseKey;                    // without the negation: "hint-14"
-    const PatternKey* patternKey = nullptr; // nullptr for an unknown key
+    std::string rawKey;                             // as the query writes it: "!hint-14.number"
+    std::string baseKey;                            // without negation and part: "hint-14"
+    const PatternKey* patternKey = nullptr;         // nullptr for an unknown key, or an unknown part of one
+    const PatternKeyPart* patternKeyPart = nullptr; // nullptr for the whole key
     bool negated = false;
 
     bool is(PatternKeyId id) const { return patternKey && patternKey->id == id; }
     bool readsLyrics() const { return patternKey && patternKey->perVerse; }
+    // The part's values, or the key's own.
+    const ValueSpec& valueSpec() const { return patternKeyPart ? patternKeyPart->valueSpec : patternKey->valueSpec; }
 };
 
 // Every key: the driving features first.
@@ -74,5 +85,8 @@ PatternKeyLookup findPatternKey(const std::string& rawKey);
 std::optional<std::string> normalizeMetweightValue(const std::string& value); // "strong", "1": "s"
 std::optional<std::string> normalizeSylposValue(const std::string& value);    // "i": "initial"
 std::optional<std::string> normalizeMelismaValue(const std::string& value);   // "n": "none", true
+
+// The direction of a unison, which goes nowhere: "none".
+inline const std::string kNoDirection = "none";
 
 } // namespace choralesearch

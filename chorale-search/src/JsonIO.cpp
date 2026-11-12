@@ -59,7 +59,7 @@ std::optional<ComparisonOperator> parseComparisonOperator(const std::string& spe
 void checkVoiceReference(const std::string& key, const std::string& text, const std::string& context) {
     if (!supportsVoiceReference(key)) {
         throw std::invalid_argument(context + ": '" + key + "' cannot be held against another voice with '" + text +
-                                     "', only kern and duration can");
+                                     "', only kern, kern.pitch and duration can");
     }
     if (!isValidVoiceReference(text)) {
         throw std::invalid_argument(context + ": '" + text + "' is not a voice reference (@1 to @4, @below, @above, "
@@ -98,7 +98,8 @@ PatternValue comparisonFromJson(const nlohmann::json& v, const std::string& key,
 
     if (!supportsComparison(key)) {
         throw std::invalid_argument(context + ": '" + key + "' cannot be compared with '" + spelling +
-                                     "', only kern, duration, mint and the hint keys can");
+                                     "', only kern, kern.pitch, duration, mint, mint.number, mint.interval, the hint keys "
+                                     "hint-<pair>, hint-<voice>, hint-*4 and hint-@pair, and their .number can");
     }
     if (PatternValue(text).isVoiceReference()) {
         checkVoiceReference(key, text, context);
@@ -228,22 +229,20 @@ void checkPairSearchedKeys(const std::vector<AttributeMap>& pattern, const std::
                            const std::string& context) {
     const std::vector<std::string> pairs = pairSet.empty() ? std::vector<std::string>{} : expandHintPairKey(pairSet);
     for (std::size_t position = 0; position < pattern.size(); ++position) {
-        for (const bool negated : {false, true}) {
-            std::string pairSearched;
-            std::string onePair;
-            for (const auto& [key, values] : pattern[position]) {
-                if ((!key.empty() && key[0] == '!') != negated) continue;
-                if (isPairSearchedKey(key)) pairSearched = key;
-                if (std::find(pairs.begin(), pairs.end(), key.substr(negated ? 1 : 0)) != pairs.end()) onePair = key;
-            }
-            const std::string where = "'pattern[" + std::to_string(position) + "]' in " + context;
-            if (!pairSearched.empty() && pairSet.empty()) {
-                throw std::invalid_argument(where + " has '" + pairSearched + "', the pair a query over voice pairs "
+        const std::string where = "'pattern[" + std::to_string(position) + "]' in " + context;
+        for (const auto& [key, values] : pattern[position]) {
+            if (!isPairSearchedKey(key)) continue;
+            if (pairSet.empty()) {
+                throw std::invalid_argument(where + " has '" + key + "', the pair a query over voice pairs "
                                             "searches, but 'feature' of the query is no set of voice pairs like hint-**");
             }
-            if (!pairSearched.empty() && !onePair.empty()) {
-                throw std::invalid_argument(where + " can't have both '" + pairSearched + "' and '" + onePair +
-                                            "': while that pair is searched, both are the key '" + onePair + "'");
+            // The same key for one of the pairs, "!hint-14.number" for "!hint-@pair.number".
+            const std::size_t at = key.find(kPairSearchedKey);
+            for (const std::string& pair : pairs) {
+                const std::string sameKey = key.substr(0, at) + pair + key.substr(at + kPairSearchedKey.size());
+                if (!pattern[position].count(sameKey)) continue;
+                throw std::invalid_argument(where + " can't have both '" + key + "' and '" + sameKey +
+                                            "': while that pair is searched, both are the key '" + sameKey + "'");
             }
         }
     }

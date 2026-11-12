@@ -111,14 +111,14 @@ std::string voicesOfPair(const std::string& voices, const std::string& pair) {
     return replaceAll(replaceAll(voices, "@lower", pair.substr(5, 1)), "@upper", pair.substr(6, 1));
 }
 
-// A pattern with the pair in place of hint-@pair, the interval of the pair being searched, also when negated.
+// A pattern with the pair in place of hint-@pair, the interval of the pair being searched, also when negated and
+// in a part ("hint-@pair.number").
 std::vector<AttributeMap> patternOfPair(const std::vector<AttributeMap>& pattern, const std::string& pair) {
     std::vector<AttributeMap> pairPattern;
     for (const AttributeMap& position : pattern) {
         AttributeMap pairPosition;
         for (const auto& [key, values] : position) {
-            const bool negated = !key.empty() && key[0] == '!';
-            pairPosition[isPairSearchedKey(key) ? (negated ? "!" : "") + pair : key] = values;
+            pairPosition[isPairSearchedKey(key) ? replaceAll(key, kPairSearchedKey, pair) : key] = values;
         }
         pairPattern.push_back(std::move(pairPosition));
     }

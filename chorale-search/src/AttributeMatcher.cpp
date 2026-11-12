@@ -591,9 +591,11 @@ bool hasOnlyExactDurations(const PatternPosition& position) {
 
 // The value as the score spells what it is compared with, so the comparison is literal: metweight and mode
 // by their canonical name, sylpos and melisma by name ("i" is "initial"), word and syl like the lyrics
-// (see normalizeLyricsText: "Jesu" finds "jesu"). A wildcard and a comparison stay as they are.
+// (see normalizeLyricsText: "Jesu" finds "jesu"), mint.direction "none" as "P1". A wildcard and a comparison stay as they are.
 void normalizePatternValue(const PositionKey& positionKey, PatternValue& value) {
     if (value.text == "*" || value.hasComparisonOperator() || value.isVoiceReference()) return;
+    // mint.direction "none" is a unison, which goes nowhere.
+    if (positionKey.is(PatternKeyId::Mint) && positionKey.patternKeyPart && value.text == kNoDirection) value.text = "P1";
     if (positionKey.is(PatternKeyId::Metweight)) value.text = normalizeMetweightValue(value.text).value_or(value.text);
     else if (positionKey.is(PatternKeyId::Mode)) value.text = normalizeModeName(value.text).value_or(value.text);
     else if (positionKey.is(PatternKeyId::Sylpos)) value.text = normalizeSylposValue(value.text).value_or(value.text);
@@ -696,7 +698,7 @@ hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull =
 // The entries that are no voice reference are not looked at, they are for the ...InList functions.
 bool voiceReferenceInList(const HumdrumChorale& chorale, std::size_t voice, PatternKeyId id,
                           const std::vector<PatternValue>& allowed, hum::HTp lineToken, hum::HTp walkedNote,
-                          hum::HumNum walkedDuration, bool ignoreOctave) {
+                          hum::HumNum walkedDuration, bool ignoreOctave, bool withRhythm) {
     for (const PatternValue& entry : allowed) {
         if (!entry.isVoiceReference()) continue;
         auto reference = resolveVoiceReference(entry.text, voice);
@@ -705,15 +707,27 @@ bool voiceReferenceInList(const HumdrumChorale& chorale, std::size_t voice, Patt
         auto holdsFor = [&](std::size_t other) {
             hum::HTp note = tokenBesideOnLine(lineToken, chorale.spine(kKernKey, other), true);
             if (!note) return false;
-            if (id == PatternKeyId::Duration) {
-                // A tied note is one note, and its duration is counted from where it was struck.
+            // A tied note is one note, and its duration is counted from where it was struck.
+            auto tiedDuration = [&]() -> std::optional<hum::HumNum> {
                 hum::HTp start = note;
                 while (start && start->isSecondaryTiedNote()) start = start->getPreviousNNDT();
-                if (!start) return false;
-                return evaluateComparison(entry.comparisonOperator, walkedDuration, start->getTiedDuration());
+                if (!start) return std::nullopt;
+                return start->getTiedDuration();
+            };
+            if (id == PatternKeyId::Duration) {
+                const auto duration = tiedDuration();
+                return duration && evaluateComparison(entry.comparisonOperator, walkedDuration, *duration);
             }
+            // A rest has no pitch, and is no note to be the same as either.
             std::string pitch = kernToPitch(std::string(*note));
             if (pitch.empty() || pitch == "r") return false;
+            // The whole kern value is the note with its rhythm; a comparison and kern.pitch read the pitch alone.
+            if (withRhythm && !entry.hasComparisonOperator()) {
+                const auto duration = tiedDuration();
+                if (!duration) return false;
+                return kernInList({PatternValue(hum::Convert::durationToRecip(*duration) + pitch)}, walkedNote, ignoreOctave,
+                                  walkedDuration);
+            }
             return kernInList({PatternValue(entry.comparisonOperator, pitch)}, walkedNote, ignoreOctave, walkedDuration);
         };
 
@@ -946,10 +960,12 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         else if (positionKey.is(PatternKeyId::HintPair)) matched = hintInList(allowed, actual, m_options.hintReduceCompound);
         else if (positionKey.is(PatternKeyId::Kern)) {
             matched = kernInList(allowed, kernTok, m_options.kernIgnoreOctave, onset.duration) ||
-                      voiceReferenceInList(chorale, voice, PatternKeyId::Kern, allowed, tok, kernTok, onset.duration, m_options.kernIgnoreOctave);
+                      voiceReferenceInList(chorale, voice, PatternKeyId::Kern, allowed, tok, kernTok, onset.duration, m_options.kernIgnoreOctave,
+                                           !positionKey.patternKeyPart);
         } else if (positionKey.is(PatternKeyId::Duration)) {
             matched = durationInList(allowed, onset.duration) ||
-                      voiceReferenceInList(chorale, voice, PatternKeyId::Duration, allowed, tok, nullptr, onset.duration, m_options.kernIgnoreOctave);
+                      voiceReferenceInList(chorale, voice, PatternKeyId::Duration, allowed, tok, nullptr, onset.duration, m_options.kernIgnoreOctave,
+                                           false);
         }
         else if (positionKey.is(PatternKeyId::Metweight)) matched = inList(allowed, actual);
         else if (positionKey.is(PatternKeyId::Deg)) matched = degInList(allowed, actual);
@@ -1050,9 +1066,10 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
                                 ? tok
                                 : lookupToken(chorale, voice, tok->getLineNumber(), kKernKey);
         if (!kernTok) return std::nullopt;
+        // A re-attack has no note value of its own: only the pitch counts.
         matched = kernReAttackInList(allowed, kernTok, m_options.kernIgnoreOctave) ||
                   voiceReferenceInList(chorale, voice, PatternKeyId::Kern, allowed, tok, kernTok, kernTok->getTiedDuration(),
-                                       m_options.kernIgnoreOctave);
+                                       m_options.kernIgnoreOctave, false);
     }
     return negate ? !matched : matched;
 }

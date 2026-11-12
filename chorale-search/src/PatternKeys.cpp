@@ -11,6 +11,7 @@
 #include <map>
 #include <regex>
 #include <sstream>
+#include <utility>
 
 namespace choralesearch {
 
@@ -135,13 +136,52 @@ bool isNegatedKey(const std::string& rawKey) {
     return rawKey.size() > 1 && rawKey[0] == '!';
 }
 
+// The parts take fewer values than their key, with the same meaning.
+
+bool isValidIntervalNumber(const std::string& v) {
+    return isIntervalNumber(v);
+}
+
+// A quality and a number it fits: "M2", "P5", "A4".
+bool isValidIntervalWithQuality(const std::string& v) {
+    const auto parsed = parseFbValue(v);
+    return parsed && !parsed->quality.empty() && isValidQualityAndNumber(parsed->quality, parsed->figure);
+}
+
+bool isValidDirection(const std::string& v) {
+    return v == "+" || v == "-" || v == kNoDirection;
+}
+
+// The numbers of the figures of a chord: "6 3".
+bool isValidFigureNumbers(const std::string& v) {
+    std::istringstream iss(v);
+    std::vector<std::string> numbers{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+    return !numbers.empty() && std::all_of(numbers.begin(), numbers.end(), isValidIntervalNumber);
+}
+
 constexpr ValueSpec kHintValues{
     .comparable = true,
     .isValidValue = isValidIntervalFigure, .isValidComparisonValue = isValidHintComparisonValue,
 };
 
+constexpr ValueSpec kPitchPart{
+    .comparable = true, .voiceReference = true,
+    .isValidValue = isValidKernPitchValue, .isValidComparisonValue = isValidKernPitchValue,
+};
+constexpr ValueSpec kNumberPart{
+    .comparable = true,
+    .isValidValue = isValidIntervalNumber, .isValidComparisonValue = isValidIntervalNumber,
+};
+constexpr ValueSpec kIntervalPart{
+    .comparable = true,
+    .isValidValue = isValidIntervalWithQuality, .isValidComparisonValue = isValidIntervalWithQuality,
+};
+constexpr ValueSpec kDirectionPart{.isValidValue = isValidDirection};
+constexpr ValueSpec kFigureNumbersPart{.isValidValue = isValidFigureNumbers};
+
 std::vector<PatternKey> buildPatternKeys() {
     using Id = PatternKeyId;
+    const std::vector<PatternKeyPart> hintParts = {{"number", kNumberPart}};
     return {
         {
             .id = Id::Kern,
@@ -150,6 +190,9 @@ std::vector<PatternKey> buildPatternKeys() {
             .valueSpec = {
                 .comparable = true, .voiceReference = true,
                 .isValidValue = isAnyValue, .isValidComparisonValue = isValidKernPitchValue,
+            },
+            .parts = {
+                {"pitch", kPitchPart},
             },
         },
         {
@@ -166,12 +209,20 @@ std::vector<PatternKey> buildPatternKeys() {
                 .comparable = true,
                 .isValidValue = isValidMintValue, .isValidComparisonValue = isValidMintComparisonValue,
             },
+            .parts = {
+                {"direction", kDirectionPart},
+                {"number", kNumberPart},
+                {"interval", kIntervalPart},
+            },
         },
         {
             .id = Id::Fb,
             .name = kFbKey,
             .driving = true,
             .valueSpec = {.isValidValue = isValidFbValue},
+            .parts = {
+                {"numbers", kFigureNumbersPart},
+            },
         },
         {
             .id = Id::Metweight,
@@ -199,6 +250,7 @@ std::vector<PatternKey> buildPatternKeys() {
             .coversQueryKey = isHintPairFeature,
             .driving = true,
             .valueSpec = kHintValues,
+            .parts = hintParts,
         },
         {
             .id = Id::Duration,
@@ -250,17 +302,20 @@ std::vector<PatternKey> buildPatternKeys() {
             .name = "hint-<voice>",
             .coversQueryKey = isHintRelativeKey,
             .valueSpec = kHintValues,
+            .parts = hintParts,
         },
         {
             .id = Id::HintPairWildcard,
             .name = "hint-<pairWildcard>",
             .coversQueryKey = isHintPairWildcardKey,
             .valueSpec = kHintValues,
+            .parts = hintParts,
         },
         {
             .id = Id::HintPairCurrent,
             .name = kPairSearchedKey,
             .valueSpec = kHintValues,
+            .parts = hintParts,
         },
     };
 }
@@ -276,13 +331,23 @@ PatternKeyLookup findPatternKey(const std::string& rawKey) {
     PatternKeyLookup lookup;
     lookup.rawKey = rawKey;
     lookup.negated = isNegatedKey(rawKey);
-    lookup.baseKey = lookup.negated ? rawKey.substr(1) : rawKey;
+    const std::string key = rawKey.substr(lookup.negated ? 1 : 0);
+    const std::size_t dot = key.find('.');
+    lookup.baseKey = key.substr(0, dot);
     for (const PatternKey& patternKey : patternKeys()) {
         const bool found = patternKey.coversQueryKey ? patternKey.coversQueryKey(lookup.baseKey) : patternKey.name == lookup.baseKey;
-        if (found) {
+        if (!found) continue;
+        if (dot == std::string::npos) {
             lookup.patternKey = &patternKey;
             break;
         }
+        const std::string part = key.substr(dot + 1);
+        for (const PatternKeyPart& patternKeyPart : patternKey.parts) {
+            if (patternKeyPart.name != part) continue;
+            lookup.patternKey = &patternKey;
+            lookup.patternKeyPart = &patternKeyPart;
+        }
+        break;
     }
     return lookup;
 }
