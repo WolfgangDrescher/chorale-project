@@ -11,7 +11,7 @@ namespace choralesearch {
 bool isKnownSimultaneousGroupKey(const std::string& key);
 
 // True if `key` is any field a top-level Query can have -- everything
-// isKnownSimultaneousGroupKey accepts, plus "id", "limit", "choraleFilter", "simultaneousWith" (only
+// isKnownSimultaneousGroupKey accepts, plus "id", "limit", "choraleFilter", "simultaneousWith", "skipOverlappingMatches" (only
 // meaningful on the top-level query, not inside a nested simultaneousWith group).
 bool isKnownQueryKey(const std::string& key);
 

@@ -129,6 +129,7 @@ struct MatcherOptions {
     bool durationAllowSplitNotes = false;
     bool durationAllowMergedNotes = false;
     bool metweightSkipUnclassified = false;
+    bool skipOverlappingMatches = false;
 };
 
 // An additional pattern that must have a match starting at the exact same musical position
@@ -240,6 +241,10 @@ struct Query {
     // voice's very first onset (there is no note in front of it to decorate).
     bool metweightSkipUnclassified = false;
 
+    // When set, a match that begins on an onset of the match before it in the same voice is left out, so a
+    // sequence that repeats as often as it goes is found once and not again from each of its onsets.
+    bool skipOverlappingMatches = false;
+
     // Only relevant with simultaneousWith: which of a group's own match's positions must
     // line up with the primary match's. One of "start" (default -- just start together),
     // "end" (just end together), or "start-end" (both -- runs for the same duration).
@@ -330,6 +335,7 @@ inline nlohmann::json queryToJson(const Query& q) {
     if (q.durationAllowSplitNotes) j["durationAllowSplitNotes"] = true;
     if (q.durationAllowMergedNotes) j["durationAllowMergedNotes"] = true;
     if (q.metweightSkipUnclassified) j["metweightSkipUnclassified"] = true;
+    if (q.skipOverlappingMatches) j["skipOverlappingMatches"] = true;
     if (q.simultaneousAlignment != "start") j["simultaneousAlignment"] = q.simultaneousAlignment;
 
     if (!q.simultaneousWith.empty()) {

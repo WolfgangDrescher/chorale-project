@@ -694,6 +694,13 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
 
     if (j.contains("choraleFilter")) q.choraleFilter = choraleFilterFromJson(j["choraleFilter"], context);
 
+    if (j.contains("skipOverlappingMatches")) {
+        if (!j["skipOverlappingMatches"].is_boolean()) {
+            throw std::invalid_argument("'skipOverlappingMatches' in " + context + " must be a boolean");
+        }
+        q.skipOverlappingMatches = j["skipOverlappingMatches"].get<bool>();
+    }
+
     if (j.contains("simultaneousWith")) {
         q.simultaneousWith = simultaneousWithFromJson(j["simultaneousWith"], pairSet);
     }

@@ -1488,3 +1488,14 @@ TEST_CASE(query_from_json_refuses_a_repeat_at_the_end_that_would_take_no_more_th
     CHECK_THROWS(queryFromJson(json::parse(afterC + R"({"kern":"d"}],
         "simultaneousWith":[{"feature":"kern","pattern":[{"kern":"c"},{"repeat":"*"}]}]})")));
 }
+
+TEST_CASE(query_from_json_reads_whether_overlapping_matches_are_skipped) {
+    CHECK(!queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"}]})")).skipOverlappingMatches);
+    const json once = json::parse(R"({"feature":"kern","voices":"all","pattern":[{"kern":"c"}],"skipOverlappingMatches":true})");
+    CHECK(queryFromJson(once).skipOverlappingMatches);
+    CHECK_EQ(choralesearch::queryToJson(queryFromJson(once)), once);
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"}],"skipOverlappingMatches":"yes"})")));
+    // A group only says whether a match of the query has one beside it.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"}],
+        "simultaneousWith":[{"feature":"kern","pattern":[{"kern":"c"}],"skipOverlappingMatches":true}]})")));
+}

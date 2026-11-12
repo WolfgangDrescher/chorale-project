@@ -3793,3 +3793,33 @@ TEST_CASE(repeat_does_not_try_every_way_of_dividing_up_the_onsets) {
     CHECK(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"*"}}}}, gap, gap,
                                     PatternPosition{.keys = {{"!kern.pitch", {"#1"}}}}}).findAll(chorale, 1).empty());
 }
+
+TEST_CASE(matches_inside_the_match_before_are_left_out_when_overlapping_matches_are_skipped) {
+    std::istringstream score("**kern\n4c\n4d\n4c\n4d\n4c\n4e\n4c\n4d\n4c\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    PatternPosition pendulum;
+    pendulum.repeat = PatternRepeat{.min = 1, .greedy = true};
+    pendulum.subPattern = {PatternPosition{.keys = {{"kern", {"d"}}}}, c};
+    // The second c begins a pendulum of its own inside the first.
+    CHECK_EQ(AttributeMatcher("kern", {c, pendulum}).findAll(chorale, 1).size(), std::size_t{3});
+    const auto apart = AttributeMatcher("kern", {c, pendulum}, MatcherOptions{.skipOverlappingMatches = true}).findAll(chorale, 1);
+    REQUIRE(apart.size() == 2u);
+    CHECK(apart[0].endPosition == 4);
+    CHECK(apart[1].startPosition == 6);
+
+    // The last onset of a match belongs to it too: three notes, and the next three.
+    const PatternPosition any{.keys = {{"kern", {"*"}}}};
+    const auto threeNotes = AttributeMatcher("kern", {any, any, any}, MatcherOptions{.skipOverlappingMatches = true}).findAll(chorale, 1);
+    REQUIRE(threeNotes.size() == 3u);
+    CHECK(threeNotes[1].startPosition == 3);
+    // So does the note before it that mintStartAtPreviousToken reports: in the bass of chor001 no two steps down
+    // begin on the note the two before end on.
+    HumdrumChorale chor001(FIXTURE_CHORALE("chor001"));
+    const PatternPosition stepDown{.keys = {{"mint", {"-2"}}}};
+    const auto steps =
+        AttributeMatcher("mint", {stepDown, stepDown}, MatcherOptions{.mintStartAtPreviousToken = true, .skipOverlappingMatches = true})
+            .findAll(chor001, 1);
+    REQUIRE(steps.size() > 1u);
+    for (std::size_t i = 1; i < steps.size(); ++i) CHECK(steps[i].startPosition > steps[i - 1].endPosition);
+}

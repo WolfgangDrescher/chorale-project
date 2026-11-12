@@ -36,7 +36,8 @@ bool isKnownSimultaneousGroupKey(const std::string& key) {
 }
 
 bool isKnownQueryKey(const std::string& key) {
-    return isKnownSimultaneousGroupKey(key) || key == "id" || key == "limit" || key == "choraleFilter" || key == "simultaneousWith";
+    return isKnownSimultaneousGroupKey(key) || key == "id" || key == "limit" || key == "choraleFilter" || key == "simultaneousWith" ||
+           key == "skipOverlappingMatches";
 }
 
 const std::vector<std::string>& drivingFeatureNames() {

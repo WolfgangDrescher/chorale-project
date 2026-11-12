@@ -1478,19 +1478,22 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
     hum::HTp walkedKernSpine = chorale.spine(kKernKey, voice);
 
     // Back to the nearest earlier note of the walked voice, rests skipped as **mint does.
-    const auto reportedStartToken = [&](std::size_t start) {
+    const auto reportedStart = [&](std::size_t start) {
         if (shiftStartToPreviousToken) {
             for (std::size_t i = start; i-- > 0;) {
                 hum::HTp walkedNote = tokenBesideOnLine(onsets[i].token, walkedKernSpine, true);
-                if (walkedNote && !walkedNote->isRest()) return onsets[i].token;
+                if (walkedNote && !walkedNote->isRest()) return i;
             }
         }
-        return onsets[start].token;
+        return start;
     };
 
     Walk walk{.chorale = chorale, .voice = voice, .onsets = onsets};
+    std::size_t afterPreviousMatch = 0;
     for (std::size_t start = 0; start + minOnsets <= onsets.size(); ++start) {
-        hum::HTp startTok = reportedStartToken(start);
+        // A match overlaps the one before where it is reported to begin, the note before it included.
+        if (m_options.skipOverlappingMatches && reportedStart(start) < afterPreviousMatch) continue;
+        hum::HTp startTok = onsets[reportedStart(start)].token;
         walk.positionOnsets.assign(n, PositionOnset{});
         walk.matched.assign(n, std::nullopt);
         walk.repeatedOnsets.clear();
@@ -1517,6 +1520,7 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
             .repeatedOnsets = std::move(repeatedOnsets),
             .verses = walk.verses,
         });
+        afterPreviousMatch = walk.end;
     }
     return matches;
 }

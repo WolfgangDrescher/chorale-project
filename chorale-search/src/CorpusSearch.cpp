@@ -32,6 +32,7 @@ MatcherOptions matcherOptions(const Query& query) {
         .durationAllowSplitNotes = query.durationAllowSplitNotes,
         .durationAllowMergedNotes = query.durationAllowMergedNotes,
         .metweightSkipUnclassified = query.metweightSkipUnclassified,
+        .skipOverlappingMatches = query.skipOverlappingMatches,
     };
 }
 
