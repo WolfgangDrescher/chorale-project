@@ -1420,11 +1420,11 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
     return std::nullopt;
 }
 
-std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice) const {
+std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chorale, std::size_t voice, const MatchConditions& conditions) const {
     std::vector<AttributeMatch> matches;
     if (m_pattern.empty()) return matches;
     std::vector<Onset> onsets = buildOnsets(chorale, voice);
-    if (!isDrivenByLyrics()) return walkPattern(chorale, voice, onsets);
+    if (!isDrivenByLyrics()) return walkPattern(chorale, voice, onsets, conditions);
 
     // The next word of a verse is not the next onset of the merged list, so the walk follows one verse at a
     // time; a match found in several verses is kept once, with all of them.
@@ -1433,8 +1433,14 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
         for (const Onset& onset : onsets) {
             if (onset.verses.contains(n)) verseOnsets.push_back(onset);
         }
-        for (AttributeMatch& m : walkPattern(chorale, voice, verseOnsets)) {
-            if (!m.verses.contains(n)) continue;
+        MatchConditions conditionsInVerse = conditions;
+        conditionsInVerse.accepts = [&](const MatchCandidate& candidate) {
+            if (!candidate.verses.contains(n)) return false;
+            MatchCandidate inVerse = candidate;
+            inVerse.verses = VerseSet::of(n);
+            return !conditions.accepts || conditions.accepts(inVerse);
+        };
+        for (AttributeMatch& m : walkPattern(chorale, voice, verseOnsets, conditionsInVerse)) {
             m.verses = VerseSet::of(n);
             const auto same = std::find_if(matches.begin(), matches.end(), [&](const AttributeMatch& found) {
                 return found.startLineNumber == m.startLineNumber && found.endLineNumber == m.endLineNumber &&
@@ -1452,7 +1458,7 @@ std::vector<AttributeMatch> AttributeMatcher::findAll(const HumdrumChorale& chor
 }
 
 std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& chorale, std::size_t voice,
-                                                        const std::vector<Onset>& onsets) const {
+                                                        const std::vector<Onset>& onsets, const MatchConditions& conditions) const {
     std::vector<AttributeMatch> matches;
     std::size_t n = m_pattern.size();
     if (onsets.empty()) return matches;
@@ -1488,12 +1494,16 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
         return start;
     };
 
-    Walk walk{.chorale = chorale, .voice = voice, .onsets = onsets};
+    Walk walk{.chorale = chorale, .voice = voice, .onsets = onsets, .conditions = conditions};
     std::size_t afterPreviousMatch = 0;
     for (std::size_t start = 0; start + minOnsets <= onsets.size(); ++start) {
         // A match overlaps the one before where it is reported to begin, the note before it included.
         if (m_options.skipOverlappingMatches && reportedStart(start) < afterPreviousMatch) continue;
         hum::HTp startTok = onsets[reportedStart(start)].token;
+        if (conditions.start && startTok->getDurationFromStart() != *conditions.start) continue;
+        walk.startPosition = startTok->getDurationFromStart();
+        // What is accepted depends on where the match begins, so a state that failed says nothing about the next start.
+        if (conditions.accepts) walk.failedStates.clear();
         walk.positionOnsets.assign(n, PositionOnset{});
         walk.matched.assign(n, std::nullopt);
         walk.repeatedOnsets.clear();
@@ -1541,6 +1551,10 @@ std::vector<std::size_t> AttributeMatcher::walkState(const Walk& walk, std::size
 
 bool AttributeMatcher::matchFrom(Walk& walk, std::size_t offset, std::size_t onsetIndex) const {
     if (offset == m_pattern.size()) {
+        const hum::HumNum endPosition = walk.onsets[onsetIndex - 1].lastToken->getDurationFromStart();
+        if (walk.conditions.end && endPosition != *walk.conditions.end) return false;
+        const MatchCandidate candidate{.startPosition = walk.startPosition, .endPosition = endPosition, .verses = walk.verses};
+        if (walk.conditions.accepts && !walk.conditions.accepts(candidate)) return false;
         walk.end = onsetIndex;
         return true;
     }

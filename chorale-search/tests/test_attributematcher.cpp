@@ -3823,3 +3823,28 @@ TEST_CASE(matches_inside_the_match_before_are_left_out_when_overlapping_matches_
     REQUIRE(steps.size() > 1u);
     for (std::size_t i = 1; i < steps.size(); ++i) CHECK(steps[i].startPosition > steps[i - 1].endPosition);
 }
+
+TEST_CASE(repeat_goes_on_to_where_the_match_has_to_end) {
+    std::istringstream score("**kern\n4c\n4d\n4c\n4d\n4c\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.min = 0};
+    const AttributeMatcher matcher("kern", {c, gap, c});
+    // On its own the gap stops at the next c.
+    CHECK(matcher.findAll(chorale, 1)[0].endPosition == 2);
+    const auto endingOnTheLast = matcher.findAll(chorale, 1, {std::nullopt, hum::HumNum(4), {}});
+    REQUIRE(endingOnTheLast.size() == 2u);
+    CHECK(endingOnTheLast[0].startPosition == 0);
+    CHECK(endingOnTheLast[0].endPosition == 4);
+    CHECK_EQ(matcher.findAll(chorale, 1, {hum::HumNum(0), hum::HumNum(4), {}}).size(), std::size_t{1});
+    CHECK(matcher.findAll(chorale, 1, {hum::HumNum(0), hum::HumNum(3), {}}).empty());
+
+    // And past an end that is not accepted.
+    choralesearch::MatchConditions conditions;
+    conditions.accepts = [](const choralesearch::MatchCandidate& candidate) { return candidate.endPosition == 4; };
+    const auto accepted = matcher.findAll(chorale, 1, conditions);
+    REQUIRE(accepted.size() == 2u);
+    CHECK(accepted[0].startPosition == 0);
+    CHECK(accepted[1].startPosition == 2);
+}

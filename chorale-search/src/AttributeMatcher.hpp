@@ -73,12 +73,31 @@ bool fbFigureMatchesInterval(const std::string& figure, const std::string& inter
 // Whether a hint interval ("P11") matches one of the values of a hint key.
 bool hintInList(const std::vector<PatternValue>& allowed, const std::string& actual, bool reduceCompound);
 
+// Where a match would begin and end, in quarter notes from the start of the piece, and the verses it would hold in.
+struct MatchCandidate {
+    hum::HumNum startPosition;
+    hum::HumNum endPosition;
+    VerseSet verses;
+};
+
+// What a match has to meet: where it begins and ends, and whether it is accepted there. Refused, a repeat of the
+// pattern goes on to the next place the match could end.
+struct MatchConditions {
+    std::optional<hum::HumNum> start;
+    std::optional<hum::HumNum> end;
+    std::function<bool(const MatchCandidate&)> accepts;
+};
+
 class AttributeMatcher {
 public:
     AttributeMatcher(std::string drivingFeature, std::vector<PatternPosition> pattern,
                       MatcherOptions options = {});
 
-    std::vector<AttributeMatch> findAll(const HumdrumChorale& chorale, std::size_t voice) const;
+    // The matches in `voice` under `conditions`. With skipOverlappingMatches, none begins inside the one before it.
+    std::vector<AttributeMatch> findAll(const HumdrumChorale& chorale, std::size_t voice, const MatchConditions& conditions = {}) const;
+
+    // Whether a position of the pattern repeats: then where a match ends depends on its conditions.
+    bool hasRepeats() const { return m_hasRepeats; }
 
     // Driven by word or syl, or with a lyrics key in the pattern: the matches say which verses they hold in.
     bool readsLyrics() const { return m_readsLyrics; }
@@ -111,7 +130,8 @@ public:
 
 private:
     // Walks the pattern along `onsets`, the matches in their order.
-    std::vector<AttributeMatch> walkPattern(const HumdrumChorale& chorale, std::size_t voice, const std::vector<Onset>& onsets) const;
+    std::vector<AttributeMatch> walkPattern(const HumdrumChorale& chorale, std::size_t voice, const std::vector<Onset>& onsets,
+                                            const MatchConditions& conditions) const;
 
     // The pattern matched from one start onset on, position by position. A repeat tries its counts one after the
     // other, and the states the rest of the pattern failed from are kept for the starts after it.
@@ -119,6 +139,8 @@ private:
         const HumdrumChorale& chorale;
         std::size_t voice;
         const std::vector<Onset>& onsets;
+        const MatchConditions& conditions;
+        hum::HumNum startPosition = 0;
         std::vector<PositionOnset> positionOnsets;
         // The onsets the positions that repeat took so far, each with the position that took it.
         std::vector<std::pair<const CompiledPosition*, std::size_t>> repeatedOnsets;

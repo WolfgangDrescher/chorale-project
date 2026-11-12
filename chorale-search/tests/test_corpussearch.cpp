@@ -6,6 +6,7 @@
 #include <fstream>
 #include <map>
 #include <set>
+#include <sstream>
 
 #include "CorpusSearch.hpp"
 #include "HumdrumChorale.hpp"
@@ -1735,4 +1736,89 @@ TEST_CASE(a_query_over_voice_pairs_keeps_the_repeats_of_its_pattern) {
     CHECK_EQ(repeated.size(), written.size());
     CHECK_EQ(repeatedSubPattern.size(), written.size());
     CHECK_EQ(repeated[0].endLineNumber, written[0].endLineNumber);
+}
+
+// A group with a gap ends with the match it is beside, not where the gap would have stopped on its own.
+TEST_CASE(a_group_that_repeats_a_position_is_searched_to_the_end_of_the_match) {
+    // Four voices in unison: c d c d c.
+    std::istringstream score("**kern\t**kern\t**kern\t**kern\n4c\t4c\t4c\t4c\n4d\t4d\t4d\t4d\n4c\t4c\t4c\t4c\n4d\t4d\t4d\t4d\n"
+                             "4c\t4c\t4c\t4c\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(score, "chor000");
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    PatternPosition gap;
+    gap.repeat = choralesearch::PatternRepeat{.min = 0};
+    for (const char* alignment : {"start-end", "end", "start"}) {
+        Query query;
+        query.feature = "kern";
+        query.voices = "soprano";
+        query.pattern = {PatternPosition{.keys = {{"kern", {"c"}}}},
+                         PatternPosition{.keys = {{"kern", {"d"}}}},
+                         PatternPosition{.keys = {{"kern", {"c"}}}},
+                         PatternPosition{.keys = {{"kern", {"d"}}}}, PatternPosition{.keys = {{"kern", {"c"}}}}};
+        SimultaneousGroup bass;
+        bass.feature = "kern";
+        bass.voices = "bass";
+        bass.pattern = {PatternPosition{.keys = {{"kern", {"c"}}}}, gap, PatternPosition{.keys = {{"kern", {"c"}}}}};
+        bass.simultaneousAlignment = alignment;
+        query.simultaneousWith = {bass};
+        const auto found = search.runOne(chorale, query);
+        REQUIRE(found.size() == 1u);
+        std::vector<NoteSection> bassSections;
+        for (const NoteSection& section : found[0].linkedSections) {
+            if (section.voice == 1) bassSections.push_back(section);
+        }
+        REQUIRE(!bassSections.empty());
+        // Only where it begins with the match does the gap stop at the next c.
+        CHECK_EQ(bassSections.back().endPosition, std::string(alignment) == "start" ? std::string("2") : found[0].endPosition);
+    }
+}
+
+// A gap of the query does not stop at the first place the pattern goes on if no group lines up there.
+TEST_CASE(a_query_that_repeats_a_position_goes_on_to_where_its_groups_line_up) {
+    // Four voices in unison: c e c d c.
+    std::istringstream score("**kern\t**kern\t**kern\t**kern\n4c\t4c\t4c\t4c\n4e\t4e\t4e\t4e\n4c\t4c\t4c\t4c\n4d\t4d\t4d\t4d\n"
+                             "4c\t4c\t4c\t4c\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(score, "chor000");
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    PatternPosition gap;
+    gap.repeat = choralesearch::PatternRepeat{.min = 0};
+    Query query;
+    query.feature = "kern";
+    query.voices = "soprano";
+    query.pattern = {PatternPosition{.keys = {{"kern", {"c"}}}}, gap, PatternPosition{.keys = {{"kern", {"c"}}}}};
+    SimultaneousGroup bass;
+    bass.feature = "kern";
+    bass.voices = "bass";
+    bass.pattern = {PatternPosition{.keys = {{"kern", {"d"}}}}, PatternPosition{.keys = {{"kern", {"c"}}}}};
+    bass.simultaneousAlignment = "end";
+    query.simultaneousWith = {bass};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(found.size() == 2u);
+    // From the first c past the c after the e, under which the bass does not come from d.
+    CHECK_EQ(found[0].endPosition, std::string("4"));
+    CHECK_EQ(found[1].endPosition, found[0].endPosition);
+}
+
+// A match no group lines up with is none, so the match that begins inside it is found.
+TEST_CASE(skipped_overlapping_matches_are_those_inside_a_match_the_groups_line_up_with) {
+    // Four voices in unison: c d e f g a.
+    std::istringstream score("**kern\t**kern\t**kern\t**kern\n4c\t4c\t4c\t4c\n4d\t4d\t4d\t4d\n4e\t4e\t4e\t4e\n4f\t4f\t4f\t4f\n"
+                             "4g\t4g\t4g\t4g\n4a\t4a\t4a\t4a\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(score, "chor000");
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    Query query;
+    query.feature = "kern";
+    query.voices = "soprano";
+    query.skipOverlappingMatches = true;
+    query.pattern = {PatternPosition{.keys = {{"kern", {"*"}}}},
+                     PatternPosition{.keys = {{"kern", {"*"}}}},
+                     PatternPosition{.keys = {{"kern", {"*"}}}}};
+    SimultaneousGroup bass;
+    bass.feature = "kern";
+    bass.voices = "bass";
+    bass.pattern = {PatternPosition{.keys = {{"kern", {"d", "e"}}}}};
+    query.simultaneousWith = {bass};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(found.size() == 1u);
+    CHECK_EQ(found[0].startPosition, std::string("1"));
 }
