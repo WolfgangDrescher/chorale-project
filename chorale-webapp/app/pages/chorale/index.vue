@@ -186,9 +186,9 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
                     <span class="text-2xl font-light tabular-nums text-dimmed group-hover:text-primary">{{ row.original.number }}</span>
                 </template>
                 <template #title-cell="{ row }">
-                    <ULink :to="linkTo(row.original)" class="block font-medium text-highlighted group-hover:text-primary">
+                    <NuxtLink :to="linkTo(row.original)" class="block font-medium text-highlighted group-hover:text-primary">
                         {{ row.original.title }}
-                    </ULink>
+                    </NuxtLink>
                     <ChoraleListItemDetails :chorale="row.original" />
                     <!-- Along the bottom of the whole row, which is its positioned ancestor. -->
                     <ChoraleModulationMap
