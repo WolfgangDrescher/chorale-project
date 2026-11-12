@@ -22,7 +22,7 @@ const { filter, listFilter, isFiltered } = useChoraleListFilter();
 const isFilterModalOpen = ref(false);
 const isFilterPopoverOpen = ref(false);
 const { data: allChorales } = await useAsyncData('chorale-list-filter-fields', () => {
-    return queryCollection('chorales').select('choraleId', 'bwv', 'title', 'key', 'mode', 'cantusFirmus', 'meter').order('stem', 'ASC').all();
+    return queryCollection('chorales').select('choraleId', 'bwv', 'title', 'key', 'mode', 'cantusFirmus', 'meters').order('stem', 'ASC').all();
 });
 const filteredChorales = computed(() => (allChorales.value ?? []).filter((item) => matchesChoraleListFilter(item, listFilter.value)));
 const positionInFilter = computed(() => {
@@ -229,7 +229,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 <Heading>
                     {{ heading }}
                     <div class="text-base font-normal">
-                        {{ [chorale.composer, chorale.bwv, keyName, chorale.meter].filter(Boolean).join(' · ') }}
+                        {{ [chorale.composer, chorale.bwv, keyName, chorale.meters?.join(' ')].filter(Boolean).join(' · ') }}
                     </div>
                 </Heading>
                 <div class="flex flex-wrap items-center gap-2">

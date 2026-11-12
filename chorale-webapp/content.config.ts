@@ -23,7 +23,7 @@ export default defineContentConfig({
                 number: z.number().optional(),
                 key: z.string().optional(),
                 mode: z.enum(['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']).optional(),
-                meter: z.string().optional(),
+                meters: z.array(z.string()).optional(),
                 duration: z.number().optional(),
                 phraseCount: z.number().optional(),
                 modulations: z.array(z.union([

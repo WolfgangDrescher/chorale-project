@@ -106,7 +106,7 @@ for (const file of files) {
         number: parseInt(first(referenceRecords['PC#']), 10) || null,
         key: info?.key ?? null,
         mode: info?.mode ?? null,
-        meter: info?.meters?.[0] ?? null,
+        meters: info?.meters?.length ? info.meters : null,
         // The length in quarter notes, which the search results are ranked by.
         duration: info?.duration ?? null,
         phraseCount: info?.phraseCount ?? null,

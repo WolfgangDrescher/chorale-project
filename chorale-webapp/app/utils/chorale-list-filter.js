@@ -1,4 +1,5 @@
-// Turns the filter of the chorale list into conditions: a meter like `3/4`, a key with or
+// Turns the filter of the chorale list into conditions: a meter like `3/4`, which one of the meters
+// of a chorale has to be, a key with or
 // without its mode like `G major` or `f# min`, a mode on its own like `dorian`, which is also
 // looked for in the mode of the cantus firmus, and the words that are left, which are looked
 // for in the id, the BWV number and the title.
@@ -43,7 +44,7 @@ export function matchesChoraleListFilter(chorale, filter) {
     const key = chorale.key?.toLowerCase();
     const text = [chorale.choraleId, chorale.bwv, chorale.title].filter(Boolean).join(' ').toLowerCase();
 
-    return filter.meters.every((meter) => chorale.meter === meter)
+    return filter.meters.every((meter) => chorale.meters?.includes(meter))
         && (!filter.key || (key === filter.key.key && (!filter.key.mode || chorale.mode === filter.key.mode)))
         && filter.modes.every((mode) => chorale.mode === mode || chorale.cantusFirmus?.mode === mode)
         && filter.words.every((word) => text.includes(word));

@@ -30,7 +30,7 @@ const SORT_VALUES = {
         const start = startKeyOf(chorale);
         return start?.signature === undefined ? Infinity : start.signature * 2 + (isMinorKey(start.key) ? 1 : 0);
     },
-    meter: (chorale) => chorale.meter ?? '',
+    meter: (chorale) => chorale.meters?.[0] ?? '',
 };
 
 const sorting = ref([{ id: 'number', desc: false }]);
@@ -206,7 +206,7 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
                     />
                 </template>
                 <template #meter-cell="{ row }">
-                    <ChoraleMeter v-if="row.original.meter" :meter="row.original.meter" class="text-toned" />
+                    <ChoraleMeter v-if="row.original.meters" :meters="row.original.meters" class="text-toned" />
                 </template>
                 <template #incipit-cell="{ row }">
                     <ChoraleIncipit :chorale-id="row.original.choraleId" class="h-14 w-72" />

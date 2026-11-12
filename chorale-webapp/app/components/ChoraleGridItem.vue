@@ -12,7 +12,7 @@ defineProps({
         <div class="flex items-center justify-between gap-2">
             <span class="text-3xl font-light leading-none tabular-nums text-dimmed group-hover:text-primary">{{ chorale.number }}</span>
             <div class="flex items-center gap-2">
-                <ChoraleMeter v-if="visibleColumns.meter && chorale.meter" :meter="chorale.meter" class="text-toned" />
+                <ChoraleMeter v-if="visibleColumns.meter && chorale.meters" :meters="chorale.meters" class="text-toned" />
                 <ChoraleKeyBadge
                     v-if="visibleColumns.key && startKeyOf(chorale)"
                     :key-context="startKeyOf(chorale)"
