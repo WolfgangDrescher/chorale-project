@@ -17,7 +17,7 @@ const comparisonSchema = {
         },
         value: {
             type: 'string',
-            description: 'What to compare with: a pitch for "kern" (e.g. "g", "f#"), a recip duration for "duration" (e.g. "4", "4."), and for "mint" and the hint keys the size of an interval: a diatonic number ("3" compares the number alone, so any third is as wide as any other) or a number with a quality ("m3", "A4", "M10" compare the size in semitones). "mint" may also carry a sign ("+3", "-m6") to compare in that direction only. Only kern, duration, mint and the hint keys can be compared. For kern and duration it can also be a voice reference ("@2", "@below", "@anyBelow", ...): the note another voice sounds at the same time.',
+            description: 'What to compare with: a pitch for "kern" (e.g. "g", "f#"), a recip duration for "duration" (e.g. "4", "4."), and for "mint" and the hint keys the size of an interval: a diatonic number ("3" compares the number alone, so any third is as wide as any other) or a number with a quality ("m3", "A4", "M10" compare the size in semitones). "mint" may also carry a sign ("+3", "-m6") to compare in that direction only. Only kern, duration, mint and the hint keys can be compared. For kern and duration it can also be a voice reference ("@2", "@below", "@anyBelow", ...): the note another voice sounds at the same time. For any of them it can be a position reference ("#1", "$start", "#1.mint.number"): what the score has at the note an earlier position of the pattern matched.',
         },
     },
 };
@@ -57,23 +57,37 @@ const modeValueSchema = {
     ],
 };
 
+// A value that reads the score at an earlier position of the pattern: "#1", "$start", "#1.hint-14.number".
+const positionReferenceSchema = {
+    type: 'string',
+    pattern: '^(#[1-9][0-9]*|\\$[A-Za-z][A-Za-z0-9_]*)(\\.[A-Za-z0-9@*-]+){0,2}$',
+};
+
+// `valueSchema`, or a position reference in its place.
+const orPositionReference = (valueSchema) => ({ anyOf: [valueSchema, positionReferenceSchema] });
+
+// A single value or an OR-list of them, each of which may be a position reference.
+const valueOrListSchema = (valueSchema) => ({
+    oneOf: [orPositionReference(valueSchema), { type: 'array', items: orPositionReference(valueSchema), minItems: 1 }],
+});
+
 const modePatternSchema = {
     description: 'The mode of the local key. An OR-list of modes or a single one; "!mode" asks for a note in none of them.',
-    oneOf: [modeValueSchema, { type: 'array', items: modeValueSchema, minItems: 1 }],
+    ...valueOrListSchema(modeValueSchema),
 };
 
 const keyValueSchema = { type: 'string', pattern: '^([a-gA-G][#-]*|\\*)$' };
 
 const keyPatternSchema = {
     description: 'The local key as the score writes it: "E-" is E-flat major, "f#" is F-sharp minor. An OR-list of keys or a single one.',
-    oneOf: [keyValueSchema, { type: 'array', items: keyValueSchema, minItems: 1 }],
+    ...valueOrListSchema(keyValueSchema),
 };
 
 const keyDegValueSchema = { type: 'string', pattern: '^([1-7][+-]*|\\++|-+|\\*)$' };
 
 const keyDegPatternSchema = {
     description: 'The scale degree of the local key in relation to the starting key, written like a deg value: "5" is the key of the fifth degree, A major in a chorale in D major. An OR-list of degrees or a single one.',
-    oneOf: [keyDegValueSchema, { type: 'array', items: keyDegValueSchema, minItems: 1 }],
+    ...valueOrListSchema(keyDegValueSchema),
 };
 
 // The lyrics: where the syllable of the soprano at the note stands in its word. "*" is the wildcard every key
@@ -92,7 +106,7 @@ const sylposValueSchema = {
 
 const sylposPatternSchema = {
     description: 'Where the syllable of the soprano at the note stands in its word: "single", "initial", "medial" or "terminal". An OR-list of these or a single one.',
-    oneOf: [sylposValueSchema, { type: 'array', items: sylposValueSchema, minItems: 1 }],
+    ...valueOrListSchema(sylposValueSchema),
 };
 
 // What the note is to the melisma of its syllable, named like sylpos; true is any note of a melisma.
@@ -115,10 +129,9 @@ const melismaValueSchema = {
 
 const melismaPatternSchema = {
     description: 'The place of the note in the melisma of its syllable: "none", "initial", "medial" or "terminal"; true for any note of a melisma, false for none. An OR-list of these or a single one.',
-    oneOf: [melismaValueSchema, { type: 'array', items: melismaValueSchema, minItems: 1 }],
+    ...valueOrListSchema(melismaValueSchema),
 };
 
-// One position of a pattern, and the keys of everyPosition.
 // The keys a position can check, negated or not, and the parts of their values: "mint", "!mint.direction", "hint-14.number".
 const positionKeyPattern =
     '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
@@ -132,10 +145,11 @@ const directionValueSchema = {
 
 const directionPatternSchema = {
     description: 'The direction of the interval into the note: "+", "-", or "none" for a unison. An OR-list of these or a single one.',
-    oneOf: [directionValueSchema, { type: 'array', items: directionValueSchema, minItems: 1 }],
+    ...valueOrListSchema(directionValueSchema),
 };
 
-const patternPositionSchema = {
+// The keys of everyPosition: what one position checks.
+const positionFeaturesSchema = {
     type: 'object',
     minProperties: 1,
     additionalProperties: false,
@@ -157,7 +171,7 @@ const patternPositionSchema = {
     },
     patternProperties: {
         [positionKeyPattern]: {
-            description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern, kern.pitch and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), what another voice sounds at the same time. A key with a part, like mint.number, checks only that part of the value, with the values the whole key takes for it. word and syl are the word and the syllable the soprano sings at the note, compared in small letters without the punctuation around them; a "*" in the value stands for any characters ("Her*", "*zen"), without one the whole word has to be the value. Prefix the key with "!" to negate the whole position.',
+            description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern, kern.pitch and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), what another voice sounds at the same time. For any key but phrase and hint-<pair> with a "*" it may be a position reference ("#1", "$start", "#1.hint-14"): what the score has at the note an earlier position of the pattern matched, under the same key, or under the key named after the dot. A key with a part, like mint.number, checks only that part of the value, with the values the whole key takes for it. word and syl are the word and the syllable the soprano sings at the note, compared in small letters without the punctuation around them; a "*" in the value stands for any characters ("Her*", "*zen"), without one the whole word has to be the value. Prefix the key with "!" to negate the whole position.',
             oneOf: [
                 { type: 'string' },
                 { type: 'boolean' },
@@ -169,6 +183,23 @@ const patternPositionSchema = {
     propertyNames: {
         pattern: positionKeyPattern,
         description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position, and optionally a part of its value after a dot: kern.pitch, fb.numbers, mint.direction, mint.number, mint.interval, hint-<pair>.number. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked. word, syl, sylpos and melisma read the lyrics the soprano sings at the note.',
+    },
+};
+
+// One position of a pattern: what it checks, and its name.
+const patternPositionSchema = {
+    ...positionFeaturesSchema,
+    properties: {
+        as: {
+            type: 'string',
+            pattern: '^\\$[A-Za-z][A-Za-z0-9_]*$',
+            description: 'The name of this position, "$" and a word, so that a later position can refer to it by name ("$start" instead of "#1"). Checks nothing against the score; a name is given to one position of its pattern.',
+        },
+        ...positionFeaturesSchema.properties,
+    },
+    propertyNames: {
+        ...positionFeaturesSchema.propertyNames,
+        pattern: `^as$|${positionKeyPattern}`,
     },
 };
 
@@ -195,7 +226,7 @@ const searchRequestFieldSchemas = {
         items: patternPositionSchema,
     },
     everyPosition: {
-        ...patternPositionSchema,
+        ...positionFeaturesSchema,
         minProperties: 0,
         description: 'Features every position of the pattern checks, as if they were written in each one. A position that checks the same feature itself, negated or not, keeps its own value.',
         suggestSortText: '2.5',
