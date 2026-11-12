@@ -1,5 +1,6 @@
 #include "JsonIO.hpp"
 #include "HintPairs.hpp"
+#include "PatternRepeat.hpp"
 #include "PositionReference.hpp"
 #include "QueryValidation.hpp"
 #include "VoiceMap.hpp"
@@ -173,13 +174,59 @@ void addOtherVoiceKeys(AttributeMap& pos, const std::string& voiceReference, con
     }
 }
 
-// `name` locates the errors: "'pattern[...]" or "'everyPosition".
-PatternPosition positionFromJson(const nlohmann::json& posJson, const std::string& name) {
+// "*", "+", "?" (at most once, if it can), a number of times, or {"min", "max", "greedy"}.
+PatternRepeat repeatFromJson(const nlohmann::json& j, const std::string& context) {
+    const std::string must = context + " must be '*', '+', '?', a number of times from 1, or an object with 'min', 'max' and 'greedy'";
+    if (j.is_string()) {
+        if (j == "*") return PatternRepeat{.min = 0};
+        if (j == "+") return PatternRepeat{.min = 1};
+        if (j == "?") return PatternRepeat{.min = 0, .max = 1, .greedy = true};
+        throw std::invalid_argument(must + " (got " + j.dump() + ")");
+    }
+    if (j.is_number_unsigned() && j.get<std::size_t>() > 0) return PatternRepeat{.min = j.get<std::size_t>(), .max = j.get<std::size_t>()};
+    if (!j.is_object()) throw std::invalid_argument(must + " (got " + j.dump() + ")");
+    PatternRepeat repeat;
+    for (auto it = j.begin(); it != j.end(); ++it) {
+        const std::string field = context + "[" + it.key() + "]'";
+        if (it.key() == "greedy") {
+            if (!it.value().is_boolean()) throw std::invalid_argument(field + " must be a boolean");
+            repeat.greedy = it.value().get<bool>();
+        } else if (it.key() == "min" || it.key() == "max") {
+            if (!it.value().is_number_unsigned()) throw std::invalid_argument(field + " must be a non-negative integer");
+            if (it.key() == "min") repeat.min = it.value().get<std::size_t>();
+            else repeat.max = it.value().get<std::size_t>();
+        } else {
+            throw std::invalid_argument(context + "' has an unknown key '" + it.key() + "': a repeat has 'min', 'max' and 'greedy'");
+        }
+    }
+    return repeat;
+}
+
+std::vector<PatternPosition> patternPositionsFromJson(const nlohmann::json& j, const std::string& name, std::size_t nesting = 0);
+
+// How many subPatterns may lie inside each other: far more than a pattern needs, few enough to read safely.
+constexpr std::size_t kMaxSubPatternNesting = 16;
+
+// `name` locates the errors: "'pattern[...]" or "'everyPosition". `nesting` counts the subPatterns around it.
+PatternPosition positionFromJson(const nlohmann::json& posJson, const std::string& name, std::size_t nesting = 0) {
     PatternPosition pos;
     for (auto it = posJson.begin(); it != posJson.end(); ++it) {
         const std::string& rawKey = it.key();
         if (isOtherVoiceKey(rawKey)) {
             addOtherVoiceKeys(pos.keys, rawKey, it.value(), name);
+            continue;
+        }
+        if (rawKey == kRepeatKey) {
+            pos.repeat = repeatFromJson(it.value(), name + "[" + kRepeatKey + "]'");
+            continue;
+        }
+        if (rawKey == kSubPatternKey) {
+            if (nesting == kMaxSubPatternNesting) {
+                throw std::invalid_argument(name + "[" + kSubPatternKey + "]' lies inside more than " + std::to_string(kMaxSubPatternNesting) +
+                                            " subPatterns");
+            }
+            pos.subPattern = patternPositionsFromJson(it.value(), name + "[" + kSubPatternKey + "]", nesting + 1);
+            if (pos.subPattern.empty()) throw std::invalid_argument(name + "[" + kSubPatternKey + "]' must not be empty");
             continue;
         }
         // isKnownPatternKey/isValidPatternValue both accept a "!"-negated key directly (see
@@ -197,16 +244,25 @@ PatternPosition positionFromJson(const nlohmann::json& posJson, const std::strin
         }
         pos.keys[rawKey] = attributeValueFromJson(it.value(), rawKey, name + "[" + rawKey + "]'");
     }
+    if (pos.repeat && pos.keys.count(kPositionNameKey)) {
+        throw std::invalid_argument(name + "[" + kPositionNameKey + "]' names a position that repeats, which has no single value to read");
+    }
     return pos;
 }
 
-std::vector<PatternPosition> patternFromJson(const nlohmann::json& j) {
-    if (!j.is_array()) throw std::invalid_argument("'pattern' must be an array");
+// `name` locates the errors: "'pattern" or "'pattern[...][subPattern]".
+std::vector<PatternPosition> patternPositionsFromJson(const nlohmann::json& j, const std::string& name, std::size_t nesting) {
+    if (!j.is_array()) throw std::invalid_argument(name + "' must be an array");
     std::vector<PatternPosition> result;
     for (const auto& posJson : j) {
-        if (!posJson.is_object()) throw std::invalid_argument("'pattern' entries must be objects");
-        result.push_back(positionFromJson(posJson, "'pattern[...]"));
+        if (!posJson.is_object()) throw std::invalid_argument(name + "' entries must be objects");
+        result.push_back(positionFromJson(posJson, name + "[...]", nesting));
     }
+    return result;
+}
+
+std::vector<PatternPosition> patternFromJson(const nlohmann::json& j) {
+    std::vector<PatternPosition> result = patternPositionsFromJson(j, "'pattern");
     if (result.empty()) throw std::invalid_argument("'pattern' must not be empty");
     // References are checked once every position and name is known.
     return resolvePositionReferences(result);
@@ -262,10 +318,12 @@ std::string simultaneousAlignmentFromJson(const nlohmann::json& j, const std::st
 // once only: hint-@pair and one of the pairs of `pairSet` would be the same key for that pair, and one of the two
 // would not be checked. Once negated and once not is two keys.
 void validatePairSearchedKeys(const std::vector<PatternPosition>& pattern, const std::string& pairSet,
-                              const std::string& context) {
+                              const std::string& context, const std::string& path = "pattern") {
     const std::vector<std::string> pairs = pairSet.empty() ? std::vector<std::string>{} : expandHintPairKey(pairSet);
     for (std::size_t position = 0; position < pattern.size(); ++position) {
-        const std::string where = "'pattern[" + std::to_string(position) + "]' in " + context;
+        const std::string at = path + "[" + std::to_string(position) + "]";
+        validatePairSearchedKeys(pattern[position].subPattern, pairSet, context, at + "[" + kSubPatternKey + "]");
+        const std::string where = "'" + at + "' in " + context;
         for (const auto& [key, values] : pattern[position].keys) {
             if (!isPairSearchedKey(key)) continue;
             if (pairSet.empty()) {
@@ -281,6 +339,16 @@ void validatePairSearchedKeys(const std::vector<PatternPosition>& pattern, const
                                             "': while that pair is searched, both are the key '" + sameKey + "'");
             }
         }
+    }
+}
+
+// `endIsOpen`: no simultaneousWith group says where a match of the pattern ends.
+void validateRequestRepeats(const std::vector<PatternPosition>& pattern, bool notesMaySplitOrMerge, bool endIsOpen, const std::string& context) {
+    try {
+        validateRepeats(pattern, notesMaySplitOrMerge);
+        if (endIsOpen) validateLastRepeatGoesOn(pattern);
+    } catch (const std::invalid_argument& e) {
+        throw std::invalid_argument(std::string(e.what()) + " in " + context);
     }
 }
 
@@ -357,6 +425,9 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         const PatternPosition everyPosition = positionFromJson(j["everyPosition"], "'everyPosition");
         if (everyPosition.keys.count(kPositionNameKey)) {
             throw std::invalid_argument("'everyPosition' in " + context + " cannot name the positions: a name belongs to one position");
+        }
+        if (everyPosition.repeat || !everyPosition.subPattern.empty()) {
+            throw std::invalid_argument("'everyPosition' in " + context + " cannot repeat: a repeat belongs to one position");
         }
         applyEveryPosition(target.pattern, everyPosition.keys);
         // The pattern as written is resolved already, so what fails now is a reference of everyPosition.
@@ -627,6 +698,19 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
         q.simultaneousWith = simultaneousWithFromJson(j["simultaneousWith"], pairSet);
     }
 
+    // With the options of a group known, which it may take over from the query. A group that ends with the match
+    // says where both end.
+    const auto endsWithMatch = [&](const SimultaneousGroup& group) {
+        return group.simultaneousAlignment.value_or(q.simultaneousAlignment) != "start";
+    };
+    const bool endIsOpen = std::none_of(q.simultaneousWith.begin(), q.simultaneousWith.end(), endsWithMatch);
+    validateRequestRepeats(q.pattern, q.durationAllowSplitNotes || q.durationAllowMergedNotes, endIsOpen, context);
+    for (std::size_t i = 0; i < q.simultaneousWith.size(); ++i) {
+        const SimultaneousGroup& group = q.simultaneousWith[i];
+        const bool notesMaySplitOrMerge = group.durationAllowSplitNotes.value_or(q.durationAllowSplitNotes) ||
+                                          group.durationAllowMergedNotes.value_or(q.durationAllowMergedNotes);
+        validateRequestRepeats(group.pattern, notesMaySplitOrMerge, !endsWithMatch(group), "'simultaneousWith[" + std::to_string(i) + "]'");
+    }
     return q;
 }
 

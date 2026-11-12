@@ -1363,3 +1363,128 @@ TEST_CASE(query_from_json_adds_a_key_of_every_position_and_the_same_key_negated)
     CHECK_EQ(q.pattern[0].keys.count("mint"), std::size_t{1});
     CHECK_EQ(q.pattern[0].keys.count("!mint"), std::size_t{1});
 }
+
+TEST_CASE(query_from_json_reads_how_often_a_position_repeats) {
+    using choralesearch::PatternRepeat;
+    const Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"repeat":"*"},{"repeat":"+"},{"repeat":"?"},{"repeat":3},
+        {"repeat":{"max":8}},{"repeat":{"min":2,"greedy":true}},{"kern":"c"}]})"));
+    CHECK(*q.pattern[0].repeat == (PatternRepeat{.min = 0}));
+    CHECK(*q.pattern[1].repeat == (PatternRepeat{.min = 1}));
+    CHECK(*q.pattern[2].repeat == (PatternRepeat{.min = 0, .max = 1, .greedy = true}));
+    CHECK(*q.pattern[3].repeat == (PatternRepeat{.min = 3, .max = 3}));
+    CHECK(*q.pattern[4].repeat == (PatternRepeat{.min = 0, .max = 8}));
+    CHECK(*q.pattern[5].repeat == (PatternRepeat{.min = 2, .greedy = true}));
+    for (const char* refused : {R"("!")", "0", "-1", "1.5", R"({"min":"2"})", R"({"times":2})", R"({"greedy":1})", R"({"max":0})",
+                                R"({"min":3,"max":2})", "[1,2]"}) {
+        CHECK_THROWS(queryFromJson(json::parse(std::string(R"({"feature":"kern","pattern":[{"repeat":)") + refused + R"(},{"kern":"c"}]})")));
+    }
+    try {
+        queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"},{"repeat":{"min":3,"max":2}},{"kern":"d"}]})"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'pattern[1]'") != std::string::npos);
+    }
+}
+
+TEST_CASE(query_from_json_reads_a_sub_pattern_that_repeats) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"},
+        {"repeat":{"min":2,"greedy":true},"mode":"minor","subPattern":[{"mint":"-P4"},{"repeat":"*","subPattern":[{"mint":"+2"}]}]}]})"));
+    REQUIRE(q.pattern[1].subPattern.size() == 2u);
+    CHECK_EQ(q.pattern[1].keys.at("mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[1].subPattern[0].keys.at("mint"), (std::vector<PatternValue>{"-P4"}));
+    CHECK_EQ(q.pattern[1].subPattern[1].subPattern[0].keys.at("mint"), (std::vector<PatternValue>{"+2"}));
+
+    // Without a repeat, empty, with a repeat of nothing, and a pattern of nothing.
+    for (const char* refused : {R"([{"kern":"c"},{"subPattern":[{"kern":"d"}]}])", R"([{"kern":"c"},{"repeat":"+","subPattern":[]}])",
+                                R"([{"kern":"c"},{"repeat":"+","subPattern":[{"repeat":"*"}]}])", R"([{"repeat":"*"},{"repeat":{"max":3}}])"}) {
+        CHECK_THROWS(queryFromJson(json::parse(std::string(R"({"feature":"kern","pattern":)") + refused + "}")));
+    }
+    try {
+        queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"},{"repeat":"+","subPattern":[{"tonality":"x"}]}]})"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'pattern[...][subPattern][...]' has an unknown key 'tonality'") != std::string::npos);
+    }
+    // Up to 16 subPatterns inside each other.
+    std::string nested = R"({"kern":"c"})";
+    for (int level = 1; level <= 17; ++level) {
+        nested = R"({"repeat":1,"subPattern":[)" + nested + "]}";
+        const json query = json::parse(R"({"feature":"kern","pattern":[)" + nested + "]}");
+        if (level <= 16) CHECK_NOTHROW(queryFromJson(query));
+        else CHECK_THROWS(queryFromJson(query));
+    }
+}
+
+TEST_CASE(query_from_json_writes_a_repeat_back_as_it_reads_it) {
+    const char* written = R"({"feature":"kern","voices":"all","pattern":[{"kern":"c"},{"repeat":"*"},{"repeat":"+","!kern":"d"},{"repeat":2},
+        {"repeat":"?","kern":"e"},{"repeat":{"max":1}},{"repeat":{"max":8}},
+        {"repeat":{"min":2,"max":4,"greedy":true},"subPattern":[{"kern":"e"},{"kern":"f"}]}]})";
+    CHECK_EQ(choralesearch::queryToJson(queryFromJson(json::parse(written))), json::parse(written));
+}
+
+TEST_CASE(query_from_json_adds_every_position_to_the_position_of_a_sub_pattern) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","everyPosition":{"mode":"minor","duration":"4"},"pattern":[{"kern":"c"},
+        {"repeat":"+","mode":"major","subPattern":[{"kern":"d"},{"kern":"e","duration":"2"}]},{"kern":"f"}]})"));
+    // The position keeps its own mode and gets the duration; its subPattern takes both from it when matched.
+    CHECK_EQ(q.pattern[1].keys.at("mode"), (std::vector<PatternValue>{"major"}));
+    CHECK_EQ(q.pattern[1].keys.at("duration"), (std::vector<PatternValue>{"4"}));
+    CHECK(!q.pattern[1].subPattern[0].keys.count("duration"));
+    CHECK_EQ(q.pattern[1].subPattern[1].keys.at("duration"), (std::vector<PatternValue>{"2"}));
+    // A repeat belongs to one position.
+    for (const char* refused : {R"({"repeat":"+"})", R"({"repeat":"+","subPattern":[{"kern":"c"}]})"}) {
+        CHECK_THROWS(queryFromJson(json::parse(std::string(R"({"feature":"kern","pattern":[{"kern":"c"}],"everyPosition":)") + refused + "}")));
+    }
+}
+
+TEST_CASE(query_from_json_refuses_a_reference_to_a_position_that_repeats) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"as":"$gap","repeat":"+"},{"kern":"$gap"}]})")));
+    try {
+        queryFromJson(json::parse(R"({"feature":"kern","everyPosition":{"key":"#1"},"pattern":[{"repeat":"+"},{"kern":"c"}]})"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("everyPosition") != std::string::npos);
+    }
+    CHECK_NOTHROW(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"as":"$start","kern":"*"},{"repeat":"+","subPattern":[{"!key":"$start"}]},{"kern":"*"}]})")));
+    // Nor can it be named.
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"},{"as":"$gap","repeat":"+"},{"kern":"d"}]})")));
+}
+
+TEST_CASE(query_from_json_refuses_a_duration_that_repeats_when_durations_add_up) {
+    const std::string repeatedDuration = R"("pattern":[{"kern":"c"},{"repeat":"+","duration":"4"},{"kern":"d"}])";
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"kern",)" + repeatedDuration + "}")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","durationAllowSplitNotes":true,)" + repeatedDuration + "}")));
+    // A group takes the option over from the query.
+    try {
+        queryFromJson(json::parse(R"({"feature":"kern","durationAllowMergedNotes":true,"pattern":[{"kern":"c"}],
+            "simultaneousWith":[{"feature":"kern",)" + repeatedDuration + "}]}"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'simultaneousWith[0]'") != std::string::npos);
+    }
+}
+
+TEST_CASE(query_from_json_refuses_a_repeat_at_the_end_that_would_take_no_more_than_its_min) {
+    const std::string afterC = R"({"feature":"kern","pattern":[{"kern":"c"},)";
+    for (const char* last : {R"({"repeat":"*"})", R"({"repeat":"+","mint":"-2"})", R"({"repeat":{"min":2},"subPattern":[{"kern":"d"}]})",
+                             R"({"repeat":{"max":3}},{"repeat":"?"})"}) {
+        CHECK_THROWS(queryFromJson(json::parse(afterC + last + "]}")));
+    }
+    try {
+        queryFromJson(json::parse(afterC + R"({"repeat":"+"},{"repeat":"?"}]})"));
+        CHECK(false);
+    } catch (const std::invalid_argument& e) {
+        CHECK(std::string(e.what()).find("'pattern[1]'") != std::string::npos);
+        CHECK(std::string(e.what()).find("nothing has to follow") != std::string::npos);
+    }
+    // Greedy it goes on, a number of times is all it may take, and "?" takes what is there.
+    for (const char* last : {R"({"repeat":{"min":1,"greedy":true},"mint":"-2"})", R"({"repeat":2})", R"({"repeat":"?"})",
+                             R"({"repeat":"*"},{"kern":"d"})"}) {
+        CHECK_NOTHROW(queryFromJson(json::parse(afterC + last + "]}")));
+    }
+    // A group that ends with the match says where both end.
+    CHECK_NOTHROW(queryFromJson(json::parse(afterC + R"({"repeat":"*"}],
+        "simultaneousWith":[{"feature":"kern","simultaneousAlignment":"end","pattern":[{"kern":"c"},{"repeat":"*"}]}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(afterC + R"({"kern":"d"}],
+        "simultaneousWith":[{"feature":"kern","pattern":[{"kern":"c"},{"repeat":"*"}]}]})")));
+}

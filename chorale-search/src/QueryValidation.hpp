@@ -39,6 +39,11 @@ bool isPairWildcardFeature(const std::string& feature);
 // The key that names a position of a pattern ("as": "$start"), see PositionReference.hpp. It checks nothing.
 inline const std::string kPositionNameKey = "as";
 
+// How often a position of a pattern repeats ("repeat": "+"), and the pattern it repeats instead of its own keys
+// ("subPattern"), see PatternRepeat. They check nothing themselves.
+inline const std::string kRepeatKey = "repeat";
+inline const std::string kSubPatternKey = "subPattern";
+
 // True if `text` is a position name: "$", a letter, then letters, digits or underscores ("$start").
 bool isValidPositionName(const std::string& text);
 

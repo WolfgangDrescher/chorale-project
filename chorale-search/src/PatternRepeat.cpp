@@ -58,4 +58,16 @@ void validateRepeats(const std::vector<PatternPosition>& pattern, bool notesMayS
     }
 }
 
+void validateLastRepeatGoesOn(const std::vector<PatternPosition>& pattern) {
+    for (std::size_t index = pattern.size(); index-- > 0;) {
+        const PatternPosition& position = pattern[index];
+        const bool mayTakeMore = position.repeat && (!position.repeat->max || *position.repeat->max > position.repeat->min);
+        if (mayTakeMore && !position.repeat->greedy) {
+            throw std::invalid_argument("'pattern[" + std::to_string(index) + "]': a repeat that nothing has to follow takes no more "
+                                        "than its min: give it \"greedy\": true, or a number of times");
+        }
+        if (minimumOnsets({position}) > 0) break;
+    }
+}
+
 } // namespace choralesearch

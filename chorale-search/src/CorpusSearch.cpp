@@ -119,6 +119,8 @@ std::vector<PatternPosition> patternOfPair(const std::vector<PatternPosition>& p
     std::vector<PatternPosition> pairPattern;
     for (const PatternPosition& position : pattern) {
         PatternPosition pairPosition;
+        pairPosition.repeat = position.repeat;
+        pairPosition.subPattern = patternOfPair(position.subPattern, pair);
         for (const auto& [key, values] : position.keys) {
             std::vector<PatternValue>& pairValues = pairPosition.keys[isPairSearchedKey(key) ? replaceAll(key, kPairSearchedKey, pair) : key];
             pairValues = values;
@@ -198,6 +200,33 @@ std::vector<std::size_t> voicesOfHintPairsMatching(const HumdrumChorale& chorale
     return voices;
 }
 
+// An onset where the match checked keys, with the keys checked there.
+struct CheckedOnset {
+    PositionOnset onset;
+    AttributeMap keys;
+};
+
+// Where the match checked which keys: each position at its onset, a position that repeats at each onset it took,
+// with the keys of the position of its subPattern that took it and those around it.
+std::vector<CheckedOnset> checkedOnsets(const AttributeMatch& match, const std::vector<PatternPosition>& pattern) {
+    std::vector<CheckedOnset> checked;
+    for (std::size_t position = 0; position < pattern.size() && position < match.positionOnsets.size(); ++position) {
+        if (!pattern[position].repeat) checked.push_back({match.positionOnsets[position], pattern[position].keys});
+    }
+    for (const RepeatedOnset& onset : match.repeatedOnsets) {
+        const PatternPosition* written = &pattern[onset.path[0]];
+        AttributeMap keys = written->keys;
+        for (std::size_t depth = 1; depth < onset.path.size(); ++depth) {
+            written = &written->subPattern[onset.path[depth]];
+            AttributeMap innerKeys = written->keys;
+            addMissingKeys(innerKeys, keys);
+            keys = std::move(innerKeys);
+        }
+        checked.push_back({{.line = onset.line, .position = onset.position}, std::move(keys)});
+    }
+    return checked;
+}
+
 // The voices a match spans from its start to its end, by the feature it was found with: both voices of the spine of a
 // pair, none for fb, whose spine is no voice's own, and otherwise the voice searched.
 std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMatch, const std::string& feature) {
@@ -223,15 +252,14 @@ std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, cons
                             humNumToString(attributeMatch.endPosition), attributeMatch.startLineNumber,
                             attributeMatch.endLineNumber});
     }
-    // The voices the keys of a position name, at that position only.
-    for (std::size_t position = 0; position < pattern.size() && position < attributeMatch.positionOnsets.size(); ++position) {
-        const PositionOnset& onset = attributeMatch.positionOnsets[position];
+    // The voices the keys of a position name, at that position only: at each onset of a position that repeats.
+    for (const auto& [onset, keys] : checkedOnsets(attributeMatch, pattern)) {
         const auto atPosition = [&](const std::string& key, std::size_t voice) {
             if (voice == attributeMatch.voice) return;
             sections.push_back({key, voice, humNumToString(onset.position), humNumToString(onset.position), onset.line,
                                 onset.line});
         };
-        for (const auto& [name, values] : pattern[position].keys) {
+        for (const auto& [name, values] : keys) {
             const std::string key = name.substr(!name.empty() && name[0] == '!' ? 1 : 0);
             // A hint-<voice> key: the other voice it compares the voice searched with.
             const std::size_t other = otherVoiceOfHintKey(key);

@@ -252,6 +252,18 @@ inline nlohmann::json patternValueToJson(const PatternValue& value) {
     return {{"operator", comparisonOperatorName(value.comparisonOperator)}, {"value", value.text}};
 }
 
+// "*", "+", "?" and a number of times as a query would spell them, else {"min", "max", "greedy"}.
+inline nlohmann::json repeatToJson(const PatternRepeat& repeat) {
+    if (!repeat.greedy && !repeat.max && repeat.min <= 1) return repeat.min == 0 ? "*" : "+";
+    if (repeat == PatternRepeat{.min = 0, .max = 1, .greedy = true}) return "?";
+    if (!repeat.greedy && repeat.max == repeat.min) return repeat.min;
+    nlohmann::json j = nlohmann::json::object();
+    if (repeat.min > 0) j["min"] = repeat.min;
+    if (repeat.max) j["max"] = *repeat.max;
+    if (repeat.greedy) j["greedy"] = true;
+    return j;
+}
+
 inline nlohmann::json patternToJson(const std::vector<PatternPosition>& pattern) {
     nlohmann::json arr = nlohmann::json::array();
     for (const auto& position : pattern) {
@@ -274,6 +286,8 @@ inline nlohmann::json patternToJson(const std::vector<PatternPosition>& pattern)
                 posJson[key] = std::move(valuesJson);
             }
         }
+        if (position.repeat) posJson["repeat"] = repeatToJson(*position.repeat);
+        if (!position.subPattern.empty()) posJson["subPattern"] = patternToJson(position.subPattern);
         arr.push_back(posJson);
     }
     return arr;

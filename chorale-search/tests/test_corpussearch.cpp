@@ -1656,3 +1656,83 @@ TEST_CASE(a_chorale_without_lyrics_has_no_matches_for_a_query_that_reads_them) {
     q.pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}};
     CHECK(!search.runOne(chorale, q).empty());
 }
+
+// Phrases of the soprano that begin and end in one key and reach another key in between.
+TEST_CASE(a_query_with_repeats_finds_the_phrases_that_touch_another_key) {
+    const auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
+    CorpusSearch search(fixturesDir);
+    PatternPosition gapInThePhrase{.keys = {{"!phrase", {"end"}}}};
+    gapInThePhrase.repeat = choralesearch::PatternRepeat{.min = 0};
+    PatternPosition inAnotherKey{.keys = {{"!key", {"$start"}}, {"!phrase", {"end"}}}};
+    inAnotherKey.repeat = choralesearch::PatternRepeat{.min = 1};
+    Query query;
+    query.feature = "kern";
+    query.voices = "soprano";
+    query.pattern = {PatternPosition{.keys = {{"as", {"$start"}}, {"phrase", {"start"}}}}, gapInThePhrase, inAnotherKey, gapInThePhrase,
+                     PatternPosition{.keys = {{"phrase", {"end"}}, {"key", {"$start"}}}}};
+    const auto results = search.run(query);
+    REQUIRE(!results.empty());
+    for (const Result& r : results) {
+        HumdrumChorale chorale((fixturesDir / (r.choraleId + ".krn")).string());
+        const std::string key = chorale.keyContextAtLine(static_cast<int>(r.startLineNumber))->key;
+        CHECK_EQ(chorale.keyContextAtLine(static_cast<int>(r.endLineNumber))->key, key);
+        CHECK(chorale.tokenAtLine("kern", 4, static_cast<int>(r.endLineNumber))->hasFermata());
+        bool otherKey = false;
+        for (std::size_t line = r.startLineNumber; line < r.endLineNumber; ++line) {
+            hum::HTp note = chorale.tokenAtLine("kern", 4, static_cast<int>(line));
+            if (!note || !note->isData() || note->isNull()) continue;
+            CHECK(!note->hasFermata());
+            otherKey = otherKey || chorale.keyContextAtLine(static_cast<int>(line))->key != key;
+        }
+        CHECK(otherKey);
+    }
+}
+
+TEST_CASE(a_position_that_repeats_links_the_voices_of_its_keys_over_its_run) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    PatternPosition twice{.keys = {{"hint-4", {"*"}}}};
+    twice.repeat = choralesearch::PatternRepeat{.min = 2, .max = 2};
+    Query query;
+    query.feature = "kern";
+    query.voices = "alto";
+    query.pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}, twice, PatternPosition{.keys = {{"kern", {"*"}}}}};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(!found.empty());
+    for (const Result& r : found) {
+        const auto& run = r.positionOnsets[1];
+        std::vector<NoteSection> soprano;
+        for (const NoteSection& section : r.linkedSections) {
+            if (section.voice == 4) soprano.push_back(section);
+        }
+        // The soprano at both onsets of the run, each a note of its own.
+        REQUIRE(soprano.size() == 2u);
+        CHECK_EQ(soprano[0].startLineNumber, run.line);
+        CHECK_EQ(soprano[0].endLineNumber, run.line);
+        CHECK_EQ(soprano[1].startLineNumber, run.endLine);
+        CHECK(run.line < run.endLine);
+    }
+}
+
+TEST_CASE(a_query_over_voice_pairs_keeps_the_repeats_of_its_pattern) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    const PatternPosition ofThePair{.keys = {{"hint-@pair", {"*"}}}};
+    PatternPosition twoOnsets;
+    twoOnsets.repeat = choralesearch::PatternRepeat{.min = 2, .max = 2};
+    PatternPosition twoOfThePair;
+    twoOfThePair.repeat = choralesearch::PatternRepeat{.min = 1, .max = 1};
+    twoOfThePair.subPattern = {ofThePair, ofThePair};
+    Query query;
+    query.feature = "hint-**";
+    query.pattern = {ofThePair, twoOnsets, ofThePair};
+    const auto repeated = search.runOne(chorale, query);
+    query.pattern = {ofThePair, twoOfThePair, ofThePair};
+    const auto repeatedSubPattern = search.runOne(chorale, query);
+    query.pattern = {ofThePair, PatternPosition{}, PatternPosition{}, ofThePair};
+    const auto written = search.runOne(chorale, query);
+    REQUIRE(!written.empty());
+    CHECK_EQ(repeated.size(), written.size());
+    CHECK_EQ(repeatedSubPattern.size(), written.size());
+    CHECK_EQ(repeated[0].endLineNumber, written[0].endLineNumber);
+}

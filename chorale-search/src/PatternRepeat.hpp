@@ -15,4 +15,8 @@ std::size_t minimumOnsets(const std::vector<PatternPosition>& pattern);
 // `notesMaySplitOrMerge` (durationAllowSplitNotes, durationAllowMergedNotes) a duration of a position that repeats.
 void validateRepeats(const std::vector<PatternPosition>& pattern, bool notesMaySplitOrMerge);
 
+// Throws for a repeat that nothing has to follow and that is not greedy: where nothing says where a match ends,
+// it would never take more than its min.
+void validateLastRepeatGoesOn(const std::vector<PatternPosition>& pattern);
+
 } // namespace choralesearch
