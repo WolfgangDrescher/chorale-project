@@ -22,16 +22,18 @@ part-writing errors such as parallel fifths and octaves.
 
 ## Repository overview
 
-| Path                 | Description                                                                                                                                     |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bach-370-chorales/` | Git submodule with the source `**kern` files. Source: [github.com/craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales). |
-| `annotations/`       | Annotations: `bach-modulations.json` (hand-made) and `bach-lyrics.json`, see [Lyrics](#lyrics).                                                 |
-| `chorale-search/`    | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`, `chorale-group`) and their test suite.     |
-| `chorale-webapp/`    | Nuxt application.                                                                                                                               |
-| `chorale-tools/`     | Build setup of the tools service for Docker, see [Docker](#docker).                                                                             |
-| `kern/`              | Generated. Scores with modulations and lyrics, served to Verovio for rendering. Not committed.                                                  |
-| `corpus/`            | Generated. Same scores plus computed spines, read by the search. Not committed.                                                                 |
-| `positions/`         | Generated. Position of every line of each score, for annotating modulations in the webapp. Not committed.                                       |
+| Path                     | Description                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bach-370-chorales/`     | Git submodule with the source `**kern` files. Source: [github.com/craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales). |
+| `kittel-24-chorales/`    | Git submodule with Kittel's 24 chorales with eight different basses. Shown in the webapp, not searched.                                         |
+| `schiorring-choral-bog/` | Git submodule with Schiørring's «Choral-Bog». Shown in the webapp, not searched.                                                                |
+| `annotations/`           | Annotations: `bach-modulations.json` (hand-made) and `bach-lyrics.json`, see [Lyrics](#lyrics).                                                 |
+| `chorale-search/`        | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`, `chorale-group`) and their test suite.     |
+| `chorale-webapp/`        | Nuxt application.                                                                                                                               |
+| `chorale-tools/`         | Build setup of the tools service for Docker, see [Docker](#docker).                                                                             |
+| `kern/`                  | Generated. Scores with modulations and lyrics, served to Verovio for rendering. Not committed.                                                  |
+| `corpus/`                | Generated. Same scores plus computed spines, read by the search. Not committed.                                                                 |
+| `positions/`             | Generated. Position of every line of each score, for annotating modulations in the webapp. Not committed.                                       |
 
 
 ## Requirements
@@ -142,7 +144,7 @@ python3 annotations/scripts/import-lyrics.py bach-370-chorales/kern > annotation
 
 ## Updating after changes
 
-When the annotations or the scores in the submodule change, regenerate the
+When the annotations or the scores in the submodules change, regenerate the
 derived data:
 
 ```sh
@@ -167,7 +169,7 @@ without access to the outside. It passes those requests on to it when
 Every push to master runs `.github/workflows/build.yaml`. If the tests pass,
 both images are pushed to ghcr.io as `sha-<commit>` and `latest`.
 
-On the server, clone the repository without the submodule and always use
+On the server, clone the repository without the submodules and always use
 `docker/update.sh`. It updates to the newest commit with images after asking,
 and warns about rollbacks, local commits, a mismatched architecture and changes
 to `docker/nginx.example.conf`, the template for the reverse proxy.

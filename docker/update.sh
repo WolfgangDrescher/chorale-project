@@ -4,7 +4,7 @@
 #   docker/update.sh            update to the newest commit with images
 #   docker/update.sh <commit>   update (or roll back) to that commit
 #   docker/update.sh --build    build the images here instead of pulling them
-#                               (fetches the bach-370-chorales submodule)
+#                               (fetches the submodules)
 #
 # The images of a commit exist once .github/workflows/build.yaml has tested and
 # built it. The compose.yaml of that commit is checked out with it, so the two
