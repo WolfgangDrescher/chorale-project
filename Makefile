@@ -105,6 +105,7 @@ ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
 ANALYSIS_RESULTS_DIR := chorale-webapp/content/analysis-results
 ANALYSIS_MARKERS := $(patsubst chorale-webapp/analyses/%.json,$(ANALYSIS_RESULTS_DIR)/.%.generated,$(ANALYSES))
 BACH_CHORALES_MARKER := chorale-webapp/content/bach-chorales/.generated
+EXTRACT_SCRIPT_MODULES := chorale-webapp/scripts/humdrum-reference-records.mjs chorale-webapp/scripts/write-if-changed.mjs
 MODULATIONS := annotations/bach-modulations.json
 LYRICS := annotations/bach-lyrics.json
 SOURCE_KERN := bach-370-chorales/kern
@@ -165,7 +166,7 @@ chorale-webapp/node_modules: chorale-webapp/package-lock.json
 
 webapp: kern $(BACH_CHORALES_MARKER)
 
-$(BACH_CHORALES_MARKER): kern/.generated chorale-webapp/scripts/extract-bach-chorales.mjs $(CHORALE_INFO) chorale-webapp/node_modules
+$(BACH_CHORALES_MARKER): kern/.generated chorale-webapp/scripts/extract-bach-chorales.mjs $(EXTRACT_SCRIPT_MODULES) $(CHORALE_INFO) chorale-webapp/node_modules
 	node chorale-webapp/scripts/extract-bach-chorales.mjs --only-changed
 	@touch $@
 

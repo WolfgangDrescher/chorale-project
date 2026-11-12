@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dump } from 'js-yaml';
+import { parseHumdrumReferenceRecords } from './humdrum-reference-records.mjs';
+import { writeIfChanged } from './write-if-changed.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -18,46 +20,6 @@ const pathToKernScores = resolve(kernDirArg ?? `${__dirname}/../../kern/bach-370
 // the chorale-search build, so it is read the same way the search reads it.
 const choraleInfoBinary = `${__dirname}/../../chorale-search/build/chorale-info`;
 const choralesYamlPath = `${__dirname}/../content/bach-chorales/`;
-
-const HTML_ENTITIES = {
-    auml: 'ä',
-    ouml: 'ö',
-    uuml: 'ü',
-    Auml: 'Ä',
-    Ouml: 'Ö',
-    Uuml: 'Ü',
-    szlig: 'ß',
-    amp: '&',
-};
-
-// The reference records contain HTML entities ("Wasserfl&uuml;ssen").
-function decodeHtmlEntities(value) {
-    return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (entity, name) => {
-        if (name[0] === '#') {
-            const codePoint = name[1].toLowerCase() === 'x' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
-            return String.fromCodePoint(codePoint);
-        }
-        return HTML_ENTITIES[name] ?? entity;
-    });
-}
-
-function parseHumdrumReferenceRecords(humdrum) {
-    const output = {};
-    for (const line of humdrum.split(/\r?\n/)) {
-        const matches = line.match(/^!!!\s*([^:]+?)\s*:\s*(.*?)\s*$/);
-        if (!matches) continue;
-        const key = matches[1];
-        const value = decodeHtmlEntities(matches[2]);
-        if (Array.isArray(output[key])) {
-            output[key].push(value);
-        } else if (typeof output[key] !== 'undefined') {
-            output[key] = [output[key], value];
-        } else {
-            output[key] = value;
-        }
-    }
-    return output;
-}
 
 function first(value) {
     return Array.isArray(value) ? value[0] : value;
@@ -76,13 +38,6 @@ if (!fs.existsSync(choraleInfoBinary)) {
 const infosById = Object.fromEntries(
     JSON.parse(execFileSync(choraleInfoBinary, [pathToKernScores], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })).map((info) => [info.id, info]),
 );
-
-// Nuxt Content's dev server rebuilds its database for every file that changes.
-function writeIfChanged(path, content) {
-    if (fs.existsSync(path) && fs.readFileSync(path, 'utf8') === content) return false;
-    fs.writeFileSync(path, content);
-    return true;
-}
 
 if (!onlyChanged) fs.rmSync(choralesYamlPath, { recursive: true, force: true });
 fs.mkdirSync(choralesYamlPath, { recursive: true });
