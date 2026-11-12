@@ -89,6 +89,17 @@ const columns = [
     { id: 'incipit', header: t('incipit'), meta: { class: { th: 'hidden lg:table-cell w-80', td: 'hidden lg:table-cell py-0' } } },
 ];
 
+// The modulations cover the bottom of a row, which gets as much more padding as they are high,
+// so the text has as much room below as above.
+const tableUi = computed(() => ({
+    root: 'rounded-lg border border-default',
+    base: 'w-full table-fixed',
+    thead: 'bg-elevated/50',
+    th: 'px-2 sm:px-4',
+    td: ['px-2 sm:px-4 pt-2.5', visibleColumns.value.modulations ? 'pb-3.5' : 'pb-2.5'],
+    tr: 'group relative cursor-pointer',
+}));
+
 // The modulations run along the bottom of a row and have no column of their own.
 const columnVisibility = computed(() => {
     const { key, meter, incipit } = visibleColumns.value;
@@ -179,7 +190,7 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
                 :get-row-id="(chorale) => chorale.choraleId"
                 :data="pagedChorales"
                 :columns="columns"
-                :ui="{ root: 'rounded-lg border border-default', base: 'w-full table-fixed', thead: 'bg-elevated/50', th: 'px-2 sm:px-4', td: 'px-2 sm:px-4 py-2.5', tr: 'group relative cursor-pointer' }"
+                :ui="tableUi"
                 @select="(_, row) => navigateTo(linkTo(row.original))"
             >
                 <template #number-cell="{ row }">
