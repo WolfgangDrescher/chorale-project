@@ -3,7 +3,7 @@ import { useMediaQuery } from '@vueuse/core';
 
 // The outcome of a search made with useChoraleSearch: the error or progress while it runs, and
 // afterwards the matches per chorale. The empty slot replaces what is shown before the first
-// search and when there are no matches.
+// search, after an error and when there are no matches.
 const props = defineProps({
     search: { type: Object, required: true },
 });
@@ -123,91 +123,83 @@ function choraleLink(choraleId, items) {
 </script>
 
 <template>
-    <template v-if="error">
-        <UAlert color="error" variant="subtle" :title="error.data?.message ?? $t('searchError')">
-            <template v-if="error.data?.errors?.length" #description>
-                <ul>
-                    <li v-for="(msg, i) in error.data.errors" :key="i">{{ msg }}</li>
-                </ul>
-            </template>
-        </UAlert>
-    </template>
-    <template v-else>
-        <SearchProgress v-if="pending" :progress="progress" class="mt-8" />
-        <slot
-            v-else-if="(searchFetchCompleted && choraleEntries.length === 0) || !searchFetchCompleted"
-            name="empty"
-            :completed="searchFetchCompleted"
-        >
-            <UEmpty
-                :title="searchFetchCompleted ? $t('noResults') : undefined"
-                :description="searchFetchCompleted ? undefined : $t('noResultsDescription')"
-                icon="lucide:file-search"
-            />
-        </slot>
-        <template v-else>
-            <div class="flex flex-wrap items-center justify-between gap-4 my-4">
-                <i18n-t keypath="matchesFound" :plural="choraleEntries.length" tag="p" class="text-sm" scope="global">
-                    <template #matches>{{ totalMatches }}</template>
-                    <template #duration>
-                        <span v-if="durationMs !== null" class="text-dimmed tabular-nums">({{ $t('searchDuration', { duration: formatDuration(durationMs) }) }})</span>
-                    </template>
-                </i18n-t>
-                <div class="flex flex-wrap items-center gap-2">
-                    <ScoreOptionsPalette :score-options="scoreOptions" size="xs" />
-                    <ScorePlayerSettings variant="outline" size="xs" />
-                    <UFieldGroup>
-                        <USelect
-                            v-model="sortBy"
-                            :items="[
-                                { label: $t('sortById'), value: 'id' },
-                                { label: $t('sortByMatches'), value: 'matches' },
-                                { label: $t('sortByDensity'), value: 'density' },
-                            ]"
-                            size="xs"
-                            class="w-28"
-                            :aria-label="$t('sortBy')"
-                        />
-                        <UButton
-                            color="neutral"
-                            variant="outline"
-                            size="xs"
-                            :icon="sortDescending ? 'lucide:arrow-down-wide-narrow' : 'lucide:arrow-up-narrow-wide'"
-                            :aria-label="sortDescending ? $t('sortDescending') : $t('sortAscending')"
-                            @click="sortDescending = !sortDescending"
-                        />
-                    </UFieldGroup>
-                    <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" size="xs" v-bind="paginationProps" />
-                </div>
-            </div>
-            <div class="flex flex-col gap-4">
-                <ChoraleCard
-                    v-for="([choraleId, items]) in pagedChoraleEntries"
-                    :key="choraleId"
-                    :chorale-id="choraleId"
-                    :chorale="chorales?.[choraleId]"
-                    :match-count="items.length"
-                    :player="players.get(choraleId)"
-                    :to="choraleLink(choraleId, items)"
-                >
-                    <PlayableHighlightedScore
-                        :player="players.get(choraleId)"
-                        :horizontal="scoreOptions.showHorizontalViewMode"
-                        :piece-id="choraleId"
-                        :verovio-options="{
-                            ...scoreOptions.verovioOptions,
-                            pageMarginLeft: 42,
-                        }"
-                        :base-filters="scoreOptions.baseFilters"
-                        :filters="scoreOptions.humdrumFilters"
-                        :sections="sectionsForItems(items)"
-                        :scroll-to-first-section="scoreOptions.showHorizontalViewMode"
-                    />
-                </ChoraleCard>
-            </div>
-            <div class="flex justify-center my-4">
-                <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" v-bind="paginationProps" />
-            </div>
+    <UAlert v-if="error" color="error" variant="subtle" :title="error.data?.message ?? $t('searchError')" class="mb-8">
+        <template v-if="error.data?.errors?.length" #description>
+            <ul>
+                <li v-for="(msg, i) in error.data.errors" :key="i">{{ msg }}</li>
+            </ul>
         </template>
+    </UAlert>
+    <SearchProgress v-if="pending" :progress="progress" class="mt-8" />
+    <slot v-else-if="!searchFetchCompleted || choraleEntries.length === 0" name="empty" :completed="searchFetchCompleted">
+        <UEmpty
+            :title="searchFetchCompleted ? $t('noResults') : undefined"
+            :description="searchFetchCompleted ? undefined : $t('noResultsDescription')"
+            icon="lucide:file-search"
+        />
+    </slot>
+    <template v-else>
+        <div class="flex flex-wrap items-center justify-between gap-4 my-4">
+            <i18n-t keypath="matchesFound" :plural="choraleEntries.length" tag="p" class="text-sm" scope="global">
+                <template #matches>{{ totalMatches }}</template>
+                <template #duration>
+                    <span v-if="durationMs !== null" class="text-dimmed tabular-nums">({{ $t('searchDuration', { duration: formatDuration(durationMs) }) }})</span>
+                </template>
+            </i18n-t>
+            <div class="flex flex-wrap items-center gap-2">
+                <ScoreOptionsPalette :score-options="scoreOptions" size="xs" />
+                <ScorePlayerSettings variant="outline" size="xs" />
+                <UFieldGroup>
+                    <USelect
+                        v-model="sortBy"
+                        :items="[
+                            { label: $t('sortById'), value: 'id' },
+                            { label: $t('sortByMatches'), value: 'matches' },
+                            { label: $t('sortByDensity'), value: 'density' },
+                        ]"
+                        size="xs"
+                        class="w-28"
+                        :aria-label="$t('sortBy')"
+                    />
+                    <UButton
+                        color="neutral"
+                        variant="outline"
+                        size="xs"
+                        :icon="sortDescending ? 'lucide:arrow-down-wide-narrow' : 'lucide:arrow-up-narrow-wide'"
+                        :aria-label="sortDescending ? $t('sortDescending') : $t('sortAscending')"
+                        @click="sortDescending = !sortDescending"
+                    />
+                </UFieldGroup>
+                <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" size="xs" v-bind="paginationProps" />
+            </div>
+        </div>
+        <div class="flex flex-col gap-4">
+            <ChoraleCard
+                v-for="([choraleId, items]) in pagedChoraleEntries"
+                :key="choraleId"
+                :chorale-id="choraleId"
+                :chorale="chorales?.[choraleId]"
+                :match-count="items.length"
+                :player="players.get(choraleId)"
+                :to="choraleLink(choraleId, items)"
+            >
+                <PlayableHighlightedScore
+                    :player="players.get(choraleId)"
+                    :horizontal="scoreOptions.showHorizontalViewMode"
+                    :piece-id="choraleId"
+                    :verovio-options="{
+                        ...scoreOptions.verovioOptions,
+                        pageMarginLeft: 42,
+                    }"
+                    :base-filters="scoreOptions.baseFilters"
+                    :filters="scoreOptions.humdrumFilters"
+                    :sections="sectionsForItems(items)"
+                    :scroll-to-first-section="scoreOptions.showHorizontalViewMode"
+                />
+            </ChoraleCard>
+        </div>
+        <div class="flex justify-center my-4">
+            <UPagination v-model:page="page" :total="choraleEntries.length" :items-per-page="CHORALES_PER_PAGE" v-bind="paginationProps" />
+        </div>
     </template>
 </template>

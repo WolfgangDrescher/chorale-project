@@ -51,14 +51,19 @@ export function useChoraleSearch(initialQuery = '', { sortBy: initialSortBy = 'i
         return choraleEntries.value.slice(start, start + CHORALES_PER_PAGE);
     });
 
-    async function fetchSearchResults() {
+    function clearResults() {
         results.value = [];
         error.value = null;
-        pending.value = true;
         progress.value = null;
         page.value = 1;
         durationMs.value = null;
         searchedQuery.value = null;
+        searchFetchCompleted.value = false;
+    }
+
+    async function fetchSearchResults() {
+        clearResults();
+        pending.value = true;
         const searching = query.value;
         try {
             // durationMs is the server's measurement of the chorale-search binary
