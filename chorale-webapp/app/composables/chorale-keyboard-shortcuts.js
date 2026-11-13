@@ -17,12 +17,12 @@ export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, keysTake
 
     onKeyStroke('ArrowLeft', () => {
         if (ignoreIfInput() || toValue(keysTaken) || !prev.value) return;
-        navigateTo(localePath({ name: 'chorale-id', params: { id: prev.value.choraleId }, hash: route.hash }));
+        navigateTo(localePath({ name: 'chorale-bach-id', params: { id: prev.value.choraleId }, hash: route.hash }));
     });
 
     onKeyStroke('ArrowRight', () => {
         if (ignoreIfInput() || toValue(keysTaken) || !next.value) return;
-        navigateTo(localePath({ name: 'chorale-id', params: { id: next.value.choraleId }, hash: route.hash }));
+        navigateTo(localePath({ name: 'chorale-bach-id', params: { id: next.value.choraleId }, hash: route.hash }));
     });
 
     onKeyStroke('h', () => {

@@ -29,7 +29,7 @@ const filters = computed(() => [
             }"
         />
         <figcaption v-if="caption" class="mt-2 text-sm text-dimmed">
-            <NuxtLink :to="`/chorale/${choraleId}`" class="hover:underline">{{ caption }}</NuxtLink>
+            <NuxtLink :to="`/chorale/bach/${choraleId}`" class="hover:underline">{{ caption }}</NuxtLink>
         </figcaption>
     </figure>
 </template>

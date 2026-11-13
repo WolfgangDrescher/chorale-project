@@ -113,12 +113,12 @@ useScorePlayerKeyboardShortcuts(() => {
 
 // The page of the chorale, with the matches to highlight there: "4:12-15~1:12-14,4:30-31" is a
 // voice and its lines for each section, joined with "~" to the sections it links in other voices;
-// "t1:27-38" is the text of verse 1 over those lines (see pages/chorale/[id].vue).
+// "t1:27-38" is the text of verse 1 over those lines (see pages/chorale/bach/[id].vue).
 function choraleLink(choraleId, items) {
     const text = ({ type, voice, verse, startLine, endLine }) => `${type === 'text' ? 't' + verse : voice}:${startLine}-${endLine}`;
     const sections = sectionsForItems(items).flatMap(({ items: sectionItems }) => sectionItems);
     const matches = sections.map((section) => [section, ...section.linkedSections].map(text).join('~')).join(',');
-    return { path: localePath(`/chorale/${choraleId}`), query: { matches } };
+    return { path: localePath(`/chorale/bach/${choraleId}`), query: { matches } };
 }
 </script>
 

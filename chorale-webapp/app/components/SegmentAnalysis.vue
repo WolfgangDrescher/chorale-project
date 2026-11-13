@@ -426,10 +426,10 @@ function sectionsForMatchItems(items) {
     ];
 }
 
-// The format of matches is read in pages/chorale/[id].vue.
+// The format of matches is read in pages/chorale/bach/[id].vue.
 function choraleLink(choraleId, items) {
     const matches = items.map(({ voice, startLine, endLine }) => `${voice}:${startLine}-${endLine}`).join(',');
-    return { path: localePath(`/chorale/${choraleId}`), query: { matches } };
+    return { path: localePath(`/chorale/bach/${choraleId}`), query: { matches } };
 }
 
 // The segment's query or stats as JSON in a modal, so they don't take up room on the page.

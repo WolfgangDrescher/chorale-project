@@ -237,7 +237,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 </Heading>
                 <div class="flex flex-wrap items-center gap-2">
                     <div class="flex gap-2">
-                        <UButton :disabled="!prevChorale" :to="localePath({ name: 'chorale-id', params: { id: prevChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
+                        <UButton :disabled="!prevChorale" :to="localePath({ name: 'chorale-bach-id', params: { id: prevChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
                             <template #leading>
                                 <UKbd color="neutral" class="hidden sm:inline-flex">
                                     <UIcon name="lucide:arrow-left" />
@@ -245,7 +245,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                             </template>
                             {{ $t('previousChorale') }}
                         </UButton>
-                        <UButton :disabled="!nextChorale" :to="localePath({ name: 'chorale-id', params: { id: nextChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
+                        <UButton :disabled="!nextChorale" :to="localePath({ name: 'chorale-bach-id', params: { id: nextChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
                             {{ $t('nextChorale') }}
                             <template #trailing>
                                 <UKbd color="neutral" class="hidden sm:inline-flex">

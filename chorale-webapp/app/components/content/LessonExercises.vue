@@ -26,7 +26,7 @@ const items = computed(() => (lesson?.exercises ?? []).map((exercise, index) => 
     chorales: exercise.chorales.map((chorale) => ({
         label: chorale,
         score: exercise.scoreFilters && {
-            to: { path: localePath(`/chorale/${chorale}`), query: { filters: exercise.scoreFilters.join(',') } },
+            to: { path: localePath(`/chorale/bach/${chorale}`), query: { filters: exercise.scoreFilters.join(',') } },
             ariaLabel: t('exerciseOpenScore', { chorale }),
         },
         entries: (exercise.export?.formats ?? ['pdf', 'mei']).map((format) => ({

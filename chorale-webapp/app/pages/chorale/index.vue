@@ -55,7 +55,7 @@ const chorales = computed(() => {
 
 const pagedChorales = computed(() => chorales.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value));
 
-const linkTo = (chorale) => localePath({ name: 'chorale-id', params: { id: chorale.choraleId } });
+const linkTo = (chorale) => localePath({ name: 'chorale-bach-id', params: { id: chorale.choraleId } });
 
 const TOOLTIP_CONTENT = { side: 'bottom' };
 

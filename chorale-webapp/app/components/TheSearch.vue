@@ -52,7 +52,7 @@ const choraleItems = computed(() => chorales.value.map((chorale) => ({
     label: chorale.title ? [chorale.number, chorale.title].filter(Boolean).join('. ') : chorale.choraleId,
     suffix: [chorale.choraleId, chorale.bwv, [chorale.key, chorale.mode].filter(Boolean).join(' ')].filter(Boolean).join(' · '),
     icon: 'lucide:music',
-    to: localePath({ name: 'chorale-id', params: { id: chorale.choraleId } }),
+    to: localePath({ name: 'chorale-bach-id', params: { id: chorale.choraleId } }),
     choraleNumber: chorale.number,
 })));
 
