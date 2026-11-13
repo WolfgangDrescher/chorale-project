@@ -1,6 +1,7 @@
 <script setup>
 const localePath = useLocalePath();
-const { params: { id } } = useRoute();
+const route = useRoute();
+const { params: { id } } = route;
 
 const { data: chorale } = await useAsyncData(`bach-chorales/${id}`, () => queryCollection('bachChorales').where('stem', '=', `bach-chorales/${id}`).first());
 
@@ -37,6 +38,9 @@ const surroundingChorales = computed(() => {
 });
 const prevChorale = computed(() => surroundingChorales.value.prev);
 const nextChorale = computed(() => surroundingChorales.value.next);
+const choraleRoute = (item) => item && localePath({ name: 'chorale-bach-id', params: { id: item.choraleId }, hash: route.hash });
+const prevChoraleRoute = computed(() => choraleRoute(prevChorale.value));
+const nextChoraleRoute = computed(() => choraleRoute(nextChorale.value));
 
 const { localScoreUrlGenerator, githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator();
 
@@ -223,89 +227,62 @@ useChoraleKeyboardShortcuts({ prevChorale, nextChorale, keysTaken: () => annotat
 
 // The key as the score writes it, e.g. "G major" or "f# minor".
 const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Boolean).join(' '));
+const subtitle = computed(() => [chorale.value.composer, chorale.value.bwv, keyName.value, chorale.value.meters?.join(' ')].filter(Boolean).join(' · '));
+
+const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHORALE_PAGE_VEROVIO_OPTIONS }));
 </script>
 
 <template>
     <UContainer>
         <div class="flex flex-col gap-8">
-            <div>
-                <Heading>
-                    {{ heading }}
-                    <div class="text-base font-normal">
-                        {{ [chorale.composer, chorale.bwv, keyName, chorale.meters?.join(' ')].filter(Boolean).join(' · ') }}
-                    </div>
-                </Heading>
-                <div class="flex flex-wrap items-center gap-2">
-                    <div class="flex gap-2">
-                        <UButton :disabled="!prevChorale" :to="localePath({ name: 'chorale-bach-id', params: { id: prevChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
-                            <template #leading>
-                                <UKbd color="neutral" class="hidden sm:inline-flex">
-                                    <UIcon name="lucide:arrow-left" />
-                                </UKbd>
-                            </template>
-                            {{ $t('previousChorale') }}
-                        </UButton>
-                        <UButton :disabled="!nextChorale" :to="localePath({ name: 'chorale-bach-id', params: { id: nextChorale?.choraleId }, hash: $route.hash })" color="neutral" variant="outline" size="xs">
-                            {{ $t('nextChorale') }}
-                            <template #trailing>
-                                <UKbd color="neutral" class="hidden sm:inline-flex">
-                                    <UIcon name="lucide:arrow-right" />
-                                </UKbd>
-                            </template>
-                        </UButton>
-                        <UFieldGroup size="xs">
-                            <UPopover mode="hover" :open="isFiltered && isFilterPopoverOpen" @update:open="isFilterPopoverOpen = $event">
-                                <UButton
-                                    :label="$t('filterChoraleList')"
-                                    :color="isFiltered ? 'primary' : 'neutral'"
-                                    :variant="isFiltered ? 'soft' : 'outline'"
-                                    icon="lucide:funnel"
-                                    @click="isFilterModalOpen = true"
-                                />
-                                <template #content>
-                                    <ChoraleListFilterBadges class="p-2" />
-                                </template>
-                            </UPopover>
+            <ChoraleHeader :heading="heading" :subtitle="subtitle" :prev-route="prevChoraleRoute" :next-route="nextChoraleRoute">
+                <template #navigation>
+                    <UFieldGroup size="xs">
+                        <UPopover mode="hover" :open="isFiltered && isFilterPopoverOpen" @update:open="isFilterPopoverOpen = $event">
                             <UButton
-                                v-if="isFiltered"
-                                color="primary"
-                                variant="soft"
-                                icon="lucide:x"
-                                :aria-label="$t('resetFilter')"
-                                class="px-1.5"
-                                :ui="{ leadingIcon: 'size-3' }"
-                                @click="filter = ''"
+                                :label="$t('filterChoraleList')"
+                                :color="isFiltered ? 'primary' : 'neutral'"
+                                :variant="isFiltered ? 'soft' : 'outline'"
+                                icon="lucide:funnel"
+                                @click="isFilterModalOpen = true"
                             />
-                        </UFieldGroup>
-                    </div>
-                    <div v-if="allChorales.length" class="text-sm text-muted">
-                        <template v-if="!isFiltered">{{ $t('choralePosition', { position: positionInFilter, count: filteredChorales.length }) }}</template>
-                        <template v-else-if="positionInFilter">{{ $t('choralePositionFiltered', { position: positionInFilter, count: filteredChorales.length }, filteredChorales.length) }}</template>
-                        <template v-else>{{ $t('choraleNotInFilter', { count: filteredChorales.length }, filteredChorales.length) }}</template>
-                    </div>
-                    <UModal v-model:open="isFilterModalOpen" :title="$t('filterChoraleList')">
-                        <template #body>
-                            <ChoraleListFilter :count="filteredChorales.length" />
-                        </template>
-                    </UModal>
+                            <template #content>
+                                <ChoraleListFilterBadges class="p-2" />
+                            </template>
+                        </UPopover>
+                        <UButton
+                            v-if="isFiltered"
+                            color="primary"
+                            variant="soft"
+                            icon="lucide:x"
+                            :aria-label="$t('resetFilter')"
+                            class="px-1.5"
+                            :ui="{ leadingIcon: 'size-3' }"
+                            @click="filter = ''"
+                        />
+                    </UFieldGroup>
+                </template>
+                <div v-if="allChorales.length" class="text-sm text-muted">
+                    <template v-if="!isFiltered">{{ $t('choralePosition', { position: positionInFilter, count: filteredChorales.length }) }}</template>
+                    <template v-else-if="positionInFilter">{{ $t('choralePositionFiltered', { position: positionInFilter, count: filteredChorales.length }, filteredChorales.length) }}</template>
+                    <template v-else>{{ $t('choraleNotInFilter', { count: filteredChorales.length }, filteredChorales.length) }}</template>
                 </div>
-            </div>
+                <UModal v-model:open="isFilterModalOpen" :title="$t('filterChoraleList')">
+                    <template #body>
+                        <ChoraleListFilter :count="filteredChorales.length" />
+                    </template>
+                </UModal>
+            </ChoraleHeader>
 
             <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
                 <ScoreOptionsPalette :chorale="chorale" />
                 <ScorePlayerControls :player="player" :file-name="chorale.choraleId" />
                 <div class="shrink-0 flex gap-2 ml-auto">
-                    <UFieldGroup>
-                        <UTooltip :text="$t('github')">
-                            <UButton :to="githubScoreUrlGenerator(chorale.choraleId)" target="_blank" icon="simple-icons:github" color="neutral" variant="outline" :aria-label="$t('github')" />
-                        </UTooltip>
-                        <UTooltip :text="$t('vhv')">
-                            <UButton :to="vhvScoreUrlGenerator(chorale.choraleId)" target="_blank" icon="custom:vhv" color="neutral" variant="outline" :aria-label="$t('vhv')" />
-                        </UTooltip>
+                    <ChoraleScoreLinks :github-url="githubScoreUrlGenerator(chorale.choraleId)" :vhv-url="vhvScoreUrlGenerator(chorale.choraleId)">
                         <UTooltip v-if="chorale.urlScan" :text="$t('scan')">
                             <UButton :to="chorale.urlScan" target="_blank" icon="lucide:book-image" color="neutral" variant="outline" :aria-label="$t('scan')" />
                         </UTooltip>
-                    </UFieldGroup>
+                    </ChoraleScoreLinks>
                     <UDropdownMenu :items="downloadItems" arrow>
                         <UButton icon="lucide:download" trailing-icon="lucide:chevron-down" color="neutral" variant="outline" :aria-label="$t('download')" />
                         <template #content-top>
@@ -350,15 +327,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 :player="player"
                 :score-url="localScoreUrlGenerator(chorale.choraleId)"
                 :horizontal="scoreOptions.showHorizontalViewMode"
-                :verovio-options="{
-                    ...scoreOptions.verovioOptions,
-                    header: 'none',
-                    spacingSystem: 15,
-                    pageMarginLeft: 50,
-                    pageMarginRight: 0,
-                    pageMarginTop: 50,
-                    pageMarginBottom: 50,
-                }"
+                :verovio-options="verovioOptions"
                 :base-filters="scoreOptions.baseFilters"
                 :filters="scoreOptions.humdrumFilters"
                 :sections="matches"
