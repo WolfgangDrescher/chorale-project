@@ -292,16 +292,16 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                 <ScoreOptionsPalette :chorale="chorale" />
                 <ScorePlayerControls :player="player" :file-name="chorale.choraleId" />
                 <div class="shrink-0 flex gap-2 ml-auto">
-                    <UButton :to="githubScoreUrlGenerator(chorale.choraleId)" target="_blank">
-                        {{ $t('github') }}
-                    </UButton>
-                    <UButton :to="vhvScoreUrlGenerator(chorale.choraleId)" target="_blank">
-                        {{ $t('vhv') }}
-                    </UButton>
+                    <UFieldGroup>
+                        <UTooltip :text="$t('github')">
+                            <UButton :to="githubScoreUrlGenerator(chorale.choraleId)" target="_blank" icon="simple-icons:github" color="neutral" variant="outline" :aria-label="$t('github')" />
+                        </UTooltip>
+                        <UTooltip :text="$t('vhv')">
+                            <UButton :to="vhvScoreUrlGenerator(chorale.choraleId)" target="_blank" icon="custom:vhv" color="neutral" variant="outline" :aria-label="$t('vhv')" />
+                        </UTooltip>
+                    </UFieldGroup>
                     <UDropdownMenu :items="downloadItems" arrow>
-                        <UButton trailing-icon="lucide:chevron-down">
-                            {{ $t('download') }}
-                        </UButton>
+                        <UButton icon="lucide:download" trailing-icon="lucide:chevron-down" color="neutral" variant="outline" :aria-label="$t('download')" />
                         <template #content-top>
                             <div class="flex flex-col gap-2 p-1.5 pb-1">
                                 <div>

@@ -5,6 +5,9 @@ export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
     devtools: { enabled: false },
     modules: ['@nuxt/ui', '@nuxt/content', '@nuxtjs/i18n', '@pinia/nuxt', '@nuxtjs/plausible'],
+    icon: {
+        customCollections: [{ prefix: 'custom', dir: './app/assets/icons' }],
+    },
     css: ['~/assets/css/main.css'],
     app: {
         head: {
