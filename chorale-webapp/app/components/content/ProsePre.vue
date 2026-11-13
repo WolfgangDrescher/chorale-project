@@ -48,16 +48,7 @@ const isRunnable = computed(() => {
 // The code of a block ends with a line break, which the editor would show as an empty last line.
 const query = computed(() => props.code?.trimEnd());
 const drawerOpen = ref(false);
-// The tooltips shift to stay within the block. Its bottom edge is moved far down, so a tooltip
-// of a short block does not flip above its button. Rendered within the block, a closing tooltip
-// under the pointer keeps the block hovered and its buttons visible.
-const tooltipProps = computed(() => ({
-    delayDuration: 0,
-    disableHoverableContent: true,
-    arrow: true,
-    content: { side: 'bottom', sideOffset: 4, collisionBoundary: rootRef.value, collisionPadding: { left: 8, right: 8, bottom: -1000 } },
-    portal: false,
-}));
+const tooltipProps = useCodeBlockTooltipProps(rootRef);
 </script>
 
 <template>

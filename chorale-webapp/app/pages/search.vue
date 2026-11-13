@@ -38,7 +38,16 @@ const storedQuery = useLocalStorage('chorale-search-query', DEMO_QUERY);
 
 const search = useChoraleSearch(storedQuery);
 
-const { query, pending, fetchSearchResults } = search;
+const { query, pending, fetchSearchResults, searchFetchCompleted, totalMatches, choraleEntries } = search;
+
+const history = useSearchHistory();
+
+async function searchAndRemember() {
+    const searching = query.value;
+    await fetchSearchResults();
+    if (!searchFetchCompleted.value) return;
+    history.remember({ query: searching, matches: totalMatches.value, choraleCount: choraleEntries.value.length });
+}
 
 // A query given in the URL (?query=...) replaces the stored one and is searched right away. The
 // parameter is then removed, so a reload keeps later changes to the query. It is JSON or, for
@@ -66,11 +75,11 @@ onMounted(() => {
     const parsed = parseQueryParameter(route.query.query);
     query.value = parsed === undefined ? route.query.query : formatQuery(parsed);
     router.replace({ query: { ...route.query, query: undefined } });
-    fetchSearchResults();
+    searchAndRemember();
 });
 
-function onSubmit() {
-    fetchSearchResults();
+function applyHistoryQuery(historyQuery) {
+    query.value = historyQuery;
 }
 
 function applyDemoQuery() {
@@ -83,8 +92,11 @@ function applyDemoQuery() {
        <Heading>{{ $t('search') }}</Heading>
 
        <UCard class="mb-4">
-           <UForm class="space-y-4" @submit="onSubmit">
+           <UForm class="space-y-4" @submit="searchAndRemember">
                 <UFormField :label="$t('query')">
+                    <template #hint>
+                        <SearchHistory @apply="applyHistoryQuery" />
+                    </template>
                     <MonacoEditor
                         v-model="query"
                         :schema="choraleSearchQuerySchema"

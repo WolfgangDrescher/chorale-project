@@ -28,6 +28,15 @@ searchResults: Suchergebnisse
 editQuery: Query bearbeiten
 openInSearch: In der Suche öffnen
 searchError: Die Suche ist fehlgeschlagen.
+searchHistory: Verlauf
+searchHistoryEmpty: Noch keine Suchen im Verlauf.
+searchHistoryMatches: "keine Treffer | {matches} Treffer in einem Choral | {matches} Treffer in {count} Chorälen"
+searchHistoryCombinedQueries: "{count} kombinierte Queries"
+searchHistoryApply: Übernehmen
+searchHistoryForget: Entfernen
+searchHistoryEntryRemoved: Eintrag aus dem Verlauf entfernt
+searchHistoryClear: Verlauf leeren
+searchHistoryClearConfirmation: Gesamten Verlauf löschen?
 choraleAnalysis: Choralanalyse
 segmentAnalysis: Segmente
 checkAnalysis: Satzkontrolle
@@ -78,6 +87,7 @@ cantusFirmusMatches: "Der Cantus firmus dieses Segments kommt nicht im Korpus vo
 noBassLines: Auch die Melodie allein kommt im Korpus nicht vor, daher gibt es keinen Bass dazu.
 matchCount: "ein Treffer | {count} Treffer"
 copy: Kopieren
+undo: Rückgängig
 copied: Kopiert
 stats: Stats
 showMatches: Treffer im Korpus anzeigen
