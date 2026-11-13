@@ -6,12 +6,12 @@ export function useScoreUrlGenerator() {
 
 
     function githubScoreUrlGenerator(id) {
-        const url = `https://github.com/craigsapp/bach-370-chorales/blob/master/kern/${id}.krn`;
+        const url = `https://github.com/craigsapp/bach-370-chorales/blob/main/kern/${id}.krn`;
         return url;
     }
 
     function githubRawScoreUrlGenerator(id) {
-        const url = `https://raw.githubusercontent.com/craigsapp/bach-370-chorales/refs/heads/master/kern/${id}.krn`;
+        const url = `https://raw.githubusercontent.com/craigsapp/bach-370-chorales/refs/heads/main/kern/${id}.krn`;
         return url;
     }
 
