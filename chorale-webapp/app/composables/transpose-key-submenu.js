@@ -48,11 +48,12 @@ export function useTransposeKeySubmenu(chorale) {
         return `${Math.abs(keySignature)}${keySignature < 0 ? '♭' : '♯'}`;
     }
 
-    // A key written as the heading of the page of a chorale writes its key: the tonic in **kern
-    // spelling (upper case for major, lower case for minor) and the mode, e.g. "E- major".
+    const keyNotation = useKeyNotation();
+
+    // The tonic is spelled as **kern spells it, upper case for a mode with a major third.
     function keyLabel(key) {
         const tonic = isMinor.value ? key : key.charAt(0).toUpperCase() + key.slice(1);
-        return [tonic, mode.value].filter(Boolean).join(' ');
+        return keyNameInNotation(tonic, mode.value, keyNotation.value, t);
     }
 
     return computed(() => {

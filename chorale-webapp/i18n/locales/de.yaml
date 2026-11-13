@@ -152,6 +152,7 @@ resetZoom: Partitur Anzeige zurücksetzen
 showHorizontalViewMode: Partitur horizontal anzeigen
 layers: Layer
 showModulations: Modulationen anzeigen
+hideModulations: Modulationen ausblenden
 showLyrics: Liedtext anzeigen
 keyColoringAbsolute: Absolute Farben
 keyColoringRelative: Farben relativ zur Grundtonart
@@ -205,6 +206,12 @@ hideNonCantusFirmusVoices: Alle Stimmen ausser Cantus firmus ausblenden
 transposeKey: Transponieren
 searchKey: Tonart suchen
 originalKey: Originaltonart
+keyNotation: Tonartbezeichnung
+keyNotationHumdrum: Humdrum
+keyNotationHumdrumRules: "Dur groß, Moll klein, {flat} ist ♭, {sharp} ist ♯: {examples}"
+keyNotationGerman: Deutsch
+keyNotationJazz: Jazz-Akkordsymbole
+keyNotationEnglish: Englisch
 chorales: Choräle
 id: ID
 title: Titel
@@ -266,6 +273,10 @@ modeMixolydian: mixolydisch
 modeMixolydianShort: mixolyd.
 modeLocrian: lokrisch
 modeLocrianShort: lokr.
+modeIonian: ionisch
+modeIonianShort: ion.
+modeAeolian: äolisch
+modeAeolianShort: äol.
 text: Text
 playerPlay: Abspielen
 playerPause: Pause

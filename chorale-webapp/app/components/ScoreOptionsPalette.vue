@@ -77,9 +77,48 @@ function humdrumFilterItem(option) {
     };
 }
 
-// A click on the checkbox of a checked filter with a submenu turns it off; it does not open the
-// submenu, as a click on the rest of the row does.
+const keyNotation = useKeyNotation();
+
+// The modulations are turned on and off with the checkbox. The row opens a submenu that hides them
+// or shows them with their keys in a notation.
+function showModulationsItem() {
+    return {
+        label: t('showModulations'),
+        indicator: 'checkbox',
+        checked: () => scoreOptions.showModulations,
+        toggle: () => (scoreOptions.showModulations = !scoreOptions.showModulations),
+        kbd: 'M',
+        suffix: t(KEY_NOTATIONS[keyNotation.value] ?? KEY_NOTATIONS.humdrum),
+        placeholder: t('keyNotation'),
+        children: [
+            {
+                label: t('hideModulations'),
+                indicator: 'radio',
+                checked: () => !scoreOptions.showModulations,
+                onSelect: () => (scoreOptions.showModulations = false),
+            },
+            ...Object.entries(KEY_NOTATIONS).map(([notation, name]) => ({
+                label: t(name),
+                notation,
+                indicator: 'radio',
+                checked: () => scoreOptions.showModulations && keyNotation.value === notation,
+                onSelect: () => {
+                    keyNotation.value = notation;
+                    scoreOptions.showModulations = true;
+                },
+            })),
+        ],
+    };
+}
+
+// A click on the checkbox of a checked filter with a submenu turns it off, one of an item with a
+// toggle toggles it; it does not open the submenu, as a click on the rest of the row does.
 function onCheckboxClick(event, item) {
+    if (item.toggle) {
+        event.stopPropagation();
+        item.toggle();
+        return;
+    }
     if (!item.uncheck || !item.checked()) return;
     event.stopPropagation();
     item.uncheck();
@@ -138,13 +177,7 @@ const groups = computed(() => {
                     kbd: 'L',
                 },
                 // Without a chorale there are no modulations to show.
-                ...(props.chorale ? [{
-                    label: t('showModulations'),
-                    onSelect: () => (scoreOptions.showModulations = !scoreOptions.showModulations),
-                    indicator: 'checkbox',
-                    checked: () => scoreOptions.showModulations,
-                    kbd: 'M',
-                }] : []),
+                ...(props.chorale ? [showModulationsItem()] : []),
             ],
         },
         {
@@ -210,6 +243,9 @@ const groups = computed(() => {
                     <span v-else-if="item.indicator === 'checkbox'" class="flex" @click="onCheckboxClick($event, item)">
                         <UCheckbox :model-value="item.checked()" />
                     </span>
+                </template>
+                <template #item-description="{ item }">
+                    <KeyNotationExamples v-if="item.notation" :notation="item.notation" />
                 </template>
                 <template #item-trailing="{ item }">
                     <div v-if="item.cmd" class="font-mono text-[0.55rem] text-gray-500" :class="{ 'translate-y-1': !item.children?.length }">{{ item.cmd }}</div>

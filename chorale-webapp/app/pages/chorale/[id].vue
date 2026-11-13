@@ -203,11 +203,14 @@ useScorePlayerKeyboardShortcuts(() => toggleCurrentScorePlayer(player));
 
 const modulations = computed(() => chorale.value.modulations ?? []);
 
+const { t } = useI18n();
+const keyNotation = useKeyNotation();
+
 const modulationLines = computed(() => [{
     color: 'rgb(34 197 94 / 0.4)',
     items: modulations.value.map(({ line, key, mode }) => ({
         lineNumber: line,
-        label: { value: !mode || ['major', 'minor'].includes(mode) ? key : `${key}:${mode.slice(0, 3)}`, position: 'bottom' },
+        label: { value: key === '?' ? key : keyNameInNotation(key, mode, keyNotation.value, t), position: 'bottom' },
     })),
 }]);
 

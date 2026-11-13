@@ -12,17 +12,6 @@ const POPOVER_CONTENT = { side: 'bottom', align: 'center' };
 
 const { t, locale } = useI18n();
 
-// The name of a mode and its short form.
-const MODE_NAMES = {
-    major: ['modeMajor', 'modeMajor'],
-    minor: ['modeMinor', 'modeMinor'],
-    dorian: ['modeDorian', 'modeDorianShort'],
-    phrygian: ['modePhrygian', 'modePhrygianShort'],
-    lydian: ['modeLydian', 'modeLydianShort'],
-    mixolydian: ['modeMixolydian', 'modeMixolydianShort'],
-    locrian: ['modeLocrian', 'modeLocrianShort'],
-};
-
 const nameOf = ({ key, mode }) => t('keyWithMode', { key: localizedKeyName(key, locale.value), mode: t(MODE_NAMES[mode][0]) });
 
 const cantusFirmusLabel = computed(() => {
