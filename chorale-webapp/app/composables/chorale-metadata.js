@@ -1,7 +1,7 @@
-// Each chorale by its id, from the metadata extract-chorales.mjs wrote.
+// Each chorale by its id, from the metadata extract-bach-chorales.mjs wrote.
 export function useChoraleMetadata() {
     const { data: chorales } = useAsyncData('chorales-by-id', async () => {
-        const entries = await queryCollection('chorales').select('choraleId', 'title', 'bwv', 'duration').all();
+        const entries = await queryCollection('bachChorales').select('choraleId', 'title', 'bwv', 'duration').all();
         return Object.fromEntries(entries.map((chorale) => [chorale.choraleId, chorale]));
     });
     return chorales;

@@ -17,7 +17,7 @@ const pathToKernScores = resolve(kernDirArg ?? `${__dirname}/../../kern/bach-370
 // What the scores state about themselves as a whole (the key, the meter, the length) comes from
 // the chorale-search build, so it is read the same way the search reads it.
 const choraleInfoBinary = `${__dirname}/../../chorale-search/build/chorale-info`;
-const choralesYamlPath = `${__dirname}/../content/chorales/`;
+const choralesYamlPath = `${__dirname}/../content/bach-chorales/`;
 
 const HTML_ENTITIES = {
     auml: 'ä',

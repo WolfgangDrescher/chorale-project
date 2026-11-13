@@ -21,7 +21,7 @@ function invalidQuery(name, allowed) {
 
 // The chorale of the content (see content.config.ts), where the title of a PDF comes from.
 async function findChorale(event, id) {
-    const chorale = await queryCollection(event, 'chorales').where('stem', '=', `chorales/${id}`).first();
+    const chorale = await queryCollection(event, 'bachChorales').where('stem', '=', `bach-chorales/${id}`).first();
     if (!chorale) throw createError({ statusCode: 404, statusMessage: 'Page Not Found' });
     return chorale;
 }

@@ -34,8 +34,8 @@
 #     generated again if something changed (./corpus/.generated).
 #
 # make webapp
-#     generate chorale-webapp/content/chorales from ./kern with
-#     chorale-webapp/scripts/extract-chorales.mjs: one YAML file per chorale
+#     generate chorale-webapp/content/bach-chorales from ./kern with
+#     chorale-webapp/scripts/extract-bach-chorales.mjs: one YAML file per chorale
 #     with the metadata for the chorale pages. The key, the meter and the
 #     length come from chorale-info. Installs the webapp's npm
 #     dependencies first if chorale-webapp/node_modules is missing or older
@@ -57,7 +57,7 @@
 #     markers record when they last ran
 #
 # make clean
-#     remove the generated ./kern, ./corpus and chorale-webapp/content/chorales
+#     remove the generated ./kern, ./corpus and chorale-webapp/content/bach-chorales
 #     directories -- only what this Makefile itself produces. The
 #     chorale-search build survives, so the next `make kern` does not
 #     recompile it; use clean-build for that
@@ -104,7 +104,7 @@ CHORALE_INFO := ./chorale-search/build/chorale-info
 ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
 ANALYSIS_RESULTS_DIR := chorale-webapp/content/analysis-results
 ANALYSIS_MARKERS := $(patsubst chorale-webapp/analyses/%.json,$(ANALYSIS_RESULTS_DIR)/.%.generated,$(ANALYSES))
-CHORALES_MARKER := chorale-webapp/content/chorales/.generated
+BACH_CHORALES_MARKER := chorale-webapp/content/bach-chorales/.generated
 MODULATIONS := annotations/bach-modulations.json
 LYRICS := annotations/bach-lyrics.json
 SOURCE_KERN := bach-370-chorales/kern
@@ -163,10 +163,10 @@ chorale-webapp/node_modules: chorale-webapp/package-lock.json
 	npm ci --prefix chorale-webapp
 	touch chorale-webapp/node_modules
 
-webapp: kern $(CHORALES_MARKER)
+webapp: kern $(BACH_CHORALES_MARKER)
 
-$(CHORALES_MARKER): kern/.generated chorale-webapp/scripts/extract-chorales.mjs $(CHORALE_INFO) chorale-webapp/node_modules
-	node chorale-webapp/scripts/extract-chorales.mjs --only-changed
+$(BACH_CHORALES_MARKER): kern/.generated chorale-webapp/scripts/extract-bach-chorales.mjs $(CHORALE_INFO) chorale-webapp/node_modules
+	node chorale-webapp/scripts/extract-bach-chorales.mjs --only-changed
 	@touch $@
 
 analyses: $(ANALYSIS_MARKERS)
@@ -179,7 +179,7 @@ $(ANALYSIS_RESULTS_DIR)/.%.generated: chorale-webapp/analyses/%.json corpus/.gen
 	@touch $@
 
 clean:
-	rm -rf kern positions corpus chorale-webapp/content/chorales chorale-webapp/content/analysis-results
+	rm -rf kern positions corpus chorale-webapp/content/bach-chorales chorale-webapp/content/analysis-results
 
 clean-build:
 	$(MAKE) -C chorale-search clean

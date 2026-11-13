@@ -77,7 +77,7 @@ CMD ["node", ".output/server/index.mjs"]
 
 
 # The webapp, built with chorale-info (the key, the meter and the length of
-# every chorale, for content/chorales). kern comes first as in the Makefile: the
+# every chorale, for content/bach-chorales). kern comes first as in the Makefile: the
 # install runs `nuxt prepare`, and the config points at it.
 FROM node:${NODE}-${DEBIAN}-slim AS webapp-build
 WORKDIR /build/chorale-webapp
@@ -87,7 +87,7 @@ COPY chorale-webapp ./
 COPY --from=data /build/chorale-webapp/content/analysis-results ./content/analysis-results
 RUN npm ci
 COPY --from=toolchain /build/chorale-search/build/chorale-info /build/chorale-search/build/chorale-info
-RUN node scripts/extract-chorales.mjs \
+RUN node scripts/extract-bach-chorales.mjs \
     && npm run build
 
 

@@ -10,7 +10,7 @@ useHead({
 
 const UButton = resolveComponent('UButton');
 
-const { data: allChorales } = await useAsyncData('all-chorales', () => queryCollection('chorales').order('stem', 'ASC').all());
+const { data: allChorales } = await useAsyncData('all-bach-chorales', () => queryCollection('bachChorales').order('stem', 'ASC').all());
 
 const { filter, listFilter } = useChoraleListFilter();
 const { view, visibleColumns, coloring } = useChoraleListSettings();

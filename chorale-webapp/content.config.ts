@@ -11,9 +11,9 @@ const keySchema = z.object({
 export default defineContentConfig({
     collections: {
         // One file per chorale, generated from the `make kern` corpus by
-        // scripts/extract-chorales.mjs.
-        chorales: defineCollection({
-            source: 'chorales/**/*.yaml',
+        // scripts/extract-bach-chorales.mjs.
+        bachChorales: defineCollection({
+            source: 'bach-chorales/**/*.yaml',
             type: 'page',
             schema: z.object({
                 choraleId: z.string(),

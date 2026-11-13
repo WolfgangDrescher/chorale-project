@@ -2,7 +2,7 @@
 const localePath = useLocalePath();
 const { params: { id } } = useRoute();
 
-const { data: chorale } = await useAsyncData(`chorales/${id}`, () => queryCollection('chorales').where('stem', '=', `chorales/${id}`).first());
+const { data: chorale } = await useAsyncData(`bach-chorales/${id}`, () => queryCollection('bachChorales').where('stem', '=', `bach-chorales/${id}`).first());
 
 if (!chorale.value) {
     throw createError({
@@ -22,7 +22,7 @@ const { filter, listFilter, isFiltered } = useChoraleListFilter();
 const isFilterModalOpen = ref(false);
 const isFilterPopoverOpen = ref(false);
 const { data: allChorales } = await useAsyncData('chorale-list-filter-fields', () => {
-    return queryCollection('chorales').select('choraleId', 'bwv', 'title', 'key', 'mode', 'cantusFirmus', 'meters').order('stem', 'ASC').all();
+    return queryCollection('bachChorales').select('choraleId', 'bwv', 'title', 'key', 'mode', 'cantusFirmus', 'meters').order('stem', 'ASC').all();
 });
 const filteredChorales = computed(() => (allChorales.value ?? []).filter((item) => matchesChoraleListFilter(item, listFilter.value)));
 const positionInFilter = computed(() => {

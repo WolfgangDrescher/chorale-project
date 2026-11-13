@@ -28,7 +28,7 @@ const { data: navigation, execute: loadNavigation } = useLazyAsyncData('search-n
 }, lazy);
 
 const { data: chorales, execute: loadChorales } = useLazyAsyncData('search-chorales', () => {
-    return queryCollection('chorales').select('choraleId', 'title', 'number', 'bwv', 'key', 'mode').order('stem', 'ASC').all();
+    return queryCollection('bachChorales').select('choraleId', 'title', 'number', 'bwv', 'key', 'mode').order('stem', 'ASC').all();
 }, lazy);
 
 watch(open, (isOpen) => {

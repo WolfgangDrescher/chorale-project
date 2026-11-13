@@ -77,7 +77,7 @@ call them yourself:
 | `make build`   | Download the pinned C++ libraries and build the `chorale-search` binaries into `chorale-search/build/`.                          |
 | `make kern`    | Generate `kern/` (scores with modulations and lyrics) and `positions/` from `annotations/`. Needs `build`.                       |
 | `make corpus`  | Generate `corpus/` (same scores plus computed spines). Needed by the search and the segment endpoints. Needs `build`.            |
-| `make webapp`  | Install the npm dependencies and generate `chorale-webapp/content/chorales/` (one YAML file per chorale). Needs `kern`.          |
+| `make webapp`  | Install the npm dependencies and generate `chorale-webapp/content/bach-chorales/` (one YAML file per chorale). Needs `kern`.     |
 | `make analyses`| Generate the analysis tables in `chorale-webapp/content/analysis-results/` from `chorale-webapp/analyses/`. Needs `corpus`.      |
 | `make test`    | Run the `chorale-search` test suite. `make` itself runs it only if a test binary or fixture changed.                             |
 | `make fixtures`| Regenerate the committed test fixtures in `chorale-search/tests/fixtures/`. Not part of `make`, see below.                      |
