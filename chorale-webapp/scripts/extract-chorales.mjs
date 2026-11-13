@@ -112,6 +112,7 @@ for (const file of files) {
         phraseCount: info?.phraseCount ?? null,
         modulations: info?.modulations ?? null,
         cantusFirmus: info?.cantusFirmus ?? null,
+        urlScan: first(referenceRecords['URL-scan'])?.split(/\s/)[0] ?? null,
     };
 
     // Missing values are left out instead of written as null, so the collection schema can mark

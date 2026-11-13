@@ -31,6 +31,7 @@ export default defineContentConfig({
                     z.object({ line: z.number(), durationFromStart: z.number(), key: z.literal('?') }),
                 ])).optional(),
                 cantusFirmus: keySchema.optional(),
+                urlScan: z.string().optional(),
             }),
         }),
         lessons: defineCollection({

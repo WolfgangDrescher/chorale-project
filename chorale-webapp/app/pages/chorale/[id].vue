@@ -299,6 +299,9 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
                         <UTooltip :text="$t('vhv')">
                             <UButton :to="vhvScoreUrlGenerator(chorale.choraleId)" target="_blank" icon="custom:vhv" color="neutral" variant="outline" :aria-label="$t('vhv')" />
                         </UTooltip>
+                        <UTooltip v-if="chorale.urlScan" :text="$t('scan')">
+                            <UButton :to="chorale.urlScan" target="_blank" icon="lucide:book-image" color="neutral" variant="outline" :aria-label="$t('scan')" />
+                        </UTooltip>
                     </UFieldGroup>
                     <UDropdownMenu :items="downloadItems" arrow>
                         <UButton icon="lucide:download" trailing-icon="lucide:chevron-down" color="neutral" variant="outline" :aria-label="$t('download')" />
