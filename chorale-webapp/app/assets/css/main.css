@@ -27,6 +27,16 @@
     font-display: swap;
 }
 
+/* ♭, ♮ and ♯ (U+266D to U+266F), which the text font lacks; the font of the system sets them apart from the
+   letter: "E ♭". Bravura Text sits them on the baseline, unlike Bravura. */
+@font-face {
+    font-family: 'Bravura Text';
+    src: url('@fontsource/bravura-text/files/bravura-text-latin-400-normal.woff2') format('woff2');
+    unicode-range: U+266D-266F;
+    size-adjust: 80%;
+    font-display: swap;
+}
+
 @theme {
     /* A highlight sweeping across a placeholder, see the incipits of the chorale list. */
     --animate-shimmer: shimmer 1.5s linear infinite;
@@ -35,7 +45,7 @@
         to { background-position: -100% 0; }
     }
 
-    --font-sans: 'Alegreya Sans', 'Bravura', sans-serif;
+    --font-sans: 'Alegreya Sans', 'Bravura Text', 'Bravura', sans-serif;
     --font-serif: 'Alegreya',  sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', 'Bravura', monospace;
 }
