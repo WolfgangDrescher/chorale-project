@@ -37,7 +37,7 @@ defineProps({
         <HighlightedScore
             :piece-id="chorale.choraleId"
             :horizontal="true"
-            :verovio-options="{ scale: 35, pageMarginLeft: 20, header: 'none', footer: 'none' }"
+            :verovio-options="{ scale: 35, pageMarginLeft: 70, header: 'none', footer: 'none' }"
         />
     </article>
 </template>
