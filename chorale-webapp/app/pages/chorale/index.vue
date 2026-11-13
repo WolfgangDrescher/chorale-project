@@ -57,6 +57,8 @@ const pagedChorales = computed(() => chorales.value.slice((page.value - 1) * pag
 
 const linkTo = (chorale) => localePath({ name: 'chorale-id', params: { id: chorale.choraleId } });
 
+const TOOLTIP_CONTENT = { side: 'bottom' };
+
 const VIEWS = [
     { value: 'table', icon: 'lucide:list', label: 'tableView' },
     { value: 'grid', icon: 'lucide:layout-grid', label: 'gridView' },
@@ -165,19 +167,21 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
                     />
                     <!-- The room of a check mark stays when it is unchecked, so the menu keeps its width. -->
                     <UDropdownMenu :items="displayMenuItems" :content="{ align: 'end' }" :ui="{ itemTrailing: 'min-w-5' }">
-                        <UButton icon="lucide:settings-2" color="neutral" variant="outline" size="sm" :aria-label="$t('choraleListShow')" />
+                        <UTooltip :text="$t('choraleListShow')" arrow :content="TOOLTIP_CONTENT">
+                            <UButton icon="lucide:settings-2" color="neutral" variant="outline" size="sm" :aria-label="$t('choraleListShow')" />
+                        </UTooltip>
                     </UDropdownMenu>
                     <UFieldGroup size="sm">
-                        <UButton
-                            v-for="{ value, icon, label } in VIEWS"
-                            :key="value"
-                            :icon="icon"
-                            color="neutral"
-                            :variant="view === value ? 'subtle' : 'outline'"
-                            :aria-label="$t(label)"
-                            :aria-pressed="view === value"
-                            @click="view = value"
-                        />
+                        <UTooltip v-for="{ value, icon, label } in VIEWS" :key="value" :text="$t(label)" arrow :content="TOOLTIP_CONTENT">
+                            <UButton
+                                :icon="icon"
+                                color="neutral"
+                                :variant="view === value ? 'subtle' : 'outline'"
+                                :aria-label="$t(label)"
+                                :aria-pressed="view === value"
+                                @click="view = value"
+                            />
+                        </UTooltip>
                     </UFieldGroup>
                 </div>
             </div>
