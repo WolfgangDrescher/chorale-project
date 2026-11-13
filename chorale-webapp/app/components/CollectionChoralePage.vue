@@ -21,7 +21,7 @@ if (!chorale) {
 }
 
 const heading = `${chorale.number}. ${chorale.title}`;
-const subtitle = [chorale.composer, [chorale.key, chorale.mode].filter(Boolean).join(' '), chorale.meters?.join(' ')].filter(Boolean).join(' · ');
+const subtitle = [[chorale.key, chorale.mode].filter(Boolean).join(' '), chorale.meters?.join(' ')].filter(Boolean).join(' · ');
 
 useHead({
     title: `${heading} | ${props.collection.name}`,
@@ -51,7 +51,7 @@ const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHOR
 <template>
     <UContainer>
         <div class="flex flex-col gap-8">
-            <ChoraleHeader :heading="heading" :subtitle="subtitle" :prev-route="prevChoraleRoute" :next-route="nextChoraleRoute" />
+            <ChoraleHeader :collection-id="collection.id" :chorale-id="chorale.choraleId" :heading="heading" :subtitle="subtitle" :prev-route="prevChoraleRoute" :next-route="nextChoraleRoute" />
 
             <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
                 <ScoreOptionsPalette :score-options="scoreOptions" />

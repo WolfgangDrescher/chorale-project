@@ -1,6 +1,9 @@
 <script setup>
-// Title, subtitle and the links to the neighbouring chorales. The page adds its own in the slots.
+// Breadcrumb, title, subtitle and the links to the neighbouring chorales. The page adds its own in
+// the slots.
 defineProps({
+    collectionId: { type: String, required: true },
+    choraleId: { type: String, required: true },
     heading: { type: String, required: true },
     subtitle: { type: String, default: '' },
     prevRoute: { type: [String, Object], default: null },
@@ -10,6 +13,7 @@ defineProps({
 
 <template>
     <div>
+        <ChoraleBreadcrumb :collection-id="collectionId" :chorale-id="choraleId" />
         <Heading>
             {{ heading }}
             <div v-if="subtitle" class="text-base font-normal">

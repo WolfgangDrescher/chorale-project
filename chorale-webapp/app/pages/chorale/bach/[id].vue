@@ -227,7 +227,7 @@ useChoraleKeyboardShortcuts({ prevRoute: prevChoraleRoute, nextRoute: nextChoral
 
 // The key as the score writes it, e.g. "G major" or "f# minor".
 const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Boolean).join(' '));
-const subtitle = computed(() => [chorale.value.composer, chorale.value.bwv, keyName.value, chorale.value.meters?.join(' ')].filter(Boolean).join(' · '));
+const subtitle = computed(() => [chorale.value.bwv, keyName.value, chorale.value.meters?.join(' ')].filter(Boolean).join(' · '));
 
 const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHORALE_PAGE_VEROVIO_OPTIONS }));
 </script>
@@ -235,7 +235,7 @@ const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHOR
 <template>
     <UContainer>
         <div class="flex flex-col gap-8">
-            <ChoraleHeader :heading="heading" :subtitle="subtitle" :prev-route="prevChoraleRoute" :next-route="nextChoraleRoute">
+            <ChoraleHeader :collection-id="BACH_CHORALES.id" :chorale-id="id" :heading="heading" :subtitle="subtitle" :prev-route="prevChoraleRoute" :next-route="nextChoraleRoute">
                 <template #navigation>
                     <UFieldGroup size="xs">
                         <UPopover mode="hover" :open="isFiltered && isFilterPopoverOpen" @update:open="isFilterPopoverOpen = $event">
