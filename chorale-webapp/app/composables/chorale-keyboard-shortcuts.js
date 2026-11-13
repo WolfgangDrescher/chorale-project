@@ -8,21 +8,19 @@ function ignoreIfInput() {
 
 // keysTaken (a value, a ref or a getter) hands the arrow keys and H to something else on the page, like
 // the annotation of modulations.
-export function useChoraleKeyboardShortcuts({ prevChorale, nextChorale, keysTaken = false, scoreOptions = useScoreOptions() } = {}) {
-    const route = useRoute();
-    const localePath = useLocalePath();
-
-    const prev = computed(() => unref(prevChorale));
-    const next = computed(() => unref(nextChorale));
+// prevRoute and nextRoute are the pages of the neighbouring chorales, or null.
+export function useChoraleKeyboardShortcuts({ prevRoute, nextRoute, keysTaken = false, scoreOptions = useScoreOptions() } = {}) {
+    const prev = computed(() => toValue(prevRoute));
+    const next = computed(() => toValue(nextRoute));
 
     onKeyStroke('ArrowLeft', () => {
         if (ignoreIfInput() || toValue(keysTaken) || !prev.value) return;
-        navigateTo(localePath({ name: 'chorale-bach-id', params: { id: prev.value.choraleId }, hash: route.hash }));
+        navigateTo(prev.value);
     });
 
     onKeyStroke('ArrowRight', () => {
         if (ignoreIfInput() || toValue(keysTaken) || !next.value) return;
-        navigateTo(localePath({ name: 'chorale-bach-id', params: { id: next.value.choraleId }, hash: route.hash }));
+        navigateTo(next.value);
     });
 
     onKeyStroke('h', () => {

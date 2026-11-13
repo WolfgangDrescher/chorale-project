@@ -223,7 +223,7 @@ const modulationLines = computed(() => [{
 const annotating = useState('annotating', () => false);
 const annotator = useModulationAnnotator(id, player, annotating, import.meta.dev);
 
-useChoraleKeyboardShortcuts({ prevChorale, nextChorale, keysTaken: () => annotator.active });
+useChoraleKeyboardShortcuts({ prevRoute: prevChoraleRoute, nextRoute: nextChoraleRoute, keysTaken: () => annotator.active });
 
 // The key as the score writes it, e.g. "G major" or "f# minor".
 const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Boolean).join(' '));
