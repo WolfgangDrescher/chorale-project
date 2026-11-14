@@ -120,6 +120,7 @@ const groups = computed(() => [...choraleGroups.value, ...contentGroups.value]);
     <ClientOnly>
         <LazyUContentSearch
             :groups="groups"
+            :fuse="{ fuseOptions: { tokenMatch: 'all' } }"
             :placeholder="t('searchPlaceholder')"
             :color-mode="false"
             :content="{ onCloseAutoFocus: (event) => event.preventDefault() }"
