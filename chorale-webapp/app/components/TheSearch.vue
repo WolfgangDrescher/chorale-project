@@ -3,7 +3,7 @@
 // lessons, and the chorales by their number, title, ID, BWV number or starting key.
 const { t } = useI18n();
 const localePath = useLocalePath();
-const { open } = useContentSearch();
+const { open, mapNavigationItems, postFilter } = useContentSearch();
 
 // The text of all docs and lessons is loaded in the browser the first time the palette opens,
 // not sent along with every page.
@@ -94,7 +94,7 @@ function matchedWordRanges(text, words) {
         }, []);
 }
 
-const groups = computed(() => [
+const choraleGroups = computed(() => [
     {
         id: 'chorales',
         label: t('chorales'),
@@ -104,13 +104,21 @@ const groups = computed(() => [
         postFilter: (searchTerm, items) => (searchTerm ? searchChorales(searchTerm, items) : []),
     },
 ]);
+
+// The docs and the lessons as UContentSearch builds them, given here so the chorales come first.
+const contentGroups = computed(() => navigation.value.map((group) => ({
+    id: group.path,
+    label: group.title,
+    items: mapNavigationItems(group.children ?? [], files.value),
+    postFilter,
+})));
+
+const groups = computed(() => [...choraleGroups.value, ...contentGroups.value]);
 </script>
 
 <template>
     <ClientOnly>
         <LazyUContentSearch
-            :files="files"
-            :navigation="navigation"
             :groups="groups"
             :placeholder="t('searchPlaceholder')"
             :color-mode="false"
