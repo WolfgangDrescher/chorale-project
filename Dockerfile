@@ -85,9 +85,12 @@ COPY --from=data /build/kern /build/kern
 COPY --from=data /build/positions /build/positions
 COPY chorale-webapp ./
 COPY --from=data /build/chorale-webapp/content/analysis-results ./content/analysis-results
+COPY kittel-24-chorales/kern /build/kittel-24-chorales/kern
+COPY schiorring-choral-bog/kern /build/schiorring-choral-bog/kern
 RUN npm ci
 COPY --from=toolchain /build/chorale-search/build/chorale-info /build/chorale-search/build/chorale-info
 RUN node scripts/extract-bach-chorales.mjs \
+    && node scripts/extract-collection-chorales.mjs \
     && npm run build
 
 

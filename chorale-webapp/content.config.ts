@@ -8,6 +8,16 @@ const keySchema = z.object({
     signature: z.number(),
 });
 
+// What every chorale has, whatever its collection; the list and its filter rely on it.
+const choraleSchema = z.object({
+    choraleId: z.string(),
+    title: z.string().optional(),
+    composer: z.string().optional(),
+    key: z.string().optional(),
+    mode: z.enum(['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']).optional(),
+    meters: z.array(z.string()).optional(),
+});
+
 export default defineContentConfig({
     collections: {
         // One file per chorale, generated from the `make kern` corpus by
@@ -15,15 +25,9 @@ export default defineContentConfig({
         bachChorales: defineCollection({
             source: 'bach-chorales/**/*.yaml',
             type: 'page',
-            schema: z.object({
-                choraleId: z.string(),
-                title: z.string().optional(),
-                composer: z.string().optional(),
+            schema: choraleSchema.extend({
                 bwv: z.string().optional(),
                 number: z.number().optional(),
-                key: z.string().optional(),
-                mode: z.enum(['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']).optional(),
-                meters: z.array(z.string()).optional(),
                 duration: z.number().optional(),
                 phraseCount: z.number().optional(),
                 modulations: z.array(z.union([
@@ -32,6 +36,16 @@ export default defineContentConfig({
                 ])).optional(),
                 cantusFirmus: keySchema.optional(),
                 urlScan: z.string().optional(),
+            }),
+        }),
+        // The other collections, by scripts/extract-collection-chorales.mjs. Not searched.
+        collectionChorales: defineCollection({
+            source: 'collection-chorales/**/*.yaml',
+            type: 'data',
+            schema: choraleSchema.extend({
+                collection: z.string(),
+                number: z.string().optional(),
+                signature: z.number().optional(),
             }),
         }),
         lessons: defineCollection({

@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { CHORALE_COLLECTIONS } from './shared/utils/chorale-collections.js';
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -79,6 +80,11 @@ export default defineNuxtConfig({
                 dir: fileURLToPath(new URL('../positions/bach-370-chorales', import.meta.url)),
                 maxAge: 3600,
             },
+            ...CHORALE_COLLECTIONS.map(({ directory }) => ({
+                baseURL: `kern/${directory}`,
+                dir: fileURLToPath(new URL(`../${directory}/kern`, import.meta.url)),
+                maxAge: 3600,
+            })),
         ],
     },
 })

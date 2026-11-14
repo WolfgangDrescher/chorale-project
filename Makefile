@@ -42,6 +42,10 @@
 #     than its package-lock.json. Runs only if one of its inputs changed and
 #     writes only changed files (see Nuxt Content below). Never committed
 #
+#     The same for chorale-webapp/content/collection-chorales from the submodules of the
+#     collections in chorale-webapp/shared/utils/chorale-collections.js, with
+#     chorale-webapp/scripts/extract-collection-chorales.mjs. They are only shown, not searched
+#
 # make analyses
 #     generate chorale-webapp/content/analysis-results from ./corpus with chorale-group:
 #     one JSON file for each analysis in chorale-webapp/analyses,
@@ -105,6 +109,9 @@ ANALYSES := $(wildcard chorale-webapp/analyses/*.json)
 ANALYSIS_RESULTS_DIR := chorale-webapp/content/analysis-results
 ANALYSIS_MARKERS := $(patsubst chorale-webapp/analyses/%.json,$(ANALYSIS_RESULTS_DIR)/.%.generated,$(ANALYSES))
 BACH_CHORALES_MARKER := chorale-webapp/content/bach-chorales/.generated
+COLLECTION_CHORALES_MARKER := chorale-webapp/content/collection-chorales/.generated
+# The submodules of chorale-webapp/shared/utils/chorale-collections.js.
+COLLECTION_KERN := $(wildcard kittel-24-chorales/kern/*.krn schiorring-choral-bog/kern/*.krn)
 EXTRACT_SCRIPT_MODULES := chorale-webapp/scripts/humdrum-reference-records.mjs chorale-webapp/scripts/write-if-changed.mjs
 MODULATIONS := annotations/bach-modulations.json
 LYRICS := annotations/bach-lyrics.json
@@ -164,10 +171,14 @@ chorale-webapp/node_modules: chorale-webapp/package-lock.json
 	npm ci --prefix chorale-webapp
 	touch chorale-webapp/node_modules
 
-webapp: kern $(BACH_CHORALES_MARKER)
+webapp: kern $(BACH_CHORALES_MARKER) $(COLLECTION_CHORALES_MARKER)
 
 $(BACH_CHORALES_MARKER): kern/.generated chorale-webapp/scripts/extract-bach-chorales.mjs $(EXTRACT_SCRIPT_MODULES) $(CHORALE_INFO) chorale-webapp/node_modules
 	node chorale-webapp/scripts/extract-bach-chorales.mjs --only-changed
+	@touch $@
+
+$(COLLECTION_CHORALES_MARKER): $(COLLECTION_KERN) chorale-webapp/shared/utils/chorale-collections.js chorale-webapp/scripts/extract-collection-chorales.mjs $(EXTRACT_SCRIPT_MODULES) chorale-webapp/node_modules
+	node chorale-webapp/scripts/extract-collection-chorales.mjs --only-changed
 	@touch $@
 
 analyses: $(ANALYSIS_MARKERS)
@@ -180,7 +191,7 @@ $(ANALYSIS_RESULTS_DIR)/.%.generated: chorale-webapp/analyses/%.json corpus/.gen
 	@touch $@
 
 clean:
-	rm -rf kern positions corpus chorale-webapp/content/bach-chorales chorale-webapp/content/analysis-results
+	rm -rf kern positions corpus chorale-webapp/content/bach-chorales chorale-webapp/content/collection-chorales chorale-webapp/content/analysis-results
 
 clean-build:
 	$(MAKE) -C chorale-search clean

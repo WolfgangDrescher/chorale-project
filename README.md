@@ -74,15 +74,15 @@ application. What is created in which order is described in
 right order. The individual steps depend on each other, so you rarely need to
 call them yourself:
 
-| Command        | Description                                                                                                                      |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `make build`   | Download the pinned C++ libraries and build the `chorale-search` binaries into `chorale-search/build/`.                          |
-| `make kern`    | Generate `kern/` (scores with modulations and lyrics) and `positions/` from `annotations/`. Needs `build`.                       |
-| `make corpus`  | Generate `corpus/` (same scores plus computed spines). Needed by the search and the segment endpoints. Needs `build`.            |
-| `make webapp`  | Install the npm dependencies and generate `chorale-webapp/content/bach-chorales/` (one YAML file per chorale). Needs `kern`.     |
-| `make analyses`| Generate the analysis tables in `chorale-webapp/content/analysis-results/` from `chorale-webapp/analyses/`. Needs `corpus`.      |
-| `make test`    | Run the `chorale-search` test suite. `make` itself runs it only if a test binary or fixture changed.                             |
-| `make fixtures`| Regenerate the committed test fixtures in `chorale-search/tests/fixtures/`. Not part of `make`, see below.                      |
+| Command         | Description                                                                                                                 |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `make build`    | Download the pinned C++ libraries and build the `chorale-search` binaries into `chorale-search/build/`.                     |
+| `make kern`     | Generate `kern/` (scores with modulations and lyrics) and `positions/` from `annotations/`. Needs `build`.                  |
+| `make corpus`   | Generate `corpus/` (same scores plus computed spines). Needed by the search and the segment endpoints. Needs `build`.       |
+| `make webapp`   | Install the npm dependencies and generate one YAML file per chorale in `chorale-webapp/content/`. Needs `kern`.             |
+| `make analyses` | Generate the analysis tables in `chorale-webapp/content/analysis-results/` from `chorale-webapp/analyses/`. Needs `corpus`. |
+| `make test`     | Run the `chorale-search` test suite. `make` itself runs it only if a test binary or fixture changed.                        |
+| `make fixtures` | Regenerate the committed test fixtures in `chorale-search/tests/fixtures/`. Not part of `make`, see below.                  |
 
 The order that `make all` follows is `build`, `corpus`, `kern`, `webapp`,
 `analyses`, `test-if-changed`.
@@ -100,12 +100,12 @@ make corpus chor001 chor009
 
 Cleaning up:
 
-| Command            | Description                                                          |
-| ------------------ | -------------------------------------------------------------------- |
-| `make clean`       | Remove `kern/`, `corpus/`, `positions/` and the generated content.   |
-| `make clean-build` | Remove the `chorale-search` build directory.                         |
-| `make clean-deps`  | Remove the downloaded C++ libraries.                                 |
-| `make distclean`   | Everything above, back to a freshly cloned tree.                     |
+| Command            | Description                                                        |
+| ------------------ | ------------------------------------------------------------------ |
+| `make clean`       | Remove `kern/`, `corpus/`, `positions/` and the generated content. |
+| `make clean-build` | Remove the `chorale-search` build directory.                       |
+| `make clean-deps`  | Remove the downloaded C++ libraries.                               |
+| `make distclean`   | Everything above, back to a freshly cloned tree.                   |
 
 
 ## Web application
