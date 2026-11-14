@@ -1,8 +1,8 @@
 <script setup>
 // The search palette (meta+K, or the button in the header): the full text of the docs and the
-// lessons, and the chorales by their number, title, ID, BWV number or starting key.
+// lessons, and the chorales of each collection by their number, title, ID, BWV number or key.
 const { t } = useI18n();
-const localePath = useLocalePath();
+const choraleRoute = useChoraleRoute();
 const { open, mapNavigationItems, postFilter } = useContentSearch();
 
 // The text of all docs and lessons is loaded in the browser the first time the palette opens,
@@ -31,11 +31,16 @@ const { data: chorales, execute: loadChorales } = useLazyAsyncData('search-chora
     return queryCollection('bachChorales').select('choraleId', 'title', 'number', 'bwv', 'key', 'mode').order('stem', 'ASC').all();
 }, lazy);
 
+const { data: collectionChorales, execute: loadCollectionChorales } = useLazyAsyncData('search-collection-chorales', () => {
+    return queryCollection('collectionChorales').select('collection', 'choraleId', 'title', 'number', 'key', 'mode').order('stem', 'ASC').all();
+}, lazy);
+
 watch(open, (isOpen) => {
     if (isOpen) {
         loadFiles();
         loadNavigation();
         loadChorales();
+        loadCollectionChorales();
     }
 }, { once: true });
 
@@ -52,7 +57,7 @@ const choraleItems = computed(() => chorales.value.map((chorale) => ({
     label: chorale.title ? [chorale.number, chorale.title].filter(Boolean).join('. ') : chorale.choraleId,
     suffix: [chorale.choraleId, chorale.bwv, [chorale.key, chorale.mode].filter(Boolean).join(' ')].filter(Boolean).join(' · '),
     icon: 'lucide:music',
-    to: localePath({ name: 'chorale-bach-id', params: { id: chorale.choraleId } }),
+    to: choraleRoute(BACH_CHORALES.id, chorale.choraleId),
     choraleNumber: chorale.number,
 })));
 
@@ -63,12 +68,25 @@ function withNumberFirst(searchTerm, items) {
     return [...items.filter(isNumber), ...items.filter((item) => !isNumber(item))];
 }
 
-// The chorales with every word of the search term in their label or suffix. Not left to Fuse,
+const collectionChoraleItems = computed(() => Object.fromEntries(CHORALE_COLLECTIONS.map(({ id }) => [
+    id,
+    collectionChorales.value.filter((chorale) => chorale.collection === id).map((chorale) => ({
+        label: `${chorale.number}. ${chorale.title}`,
+        suffix: [t('choraleNumber', { number: chorale.number }), [chorale.key, chorale.mode].filter(Boolean).join(' ')].filter(Boolean).join(' · '),
+        icon: 'lucide:music',
+        to: choraleRoute(id, chorale.choraleId),
+        choraleNumber: chorale.number,
+        // Searched, not shown: a long slug of the title.
+        choraleId: chorale.choraleId,
+    })),
+])));
+
+// The chorales with every word of the search term in their label, suffix or ID. Not left to Fuse,
 // whose 12 results all groups share.
 function searchChorales(searchTerm, items) {
     const words = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
     const hits = items
-        .filter((item) => words.every((word) => `${item.label} ${item.suffix}`.toLowerCase().includes(word)))
+        .filter((item) => words.every((word) => `${item.label} ${item.suffix} ${item.choraleId ?? ''}`.toLowerCase().includes(word)))
         .map((item) => ({ ...item, matches: ['label', 'suffix'].map((key) => ({ key, value: item[key], indices: matchedWordRanges(item[key], words) })) }));
     return withNumberFirst(searchTerm, hits);
 }
@@ -94,16 +112,19 @@ function matchedWordRanges(text, words) {
         }, []);
 }
 
+const groupLabel = (id) => `${t('chorales')} · ${findChoraleCollection(id).name}`;
+
+// All the chorales would fill the palette before anything is typed.
 const choraleGroups = computed(() => [
-    {
-        id: 'chorales',
-        label: t('chorales'),
-        items: choraleItems.value,
-        ignoreFilter: true,
-        // All 370 chorales would fill the palette before anything is typed.
-        postFilter: (searchTerm, items) => (searchTerm ? searchChorales(searchTerm, items) : []),
-    },
-]);
+    [BACH_CHORALES.id, choraleItems.value],
+    ...CHORALE_COLLECTIONS.map(({ id }) => [id, collectionChoraleItems.value[id]]),
+].map(([id, items]) => ({
+    id: `chorales-${id}`,
+    label: groupLabel(id),
+    items,
+    ignoreFilter: true,
+    postFilter: (searchTerm, all) => (searchTerm ? searchChorales(searchTerm, all) : []),
+})));
 
 // The docs and the lessons as UContentSearch builds them, given here so the chorales come first.
 const contentGroups = computed(() => navigation.value.map((group) => ({
