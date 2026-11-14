@@ -4,6 +4,7 @@ import { useClipboard } from '@vueuse/core';
 const { t } = useI18n();
 
 const localePath = useLocalePath();
+const { localScoreUrlGenerator } = useScoreUrlGenerator();
 
 // The score, shared with the other analyses of the page.
 const file = defineModel('file', { default: null });
@@ -672,7 +673,7 @@ function onSubmit() {
                                     arrows
                                     class="w-full"
                                 >
-                                    <CompactPlayableScore :piece-id="bassLine.example.choraleId" :filters="bassLineFilters(bassLine.example)">
+                                    <CompactPlayableScore :score-url="localScoreUrlGenerator(bassLine.example.choraleId)" :filters="bassLineFilters(bassLine.example)">
                                         <UButton
                                             color="neutral"
                                             variant="outline"
@@ -715,7 +716,7 @@ function onSubmit() {
                         <PlayableHighlightedScore
                             :player="matchPlayers.get(choraleId)"
                             :horizontal="true"
-                            :piece-id="choraleId"
+                            :score-url="localScoreUrlGenerator(choraleId)"
                             :verovio-options="{
                                 scale: 35,
                                 pageMarginLeft: 42,
@@ -755,7 +756,7 @@ function onSubmit() {
                     <PlayableHighlightedScore
                         :player="choralePlayer"
                         :horizontal="true"
-                        :piece-id="shownChoraleId"
+                        :score-url="localScoreUrlGenerator(shownChoraleId)"
                         :verovio-options="{
                             scale: 35,
                             pageMarginLeft: 42,
@@ -789,7 +790,7 @@ function onSubmit() {
                         <PlayableHighlightedScore
                             :player="bassLineMatchPlayers.get(choraleId)"
                             :horizontal="true"
-                            :piece-id="choraleId"
+                            :score-url="localScoreUrlGenerator(choraleId)"
                             :verovio-options="{
                                 scale: 35,
                                 pageMarginLeft: 42,

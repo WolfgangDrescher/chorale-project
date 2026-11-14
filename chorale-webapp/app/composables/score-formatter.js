@@ -1,12 +1,11 @@
 export function useScoreFormatter() {
 
-    const { localScoreUrlGenerator } = useScoreUrlGenerator();
     const rawScoreData = ref(null);
     const formattedScoreData = ref(null);
 
-    async function loadScore(id, filters) {
+    async function loadScore(url, filters) {
         if (!rawScoreData.value) {
-            const data = await $fetch(localScoreUrlGenerator(id), {
+            const data = await $fetch(url, {
                 parseResponse: (txt) => txt,
             });
             rawScoreData.value = data;

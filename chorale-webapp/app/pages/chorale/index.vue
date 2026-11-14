@@ -10,7 +10,9 @@ useHead({
 
 const UButton = resolveComponent('UButton');
 
-const { data: allChorales } = await useAsyncData('all-bach-chorales', () => queryCollection('bachChorales').order('stem', 'ASC').all());
+const { localScoreUrlGenerator } = useScoreUrlGenerator();
+const { data: bachChorales } = await useAsyncData('all-bach-chorales', () => queryCollection('bachChorales').order('stem', 'ASC').all());
+const allChorales = computed(() => (bachChorales.value ?? []).map((chorale) => ({ ...chorale, scoreUrl: localScoreUrlGenerator(chorale.choraleId) })));
 
 const { filter, listFilter } = useChoraleListFilter();
 const { view, visibleColumns, coloring } = useChoraleListSettings();
@@ -47,7 +49,7 @@ function compareBy(id) {
 }
 
 const chorales = computed(() => {
-    const filtered = (allChorales.value ?? []).filter((item) => matchesChoraleListFilter(item, listFilter.value));
+    const filtered = allChorales.value.filter((item) => matchesChoraleListFilter(item, listFilter.value));
     const { id, desc } = sorting.value[0] ?? { id: 'number', desc: false };
     const [compare, compareNumbers] = [compareBy(id), compareBy('number')];
     return filtered.sort((a, b) => (desc ? -1 : 1) * compare(a, b) || compareNumbers(a, b));
@@ -142,7 +144,7 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
     <UContainer>
         <Heading>{{ $t('chorales') }}</Heading>
 
-        <div v-if="!allChorales?.length">
+        <div v-if="!allChorales.length">
             <UAlert
                 icon="lucide:circle-alert"
                 color="warning"
@@ -225,7 +227,7 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
                     <ChoraleMeter v-if="row.original.meters" :meters="row.original.meters" class="text-toned" />
                 </template>
                 <template #incipit-cell="{ row }">
-                    <ChoraleIncipit :chorale-id="row.original.choraleId" class="h-14 w-72" />
+                    <ChoraleIncipit :score-url="row.original.scoreUrl" class="h-14 w-72" />
                 </template>
             </UTable>
 

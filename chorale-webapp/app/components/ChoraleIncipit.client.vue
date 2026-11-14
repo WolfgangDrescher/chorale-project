@@ -2,7 +2,7 @@
 // The first measures of the cantus firmus, after a pickup if there is one. Until Verovio has
 // rendered them, shimmering bars stand in for them instead of its status box. An error stays.
 defineProps({
-    choraleId: { type: String, required: true },
+    scoreUrl: { type: String, required: true },
     measures: { type: Number, default: 5 },
 });
 
@@ -22,7 +22,7 @@ const PLACEHOLDER_WIDTHS = ['w-full', 'w-4/5', 'w-3/5'];
             />
         </div>
         <HighlightedScore
-            :piece-id="choraleId"
+            :score-url="scoreUrl"
             :horizontal="true"
             :filters="[`myank -m 0-${measures}`, 'extract -k $']"
             :verovio-options="{ scale: 30, pageMarginLeft: 10, pageMarginTop: 0, header: 'none', footer: 'none', mnumInterval: 0 }"

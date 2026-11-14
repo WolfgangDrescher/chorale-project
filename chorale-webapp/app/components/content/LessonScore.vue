@@ -9,6 +9,8 @@ const props = defineProps({
     scale: { type: Number, default: 40 },
 });
 
+const { localScoreUrlGenerator } = useScoreUrlGenerator();
+
 // The Humdrum filters, in the order the score options apply them: the lines and the voices first.
 const filters = computed(() => [
     props.lines && `myank -l ${props.lines}`,
@@ -21,7 +23,7 @@ const filters = computed(() => [
     <figure class="not-prose my-6">
         <HighlightedScore
             :horizontal="true"
-            :piece-id="choraleId"
+            :score-url="localScoreUrlGenerator(choraleId)"
             :filters="filters"
             :verovio-options="{
                 scale,

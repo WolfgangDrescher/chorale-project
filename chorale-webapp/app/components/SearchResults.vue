@@ -9,6 +9,7 @@ const props = defineProps({
 });
 
 const localePath = useLocalePath();
+const { localScoreUrlGenerator } = useScoreUrlGenerator();
 
 const scoreOptions = useSearchScoreOptions();
 useChoraleKeyboardShortcuts({ scoreOptions });
@@ -186,7 +187,7 @@ function choraleLink(choraleId, items) {
                 <PlayableHighlightedScore
                     :player="players.get(choraleId)"
                     :horizontal="scoreOptions.showHorizontalViewMode"
-                    :piece-id="choraleId"
+                    :score-url="localScoreUrlGenerator(choraleId)"
                     :verovio-options="{
                         ...scoreOptions.verovioOptions,
                         pageMarginLeft: 42,

@@ -24,7 +24,7 @@ defineProps({
             <div class="font-medium leading-snug text-highlighted line-clamp-2 group-hover:text-primary">{{ chorale.title }}</div>
             <ChoraleListItemDetails :chorale="chorale" class="mt-0.5" />
         </div>
-        <ChoraleIncipit v-if="visibleColumns.incipit" :chorale-id="chorale.choraleId" class="h-14 mt-auto" />
+        <ChoraleIncipit v-if="visibleColumns.incipit" :score-url="chorale.scoreUrl" class="h-14 mt-auto" />
         <ChoraleModulationMap
             v-if="visibleColumns.modulations && chorale.modulations && chorale.duration"
             :modulations="chorale.modulations"

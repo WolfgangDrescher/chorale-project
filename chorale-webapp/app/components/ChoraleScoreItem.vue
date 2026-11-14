@@ -35,7 +35,7 @@ defineProps({
             />
         </NuxtLink>
         <HighlightedScore
-            :piece-id="chorale.choraleId"
+            :score-url="chorale.scoreUrl"
             :horizontal="true"
             :verovio-options="{ scale: 35, pageMarginLeft: 70, header: 'none', footer: 'none' }"
         />

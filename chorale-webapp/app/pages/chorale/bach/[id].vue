@@ -38,7 +38,7 @@ const surroundingChorales = computed(() => {
 const prevChorale = computed(() => surroundingChorales.value.prev);
 const nextChorale = computed(() => surroundingChorales.value.next);
 
-const { githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator();
+const { localScoreUrlGenerator, githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator();
 
 const scoreOptions = useScoreOptions();
 
@@ -348,7 +348,7 @@ const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Bo
 
             <PlayableHighlightedScore
                 :player="player"
-                :piece-id="chorale.choraleId"
+                :score-url="localScoreUrlGenerator(chorale.choraleId)"
                 :horizontal="scoreOptions.showHorizontalViewMode"
                 :verovio-options="{
                     ...scoreOptions.verovioOptions,

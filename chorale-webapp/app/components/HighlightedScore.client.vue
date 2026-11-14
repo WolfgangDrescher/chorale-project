@@ -2,10 +2,8 @@
 import { useEventListener } from '@vueuse/core';
 
 const props = withDefaults(defineProps<{
-    // Where the score comes from: a piece served by the app (pieceId), or -- for a score that
-    // only exists as text, like an upload -- the **kern data itself. scoreData wins when both
-    // are given.
-    pieceId?: String,
+    // The URL of the score, or its **kern itself, e.g. of an upload. scoreData wins.
+    scoreUrl?: String,
     scoreData?: String,
     verovioOptions?: {
         type: Object,
@@ -336,7 +334,7 @@ watch(() => props.scoreData, (data) => {
 
 onMounted(async () => {
     if (props.scoreData) setScore(props.scoreData, scoreFilters.value);
-    else loadScore(props.pieceId, scoreFilters.value);
+    else loadScore(props.scoreUrl, scoreFilters.value);
     await nextTick();
     updateMarkerWidth();
     updateStickySystemStart();
