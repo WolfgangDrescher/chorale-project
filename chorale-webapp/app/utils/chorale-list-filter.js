@@ -2,7 +2,7 @@
 // of a chorale has to be, a key with or
 // without its mode like `G major` or `f# min`, a mode on its own like `dorian`, which is also
 // looked for in the mode of the cantus firmus, and the words that are left, which are looked
-// for in the id, the BWV number and the title.
+// for in the id, the BWV number and the title, normalized for the search.
 
 const MODES = ['major', 'minor', 'ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian'];
 
@@ -42,10 +42,10 @@ export function parseChoraleListFilter(value) {
 
 export function matchesChoraleListFilter(chorale, filter) {
     const key = chorale.key?.toLowerCase();
-    const text = [chorale.choraleId, chorale.bwv, chorale.title].filter(Boolean).join(' ').toLowerCase();
+    const text = normalizeForSearch([chorale.choraleId, chorale.bwv, chorale.title].filter(Boolean).join(' '));
 
     return filter.meters.every((meter) => chorale.meters?.includes(meter))
         && (!filter.key || (key === filter.key.key && (!filter.key.mode || chorale.mode === filter.key.mode)))
         && filter.modes.every((mode) => chorale.mode === mode || chorale.cantusFirmus?.mode === mode)
-        && filter.words.every((word) => text.includes(word));
+        && filter.words.every((word) => text.includes(normalizeForSearch(word)));
 }

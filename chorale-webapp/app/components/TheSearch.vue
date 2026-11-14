@@ -81,24 +81,24 @@ const collectionChoraleItems = computed(() => Object.fromEntries(CHORALE_COLLECT
     })),
 ])));
 
-// The chorales with every word of the search term in their label, suffix or ID. Not left to Fuse,
-// whose 12 results all groups share.
+// The chorales with every normalized word of the search term in their label, suffix or ID. Not
+// left to Fuse, whose 12 results all groups share.
 function searchChorales(searchTerm, items) {
-    const words = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
+    const words = normalizeForSearch(searchTerm).split(/\s+/).filter(Boolean);
     const hits = items
-        .filter((item) => words.every((word) => `${item.label} ${item.suffix} ${item.choraleId ?? ''}`.toLowerCase().includes(word)))
+        .filter((item) => words.every((word) => normalizeForSearch(`${item.label} ${item.suffix} ${item.choraleId ?? ''}`).includes(word)))
         .map((item) => ({ ...item, matches: ['label', 'suffix'].map((key) => ({ key, value: item[key], indices: matchedWordRanges(item[key], words) })) }));
     return withNumberFirst(searchTerm, hits);
 }
 
-// The ranges of `text` the words are found in, as Fuse states its matches, so the palette
-// highlights them: "vom himmel" in "3. Ach Gott, vom Himmel sieh darein" is [[13, 15], [17, 22]].
+// The ranges of `text` the normalized words are found in, as Fuse states its matches, so the
+// palette highlights them: "prise" in "25. Guds Godhed ville vi priſe" is [[25, 29]].
 function matchedWordRanges(text, words) {
-    const lowerText = text.toLowerCase();
+    const { normalized, origins } = normalizeForSearchWithOrigins(text);
     const regions = words.flatMap((word) => {
         const found = [];
-        for (let index = lowerText.indexOf(word); index !== -1; index = lowerText.indexOf(word, index + 1)) {
-            found.push([index, index + word.length - 1]);
+        for (let index = normalized.indexOf(word); index !== -1; index = normalized.indexOf(word, index + 1)) {
+            found.push([origins[index], origins[index + word.length - 1]]);
         }
         return found;
     });
@@ -141,7 +141,7 @@ const groups = computed(() => [...choraleGroups.value, ...contentGroups.value]);
     <ClientOnly>
         <LazyUContentSearch
             :groups="groups"
-            :fuse="{ fuseOptions: { tokenMatch: 'all' } }"
+            :fuse="{ fuseOptions: { ignoreDiacritics: true, tokenMatch: 'all' } }"
             :placeholder="t('searchPlaceholder')"
             :color-mode="false"
             :content="{ onCloseAutoFocus: (event) => event.preventDefault() }"
