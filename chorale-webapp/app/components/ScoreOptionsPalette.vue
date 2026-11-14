@@ -158,7 +158,7 @@ const groups = computed(() => {
                 },
                 {
                     label: t('showHorizontalViewMode'),
-                    onSelect: () => (scoreOptions.showHorizontalViewMode = !scoreOptions.showHorizontalViewMode),
+                    onSelect: () => scoreOptions.toggleHorizontalViewMode(),
                     indicator: 'checkbox',
                     checked: () => scoreOptions.showHorizontalViewMode,
                     kbd: 'H',
@@ -169,13 +169,14 @@ const groups = computed(() => {
             id: 'layers',
             label: t('layers'),
             items: [
-                {
+                // Not every store has lyrics, e.g. the one of a collection.
+                ...('showLyrics' in scoreOptions.$state ? [{
                     label: t('showLyrics'),
                     onSelect: () => (scoreOptions.showLyrics = !scoreOptions.showLyrics),
                     indicator: 'checkbox',
                     checked: () => scoreOptions.showLyrics,
                     kbd: 'L',
-                },
+                }] : []),
                 // Without a chorale there are no modulations to show.
                 ...(props.chorale ? [showModulationsItem()] : []),
             ],
@@ -208,7 +209,7 @@ const groups = computed(() => {
         })).filter(g => g.items.length > 0);
     }
 
-    return allGroups;
+    return allGroups.filter(g => g.items.length > 0);
 });
 </script>
 

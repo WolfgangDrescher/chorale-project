@@ -25,7 +25,7 @@ export function useChoraleKeyboardShortcuts({ prevRoute, nextRoute, keysTaken = 
 
     onKeyStroke('h', () => {
         if (ignoreIfInput() || toValue(keysTaken)) return;
-        scoreOptions.showHorizontalViewMode = !scoreOptions.showHorizontalViewMode;
+        scoreOptions.toggleHorizontalViewMode();
     });
 
     onKeyStroke('l', () => {
