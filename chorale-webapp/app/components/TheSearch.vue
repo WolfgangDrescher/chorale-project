@@ -56,23 +56,42 @@ const choraleItems = computed(() => chorales.value.map((chorale) => ({
     choraleNumber: chorale.number,
 })));
 
-// Chorales matching a rule come first, in the order of the rules, even if Fuse left them out:
-// Fuse ranks `chor096` above `chor009` for `9`.
-const choralePriorities = [
-    (term, item) => /^\d+$/.test(term) && item.choraleNumber === parseInt(term, 10),
-];
+// The chorale whose number is the search term comes first: `9` lists chor009 before chor096.
+function withNumberFirst(searchTerm, items) {
+    const number = searchTerm.trim().toLowerCase().replace(/^0+(?=\d)/, '');
+    const isNumber = (item) => String(item.choraleNumber ?? '').toLowerCase() === number;
+    return [...items.filter(isNumber), ...items.filter((item) => !isNumber(item))];
+}
 
-function withPrioritiesFirst(searchTerm, items) {
-    const term = searchTerm.trim();
-    const rank = (item) => {
-        const index = choralePriorities.findIndex((isPriority) => isPriority(term, item));
-        return index === -1 ? choralePriorities.length : index;
-    };
-    const missing = choraleItems.value.filter((item) => rank(item) < choralePriorities.length && !items.some((hit) => hit.to === item.to));
-    return [...items, ...missing]
-        .map((item) => ({ item, rank: rank(item) }))
-        .sort((a, b) => a.rank - b.rank)
-        .map(({ item }) => item);
+// The chorales with every word of the search term in their label or suffix. Not left to Fuse,
+// whose 12 results all groups share.
+function searchChorales(searchTerm, items) {
+    const words = searchTerm.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = items
+        .filter((item) => words.every((word) => `${item.label} ${item.suffix}`.toLowerCase().includes(word)))
+        .map((item) => ({ ...item, matches: ['label', 'suffix'].map((key) => ({ key, value: item[key], indices: matchedWordRanges(item[key], words) })) }));
+    return withNumberFirst(searchTerm, hits);
+}
+
+// The ranges of `text` the words are found in, as Fuse states its matches, so the palette
+// highlights them: "vom himmel" in "3. Ach Gott, vom Himmel sieh darein" is [[13, 15], [17, 22]].
+function matchedWordRanges(text, words) {
+    const lowerText = text.toLowerCase();
+    const regions = words.flatMap((word) => {
+        const found = [];
+        for (let index = lowerText.indexOf(word); index !== -1; index = lowerText.indexOf(word, index + 1)) {
+            found.push([index, index + word.length - 1]);
+        }
+        return found;
+    });
+    return regions
+        .sort((a, b) => a[0] - b[0])
+        .reduce((merged, region) => {
+            const last = merged.at(-1);
+            if (last && region[0] <= last[1] + 1) last[1] = Math.max(last[1], region[1]);
+            else merged.push(region);
+            return merged;
+        }, []);
 }
 
 const groups = computed(() => [
@@ -80,8 +99,9 @@ const groups = computed(() => [
         id: 'chorales',
         label: t('chorales'),
         items: choraleItems.value,
+        ignoreFilter: true,
         // All 370 chorales would fill the palette before anything is typed.
-        postFilter: (searchTerm, items) => (searchTerm ? withPrioritiesFirst(searchTerm, items) : []),
+        postFilter: (searchTerm, items) => (searchTerm ? searchChorales(searchTerm, items) : []),
     },
 ]);
 </script>
