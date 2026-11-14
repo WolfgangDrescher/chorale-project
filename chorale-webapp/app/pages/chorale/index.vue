@@ -2,7 +2,8 @@
 import { breakpointsTailwind, useBreakpoints, useMounted } from '@vueuse/core';
 
 const { t } = useI18n();
-const localePath = useLocalePath();
+const choraleRoute = useChoraleRoute();
+const route = useRoute();
 
 useHead({
     title: t('chorales'),
@@ -10,11 +11,11 @@ useHead({
 
 const UButton = resolveComponent('UButton');
 
-const { localScoreUrlGenerator } = useScoreUrlGenerator();
 const { data: bachChorales } = await useAsyncData('all-bach-chorales', () => queryCollection('bachChorales').order('stem', 'ASC').all());
-const allChorales = computed(() => (bachChorales.value ?? []).map((chorale) => ({ ...chorale, scoreUrl: localScoreUrlGenerator(chorale.choraleId) })));
+const { data: collectionChorales } = await useAsyncData('all-collection-chorales', () => queryCollection('collectionChorales').order('stem', 'ASC').all());
 
 const { filter, listFilter } = useChoraleListFilter();
+const { collections } = useChoraleListCollections();
 const { view, visibleColumns, coloring } = useChoraleListSettings();
 const page = ref(1);
 // Fewer chorales on a page when each comes with its whole score.
@@ -25,9 +26,39 @@ const isPhone = useBreakpoints(breakpointsTailwind).smaller('sm');
 const isMounted = useMounted();
 const paginationSiblingCount = computed(() => (isMounted.value && isPhone.value ? 1 : 2));
 
-// What each sortable column sorts by. The number decides between equal values.
+// A link can choose the collections: ?collections=kittel,schiorring
+onMounted(() => {
+    const requested = String(route.query.collections ?? '').split(',').filter((id) => findChoraleCollection(id));
+    if (requested.length) collections.value = requested;
+});
+
+const collectionOrder = [BACH_CHORALES, ...CHORALE_COLLECTIONS].map(({ id }) => id);
+
+// The chorales of a collection as the list shows them, with their pages and scores.
+function toChoraleListItems(collection, chorales) {
+    const { localScoreUrlGenerator } = useScoreUrlGenerator(collection);
+    return chorales.map((chorale) => ({
+        ...chorale,
+        collection: collection.id,
+        collectionName: collection.name,
+        to: choraleRoute(collection.id, chorale.choraleId),
+        scoreUrl: localScoreUrlGenerator(chorale.choraleId),
+    }));
+}
+
+const allChorales = computed(() => [
+    ...toChoraleListItems(BACH_CHORALES, bachChorales.value ?? []),
+    ...CHORALE_COLLECTIONS.flatMap((collection) => toChoraleListItems(collection, (collectionChorales.value ?? []).filter((item) => item.collection === collection.id))),
+]);
+
+const choraleCounts = computed(() => Object.fromEntries(
+    collectionOrder.map((id) => [id, allChorales.value.filter((item) => item.collection === id).length]),
+));
+
+// What each sortable column sorts by. The number decides between equal values, after the
+// collection: Bach's first, then the others as in the menu.
 const SORT_VALUES = {
-    number: (chorale) => chorale.number ?? Infinity,
+    number: (chorale) => collectionOrder.indexOf(chorale.collection) * 10000 + (parseInt(chorale.number, 10) || 0),
     title: (chorale) => chorale.title ?? '',
     key: (chorale) => {
         const start = startKeyOf(chorale);
@@ -38,7 +69,7 @@ const SORT_VALUES = {
 
 const sorting = ref([{ id: 'number', desc: false }]);
 
-watch([filter, sorting, view], () => (page.value = 1));
+watch([filter, sorting, view, collections], () => (page.value = 1));
 
 function compareBy(id) {
     const valueOf = SORT_VALUES[id];
@@ -49,7 +80,7 @@ function compareBy(id) {
 }
 
 const chorales = computed(() => {
-    const filtered = allChorales.value.filter((item) => matchesChoraleListFilter(item, listFilter.value));
+    const filtered = allChorales.value.filter((item) => collections.value.includes(item.collection) && matchesChoraleListFilter(item, listFilter.value));
     const { id, desc } = sorting.value[0] ?? { id: 'number', desc: false };
     const [compare, compareNumbers] = [compareBy(id), compareBy('number')];
     return filtered.sort((a, b) => (desc ? -1 : 1) * compare(a, b) || compareNumbers(a, b));
@@ -57,7 +88,7 @@ const chorales = computed(() => {
 
 const pagedChorales = computed(() => chorales.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value));
 
-const linkTo = (chorale) => localePath({ name: 'chorale-bach-id', params: { id: chorale.choraleId } });
+const linkTo = (chorale) => chorale.to;
 
 const TOOLTIP_CONTENT = { side: 'bottom' };
 
@@ -142,7 +173,10 @@ const toggleSortDirection = () => (sorting.value = [{ id: sortId.value, desc: !s
 
 <template>
     <UContainer>
-        <Heading>{{ $t('chorales') }}</Heading>
+        <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 mb-6">
+            <Heading class="mb-0!">{{ $t('chorales') }}</Heading>
+            <ChoraleCollectionSelect v-model="collections" :counts="choraleCounts" class="w-full sm:w-64" />
+        </div>
 
         <div v-if="!allChorales.length">
             <UAlert

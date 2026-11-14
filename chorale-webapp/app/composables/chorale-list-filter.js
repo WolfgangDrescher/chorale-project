@@ -23,3 +23,13 @@ export function useChoraleListFilter() {
 
     return { filter, listFilter, listFilterBadges, isFiltered };
 }
+
+// The collections the chorale list shows, Bach's chorales unless others are chosen.
+export function useChoraleListCollections() {
+    const stored = useLocalStorage('chorale-list-collections', [BACH_CHORALES.id], { initOnMounted: true });
+    const collections = computed({
+        get: () => (stored.value?.length ? stored.value : [BACH_CHORALES.id]),
+        set: (value) => (stored.value = value),
+    });
+    return { collections };
+}

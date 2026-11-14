@@ -29,7 +29,7 @@ function createDefaultScoreOptions() {
 // toggles them. A filter with a higher priority is applied first, so the score is
 // transposed and its voices are extracted before the remaining spines are analyzed. The
 // command of an option with a value (not true or false) is made from the state.
-const CHORALE_HUMDRUM_FILTERS = {
+export const CHORALE_HUMDRUM_FILTERS = {
     transposeKey: { command: (state) => `transpose -k ${state.transposeKey}`, priority: 3 },
     showMeter: { command: 'meter -f' },
     satb2gs: { command: 'satb2gs', priority: 1 },
@@ -86,7 +86,7 @@ export const useSearchScoreViewOptions = defineStore('search_score_view_options'
 
 // The score options of a store with its own defaults and filters, so the search results do not
 // share the options of the page of a chorale. The view comes from useView.
-const scoreOptionsStore = ({ createDefaults, humdrumFilterDefinitions, useView }) => ({
+export const scoreOptionsStore = ({ createDefaults, humdrumFilterDefinitions, useView }) => ({
     state: () => createDefaults(),
     getters: {
         humdrumFilterDefinitions: () => humdrumFilterDefinitions,

@@ -6,6 +6,7 @@ legalNotice: Impressum
 navigation: Navigation
 project: Projekt
 search: Suchen
+searchScope: "Durchsucht werden nur die Choräle von {name}, nicht die der übrigen Sammlungen."
 searchPlaceholder: Choräle, Lektionen und Docs durchsuchen
 submit: Absenden
 docs: Docs
@@ -210,6 +211,9 @@ intervallsatz: Intervallsatz anzeigen
 extendedFiguredbass: Generalbassbezifferung anzeigen
 bassScaleDegree: Bassstufen anzeigen
 scaleDegree: Skalenstufen anzeigen
+modernClefs: Moderne Schlüssel
+hideFiguredBass: Bezifferung ausblenden
+figuresWithoutSlashes: Bezifferung ohne Schrägstriche
 hideMiddleVoices: Mittelstimmen ausblenden
 extractCantusFirmus: Cantus firmus isolieren
 hideNonCantusFirmusVoices: Alle Stimmen ausser Cantus firmus ausblenden
@@ -258,6 +262,19 @@ choralePositionFiltered: "Choral {position} von einem gefilterten | Choral {posi
 choraleNotInFilter: "Kein Choral entspricht dem Filter | Dieser Choral ist nicht der gefilterte | Dieser Choral ist nicht unter den {count} gefilterten"
 noChoralesFound: Keine Choräle gefunden.
 noChoralesFoundDescription: Die Choräle werden aus dem Korpus extrahiert. Führen Sie dazu im Projektverzeichnis `make webapp` aus.
+collection: Sammlung
+collections: Sammlungen
+selectAllCollections: Alle
+onlyCollection: "Nur {name}"
+allCollections: Alle Sammlungen
+figuredBassVersion: Generalbass
+keyboardVersion: Klaviersatz
+satbVersion: Vierstimmig
+bass: Bass
+version: Version
+allOptions: Alle
+multiSelectHint: Mit gedrückter Umschalt- oder Befehlstaste mehrere auswählen
+multiSelectShortHint: "{key} + Klick: mehrere"
 choraleCount: "ein Choral | {count} Choräle"
 key: Tonart
 mode: Modus

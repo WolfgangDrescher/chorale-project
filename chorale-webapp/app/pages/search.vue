@@ -90,6 +90,7 @@ function applyDemoQuery() {
  <template>
     <UContainer>
        <Heading>{{ $t('search') }}</Heading>
+       <p class="-mt-2 mb-4 text-sm text-muted">{{ $t('searchScope', { name: BACH_CHORALES.name }) }}</p>
 
        <UCard class="mb-4">
            <UForm class="space-y-4" @submit="searchAndRemember">
