@@ -1,4 +1,6 @@
 <script setup>
+import { onKeyStroke } from '@vueuse/core';
+
 const emit = defineEmits(['apply']);
 
 const { t, locale } = useI18n();
@@ -9,6 +11,7 @@ const open = ref(false);
 const confirmingClear = ref(false);
 const selectedId = ref(null);
 const selected = computed(() => entries.value.find((entry) => entry.id === selectedId.value) ?? entries.value[0]);
+const entryList = useTemplateRef('entryList');
 
 watch(open, (isOpen) => {
     if (!isOpen) return;
@@ -57,8 +60,9 @@ function confirmClear() {
 
 function forgetSelected() {
     const removed = selected.value;
+    const index = entries.value.indexOf(removed);
     forget(removed.id);
-    selectedId.value = entries.value[0]?.id ?? null;
+    selectedId.value = (entries.value[index] ?? entries.value.at(-1))?.id ?? null;
     toast.add({
         title: t('searchHistoryEntryRemoved'),
         description: `${formatSearchedAt(removed.searchedAt)} · ${detailsOf(removed)}`,
@@ -74,10 +78,61 @@ function forgetSelected() {
         }],
     });
 }
+
+function selectNeighbour(offset) {
+    const neighbour = entries.value[entries.value.indexOf(selected.value) + offset];
+    if (neighbour) selectedId.value = neighbour.id;
+}
+
+watch(selectedId, async () => {
+    await nextTick();
+    entryList.value?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
+});
+
+async function focusSelectedEntry() {
+    await nextTick();
+    entryList.value?.querySelector('[aria-current="true"]')?.focus();
+}
+
+// Instead of the close button, where Enter would only close the modal.
+function focusSelectedEntryOnOpen(event) {
+    event.preventDefault();
+    focusSelectedEntry();
+}
+
+// A focused button outside the list keeps its own Enter.
+function isOnOtherButton(event) {
+    return Boolean(event.target.closest?.('button')) && !entryList.value?.contains(event.target);
+}
+
+function whileBrowsingEntries(handler) {
+    return (event) => {
+        if (!open.value || !selected.value) return;
+        handler(event);
+    };
+}
+
+onKeyStroke(['ArrowDown', 'ArrowUp'], whileBrowsingEntries((event) => {
+    event.preventDefault();
+    selectNeighbour(event.key === 'ArrowDown' ? 1 : -1);
+    focusSelectedEntry();
+}));
+
+onKeyStroke('Enter', whileBrowsingEntries((event) => {
+    if (isOnOtherButton(event)) return;
+    event.preventDefault();
+    apply(selected.value);
+}));
+
+onKeyStroke(['Delete', 'Backspace'], whileBrowsingEntries((event) => {
+    event.preventDefault();
+    forgetSelected();
+    focusSelectedEntry();
+}));
 </script>
 
 <template>
-    <UModal v-model:open="open" :title="t('searchHistory')" :ui="{ content: 'sm:max-w-4xl' }">
+    <UModal v-model:open="open" :title="t('searchHistory')" :content="{ onOpenAutoFocus: focusSelectedEntryOnOpen }" :ui="{ content: 'sm:max-w-4xl' }">
         <UButton
             color="neutral"
             variant="ghost"
@@ -88,13 +143,15 @@ function forgetSelected() {
         />
         <template #body>
             <div v-if="selected" class="grid gap-4 md:grid-cols-[16rem_1fr]">
-                <ul class="space-y-1 max-h-48 md:max-h-[60vh] overflow-y-auto">
+                <ul ref="entryList" class="space-y-1 max-h-48 md:max-h-[60vh] overflow-y-auto">
                     <li v-for="entry in entries" :key="entry.id">
                         <button
                             type="button"
-                            class="w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-elevated"
-                            :class="{ 'bg-elevated': entry.id === selected.id }"
+                            class="w-full rounded-md px-2 py-1.5 text-left text-sm outline-none"
+                            :class="entry.id === selected.id ? 'bg-primary/10' : 'hover:bg-elevated'"
+                            :aria-current="entry.id === selected.id"
                             @click="selectedId = entry.id"
+                            @focus="selectedId = entry.id"
                         >
                             <span class="block tabular-nums">{{ formatSearchedAt(entry.searchedAt) }}</span>
                             <span class="block truncate text-xs text-dimmed">
