@@ -34,6 +34,9 @@ struct CompiledPosition {
     PositionKeys keys;
     bool hasReferences = false;
     std::optional<PatternRepeat> repeat;
+    // How long the onsets of all repeats may last together, in quarter notes.
+    std::optional<hum::HumNum> shortestDuration;
+    std::optional<hum::HumNum> longestDuration;
     std::vector<CompiledPosition> subPattern;
     // Where it stands in the written pattern, as RepeatedOnset has it.
     std::vector<std::size_t> path;

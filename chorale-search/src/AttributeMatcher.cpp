@@ -1006,6 +1006,10 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Patte
 CompiledPosition AttributeMatcher::compilePosition(const PatternPosition& position, std::vector<std::size_t> path) {
     CompiledPosition compiled;
     compiled.repeat = position.repeat;
+    if (position.repeat) {
+        compiled.shortestDuration = shortestDuration(*position.repeat);
+        compiled.longestDuration = longestDuration(*position.repeat);
+    }
     for (const auto& [rawKey, values] : position.keys) {
         if (rawKey == kPositionNameKey) continue; // only needed to resolve the references
         if (isOtherVoiceKey(rawKey)) {
@@ -1640,16 +1644,22 @@ bool AttributeMatcher::matchSinglePosition(Walk& walk, std::size_t offset, std::
 bool AttributeMatcher::matchRepeat(Walk& walk, const CompiledPosition& position, std::optional<std::size_t> offset,
                                    std::size_t count, std::size_t runStart, std::size_t onsetIndex, const Continuation& next) const {
     const PatternRepeat& repeat = *position.repeat;
+    const hum::HumNum duration = repeat.limitsDuration() ? totalDuration(walk.onsets, runStart, onsetIndex) : hum::HumNum(0);
+    if (position.longestDuration && duration > *position.longestDuration) return false;
+
     // Only where the pattern itself goes on from is kept: in a subPattern that depends on the repeat around it.
     std::optional<std::vector<std::size_t>> state;
     if (offset) {
         // Past its min, an unbounded repeat goes on the same way however often it has matched.
         state = walkState(walk, *offset, count < repeat.min || repeat.max ? count : repeat.min, onsetIndex);
+        // How long the run has lasted depends on where it began.
+        if (repeat.limitsDuration()) state->push_back(runStart);
         if (walk.failedStates.count(*state)) return false;
     }
 
     const auto stop = [&] {
         if (count < repeat.min) return false;
+        if (position.shortestDuration && duration < *position.shortestDuration) return false;
         if (offset) walk.positionOnsets[*offset] = buildPositionOnset(walk.onsets, runStart, onsetIndex);
         return next(onsetIndex);
     };

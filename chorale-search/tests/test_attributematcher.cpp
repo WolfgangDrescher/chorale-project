@@ -3848,3 +3848,83 @@ TEST_CASE(repeat_goes_on_to_where_the_match_has_to_end) {
     CHECK(accepted[0].startPosition == 0);
     CHECK(accepted[1].startPosition == 2);
 }
+
+TEST_CASE(repeat_lasts_no_longer_than_its_longest_duration) {
+    // After the c two eighths, a quarter and a half note: g begins 2 quarter notes after the c has ended.
+    std::istringstream score("**kern\n4c\n8d\n8e\n4f\n2g\n4a\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    auto countFromCTo = [&](const char* last, PatternRepeat repeat) {
+        PatternPosition gap;
+        gap.repeat = repeat;
+        return AttributeMatcher("kern", {c, gap, PatternPosition{.keys = {{"kern", {last}}}}}).findAll(chorale, 1).size();
+    };
+    CHECK_EQ(countFromCTo("f", {.maxDuration = "4"}), std::size_t{1});
+    CHECK_EQ(countFromCTo("g", {.maxDuration = "4"}), std::size_t{0});
+    CHECK_EQ(countFromCTo("g", {.maxDuration = "2"}), std::size_t{1});
+    // In quarter notes, and the narrower of both.
+    CHECK_EQ(countFromCTo("g", {.maxQuarterNotes = 2}), std::size_t{1});
+    CHECK_EQ(countFromCTo("g", {.maxDuration = "4", .maxQuarterNotes = 2}), std::size_t{0});
+    // Three onsets do not fit into a quarter here.
+    CHECK_EQ(countFromCTo("g", {.min = 3, .maxDuration = "4"}), std::size_t{0});
+    // As far as it goes is as far as it may last.
+    PatternPosition forAHalfNote;
+    forAHalfNote.repeat = PatternRepeat{.greedy = true, .maxDuration = "2"};
+    const auto matches = AttributeMatcher("kern", {c, forAHalfNote}).findAll(chorale, 1);
+    REQUIRE(matches.size() == 1u);
+    CHECK(matches[0].endPosition == 2);
+}
+
+TEST_CASE(repeat_lasts_at_least_its_shortest_duration) {
+    std::istringstream score("**kern\n4c\n8d\n8e\n4f\n2g\n4a\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    const PatternPosition any{.keys = {{"kern", {"*"}}}};
+    auto endAfter = [&](PatternRepeat repeat, bool anotherNote) {
+        PatternPosition run;
+        run.repeat = repeat;
+        const auto matches = AttributeMatcher("kern", anotherNote ? std::vector<PatternPosition>{c, run, any} : std::vector<PatternPosition>{c, run})
+                                 .findAll(chorale, 1);
+        return matches.empty() ? hum::HumNum(-1) : matches[0].endPosition;
+    };
+    // A half note is reached with the f, which begins at 2; the g after it begins at 3.
+    CHECK(endAfter({.minDuration = "2"}, false) == 2);
+    CHECK(endAfter({.minDuration = "2"}, true) == 3);
+    CHECK(endAfter({.minQuarterNotes = 4}, true) == 5);
+    // Between a shortest and a longest duration.
+    CHECK(endAfter({.minDuration = "4", .maxDuration = "4"}, true) == 2);
+    CHECK(endAfter({.minDuration = "4.", .maxDuration = "4."}, true) == -1);
+    // A run that has to last is no empty pattern.
+    PatternPosition lasting;
+    lasting.repeat = PatternRepeat{.minDuration = "4"};
+    CHECK_NOTHROW(AttributeMatcher("kern", {lasting}));
+}
+
+TEST_CASE(repeat_of_a_sub_pattern_lasts_as_long_as_all_its_repeats) {
+    std::istringstream score("**kern\n4c\n8d\n8e\n4f\n2g\n4a\n*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    const PatternPosition any{.keys = {{"kern", {"*"}}}};
+    auto endOfPairsWithin = [&](const char* longest) {
+        PatternPosition pairs;
+        pairs.repeat = PatternRepeat{.min = 1, .greedy = true, .maxDuration = longest};
+        pairs.subPattern = {any, any};
+        const auto matches = AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"c"}}}}, pairs}).findAll(chorale, 1);
+        return matches.empty() ? hum::HumNum(-1) : matches[0].endPosition;
+    };
+    // d and e are a quarter, with f and g a whole note.
+    CHECK(endOfPairsWithin("4") == hum::HumNum(3, 2));
+    CHECK(endOfPairsWithin("1") == 3);
+    CHECK(endOfPairsWithin("8") == -1);
+}
+
+TEST_CASE(repeat_refuses_durations_it_cannot_last) {
+    const PatternPosition c{.keys = {{"kern", {"c"}}}};
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.minDuration = "2", .maxDuration = "4"};
+    CHECK_THROWS(AttributeMatcher("kern", {c, gap, c}));
+    gap.repeat = PatternRepeat{.maxQuarterNotes = 0};
+    CHECK_THROWS(AttributeMatcher("kern", {c, gap, c}));
+    // The narrower limits count: a half note is longer than one quarter.
+    gap.repeat = PatternRepeat{.minDuration = "2", .maxQuarterNotes = 1};
+    CHECK_THROWS(AttributeMatcher("kern", {c, gap, c}));
+}

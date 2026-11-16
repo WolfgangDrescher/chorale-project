@@ -1,9 +1,12 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include "Query.hpp"
+#include "humlib.h"
 
 namespace choralesearch {
 
@@ -13,13 +16,22 @@ std::size_t minimumOnsets(const std::vector<PatternPosition>& pattern);
 // Whether a repeat of `pattern` may take more or fewer onsets: one without a fixed number of times.
 bool hasRepeatWithoutFixedCount(const std::vector<PatternPosition>& pattern);
 
-// Throws, naming the position, for a repeat that cannot be matched: a max of 0 or below its min, a subPattern
-// without a repeat or with repeats that match no onset, a pattern that matches no onset, and with
-// `notesMaySplitOrMerge` (durationAllowSplitNotes, durationAllowMergedNotes) a duration of a position that repeats.
+// The shortest and the longest the onsets of all repeats may last together, in quarter notes: the narrower of
+// minDuration and minQuarterNotes, of maxDuration and maxQuarterNotes. nullopt without such a limit.
+std::optional<hum::HumNum> shortestDuration(const PatternRepeat& repeat);
+std::optional<hum::HumNum> longestDuration(const PatternRepeat& repeat);
+
+// Throws, naming the position, for a repeat that cannot be matched: a max of 0 or below its min, a longest
+// duration below its shortest, a subPattern without a repeat or with repeats that match no onset, a pattern
+// that matches no onset, and with `notesMaySplitOrMerge` (durationAllowSplitNotes, durationAllowMergedNotes) a
+// duration of a position that repeats.
 void validateRepeats(const std::vector<PatternPosition>& pattern, bool notesMaySplitOrMerge);
 
-// Throws for a repeat that nothing has to follow and that is not greedy: where nothing says where a match ends,
-// it would never take more than its min.
+// The path of a repeat that nothing has to follow and that neither is greedy nor has to last: where nothing
+// says where a match ends, it would never take more than its min. nullopt without one.
+std::optional<std::string> lastRepeatThatStops(const std::vector<PatternPosition>& pattern, const std::string& path = "pattern");
+
+// Throws for the repeat lastRepeatThatStops finds.
 void validateLastRepeatGoesOn(const std::vector<PatternPosition>& pattern);
 
 } // namespace choralesearch

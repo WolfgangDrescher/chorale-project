@@ -174,9 +174,10 @@ void addOtherVoiceKeys(AttributeMap& pos, const std::string& voiceReference, con
     }
 }
 
-// "*", "+", "?" (at most once, if it can), a number of times, or {"min", "max", "greedy"}.
+// "*", "+", "?" (at most once, if it can), a number of times, or an object with its limits and "greedy".
 PatternRepeat repeatFromJson(const nlohmann::json& j, const std::string& context) {
-    const std::string must = context + " must be '*', '+', '?', a number of times from 1, or an object with 'min', 'max' and 'greedy'";
+    const std::string must = context + "' must be '*', '+', '?', a number of times from 1, or an object with 'min', 'max', "
+                             "'minDuration', 'maxDuration', 'minQuarterNotes', 'maxQuarterNotes' and 'greedy'";
     if (j.is_string()) {
         if (j == "*") return PatternRepeat{.min = 0};
         if (j == "+") return PatternRepeat{.min = 1};
@@ -195,8 +196,17 @@ PatternRepeat repeatFromJson(const nlohmann::json& j, const std::string& context
             if (!it.value().is_number_unsigned()) throw std::invalid_argument(field + " must be a non-negative integer");
             if (it.key() == "min") repeat.min = it.value().get<std::size_t>();
             else repeat.max = it.value().get<std::size_t>();
+        } else if (it.key() == "minDuration" || it.key() == "maxDuration") {
+            if (!it.value().is_string() || !isValidPatternValue("duration", it.value().get<std::string>())) {
+                throw std::invalid_argument(field + " must be a duration like \"2\" or \"4.\" (got " + it.value().dump() + ")");
+            }
+            (it.key() == "minDuration" ? repeat.minDuration : repeat.maxDuration) = it.value().get<std::string>();
+        } else if (it.key() == "minQuarterNotes" || it.key() == "maxQuarterNotes") {
+            if (!it.value().is_number_unsigned()) throw std::invalid_argument(field + " must be a non-negative integer");
+            (it.key() == "minQuarterNotes" ? repeat.minQuarterNotes : repeat.maxQuarterNotes) = it.value().get<std::size_t>();
         } else {
-            throw std::invalid_argument(context + "' has an unknown key '" + it.key() + "': a repeat has 'min', 'max' and 'greedy'");
+            throw std::invalid_argument(context + "' has an unknown key '" + it.key() + "': a repeat has 'min', 'max', 'minDuration', "
+                                        "'maxDuration', 'minQuarterNotes', 'maxQuarterNotes' and 'greedy'");
         }
     }
     return repeat;
@@ -217,7 +227,7 @@ PatternPosition positionFromJson(const nlohmann::json& posJson, const std::strin
             continue;
         }
         if (rawKey == kRepeatKey) {
-            pos.repeat = repeatFromJson(it.value(), name + "[" + kRepeatKey + "]'");
+            pos.repeat = repeatFromJson(it.value(), name + "[" + kRepeatKey + "]");
             continue;
         }
         if (rawKey == kSubPatternKey) {
@@ -706,11 +716,13 @@ Query queryFromJson(const nlohmann::json& j, const std::string& context) {
     }
 
     // With the options of a group known, which it may take over from the query. A group that ends with the match
-    // says where both end.
+    // says where both end, unless it ends on a repeat that stops itself.
     const auto endsWithMatch = [&](const SimultaneousGroup& group) {
         return group.simultaneousAlignment.value_or(q.simultaneousAlignment) != "start";
     };
-    const bool endIsOpen = std::none_of(q.simultaneousWith.begin(), q.simultaneousWith.end(), endsWithMatch);
+    const bool endIsOpen = std::none_of(q.simultaneousWith.begin(), q.simultaneousWith.end(), [&](const SimultaneousGroup& group) {
+        return endsWithMatch(group) && !lastRepeatThatStops(group.pattern);
+    });
     validateRequestRepeats(q.pattern, q.durationAllowSplitNotes || q.durationAllowMergedNotes, endIsOpen, context);
     for (std::size_t i = 0; i < q.simultaneousWith.size(); ++i) {
         const SimultaneousGroup& group = q.simultaneousWith[i];

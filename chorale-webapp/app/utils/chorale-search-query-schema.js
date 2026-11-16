@@ -206,7 +206,7 @@ const positionFeaturesSchema = {
 
 // How often a position matches in a row: "*", "+", a number of times, or a range.
 const repeatSchema = {
-    description: 'Lets the position match several onsets in a row, each of which checks the other keys of the position: "*" any number, none included, "+" at least one, "?" one if there is one, a number exactly as many, or { "min", "max", "greedy" }. Without other keys it is a gap where anything may come. A repeat goes on up to where the rest of the pattern matches; with "greedy" it takes as many onsets as it may. No other position can refer to it.',
+    description: 'Lets the position match several onsets in a row, each of which checks the other keys of the position: "*" any number, none included, "+" at least one, "?" one if there is one, a number exactly as many, or an object with "min" and "max", how long the run may last ("minDuration", "maxDuration", "minQuarterNotes", "maxQuarterNotes") and "greedy". Without other keys it is a gap where anything may come. A repeat goes on up to where the rest of the pattern matches; with "greedy" it takes as many onsets as it may. No other position can refer to it.',
     oneOf: [
         {
             type: 'string',
@@ -224,6 +224,18 @@ const repeatSchema = {
             properties: {
                 min: { type: 'integer', minimum: 0, default: 0, description: 'At least this many repeats: onsets, or with a subPattern repeats of all of it.' },
                 max: { type: 'integer', minimum: 1, description: 'At most this many repeats; no limit without it.' },
+                minDuration: {
+                    type: 'string',
+                    pattern: '^[0-9]+\\.*$',
+                    description: 'The onsets of all repeats last at least this long together: a recip duration like "2" or "4.".',
+                },
+                maxDuration: {
+                    type: 'string',
+                    pattern: '^[0-9]+\\.*$',
+                    description: 'The onsets of all repeats last at most this long together: a recip duration like "2" or "4.".',
+                },
+                minQuarterNotes: { type: 'integer', minimum: 0, description: 'The same as minDuration, in quarter notes.' },
+                maxQuarterNotes: { type: 'integer', minimum: 1, description: 'The same as maxDuration, in quarter notes.' },
                 greedy: {
                     type: 'boolean',
                     default: true,

@@ -1388,7 +1388,7 @@ TEST_CASE(query_from_json_reads_how_often_a_position_repeats) {
 
 TEST_CASE(query_from_json_reads_a_sub_pattern_that_repeats) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"},
-        {"repeat":{"min":2,"greedy":true},"mode":"minor","subPattern":[{"mint":"-P4"},{"repeat":"*","subPattern":[{"mint":"+2"}]}]}]})"));
+        {"repeat":{"min":2,"greedy":true},"mode":"minor","subPattern":[{"mint":"-P4"},{"repeat":{"greedy":true},"subPattern":[{"mint":"+2"}]}]}]})"));
     REQUIRE(q.pattern[1].subPattern.size() == 2u);
     CHECK_EQ(q.pattern[1].keys.at("mode"), (std::vector<PatternValue>{"minor"}));
     CHECK_EQ(q.pattern[1].subPattern[0].keys.at("mint"), (std::vector<PatternValue>{"-P4"}));
@@ -1467,7 +1467,7 @@ TEST_CASE(query_from_json_refuses_a_duration_that_repeats_when_durations_add_up)
 TEST_CASE(query_from_json_refuses_a_repeat_at_the_end_that_would_take_no_more_than_its_min) {
     const std::string afterC = R"({"feature":"kern","pattern":[{"kern":"c"},)";
     for (const char* last : {R"({"repeat":"*"})", R"({"repeat":"+","mint":"-2"})", R"({"repeat":{"min":2},"subPattern":[{"kern":"d"}]})",
-                             R"({"repeat":{"max":3}},{"repeat":"?"})"}) {
+                             R"({"repeat":{"max":3}},{"repeat":"?"})", R"({"repeat":2,"subPattern":[{"kern":"d"},{"repeat":"*"}]})"}) {
         CHECK_THROWS(queryFromJson(json::parse(afterC + last + "]}")));
     }
     try {
@@ -1482,8 +1482,10 @@ TEST_CASE(query_from_json_refuses_a_repeat_at_the_end_that_would_take_no_more_th
                              R"({"repeat":"*"},{"kern":"d"})"}) {
         CHECK_NOTHROW(queryFromJson(json::parse(afterC + last + "]}")));
     }
-    // A group that ends with the match says where both end.
+    // A group that ends with the match says where both end, unless it ends on such a repeat itself.
     CHECK_NOTHROW(queryFromJson(json::parse(afterC + R"({"repeat":"*"}],
+        "simultaneousWith":[{"feature":"kern","simultaneousAlignment":"end","pattern":[{"kern":"c"},{"repeat":"*"},{"kern":"d"}]}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(afterC + R"({"repeat":"*"}],
         "simultaneousWith":[{"feature":"kern","simultaneousAlignment":"end","pattern":[{"kern":"c"},{"repeat":"*"}]}]})")));
     CHECK_THROWS(queryFromJson(json::parse(afterC + R"({"kern":"d"}],
         "simultaneousWith":[{"feature":"kern","pattern":[{"kern":"c"},{"repeat":"*"}]}]})")));
@@ -1498,4 +1500,28 @@ TEST_CASE(query_from_json_reads_whether_overlapping_matches_are_skipped) {
     // A group only says whether a match of the query has one beside it.
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"c"}],
         "simultaneousWith":[{"feature":"kern","pattern":[{"kern":"c"}],"skipOverlappingMatches":true}]})")));
+}
+
+TEST_CASE(query_from_json_reads_how_long_a_repeat_lasts) {
+    const std::string afterC = R"({"feature":"kern","voices":"all","pattern":[{"kern":"c"},)";
+    const Query q = queryFromJson(json::parse(
+        afterC + R"({"repeat":{"min":1,"minDuration":"4.","maxDuration":"1","minQuarterNotes":1,"maxQuarterNotes":8}},{"kern":"d"}]})"));
+    const choralesearch::PatternRepeat& repeat = *q.pattern[1].repeat;
+    CHECK_EQ(*repeat.minDuration, std::string("4."));
+    CHECK_EQ(*repeat.maxDuration, std::string("1"));
+    CHECK_EQ(*repeat.minQuarterNotes, std::size_t{1});
+    CHECK_EQ(*repeat.maxQuarterNotes, std::size_t{8});
+    const json written = json::parse(afterC + R"({"repeat":{"maxDuration":"2"}},{"repeat":{"min":2,"max":2,"minQuarterNotes":3}},
+        {"repeat":{"minDuration":"4","maxQuarterNotes":2,"greedy":true}},{"kern":"d"}]})");
+    CHECK_EQ(choralesearch::queryToJson(queryFromJson(written)), written);
+    for (const char* refused : {R"({"maxDuration":"x"})", R"({"maxDuration":"*"})", R"({"maxDuration":2})", R"({"minDuration":""})",
+                                R"({"maxQuarterNotes":"2"})", R"({"maxQuarterNotes":1.5})", R"({"maxQuarterNotes":0})",
+                                R"({"minDuration":"2","maxDuration":"4"})", R"({"minQuarterNotes":3,"maxDuration":"2"})",
+                                R"({"minQuarterNotes":4294967298,"maxQuarterNotes":3})"}) {
+        CHECK_THROWS(queryFromJson(json::parse(afterC + R"({"repeat":)" + refused + R"(},{"kern":"d"}]})")));
+    }
+    // At the end a run that has to last goes on until it does, one that only may not last longer takes nothing.
+    CHECK_NOTHROW(queryFromJson(json::parse(afterC + R"({"repeat":{"minDuration":"2"}}]})")));
+    CHECK_THROWS(queryFromJson(json::parse(afterC + R"({"repeat":{"maxDuration":"2"}}]})")));
+    CHECK_NOTHROW(queryFromJson(json::parse(afterC + R"({"repeat":{"maxDuration":"2","greedy":true}}]})")));
 }

@@ -91,7 +91,13 @@ struct PatternRepeat {
     std::size_t min = 0;
     std::optional<std::size_t> max; // nullopt: as often as the voice allows
     bool greedy = false;            // as often as possible instead of as rarely as possible
+    // How long the onsets of all repeats last together: a recip like a duration ("2."), and in quarter notes.
+    std::optional<std::string> minDuration;
+    std::optional<std::string> maxDuration;
+    std::optional<std::size_t> minQuarterNotes;
+    std::optional<std::size_t> maxQuarterNotes;
 
+    bool limitsDuration() const { return minDuration || maxDuration || minQuarterNotes || maxQuarterNotes; }
     bool operator==(const PatternRepeat&) const = default;
 };
 
@@ -257,14 +263,20 @@ inline nlohmann::json patternValueToJson(const PatternValue& value) {
     return {{"operator", comparisonOperatorName(value.comparisonOperator)}, {"value", value.text}};
 }
 
-// "*", "+", "?" and a number of times as a query would spell them, else {"min", "max", "greedy"}.
+// "*", "+", "?" and a number of times as a query would spell them, else the object with its limits and "greedy".
 inline nlohmann::json repeatToJson(const PatternRepeat& repeat) {
-    if (!repeat.greedy && !repeat.max && repeat.min <= 1) return repeat.min == 0 ? "*" : "+";
-    if (repeat == PatternRepeat{.min = 0, .max = 1, .greedy = true}) return "?";
-    if (!repeat.greedy && repeat.max == repeat.min) return repeat.min;
+    if (!repeat.limitsDuration()) {
+        if (!repeat.greedy && !repeat.max && repeat.min <= 1) return repeat.min == 0 ? "*" : "+";
+        if (repeat == PatternRepeat{.min = 0, .max = 1, .greedy = true}) return "?";
+        if (!repeat.greedy && repeat.max == repeat.min) return repeat.min;
+    }
     nlohmann::json j = nlohmann::json::object();
     if (repeat.min > 0) j["min"] = repeat.min;
     if (repeat.max) j["max"] = *repeat.max;
+    if (repeat.minDuration) j["minDuration"] = *repeat.minDuration;
+    if (repeat.maxDuration) j["maxDuration"] = *repeat.maxDuration;
+    if (repeat.minQuarterNotes) j["minQuarterNotes"] = *repeat.minQuarterNotes;
+    if (repeat.maxQuarterNotes) j["maxQuarterNotes"] = *repeat.maxQuarterNotes;
     if (repeat.greedy) j["greedy"] = true;
     return j;
 }
