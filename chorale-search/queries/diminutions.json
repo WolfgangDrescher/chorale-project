@@ -1,0 +1,112 @@
+{
+    "consonantLeap": [
+        {
+            "feature": "kern",
+            "voices": "234",
+            "hintReduceCompound": true,
+            "pattern": [
+                { "kern": "*" },
+                {
+                    "as": "$note",
+                    "mint": { "operator": "gt", "value": "2" },
+                    "metweight": "u",
+                    "!hint-1": ["2", "7", "A4", "d5", "A5", "d4", "4"]
+                }
+            ]
+        }
+    ],
+    "suspension": [
+        {
+            "feature": "hint-**",
+            "voices": "@upper",
+            "pattern": [
+                { "as": "$preparation", "attack": true },
+                {
+                    "as": "$suspension",
+                    "sustain": true,
+                    "hint-@pair": ["2", "7", "A4", "d5", "A5", "d4"],
+                    "@anyOther": { "attack": true, "metweight": ["s", "hs", "w"] }
+                },
+                { "as": "$resolution", "mint": "-2" }
+            ]
+        },
+        {
+            "feature": "hint-**",
+            "voices": "@lower",
+            "pattern": [
+                { "as": "$preparation", "attack": true },
+                {
+                    "as": "$suspension",
+                    "sustain": true,
+                    "hint-@pair": ["2", "7", "A4", "d5", "A5", "d4"],
+                    "@anyOther": { "attack": true, "metweight": ["s", "hs", "w"] }
+                },
+                { "as": "$resolution", "mint": "-2" }
+            ]
+        }
+    ],
+    "neighborNote": [
+        {
+            "feature": "kern",
+            "pattern": [
+                { "kern": "*" },
+                { "as": "$note", "mint": "2", "metweight": "u" },
+                { "kern.pitch": "#1", "mint": "2" }
+            ]
+        }
+    ],
+    "passingNote": [
+        {
+            "feature": "kern",
+            "pattern": [
+                { "kern": "*" },
+                { "as": "$note", "mint": "2", "metweight": "u" },
+                { "mint": "2", "mint.direction": "$note" }
+            ]
+        }
+    ],
+    "accentedPassingNote": [
+        {
+            "feature": "kern",
+            "voices": "234",
+            "hintReduceCompound": true,
+            "pattern": [
+                { "kern": "*" },
+                {
+                    "as": "$note",
+                    "mint": "2",
+                    "metweight": ["s", "hs", "w"],
+                    "hint-1": ["2", "7", "A4", "d5", "A5", "d4", "4"]
+                },
+                { "mint": "2", "mint.direction": "$note", "metweight": "u" }
+            ]
+        }
+    ],
+    "anticipation": [
+        {
+            "feature": "kern",
+            "pattern": [
+                { "kern": "*" },
+                { "as": "$note", "!mint": "P1", "metweight": "u" },
+                { "mint": "P1" }
+            ]
+        }
+    ],
+    "leapingNeighborNote": [
+        {
+            "feature": "kern",
+            "voices": "234",
+            "hintReduceCompound": true,
+            "pattern": [
+                { "kern": "*" },
+                {
+                    "as": "$note",
+                    "mint": { "operator": "gt", "value": "2" },
+                    "metweight": "u",
+                    "hint-1": ["2", "7", "A4", "d5", "A5", "d4", "4"]
+                },
+                { "mint": "2" }
+            ]
+        }
+    ]
+}

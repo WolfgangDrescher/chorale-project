@@ -50,6 +50,8 @@ const annotator = useModulationAnnotator(chorale.value.choraleId, player, annota
 
 useChoraleKeyboardShortcuts({ prevRoute: () => props.prevRoute, nextRoute: () => props.nextRoute, keysTaken: annotating });
 
+const { notes: diminutionNotes, sections: diminutionSections, legend: diminutionLegend } = useDiminutionAnalysis(chorale.value.choraleId, () => (scoreOptions.showDiminutions ? scoreOptions.diminutions : []));
+
 const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHORALE_PAGE_VEROVIO_OPTIONS }));
 </script>
 
@@ -104,6 +106,8 @@ const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHOR
             </div>
         </div>
 
+        <DiminutionLegend v-if="scoreOptions.showDiminutions" :legend="diminutionLegend" @toggle="scoreOptions.toggleDiminution" />
+
         <PlayableHighlightedScore
             :player="player"
             :score-url="localScoreUrlGenerator(chorale.choraleId)"
@@ -111,7 +115,8 @@ const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHOR
             :verovio-options="verovioOptions"
             :base-filters="scoreOptions.baseFilters"
             :filters="scoreOptions.humdrumFilters"
-            :sections="matches"
+            :sections="[{ items: matches }, ...diminutionSections]"
+            :notes="diminutionNotes"
             :lines="annotator.active ? annotator.markers : (scoreOptions.showModulations ? modulationLines : undefined)"
             :scroll-to-first-section="matches.length > 0"
         />

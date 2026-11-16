@@ -131,7 +131,7 @@ export const scoreOptionsStore = ({ createDefaults, humdrumFilterDefinitions, us
         countOthers(state) {
             const defaults = createDefaults();
             const changed = ['showModulations', 'showLyrics'].filter((option) => option in state && state[option] !== defaults[option]);
-            return changed.length + (this.view.isHorizontalViewModeChanged ? 1 : 0);
+            return changed.length + (this.view.isHorizontalViewModeChanged ? 1 : 0) + (state.showDiminutions ? 1 : 0);
         },
         countTotal() {
             return this.countHumdrumFilters + this.countOthers;
@@ -152,6 +152,17 @@ export const scoreOptionsStore = ({ createDefaults, humdrumFilterDefinitions, us
         resetZoom() {
             this.view.resetZoom();
         },
+        toggleDiminution(id) {
+            this.diminutions = this.diminutions.includes(id)
+                ? this.diminutions.filter((shown) => shown !== id)
+                : [...this.diminutions, id];
+            if (this.diminutions.includes(id)) this.showDiminutions = true;
+        },
+        // Shown without any chosen, all of them are.
+        toggleDiminutions() {
+            this.showDiminutions = !this.showDiminutions;
+            if (this.showDiminutions && !this.diminutions.length) this.diminutions = DIMINUTIONS.map(({ id }) => id);
+        },
         toggleHorizontalViewMode() {
             this.view.showHorizontalViewMode = !this.view.showHorizontalViewMode;
         },
@@ -168,7 +179,13 @@ export const scoreOptionsStore = ({ createDefaults, humdrumFilterDefinitions, us
 });
 
 export const useScoreOptions = defineStore('score_options', scoreOptionsStore({
-    createDefaults: createDefaultScoreOptions,
+    createDefaults: () => ({
+        ...createDefaultScoreOptions(),
+        // Whether the diminutions are marked in the score, and which, see composables/diminutions.js. The choice
+        // stays while they are hidden.
+        showDiminutions: false,
+        diminutions: [],
+    }),
     humdrumFilterDefinitions: CHORALE_HUMDRUM_FILTERS,
     useView: useScoreViewOptions,
 }));

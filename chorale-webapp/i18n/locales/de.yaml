@@ -187,6 +187,16 @@ layers: Layer
 showModulations: Modulationen anzeigen
 hideModulations: Modulationen ausblenden
 showLyrics: Liedtext anzeigen
+showDiminutions: Diminutionsanalyse anzeigen
+diminutions: Diminutionen des Gerüstsatzes
+diminution:
+    consonantLeap: Sprung in einen konsonanten Akkordbestandteil
+    suspension: Vorhalt (syncopatio)
+    neighborNote: Wechselnote (nota cambiata)
+    passingNote: Unbetonter Durchgang (transitus regularis)
+    accentedPassingNote: Betonter Durchgang (transitus irregularis)
+    anticipation: Antizipation (anticipatio)
+    leapingNeighborNote: An- oder abgesprungene dissonante Nebennote
 keyColoringAbsolute: Absolute Farben
 keyColoringRelative: Farben relativ zur Grundtonart
 keyLabelingKeys: Tonarten

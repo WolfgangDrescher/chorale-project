@@ -39,11 +39,16 @@ function getAccidRect(elem) {
 // What a section is made of, in the order of the score: the stretches its pattern asks for and the gaps between
 // them, each with its notes. `notes` are the notes of the section with their lines.
 function splitIntoStretches(notes, gaps) {
+    const inGap = (line) => gaps.some((gap) => gap.startLine <= line && line <= gap.endLine);
+    // A note on several lines is in a gap only if all of them are.
+    const byElem = new Map();
+    for (const { line, elem, headElem } of notes) {
+        byElem.set(elem, { elem, headElem, isGap: (byElem.get(elem)?.isGap ?? true) && inGap(line) });
+    }
     const stretches = [];
-    for (const { line, elem } of notes) {
-        const isGap = gaps.some((gap) => gap.startLine <= line && line <= gap.endLine);
-        if (stretches.at(-1)?.isGap === isGap) stretches.at(-1).noteElems.push(elem);
-        else stretches.push({ isGap, noteElems: [elem] });
+    for (const { isGap, ...note } of byElem.values()) {
+        if (stretches.at(-1)?.isGap === isGap) stretches.at(-1).notes.push(note);
+        else stretches.push({ isGap, notes: [note] });
     }
     return stretches;
 }
@@ -70,7 +75,7 @@ function createMarkers(stretches, containerElem, color, voiceStaffIndex, outline
 
     const systems = [];
     stretches.forEach((stretch, index) => {
-        for (const noteElem of stretch.noteElems) {
+        for (const { elem: noteElem } of stretch.notes) {
             const systemElem = noteElem.closest('g.system');
             if (systems.at(-1)?.systemElem !== systemElem) systems.push({ systemElem, parts: [] });
             const rect = getBBoxElem(noteElem).getBoundingClientRect();
@@ -344,12 +349,21 @@ export default {
             return `g[id^="note-${suffix}"], g[id^="rest-${suffix}"], g[id^="mrest-${suffix}"]`;
         };
 
-        // The first note or rest of each line of the section, of `voice` or of any voice.
+        // The first note or rest of each line of the section, of `voice` or of any voice, and the note whose head
+        // it marks. Where `voice` holds a note it attacked within the section, its head is that note, in the place
+        // of what another voice attacks on the line.
         const notesOnLines = (voice) => {
             const notes = [];
             for (let line = props.startLine; line <= props.endLine; line++) {
                 const elem = containerElem?.querySelector(noteSelector(line, voice));
-                if (elem) notes.push({ line, elem });
+                if (elem) {
+                    notes.push({ line, elem, headElem: elem });
+                } else if (voice != null) {
+                    const held = soundingNoteElem(containerElem, line, voice);
+                    if (lineAndVoiceOf(held?.id)?.line >= props.startLine) {
+                        notes.push({ line, elem: containerElem.querySelector(noteSelector(line, null)) ?? held, headElem: held });
+                    }
+                }
             }
             return notes;
         };
@@ -363,8 +377,8 @@ export default {
         let notes = notesOnLines(voice);
         const usedFallbackVoice = voice != null && !notes.length;
         if (usedFallbackVoice) notes = notesOnLines(null);
-        const startElem = notes[0]?.elem;
-        const endElem = notes.at(-1)?.elem;
+        const startElem = notes[0]?.headElem;
+        const endElem = notes.at(-1)?.headElem;
 
         const voiceStaffIndex = voice == null
             ? null

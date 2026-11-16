@@ -62,6 +62,11 @@ export function useChoraleKeyboardShortcuts({ prevRoute, nextRoute, keysTaken = 
         scoreOptions.showModulations = !scoreOptions.showModulations;
     });
 
+    onShortcut('d', () => {
+        if (ignoreIfInput() || !('diminutions' in scoreOptions.$state)) return;
+        scoreOptions.toggleDiminutions();
+    });
+
     onShortcut('r', () => {
         if (ignoreIfInput()) return;
         scoreOptions.reset();

@@ -111,6 +111,26 @@ function showModulationsItem() {
     };
 }
 
+// The diminutions are shown and hidden with the checkbox. The row opens a submenu to choose them.
+function showDiminutionsItem() {
+    return {
+        label: t('showDiminutions'),
+        indicator: 'checkbox',
+        checked: () => scoreOptions.showDiminutions,
+        toggle: () => scoreOptions.toggleDiminutions(),
+        kbd: 'D',
+        suffix: scoreOptions.showDiminutions ? `${scoreOptions.diminutions.length}/${DIMINUTIONS.length}` : undefined,
+        placeholder: t('diminutions'),
+        children: DIMINUTIONS.map(({ id, color }) => ({
+            label: t(`diminution.${id}`),
+            indicator: 'checkbox',
+            color: highlightColorsByName[color],
+            checked: () => scoreOptions.diminutions.includes(id),
+            onSelect: () => scoreOptions.toggleDiminution(id),
+        })),
+    };
+}
+
 // A click on the checkbox of a checked filter with a submenu turns it off, one of an item with a
 // toggle toggles it; it does not open the submenu, as a click on the rest of the row does.
 function onCheckboxClick(event, item) {
@@ -179,6 +199,8 @@ const groups = computed(() => {
                 }] : []),
                 // Without a chorale there are no modulations to show.
                 ...(props.chorale ? [showModulationsItem()] : []),
+                // Only the chorales that are searched have diminutions to find.
+                ...(props.chorale && 'diminutions' in scoreOptions.$state ? [showDiminutionsItem()] : []),
             ],
         },
         {
@@ -249,6 +271,7 @@ const groups = computed(() => {
                     <KeyNotationExamples v-if="item.notation" :notation="item.notation" />
                 </template>
                 <template #item-trailing="{ item }">
+                    <span v-if="item.color" class="size-4 shrink-0 rounded-full" :style="{ backgroundColor: item.color }" />
                     <div v-if="item.cmd" class="font-mono text-[0.55rem] text-gray-500" :class="{ 'translate-y-1': !item.children?.length }">{{ item.cmd }}</div>
                     <template v-if="item.kbd">
                         <UKbd v-for="kbd in Array.isArray(item.kbd) ? item.kbd : [item.kbd]" :key="kbd" :value="kbd" size="sm" class="font-mono translate-y-0.5" />

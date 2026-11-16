@@ -39,7 +39,7 @@ export default defineComponent({
             height: `${markerSize}px`,
             left: `${xRect.x + xRect.width / 2 - parentRect.x}px`,
             top: `${elemRect.y + elemRect.height / 2 - parentRect.y}px`,
-            backgroundColor: props.color ?? 'rgb(234 179 8 / 0.4)',
+            background: props.color ?? 'rgb(234 179 8 / 0.4)',
         });
 
         return () => h('div', {
