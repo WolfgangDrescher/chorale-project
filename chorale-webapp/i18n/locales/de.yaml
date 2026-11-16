@@ -31,6 +31,8 @@ openInSearch: In der Suche öffnen
 searchError: Die Suche ist fehlgeschlagen.
 searchHistory: Verlauf
 searchHistoryEmpty: Noch keine Suchen im Verlauf.
+searchHistorySearch: Queries durchsuchen
+searchHistoryNothingFound: Keine Einträge gefunden.
 searchHistoryMatches: "keine Treffer | {matches} Treffer in einem Choral | {matches} Treffer in {count} Chorälen"
 searchHistoryCombinedQueries: "{count} kombinierte Queries"
 searchHistoryApply: Übernehmen

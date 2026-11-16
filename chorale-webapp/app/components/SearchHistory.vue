@@ -10,13 +10,21 @@ const toast = useToast();
 const open = ref(false);
 const confirmingClear = ref(false);
 const selectedId = ref(null);
-const selected = computed(() => entries.value.find((entry) => entry.id === selectedId.value) ?? entries.value[0]);
+const searchText = ref('');
+const searchTerms = computed(() => searchText.value.toLowerCase().split(/\s+/).filter(Boolean));
+const foundEntries = computed(() => entries.value.filter((entry) => {
+    const query = entry.query.toLowerCase().replace(/\s+/g, '');
+    return searchTerms.value.every((term) => query.includes(term));
+}));
+const selected = computed(() => foundEntries.value.find((entry) => entry.id === selectedId.value) ?? foundEntries.value[0]);
 const entryList = useTemplateRef('entryList');
+const searchInput = useTemplateRef('searchInput');
 
 watch(open, (isOpen) => {
     if (!isOpen) return;
     selectedId.value = entries.value[0]?.id ?? null;
     confirmingClear.value = false;
+    searchText.value = '';
 });
 
 function parsed(query) {
@@ -53,6 +61,11 @@ function apply(entry) {
     open.value = false;
 }
 
+function resetSearch() {
+    searchText.value = '';
+    searchInput.value?.inputRef?.focus();
+}
+
 function confirmClear() {
     clear();
     confirmingClear.value = false;
@@ -60,9 +73,9 @@ function confirmClear() {
 
 function forgetSelected() {
     const removed = selected.value;
-    const index = entries.value.indexOf(removed);
+    const index = foundEntries.value.indexOf(removed);
     forget(removed.id);
-    selectedId.value = (entries.value[index] ?? entries.value.at(-1))?.id ?? null;
+    selectedId.value = (foundEntries.value[index] ?? foundEntries.value.at(-1))?.id ?? null;
     toast.add({
         title: t('searchHistoryEntryRemoved'),
         description: `${formatSearchedAt(removed.searchedAt)} · ${detailsOf(removed)}`,
@@ -80,29 +93,34 @@ function forgetSelected() {
 }
 
 function selectNeighbour(offset) {
-    const neighbour = entries.value[entries.value.indexOf(selected.value) + offset];
+    const neighbour = foundEntries.value[foundEntries.value.indexOf(selected.value) + offset];
     if (neighbour) selectedId.value = neighbour.id;
 }
 
-watch(selectedId, async () => {
+watch(() => selected.value?.id, async () => {
     await nextTick();
     entryList.value?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
 });
 
+function isOnEntry(event) {
+    return Boolean(entryList.value?.contains(event.target));
+}
+
 async function focusSelectedEntry() {
     await nextTick();
-    entryList.value?.querySelector('[aria-current="true"]')?.focus();
+    const selectedEntry = entryList.value?.querySelector('[aria-current="true"]');
+    (selectedEntry ?? searchInput.value?.inputRef)?.focus();
 }
 
 // Instead of the close button, where Enter would only close the modal.
-function focusSelectedEntryOnOpen(event) {
+function focusSearchInputOnOpen(event) {
     event.preventDefault();
-    focusSelectedEntry();
+    searchInput.value?.inputRef?.focus();
 }
 
 // A focused button outside the list keeps its own Enter.
 function isOnOtherButton(event) {
-    return Boolean(event.target.closest?.('button')) && !entryList.value?.contains(event.target);
+    return Boolean(event.target.closest?.('button')) && !isOnEntry(event);
 }
 
 function whileBrowsingEntries(handler) {
@@ -115,7 +133,7 @@ function whileBrowsingEntries(handler) {
 onKeyStroke(['ArrowDown', 'ArrowUp'], whileBrowsingEntries((event) => {
     event.preventDefault();
     selectNeighbour(event.key === 'ArrowDown' ? 1 : -1);
-    focusSelectedEntry();
+    if (isOnEntry(event)) focusSelectedEntry();
 }));
 
 onKeyStroke('Enter', whileBrowsingEntries((event) => {
@@ -125,6 +143,7 @@ onKeyStroke('Enter', whileBrowsingEntries((event) => {
 }));
 
 onKeyStroke(['Delete', 'Backspace'], whileBrowsingEntries((event) => {
+    if (!isOnEntry(event)) return;
     event.preventDefault();
     forgetSelected();
     focusSelectedEntry();
@@ -132,7 +151,7 @@ onKeyStroke(['Delete', 'Backspace'], whileBrowsingEntries((event) => {
 </script>
 
 <template>
-    <UModal v-model:open="open" :title="t('searchHistory')" :content="{ onOpenAutoFocus: focusSelectedEntryOnOpen }" :ui="{ content: 'sm:max-w-4xl' }">
+    <UModal v-model:open="open" :title="t('searchHistory')" :content="{ onOpenAutoFocus: focusSearchInputOnOpen }" :ui="{ content: 'sm:max-w-4xl' }">
         <UButton
             color="neutral"
             variant="ghost"
@@ -142,25 +161,41 @@ onKeyStroke(['Delete', 'Backspace'], whileBrowsingEntries((event) => {
             :disabled="!entries.length"
         />
         <template #body>
-            <div v-if="selected" class="grid gap-4 md:grid-cols-[16rem_1fr]">
-                <ul ref="entryList" class="space-y-1 max-h-48 md:max-h-[60vh] overflow-y-auto">
-                    <li v-for="entry in entries" :key="entry.id">
-                        <button
-                            type="button"
-                            class="w-full rounded-md px-2 py-1.5 text-left text-sm outline-none"
-                            :class="entry.id === selected.id ? 'bg-primary/10' : 'hover:bg-elevated'"
-                            :aria-current="entry.id === selected.id"
-                            @click="selectedId = entry.id"
-                            @focus="selectedId = entry.id"
-                        >
-                            <span class="block tabular-nums">{{ formatSearchedAt(entry.searchedAt) }}</span>
-                            <span class="block truncate text-xs text-dimmed">
-                                {{ detailsOf(entry) }}
-                            </span>
-                        </button>
-                    </li>
-                </ul>
-                <div class="min-w-0 space-y-4">
+            <div v-if="entries.length" class="grid gap-4 md:grid-cols-[16rem_1fr]">
+                <div class="space-y-2">
+                    <UInput ref="searchInput" v-model="searchText" icon="lucide:search" :placeholder="t('searchHistorySearch')" class="w-full">
+                        <template v-if="searchText" #trailing>
+                            <UButton
+                                icon="lucide:x"
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                :aria-label="t('resetFilter')"
+                                :title="t('resetFilter')"
+                                @click="resetSearch"
+                            />
+                        </template>
+                    </UInput>
+                    <ul v-if="selected" ref="entryList" class="space-y-1 max-h-48 md:max-h-[60vh] overflow-y-auto">
+                        <li v-for="entry in foundEntries" :key="entry.id">
+                            <button
+                                type="button"
+                                class="w-full rounded-md px-2 py-1.5 text-left text-sm outline-none"
+                                :class="entry.id === selected.id ? 'bg-primary/10' : 'hover:bg-elevated'"
+                                :aria-current="entry.id === selected.id"
+                                @click="selectedId = entry.id"
+                                @focus="selectedId = entry.id"
+                            >
+                                <span class="block tabular-nums">{{ formatSearchedAt(entry.searchedAt) }}</span>
+                                <span class="block truncate text-xs text-dimmed">
+                                    {{ detailsOf(entry) }}
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+                    <p v-else class="px-2 text-sm text-dimmed">{{ t('searchHistoryNothingFound') }}</p>
+                </div>
+                <div v-if="selected" class="min-w-0 space-y-4">
                     <HighlightedQuery :query="formattedQuery(selected.query)" />
                     <div class="flex flex-wrap gap-2">
                         <UButton icon="lucide:circle-check" :label="t('searchHistoryApply')" @click="apply(selected)" />
