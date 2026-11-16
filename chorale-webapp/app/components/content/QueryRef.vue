@@ -2,6 +2,8 @@
 const props = defineProps({
     id: { type: String, required: true },
     label: { type: String, default: 'Query' },
+    // Labels the button with the title of the query instead.
+    showTitle: Boolean,
 });
 
 const { t } = useI18n();
@@ -13,7 +15,7 @@ const query = computed(() => lesson?.queries?.find((query) => query.id === props
 <template>
     <UButton
         v-if="query"
-        :label="label"
+        :label="showTitle ? query.title : label"
         icon="lucide:search"
         color="neutral"
         variant="soft"
