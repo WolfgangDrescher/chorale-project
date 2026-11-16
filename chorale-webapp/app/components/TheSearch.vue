@@ -10,23 +10,26 @@ const { open, mapNavigationItems, postFilter } = useContentSearch();
 const lazy = { server: false, immediate: false, default: () => [] };
 
 const { data: files, execute: loadFiles } = useLazyAsyncData('search-sections', async () => {
-    const sections = await Promise.all(['docs', 'lessons', 'faq'].map((collection) => queryCollectionSearchSections(collection)));
+    const sections = await Promise.all(['docs', 'lessons', 'topics', 'faq'].map((collection) => queryCollectionSearchSections(collection)));
     return sections.flat();
 }, lazy);
 
 const { data: navigation, execute: loadNavigation } = useLazyAsyncData('search-navigation', async () => {
-    const [docs, lessons, faq] = await Promise.all([
+    const [docs, lessons, topics, faq] = await Promise.all([
         queryCollectionNavigation('docs'),
         queryCollectionNavigation('lessons', ['lessonNumber']),
+        queryCollectionNavigation('topics'),
         queryCollectionNavigation('faq'),
     ]);
     // The results are grouped by the title of each collection's index page, which for the docs
     // is the name of the search engine.
-    // The questions have no index page to take the title from.
+    // The topics and the questions have no index page to take the title from.
+    const group = (title, path, children) => ({ title, path, children });
     return [
         ...docs.map((item) => ({ ...item, title: t('docs') })),
         ...withLessonNumbers(lessons),
-        { title: t('faq'), path: '/faq', children: faq },
+        group(t('topics'), '/topics', topics),
+        group(t('faq'), '/faq', faq),
     ];
 }, lazy);
 

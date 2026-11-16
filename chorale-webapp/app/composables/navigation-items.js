@@ -1,4 +1,4 @@
-const LEARN_PATHS = ['/learn', '/lessons', '/faq'];
+const LEARN_PATHS = ['/learn', '/lessons', '/topics', '/faq'];
 
 export function useNavigationItems() {
     const { t } = useI18n();
@@ -36,6 +36,7 @@ export function useNavigationItems() {
             active: LEARN_PATHS.some((path) => isAt(localePath(path))),
             children: [
                 { label: t('lessons'), icon: LEARN_PARTS.lessons.icon, ui: { linkLeadingIcon: LEARN_PARTS.lessons.color }, to: localePath('/lessons'), active: isAt(localePath('/lessons')) },
+                { label: t('topics'), icon: LEARN_PARTS.topics.icon, ui: { linkLeadingIcon: LEARN_PARTS.topics.color }, to: localePath('/topics'), active: isAt(localePath('/topics')) },
                 { label: t('faq'), icon: LEARN_PARTS.faq.icon, ui: { linkLeadingIcon: LEARN_PARTS.faq.color }, to: localePath('/faq'), active: isAt(localePath('/faq')) },
             ],
         },

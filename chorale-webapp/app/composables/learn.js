@@ -1,11 +1,11 @@
 import contentHistory from '#build/content-history.mjs';
 
-// "/faq/tenor-range" => "tenor-range"
+// "/topics/plagal-cadences" => "plagal-cadences"
 export function slugOfPath(path) {
     return path?.split('/').filter(Boolean).at(-1) ?? '';
 }
 
-// The ids of all `::faq-ref{id}` in a body, whose nodes are [tag, attributes, ...children].
+// The ids of all `::topic-ref{id}` or `::faq-ref{id}` in a body, whose nodes are [tag, attributes, ...children].
 export function findReferences(body, tag) {
     const ids = [];
     const walk = (node) => {
@@ -17,13 +17,19 @@ export function findReferences(body, tag) {
     return [...new Set(ids)];
 }
 
-// The lessons that embed the page.
+// The lessons and topics that embed the page.
 export function useLearnBacklinks(tag, slug) {
     return useAsyncData(`backlinks-${tag}-${slug}`, async () => {
-        const lessons = await queryCollection('lessons').where('lessonNumber', 'IS NOT NULL').order('lessonNumber', 'ASC').select('path', 'title', 'lessonNumber', 'body').all();
+        const [lessons, topics] = await Promise.all([
+            queryCollection('lessons').where('lessonNumber', 'IS NOT NULL').order('lessonNumber', 'ASC').select('path', 'title', 'lessonNumber', 'body').all(),
+            queryCollection('topics').select('path', 'title', 'body').all(),
+        ]);
         const refersHere = (page) => findReferences(page.body, tag).includes(slug);
         const strip = ({ body, ...page }) => page;
-        return { lessons: lessons.filter(refersHere).map(strip) };
+        return {
+            lessons: lessons.filter(refersHere).map(strip),
+            topics: topics.filter((page) => slugOfPath(page.path) !== slug && refersHere(page)).map(strip),
+        };
     });
 }
 
@@ -39,10 +45,12 @@ export function lastChangeItem(page, t, d) {
 
 // Settings of LearnFilteredCollectionPage. The first entry of `sortBy` is the default.
 export const LEARN_COLLECTION_PAGES = {
+    topics: { reference: 'topic-ref', searchPlaceholder: 'topicSearchPlaceholder', count: 'topicCount', sortBy: ['title', 'date'] },
     faq: { reference: 'faq-ref', searchPlaceholder: 'faqSearchPlaceholder', count: 'faqCount', sortBy: ['date', 'title'] },
 };
 
 export const LEARN_PARTS = {
     lessons: { icon: 'lucide:graduation-cap', color: 'text-teal-600', tile: 'bg-teal-500/15 text-teal-600' },
+    topics: { icon: 'lucide:book-open-text', color: 'text-sky-600', tile: 'bg-sky-500/15 text-sky-600' },
     faq: { icon: 'lucide:message-circle-question-mark', color: 'text-amber-600', tile: 'bg-amber-500/15 text-amber-600' },
 };

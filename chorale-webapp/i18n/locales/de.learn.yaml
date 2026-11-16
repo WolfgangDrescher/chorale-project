@@ -49,28 +49,39 @@ metweightShort:
     w: Leicht
     u: Zwischenschlag
 learn: Lernen
+topics: Themen
+topicsDescription: "Einzelne Aspekte der Choräle gezielt aufbereitet: Kadenzen, Dissonanzen, Außenstimmen und mehr."
+topic: Thema
+topicReadAll: Ganzes Thema lesen
+topicQuestions: Fragen zu diesem Thema
+topicSearchPlaceholder: Themen durchsuchen
 faq: FAQ
 faqTitle: Häufige Fragen
 faqDescription: "Kurze Antworten auf häufige Fragen zu den vierstimmigen Chorälen von Bach."
+faqMoreInTopics: Mehr dazu in den Themen
 faqSearchPlaceholder: Fragen durchsuchen
 learnQueries: Queries zum Nachprüfen
+learnLiterature: Literatur
 learnUsedIn: Kommt vor in
+learnToc: Inhalt
 learnInLessons: "Lektion {numbers}"
 learnEmpty: Hier gibt es noch keine Einträge.
 learnNoResults: Nichts gefunden.
 learnNoResultsDescription: "Kein Eintrag passt zu Suche und Tags."
 learnResetFilter: Suche und Tags zurücksetzen
 faqCount: "{n} von {total} Fragen"
+topicCount: "{n} von {total} Themen"
 referenceMissing: "Der Verweis auf „{id}“ führt ins Leere."
 learnOpenGroup: "{group} aufklappen"
 learnCloseGroup: "{group} zuklappen"
 lessonsDescription: "Eine methodische Aufbereitung der vierstimmigen Choräle von Bach in Lektionen."
+learnAuthor: Autor
 learnSort:
     date: Datum
     title: Titel
 learnChanged: "geändert {date}"
 lessonExerciseCount: "eine Aufgabe | {n} Aufgaben"
-learnDescription: "In 16 Lektionen lässt sich das Komponieren von Chorälen innerhalb eines Semesters lernen. Eingebunden sind häufige Fragen, die im Unterricht immer wieder auftauchen."
+learnDescription: "In 16 Lektionen lässt sich das Komponieren von Chorälen innerhalb eines Semesters lernen. Eingebunden sind Themen, die einzelne Aspekte gezielt vertiefen, sowie häufige Fragen, die im Unterricht immer wieder auftauchen."
 learnTagCount: "{tag}, {count} Einträge"
 faqVerdict:
     yes: Ja

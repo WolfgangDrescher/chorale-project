@@ -7,7 +7,7 @@ navigation: Navigation
 project: Projekt
 search: Suchen
 searchScope: "Durchsucht werden nur die Choräle von {name}, nicht die der übrigen Sammlungen."
-searchPlaceholder: Choräle, Lektionen, Fragen und Docs durchsuchen
+searchPlaceholder: Choräle, Lektionen, Themen, Fragen und Docs durchsuchen
 submit: Absenden
 docs: Docs
 noResults: Keine Treffer gefunden.

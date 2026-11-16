@@ -91,6 +91,34 @@ export default defineContentConfig({
                 analysesDescription: z.string().optional(),
             }),
         }),
+        topics: defineCollection({
+            type: 'page',
+            source: 'topics/*.md',
+            schema: learnSchema.extend({
+                authors: z.array(z.string()).optional(),
+                // Fields as in BibTeX, names as "Family, Given".
+                literature: z.array(z.object({
+                    type: z.enum(['book', 'incollection', 'article', 'phdthesis', 'unpublished', 'online']),
+                    author: z.array(z.string()).optional(),
+                    title: z.string(),
+                    booktitle: z.string().optional(),
+                    journal: z.string().optional(),
+                    editor: z.array(z.string()).optional(),
+                    translator: z.array(z.string()).optional(),
+                    volume: z.union([z.number(), z.string()]).optional(),
+                    series: z.string().optional(),
+                    edition: z.union([z.number(), z.string()]).optional(),
+                    school: z.string().optional(),
+                    note: z.string().optional(),
+                    address: z.string().optional(),
+                    publisher: z.string().optional(),
+                    year: z.union([z.number(), z.string()]).optional(),
+                    pages: z.string().optional(),
+                    url: z.string().optional(),
+                    urldate: z.date().optional(),
+                })).optional(),
+            }),
+        }),
         faq: defineCollection({
             type: 'page',
             source: 'faq/*.md',
@@ -105,6 +133,7 @@ export default defineContentConfig({
                     counts: z.enum(['matches', 'chorales']).optional(),
                 }).optional(),
                 verdict: z.enum(['yes', 'no']).optional(),
+                topics: z.array(z.string()).optional(),
             }),
         }),
         analysisResults: defineCollection({

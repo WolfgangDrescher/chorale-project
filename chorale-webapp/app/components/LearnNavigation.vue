@@ -3,11 +3,12 @@ const { t } = useI18n();
 const route = useRoute();
 
 const { data } = await useAsyncData('learn-navigation', async () => {
-    const [lessons, faq] = await Promise.all([
+    const [lessons, topics, faq] = await Promise.all([
         queryCollection('lessons').where('lessonNumber', 'IS NOT NULL').order('lessonNumber', 'ASC').select('path', 'title', 'lessonNumber').all(),
+        queryCollection('topics').order('title', 'ASC').select('path', 'title').all(),
         queryCollection('faq').order('title', 'ASC').select('path', 'title').all(),
     ]);
-    return { lessons, faq };
+    return { lessons, topics, faq };
 });
 
 // Also true for the pages below a lesson (its data).
@@ -15,6 +16,7 @@ const isAt = (path) => route.path === path || route.path.startsWith(`${path}/`);
 
 const groups = computed(() => [
     { title: t('lessons'), path: '/lessons', ...LEARN_PARTS.lessons, pages: (data.value?.lessons ?? []).map((lesson) => ({ title: `${lesson.lessonNumber}. ${lesson.title}`, path: lesson.path })) },
+    { title: t('topics'), path: '/topics', ...LEARN_PARTS.topics, pages: (data.value?.topics ?? []).map(({ title, path }) => ({ title, path })) },
     { title: t('faq'), path: '/faq', ...LEARN_PARTS.faq, pages: (data.value?.faq ?? []).map(({ title, path }) => ({ title, path })) },
 ]);
 

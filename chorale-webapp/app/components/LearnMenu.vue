@@ -8,21 +8,23 @@ const { t } = useI18n();
 const localePath = useLocalePath();
 
 const { data: counts } = await useAsyncData('learn-menu-counts', async () => {
-    const [lessons, faq] = await Promise.all([
+    const [lessons, topics, faq] = await Promise.all([
         queryCollection('lessons').where('lessonNumber', 'IS NOT NULL').count(),
+        queryCollection('topics').count(),
         queryCollection('faq').count(),
     ]);
-    return { lessons, faq };
+    return { lessons, topics, faq };
 });
 
 const items = computed(() => [
     { title: t('lessons'), description: t('lessonsDescription'), ...LEARN_PARTS.lessons, to: localePath('/lessons'), count: counts.value?.lessons },
+    { title: t('topics'), description: t('topicsDescription'), ...LEARN_PARTS.topics, to: localePath('/topics'), count: counts.value?.topics },
     { title: t('faq'), description: t('faqDescription'), ...LEARN_PARTS.faq, to: localePath('/faq'), count: counts.value?.faq },
 ]);
 </script>
 
 <template>
-    <UContainer v-if="!cards" class="grid grid-cols-2 gap-1 py-2">
+    <UContainer v-if="!cards" class="grid grid-cols-3 gap-1 py-2">
         <NuxtLink v-for="item in items" :key="item.to" :to="item.to" class="group flex items-start gap-2.5 rounded-md p-2.5 hover:bg-elevated">
             <span class="flex size-8 shrink-0 items-center justify-center rounded-md" :class="item.tile"><UIcon :name="item.icon" class="size-5" /></span>
             <span class="min-w-0">
@@ -34,7 +36,7 @@ const items = computed(() => [
             </span>
         </NuxtLink>
     </UContainer>
-    <div v-else class="grid gap-4 sm:grid-cols-2">
+    <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <NuxtLink v-for="item in items" :key="item.to" :to="item.to" class="group flex flex-col rounded-lg border border-default p-5 hover:bg-elevated/60">
             <span class="flex items-center justify-between">
                 <span class="flex size-11 items-center justify-center rounded-lg" :class="item.tile"><UIcon :name="item.icon" class="size-6" /></span>

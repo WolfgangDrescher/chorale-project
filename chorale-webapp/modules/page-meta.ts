@@ -8,7 +8,7 @@ import { readHistoryFromFile, readHistoryFromGit } from '../scripts/content-hist
 // ("faq/tenor-range"). Not a content hook: Nuxt Content caches parsed pages and a commit changes no text.
 // Without git (Docker) the commits come from content-history.json, see `make history`.
 
-const COLLECTION_DIRECTORIES = ['lessons', 'faq'];
+const COLLECTION_DIRECTORIES = ['lessons', 'topics', 'faq'];
 
 export default defineNuxtModule({
     meta: { name: 'page-meta' },
