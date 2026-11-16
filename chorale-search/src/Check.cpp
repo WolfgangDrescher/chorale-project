@@ -66,12 +66,12 @@ SimultaneousGroup movesInto(const std::string& voices, const std::string& sign, 
     AttributeMap move = moveExtra;
     move["mint"] = {sign};
 
-    SimultaneousGroup group;
-    group.feature = "mint";
-    group.voices = voices;
-    group.pattern = {before, move};
-    group.simultaneousAlignment = "end";
-    return group;
+    return SimultaneousGroup{
+        .feature = "mint",
+        .voices = voices,
+        .pattern = {before, move},
+        .simultaneousAlignment = "end",
+    };
 }
 
 // One query for each direction and interval (2 x 2 = 4), with the id "<check>:<direction>", over all the pairs of
@@ -88,16 +88,23 @@ std::vector<FindingQuery> buildParallelQueries() {
             AttributeMap sonority;
             sonority[kPairSearchedKey] = toPatternValues(kind.intervals);
 
-            Query query;
-            query.id = queryId(kind.parallelType, direction);
-            query.feature = pairs;
-            query.voices = "@lower"; // the pair has one spine, any voice reads it
-            query.pattern = {sonority, sonority};
-            query.hintReduceCompound = true;
-            query.simultaneousWith.push_back(movesInto("@lower", sign));
-            query.simultaneousWith.push_back(movesInto("@upper", sign));
+            Query query{
+                .id = queryId(kind.parallelType, direction),
+                .feature = pairs,
+                .voices = "@lower", // the pair has one spine, any voice reads it
+                .pattern = {sonority, sonority},
+                .simultaneousWith = {movesInto("@lower", sign), movesInto("@upper", sign)},
+                .hintReduceCompound = true,
+            };
 
-            queries.push_back({std::move(query), kind.parallelType, "error", direction, 0, 0});
+            queries.push_back(FindingQuery{
+                .query = std::move(query),
+                .type = kind.parallelType,
+                .severity = "error",
+                .direction = direction,
+                .lowerVoice = 0,
+                .upperVoice = 0,
+            });
         }
     }
     return queries;
@@ -123,16 +130,23 @@ std::vector<FindingQuery> buildHiddenMotionQueries(bool allowStepwiseSoprano) {
             AttributeMap leap;
             if (allowStepwiseSoprano) leap["!mint"] = {sign + "2", sign + "1"};
 
-            Query query;
-            query.id = queryId(kind.hiddenType, direction, kBass, kSoprano);
-            query.feature = pairKey;
-            query.voices = std::to_string(kSoprano); // the pair has one spine, any voice reads it
-            query.pattern = {before, into};
-            query.hintReduceCompound = true;
-            query.simultaneousWith.push_back(movesInto(std::to_string(kBass), sign));
-            query.simultaneousWith.push_back(movesInto(std::to_string(kSoprano), sign, leap));
+            Query query{
+                .id = queryId(kind.hiddenType, direction, kBass, kSoprano),
+                .feature = pairKey,
+                .voices = std::to_string(kSoprano), // the pair has one spine, any voice reads it
+                .pattern = {before, into},
+                .simultaneousWith = {movesInto(std::to_string(kBass), sign), movesInto(std::to_string(kSoprano), sign, leap)},
+                .hintReduceCompound = true,
+            };
 
-            queries.push_back({std::move(query), kind.hiddenType, "warning", direction, kBass, kSoprano});
+            queries.push_back(FindingQuery{
+                .query = std::move(query),
+                .type = kind.hiddenType,
+                .severity = "warning",
+                .direction = direction,
+                .lowerVoice = kBass,
+                .upperVoice = kSoprano,
+            });
         }
     }
     return queries;
@@ -153,14 +167,22 @@ std::vector<FindingQuery> buildBassPhraseEndQueries() {
         position["fermata"] = {"true"};
         position["!mint"] = toPatternValues(cadenceSteps);
 
-        Query query;
-        query.id = queryId("bassPhraseEnd", direction, kBass, kBass);
-        query.feature = "mint";
-        query.voices = std::to_string(kBass);
-        query.pattern = {position};
-        query.mintStartAtPreviousToken = true;
-        query.hintReduceCompound = true;
-        queries.push_back({std::move(query), "bassPhraseEnd", "warning", direction, kBass, kBass});
+        Query query{
+            .id = queryId("bassPhraseEnd", direction, kBass, kBass),
+            .feature = "mint",
+            .voices = std::to_string(kBass),
+            .pattern = {position},
+            .mintStartAtPreviousToken = true,
+            .hintReduceCompound = true,
+        };
+        queries.push_back(FindingQuery{
+            .query = std::move(query),
+            .type = "bassPhraseEnd",
+            .severity = "warning",
+            .direction = direction,
+            .lowerVoice = kBass,
+            .upperVoice = kBass,
+        });
     }
     return queries;
 }
@@ -181,13 +203,21 @@ std::vector<FindingQuery> buildLargeLeapQueries() {
             leap["mint"] = {PatternValue(ComparisonOperator::GreaterThan, sign + "P5")};
             leap["!mint"] = sign == "+" ? std::vector<PatternValue>{"+m6", "+P8"} : std::vector<PatternValue>{"-P8"};
 
-            Query query;
-            query.id = queryId("largeLeap", direction, voice, voice);
-            query.feature = "mint";
-            query.voices = std::to_string(voice);
-            query.pattern = {before, leap};
+            Query query{
+                .id = queryId("largeLeap", direction, voice, voice),
+                .feature = "mint",
+                .voices = std::to_string(voice),
+                .pattern = {before, leap},
+            };
 
-            queries.push_back({std::move(query), "largeLeap", "warning", direction, voice, voice});
+            queries.push_back(FindingQuery{
+                .query = std::move(query),
+                .type = "largeLeap",
+                .severity = "warning",
+                .direction = direction,
+                .lowerVoice = voice,
+                .upperVoice = voice,
+            });
         }
     }
     return queries;
@@ -204,13 +234,21 @@ std::vector<FindingQuery> buildVoiceRangeQueries(const VoiceRanges& limits) {
             {"below", ComparisonOperator::LessThan, range.lower},
         };
         for (const auto& [direction, comparisonOperator, limit] : sides) {
-            Query query;
-            query.id = queryId("voiceRange", direction, voice, voice);
-            query.feature = "kern";
-            query.voices = std::to_string(voice);
-            query.pattern = {{{"kern", {PatternValue(comparisonOperator, hum::Convert::base12ToKern(limit))}}}};
+            Query query{
+                .id = queryId("voiceRange", direction, voice, voice),
+                .feature = "kern",
+                .voices = std::to_string(voice),
+                .pattern = {{{"kern", {PatternValue(comparisonOperator, hum::Convert::base12ToKern(limit))}}}},
+            };
 
-            queries.push_back({std::move(query), "voiceRange", "warning", direction, voice, voice});
+            queries.push_back(FindingQuery{
+                .query = std::move(query),
+                .type = "voiceRange",
+                .severity = "warning",
+                .direction = direction,
+                .lowerVoice = voice,
+                .upperVoice = voice,
+            });
         }
     }
     return queries;
@@ -225,21 +263,22 @@ std::vector<Finding> runFindingQueries(const HumdrumChorale& chorale, const std:
     std::vector<Finding> findings;
     for (const FindingQuery& entry : queries) {
         for (const Result& match : search.runOne(chorale, entry.query)) {
-            Finding finding;
-            finding.check = entry.type;
-            finding.severity = entry.severity;
-            finding.direction = entry.direction;
-            finding.lowerVoice = entry.lowerVoice;
-            finding.upperVoice = entry.upperVoice;
+            Finding finding{
+                .check = entry.type,
+                .severity = entry.severity,
+                .direction = entry.direction,
+                .lowerVoice = entry.lowerVoice,
+                .upperVoice = entry.upperVoice,
+                .startLine = static_cast<int>(match.startLineNumber),
+                .endLine = static_cast<int>(match.endLineNumber),
+                .startPosition = match.startPosition,
+                .endPosition = match.endPosition,
+            };
             // A query over voice pairs: the pair is the one whose spine the match was found in ("hint-24").
             if (entry.lowerVoice == 0 && match.feature.size() == 7 && match.feature.rfind("hint-", 0) == 0) {
                 finding.lowerVoice = static_cast<std::size_t>(match.feature[5] - '0');
                 finding.upperVoice = static_cast<std::size_t>(match.feature[6] - '0');
             }
-            finding.startLine = static_cast<int>(match.startLineNumber);
-            finding.endLine = static_cast<int>(match.endLineNumber);
-            finding.startPosition = match.startPosition;
-            finding.endPosition = match.endPosition;
             findings.push_back(std::move(finding));
         }
     }
@@ -274,17 +313,17 @@ hum::HTp soundingNote(hum::HTp token) {
 // From one note to another.
 Finding makeFinding(const char* check, const char* severity, const char* direction, std::size_t lowerVoice,
                     std::size_t upperVoice, hum::HTp first, hum::HTp last) {
-    Finding finding;
-    finding.check = check;
-    finding.severity = severity;
-    finding.direction = direction;
-    finding.lowerVoice = lowerVoice;
-    finding.upperVoice = upperVoice;
-    finding.startLine = first->getLineNumber();
-    finding.endLine = last->getLineNumber();
-    finding.startPosition = humNumToString(first->getDurationFromStart());
-    finding.endPosition = humNumToString(last->getDurationFromStart());
-    return finding;
+    return Finding{
+        .check = check,
+        .severity = severity,
+        .direction = direction,
+        .lowerVoice = lowerVoice,
+        .upperVoice = upperVoice,
+        .startLine = first->getLineNumber(),
+        .endLine = last->getLineNumber(),
+        .startPosition = humNumToString(first->getDurationFromStart()),
+        .endPosition = humNumToString(last->getDurationFromStart()),
+    };
 }
 
 // At one line: the token of any voice on it.

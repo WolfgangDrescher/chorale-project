@@ -21,32 +21,32 @@ namespace choralesearch {
 namespace {
 
 MatcherOptions matcherOptions(const Query& query) {
-    MatcherOptions options;
-    options.mintStartAtPreviousToken = query.mintStartAtPreviousToken;
-    options.mintAllowIntervalComplementation = query.mintAllowIntervalComplementation;
-    options.fbCompareExactChord = query.fbCompareExactChord;
-    options.kernIgnoreOctave = query.kernIgnoreOctave;
-    options.hintReduceCompound = query.hintReduceCompound;
-    options.durationAllowSplitNotes = query.durationAllowSplitNotes;
-    options.durationAllowMergedNotes = query.durationAllowMergedNotes;
-    options.metweightSkipUnclassified = query.metweightSkipUnclassified;
-    return options;
+    return MatcherOptions{
+        .mintStartAtPreviousToken = query.mintStartAtPreviousToken,
+        .mintAllowIntervalComplementation = query.mintAllowIntervalComplementation,
+        .fbCompareExactChord = query.fbCompareExactChord,
+        .kernIgnoreOctave = query.kernIgnoreOctave,
+        .hintReduceCompound = query.hintReduceCompound,
+        .durationAllowSplitNotes = query.durationAllowSplitNotes,
+        .durationAllowMergedNotes = query.durationAllowMergedNotes,
+        .metweightSkipUnclassified = query.metweightSkipUnclassified,
+    };
 }
 
 // A group's own options are overrides -- nullopt falls back to the top-level query's own value
 // of the same name, not an independent default.
 MatcherOptions matcherOptions(const Query& query, const SimultaneousGroup& group) {
-    MatcherOptions options;
-    options.mintStartAtPreviousToken = group.mintStartAtPreviousToken.value_or(query.mintStartAtPreviousToken);
-    options.mintAllowIntervalComplementation =
-        group.mintAllowIntervalComplementation.value_or(query.mintAllowIntervalComplementation);
-    options.fbCompareExactChord = group.fbCompareExactChord.value_or(query.fbCompareExactChord);
-    options.kernIgnoreOctave = group.kernIgnoreOctave.value_or(query.kernIgnoreOctave);
-    options.hintReduceCompound = group.hintReduceCompound.value_or(query.hintReduceCompound);
-    options.durationAllowSplitNotes = group.durationAllowSplitNotes.value_or(query.durationAllowSplitNotes);
-    options.durationAllowMergedNotes = group.durationAllowMergedNotes.value_or(query.durationAllowMergedNotes);
-    options.metweightSkipUnclassified = group.metweightSkipUnclassified.value_or(query.metweightSkipUnclassified);
-    return options;
+    return MatcherOptions{
+        .mintStartAtPreviousToken = group.mintStartAtPreviousToken.value_or(query.mintStartAtPreviousToken),
+        .mintAllowIntervalComplementation =
+            group.mintAllowIntervalComplementation.value_or(query.mintAllowIntervalComplementation),
+        .fbCompareExactChord = group.fbCompareExactChord.value_or(query.fbCompareExactChord),
+        .kernIgnoreOctave = group.kernIgnoreOctave.value_or(query.kernIgnoreOctave),
+        .hintReduceCompound = group.hintReduceCompound.value_or(query.hintReduceCompound),
+        .durationAllowSplitNotes = group.durationAllowSplitNotes.value_or(query.durationAllowSplitNotes),
+        .durationAllowMergedNotes = group.durationAllowMergedNotes.value_or(query.durationAllowMergedNotes),
+        .metweightSkipUnclassified = group.metweightSkipUnclassified.value_or(query.metweightSkipUnclassified),
+    };
 }
 
 // simultaneousAlignment is resolved the same way, but it isn't a MatcherOptions field: it
@@ -286,7 +286,12 @@ std::vector<fs::path> CorpusSearch::findChoraleFiles() const {
 
 void CorpusSearch::reportProgress(std::size_t choralesSearched, std::size_t choralesTotal,
                                   const std::string& choraleId, std::size_t matchesSoFar) const {
-    if (m_onProgress) m_onProgress(SearchProgress{choralesSearched, choralesTotal, choraleId, matchesSoFar});
+    if (m_onProgress) m_onProgress(SearchProgress{
+        .choralesSearched = choralesSearched,
+        .choralesTotal = choralesTotal,
+        .choraleId = choraleId,
+        .matchesSoFar = matchesSoFar,
+    });
 }
 
 Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) const {

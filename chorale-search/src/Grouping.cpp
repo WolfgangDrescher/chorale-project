@@ -54,9 +54,8 @@ const std::string kHeldNoteSymbol = "‿";
 // The notes a voice attacks as the search sees them, without the ornaments it skips.
 std::vector<AttributeMatcher::Onset> onsetsSeenBySearch(const HumdrumChorale& chorale, const std::string& feature, std::size_t voice,
                                                         const Query& query) {
-    MatcherOptions options;
-    options.metweightSkipUnclassified = query.metweightSkipUnclassified;
-    return AttributeMatcher(feature, {}, options).buildOnsets(chorale, voice);
+    const AttributeMatcher matcher(feature, {}, MatcherOptions{.metweightSkipUnclassified = query.metweightSkipUnclassified});
+    return matcher.buildOnsets(chorale, voice);
 }
 
 // Whether the note on `line` repeats the pitch of the note on `previousLine`.

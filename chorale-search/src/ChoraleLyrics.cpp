@@ -148,11 +148,11 @@ ChoraleLyrics::ChoraleLyrics(hum::HTp soprano, const std::vector<hum::HTp>& text
             }
             const std::string& written = writtenByLine[token->getLineIndex()];
             if (!written.empty()) {
-                LyricsSyllable syllable;
-                syllable.writtenText = written;
-                syllable.normalizedText = normalizeLyricsText(withoutHyphens(written));
-                syllable.start = token->getDurationFromStart();
-                syllables.push_back(std::move(syllable));
+                syllables.push_back(LyricsSyllable{
+                    .writtenText = written,
+                    .normalizedText = normalizeLyricsText(withoutHyphens(written)),
+                    .start = token->getDurationFromStart(),
+                });
                 sounding = true;
             }
             if (!sounding) continue;

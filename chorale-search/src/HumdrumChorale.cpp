@@ -160,9 +160,9 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
             }
         }
         if (const std::optional<KeyContext> key = keyContextFromDesignation(*token)) {
-            pendingKeyChange = KeyChange{0, 0.0, *key, keySignature(key->key, key->mode)};
+            pendingKeyChange = KeyChange{.keyContext = *key, .signature = keySignature(key->key, key->mode)};
         } else if (token->isUndefinedKey()) {
-            pendingKeyChange = KeyChange{0, 0.0, KeyContext{"?", "", ""}, 0};
+            pendingKeyChange = KeyChange{.keyContext = {.key = "?"}};
         }
         if (token->isTimeSignature()) {
             const std::string meter = token->substr(2);
@@ -173,7 +173,7 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
             const std::size_t colon = token->find(':');
             info.key = token->substr(1, colon - 1);
             info.mode = modeFromKeyDesignation(*info.key, token->substr(colon + 1));
-            if (!info.cantusFirmus) info.cantusFirmus = KeyContext{*info.key, *info.mode, ""};
+            if (!info.cantusFirmus) info.cantusFirmus = KeyContext{.key = *info.key, .mode = *info.mode};
         }
     }
 

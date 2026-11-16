@@ -41,12 +41,13 @@ std::vector<LinePosition> linePositions(hum::HumdrumFile& infile) {
             continue;
         }
         if (!infile[i].isData()) continue;
-        LinePosition position;
-        position.line = infile[i].getLineNumber();
-        position.measure = measure;
-        position.beat = quarters + 1;
-        position.position = std::to_string(measure) + "/" + formatBeat(position.beat);
-        positions.push_back(position);
+        const hum::HumNum beat = quarters + 1;
+        positions.push_back(LinePosition{
+            .line = infile[i].getLineNumber(),
+            .measure = measure,
+            .beat = beat,
+            .position = std::to_string(measure) + "/" + formatBeat(beat),
+        });
         quarters += infile[i].getDuration();
     }
     return positions;

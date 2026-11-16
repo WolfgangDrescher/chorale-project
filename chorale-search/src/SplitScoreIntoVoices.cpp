@@ -162,8 +162,8 @@ std::string splitScoreIntoVoices(hum::HumdrumFile& infile) {
                                      std::to_string(tracks.size()));
     }
 
-    Staff low{tracks[0], 0};
-    Staff high{tracks[1], 0};
+    Staff low{.track = tracks[0]};
+    Staff high{.track = tracks[1]};
     if (meanPitch(infile, low.track) > meanPitch(infile, high.track)) std::swap(low.track, high.track);
     for (Staff* staff : {&low, &high}) {
         staff->twoVoices = soundsTwoVoices(infile, staff->track);

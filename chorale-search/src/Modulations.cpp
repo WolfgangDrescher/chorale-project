@@ -25,12 +25,12 @@ Modulation parseModulation(const std::string& pos, const std::string& key) {
     if (slash == std::string::npos) {
         throw std::runtime_error("Invalid modulation position (expected measure/beat): " + pos);
     }
-    Modulation mod;
-    mod.pos = pos;
-    mod.measure = std::stoi(pos.substr(0, slash));
-    mod.beat = parseBeat(pos.substr(slash + 1));
-    mod.key = key;
-    return mod;
+    return Modulation{
+        .pos = pos,
+        .measure = std::stoi(pos.substr(0, slash)),
+        .beat = parseBeat(pos.substr(slash + 1)),
+        .key = key,
+    };
 }
 
 bool isInitialModulation(const Modulation& mod) {

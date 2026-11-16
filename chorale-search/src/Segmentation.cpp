@@ -47,9 +47,8 @@ std::vector<Onset> onsetsBetween(const HumdrumChorale& chorale, const std::strin
                                   hum::HumNum from, hum::HumNum until, bool metweightSkipUnclassified = false) {
     std::vector<Onset> onsets;
     if (metweightSkipUnclassified) {
-        MatcherOptions skipOptions;
-        skipOptions.metweightSkipUnclassified = true;
-        for (const Onset& onset : AttributeMatcher(feature, {}, skipOptions).buildOnsets(chorale, voice)) {
+        const AttributeMatcher matcher(feature, {}, MatcherOptions{.metweightSkipUnclassified = true});
+        for (const Onset& onset : matcher.buildOnsets(chorale, voice)) {
             hum::HumNum position = onset.token->getDurationFromStart();
             if (position < from) continue;
             if (position >= until) break;
@@ -64,7 +63,7 @@ std::vector<Onset> onsetsBetween(const HumdrumChorale& chorale, const std::strin
         hum::HumNum position = t->getDurationFromStart();
         if (position < from) continue;
         if (position >= until) break;
-        onsets.push_back(Onset{t, t->getTiedDuration(), std::nullopt, t});
+        onsets.push_back(Onset{.token = t, .duration = t->getTiedDuration(), .lastToken = t});
     }
     return onsets;
 }
@@ -175,11 +174,11 @@ Query buildQuery(const HumdrumChorale& chorale, const std::vector<Onset>& onsets
                           options.matcherOptions.metweightSkipUnclassified);
         if (groupOnsets.empty() || groupOnsets.front().token->getDurationFromStart() != patternStart) continue;
 
-        SimultaneousGroup group;
-        group.feature = options.feature;
-        group.voices = std::to_string(voice);
-        group.pattern = buildPattern(chorale, groupOnsets, voice, windowEnd, options, true);
-        query.simultaneousWith.push_back(std::move(group));
+        query.simultaneousWith.push_back(SimultaneousGroup{
+            .feature = options.feature,
+            .voices = std::to_string(voice),
+            .pattern = buildPattern(chorale, groupOnsets, voice, windowEnd, options, true),
+        });
     }
 
     // simultaneousAlignment is left at the default "start" on purpose: the two voices' last
@@ -261,14 +260,13 @@ std::vector<Segment> segmentScore(const HumdrumChorale& chorale, const Segmentat
             }
         }
 
-        Segment segment;
-        segment.query = buildQuery(chorale, onsets, start, stop, queryOptions,
-                                    "segment-" + std::to_string(segments.size() + 1));
-        segment.startPosition = earliest->getDurationFromStart();
-        segment.endPosition = latest->getDurationFromStart();
-        segment.startLineNumber = earliest->getLineNumber();
-        segment.endLineNumber = latest->getLineNumber();
-        segments.push_back(std::move(segment));
+        segments.push_back(Segment{
+            .query = buildQuery(chorale, onsets, start, stop, queryOptions, "segment-" + std::to_string(segments.size() + 1)),
+            .startPosition = earliest->getDurationFromStart(),
+            .endPosition = latest->getDurationFromStart(),
+            .startLineNumber = earliest->getLineNumber(),
+            .endLineNumber = latest->getLineNumber(),
+        });
     }
     return segments;
 }

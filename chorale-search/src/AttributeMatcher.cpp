@@ -468,7 +468,12 @@ struct PhraseRoles {
 // The roles of a note on its own: a written note starts where `first` does and ends where `last` does,
 // which is the same token unless the note is split into several onsets.
 PhraseRoles notePhraseRoles(hum::HTp first, hum::HTp last) {
-    return {startsPhrase(first), last->hasFermata(), startsChorale(first), endsChorale(last)};
+    return PhraseRoles{
+        .startsPhrase = startsPhrase(first),
+        .endsPhrase = last->hasFermata(),
+        .startsChorale = startsChorale(first),
+        .endsChorale = endsChorale(last),
+    };
 }
 
 // Whether a "phrase" pattern value ("start"/"end", or "choraleStart"/"choraleEnd" for the first and the
@@ -527,7 +532,12 @@ void addLyricsOnset(std::vector<AttributeMatcher::Onset>& onsets, const HumdrumC
             return;
         }
     }
-    onsets.push_back({firstTok, duration, std::nullopt, lastTok, VerseSet::of(verse)});
+    onsets.push_back(AttributeMatcher::Onset{
+        .token = firstTok,
+        .duration = duration,
+        .lastToken = lastTok,
+        .verses = VerseSet::of(verse),
+    });
 }
 
 void sortByLine(std::vector<AttributeMatcher::Onset>& onsets) {
@@ -902,7 +912,7 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
     onsets.reserve(tokens.size());
 
     if (!m_options.metweightSkipUnclassified) {
-        for (hum::HTp tok : tokens) onsets.push_back(Onset{tok, tok->getTiedDuration(), std::nullopt, tok});
+        for (hum::HTp tok : tokens) onsets.push_back(Onset{.token = tok, .duration = tok->getTiedDuration(), .lastToken = tok});
         return onsets;
     }
 
@@ -932,7 +942,7 @@ std::vector<AttributeMatcher::Onset> AttributeMatcher::buildOnsets(const Humdrum
             continue;
         }
 
-        Onset onset{tok, tok->getTiedDuration(), std::nullopt, tok};
+        Onset onset{.token = tok, .duration = tok->getTiedDuration(), .lastToken = tok};
         if (skippedSincePreviousOnset && lastSoundingNote && isSoundingNote) {
             std::string interval = mintIntervalToken(lastSoundingNote, kernTok);
             if (!interval.empty()) onset.mint = interval;
@@ -1196,10 +1206,7 @@ std::optional<bool> AttributeMatcher::matchReAttackKey(const HumdrumChorale& cho
                                ? tok
                                : lookupToken(chorale, voice, tok->getLineNumber(), kKernKey);
         if (!noteTok) return std::nullopt;
-        PhraseRoles roles;
-        roles.endsPhrase = noteTok->hasFermata();
-        roles.endsChorale = endsChorale(noteTok);
-        matched = phraseInList(allowed, roles);
+        matched = phraseInList(allowed, PhraseRoles{.endsPhrase = noteTok->hasFermata(), .endsChorale = endsChorale(noteTok)});
     } else {
         hum::HTp kernTok = m_drivingFeatureId == PatternKeyId::Kern
                                 ? tok
@@ -1407,15 +1414,15 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
         }
 
         hum::HTp endTok = onsets[idx - 1].lastToken;
-        AttributeMatch m;
-        m.voice = voice;
-        m.startLineNumber = static_cast<std::size_t>(startTok->getLineNumber());
-        m.endLineNumber = static_cast<std::size_t>(endTok->getLineNumber());
-        m.startPosition = startTok->getDurationFromStart();
-        m.endPosition = endTok->getDurationFromStart();
-        m.positionOnsets = std::move(positionOnsets);
-        m.verses = verses;
-        matches.push_back(std::move(m));
+        matches.push_back(AttributeMatch{
+            .voice = voice,
+            .startLineNumber = static_cast<std::size_t>(startTok->getLineNumber()),
+            .endLineNumber = static_cast<std::size_t>(endTok->getLineNumber()),
+            .startPosition = startTok->getDurationFromStart(),
+            .endPosition = endTok->getDurationFromStart(),
+            .positionOnsets = std::move(positionOnsets),
+            .verses = verses,
+        });
     }
     return matches;
 }

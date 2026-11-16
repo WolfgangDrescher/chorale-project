@@ -45,10 +45,8 @@ std::optional<KeyContext> keyContextFromDesignation(const std::string& token) {
     static const std::regex designationRe(R"(^\*([a-gA-G][#-]*):([a-z]*)$)");
     std::smatch m;
     if (!std::regex_match(token, m, designationRe)) return std::nullopt;
-    KeyContext context;
-    context.key = m[1].str();
-    context.mode = modeFromKeyDesignation(context.key, m[2].str());
-    return context;
+    const std::string key = m[1].str();
+    return KeyContext{.key = key, .mode = modeFromKeyDesignation(key, m[2].str())};
 }
 
 } // namespace choralesearch

@@ -54,7 +54,9 @@ target_include_directories(chorale_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
 )
-target_compile_options(chorale_core PRIVATE -Wall -Wextra)
+# A designated initializer leaves out the fields it doesn't need on purpose.
+set(WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
+target_compile_options(chorale_core PRIVATE ${WARNING_FLAGS})
 find_package(Threads REQUIRED)
 target_link_libraries(chorale_core PUBLIC humlib Threads::Threads)
 
@@ -78,7 +80,7 @@ target_include_directories(chorale-generate PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
 )
-target_compile_options(chorale-generate PRIVATE -Wall -Wextra)
+target_compile_options(chorale-generate PRIVATE ${WARNING_FLAGS})
 target_link_libraries(chorale-generate PRIVATE humlib Threads::Threads)
 
 install(TARGETS chorale-search chorale-segment chorale-check chorale-info chorale-group RUNTIME DESTINATION bin)

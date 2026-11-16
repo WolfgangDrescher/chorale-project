@@ -261,9 +261,8 @@ class BassLineCollector {
 public:
     // `segmentStartNotes`: the first note of each segment's c.f., by segment id.
     BassLineCollector(const SegmentQueryOptions& options, std::map<std::string, hum::HTp> segmentStartNotes)
-        : m_options(options), m_segmentStartNotes(std::move(segmentStartNotes)) {
-        m_bassOptions.metweightSkipUnclassified = options.matcherOptions.metweightSkipUnclassified;
-    }
+        : m_options(options), m_segmentStartNotes(std::move(segmentStartNotes)),
+          m_bassOptions{.metweightSkipUnclassified = options.matcherOptions.metweightSkipUnclassified} {}
 
     // To be called for every match of a segment's c.f.
     void add(const HumdrumChorale& chorale, const Result& match) {

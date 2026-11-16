@@ -25,13 +25,13 @@ std::string withoutQuality(const std::string& interval);
 // complementary intervals count for every number, ornaments are left out, and a note may be found
 // written as its own split or merger.
 inline MatcherOptions defaultSegmentMatcherOptions() {
-    MatcherOptions options;
-    options.hintReduceCompound = true;
-    options.mintAllowIntervalComplementation = {"*"};
-    options.metweightSkipUnclassified = true;
-    options.durationAllowSplitNotes = true;
-    options.durationAllowMergedNotes = true;
-    return options;
+    return MatcherOptions{
+        .mintAllowIntervalComplementation = {"*"},
+        .hintReduceCompound = true,
+        .durationAllowSplitNotes = true,
+        .durationAllowMergedNotes = true,
+        .metweightSkipUnclassified = true,
+    };
 }
 
 // How a segment is turned into a query. The outer voices, the soprano driving the search -- and
