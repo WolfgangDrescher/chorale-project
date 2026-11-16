@@ -70,6 +70,11 @@ function otherSectionsOf(item) {
     return (item.linkedSections ?? []).filter(({ voice }) => voice !== item.voice);
 }
 
+// A section over a single line of a voice is a single note.
+function isSingleNote({ startLine, endLine }) {
+    return startLine === endLine;
+}
+
 // The text of a verse over the lines of a result, where it reads the lyrics.
 function textSectionsOf(item) {
     return (item.verses ?? []).map((verse) => ({ type: 'text', verse, ...lineRangeOf(item) }));
@@ -84,7 +89,7 @@ function sectionsForItems(items) {
     for (const item of items) {
         const queryId = item.queryId ?? '';
         if (!itemsByQueryId.has(queryId)) itemsByQueryId.set(queryId, []);
-        const linkedSections = otherSectionsOf(item).map(({ voice, startLine, endLine }) => ({ voice, startLine, endLine }));
+        const linkedSections = otherSectionsOf(item).filter((section) => !isSingleNote(section)).map(({ voice, startLine, endLine }) => ({ voice, startLine, endLine }));
         if (item.feature === 'word' || item.feature === 'syl') {
             textSectionsOf(item).forEach((section, index) => {
                 itemsByQueryId.get(queryId).push({ ...section, linkedSections: index === 0 ? linkedSections : [] });
@@ -102,6 +107,17 @@ function sectionsForItems(items) {
         items: sectionItems,
         color: colorForQueryId(queryId),
     }));
+}
+
+// The single notes the results link in other voices, circled in the color of their query.
+function notesForItems(items) {
+    const noteIdsByQueryId = new Map();
+    for (const item of items) {
+        const queryId = item.queryId ?? '';
+        if (!noteIdsByQueryId.has(queryId)) noteIdsByQueryId.set(queryId, []);
+        noteIdsByQueryId.get(queryId).push(...otherSectionsOf(item).filter(isSingleNote).map(({ voice, startLine }) => `L${startLine}F${voice}`));
+    }
+    return Array.from(noteIdsByQueryId, ([queryId, noteIds]) => ({ items: noteIds, color: colorForQueryId(queryId) }));
 }
 
 const players = useScorePlayers(() => pagedChoraleEntries.value.map(([choraleId]) => choraleId));
@@ -192,6 +208,7 @@ function choraleLink(choraleId, items) {
                     :base-filters="scoreOptions.baseFilters"
                     :filters="scoreOptions.humdrumFilters"
                     :sections="sectionsForItems(items)"
+                    :notes="notesForItems(items)"
                     :scroll-to-first-section="scoreOptions.showHorizontalViewMode"
                 />
             </ChoraleCard>
