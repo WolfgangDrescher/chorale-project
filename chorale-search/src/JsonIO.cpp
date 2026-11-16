@@ -807,6 +807,7 @@ nlohmann::json resultToJson(const Result& r) {
     }
     if (r.queryId) j["queryId"] = *r.queryId;
     if (!r.verses.empty()) j["verses"] = r.verses;
+    if (!r.namedPositionLines.empty()) j["positionLines"] = r.namedPositionLines;
     return j;
 }
 

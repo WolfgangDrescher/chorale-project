@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -86,6 +87,10 @@ struct Result : NoteSection {
     // Where each position of the pattern matched, for a caller that reads the score at the very notes the
     // pattern was matched on. Not written to the JSON.
     std::vector<PositionOnset> positionOnsets;
+
+    // By its name, the line of every position the pattern names ("as": "$note"), also where the voice only
+    // holds a note there.
+    std::map<std::string, std::size_t> namedPositionLines;
 };
 
 using Results = std::vector<Result>;

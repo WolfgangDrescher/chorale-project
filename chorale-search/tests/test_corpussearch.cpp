@@ -10,6 +10,7 @@
 
 #include "CorpusSearch.hpp"
 #include "HumdrumChorale.hpp"
+#include "PatternRepeat.hpp"
 #include "Query.hpp"
 
 using choralesearch::ChoraleIdRange;
@@ -18,6 +19,7 @@ using choralesearch::CountRange;
 using choralesearch::HumdrumChorale;
 using choralesearch::NoteSection;
 using choralesearch::PatternPosition;
+using choralesearch::PatternRepeat;
 using choralesearch::Query;
 using choralesearch::Result;
 using choralesearch::SimultaneousGroup;
@@ -27,6 +29,61 @@ using choralesearch::SimultaneousGroup;
 // (both added for ornament coverage); all three sort between chor001 and chor009.
 // Tests below exercise CorpusSearch behaviour (file discovery, aggregation,
 // result mapping, limit truncation), not AttributeMatcher.
+
+TEST_CASE(run_one_reports_the_line_of_every_named_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}, PatternPosition{.keys = {{"as", {"$fermata"}}, {"fermata", {"true"}}}}},
+    };
+    auto results = search.runOne(chorale, q);
+
+    REQUIRE(results.size() == 6u);
+    for (const Result& r : results) {
+        REQUIRE(r.namedPositionLines.size() == 1u);
+        CHECK_EQ(r.namedPositionLines.at("$fermata"), r.endLineNumber);
+        CHECK(r.startLineNumber < r.endLineNumber);
+    }
+}
+
+TEST_CASE(run_one_reports_the_line_of_a_named_position_the_voice_only_holds) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    // Driven by the pair, so the soprano also holds its note where only the bass moves.
+    Query q{
+        .feature = "hint-14",
+        .voices = "soprano",
+        .pattern = {PatternPosition{.keys = {{"as", {"$note"}}, {"hint-14", {"*"}}}}},
+    };
+    auto results = search.runOne(chorale, q);
+
+    bool foundHeld = false;
+    for (const Result& r : results) {
+        CHECK_EQ(r.namedPositionLines.at("$note"), r.startLineNumber);
+        foundHeld = foundHeld || chorale.tokenAtLine("kern", 4, static_cast<int>(r.startLineNumber)) == nullptr;
+    }
+    CHECK(foundHeld);
+}
+
+TEST_CASE(run_one_reports_no_line_for_a_named_position_that_repeats) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    CorpusSearch search(chorale.path());
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {PatternPosition{.keys = {{"as", {"$run"}}, {"!fermata", {"true"}}}, .repeat = PatternRepeat{.min = 1}},
+                    PatternPosition{.keys = {{"as", {"$fermata"}}, {"fermata", {"true"}}}}},
+    };
+    auto results = search.runOne(chorale, q);
+
+    REQUIRE(!results.empty());
+    for (const Result& r : results) {
+        CHECK(!r.namedPositionLines.contains("$run"));
+        CHECK_EQ(r.namedPositionLines.at("$fermata"), r.endLineNumber);
+    }
+}
 
 TEST_CASE(run_one_populates_result_fields_from_a_real_match) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));

@@ -1548,3 +1548,13 @@ TEST_CASE(query_from_json_reads_how_long_a_repeat_lasts) {
     CHECK_THROWS(queryFromJson(json::parse(afterC + R"({"repeat":{"maxDuration":"2"}}]})")));
     CHECK_NOTHROW(queryFromJson(json::parse(afterC + R"({"repeat":{"maxDuration":"2","greedy":true}}]})")));
 }
+
+TEST_CASE(result_to_json_writes_the_lines_of_the_named_positions_only_where_the_match_has_some) {
+    Result r;
+    r.choraleId = "chor001";
+    r.feature = "kern";
+    r.voice = 4;
+    CHECK(!resultToJson(r).contains("positionLines"));
+    r.namedPositionLines = {{"$note", 52}, {"$resolution", 53}};
+    CHECK_EQ(resultToJson(r)["positionLines"], json::parse(R"({"$note": 52, "$resolution": 53})"));
+}

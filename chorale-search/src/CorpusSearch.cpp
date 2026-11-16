@@ -15,6 +15,7 @@
 #include "HumdrumUtils.hpp"
 #include "PatternKeys.hpp"
 #include "PatternRepeat.hpp"
+#include "PositionReference.hpp"
 #include "VoiceMap.hpp"
 #include "VoiceReference.hpp"
 
@@ -436,6 +437,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
     }
 
     AttributeMatcher matcher(query.feature, query.pattern, matcherOptions(query));
+    const std::vector<std::optional<std::string>> names = positionNames(query.pattern);
 
     // Precompute each simultaneousWith group's own match positions (and resolved options)
     // once per chorale, rather than re-running its matcher for every one of the primary
@@ -496,6 +498,10 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
             std::sort(r.linkedSections.begin(), r.linkedSections.end());
             r.linkedSections.erase(std::unique(r.linkedSections.begin(), r.linkedSections.end()), r.linkedSections.end());
             r.positionOnsets = std::move(m.positionOnsets);
+            for (std::size_t position = 0; position < names.size() && position < r.positionOnsets.size(); ++position) {
+                if (!names[position] || query.pattern[position].repeat) continue;
+                r.namedPositionLines[*names[position]] = r.positionOnsets[position].line;
+            }
             results.push_back(std::move(r));
 
             if (query.limit && results.size() >= *query.limit) return results;
