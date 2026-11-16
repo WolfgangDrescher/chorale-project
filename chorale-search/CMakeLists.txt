@@ -9,6 +9,12 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# With ccache a source is compiled again if its content changed, not just its date.
+find_program(CCACHE ccache)
+if(CCACHE AND NOT CMAKE_CXX_COMPILER_LAUNCHER)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE}")
+endif()
+
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/humlib/min/humlib.h")
     message(FATAL_ERROR "external/humlib is missing. Run: ./scripts/fetch-deps.sh")
 endif()
