@@ -39,11 +39,22 @@ defineOptions({ inheritAttrs: false });
 
 const { resolvedNotes, resolvedLines, resolvedSections } = useResolveHighlightedScoreProps(props);
 
+const hasBottomLabels = computed(() => [...resolvedSections.value, ...resolvedLines.value]
+    .some((group) => group.items.some((item) => item.label?.position === 'bottom')));
+
+// A label under a marker with its gap above, as space below a system for it.
+const BOTTOM_LABEL_HEIGHT_REM = 2.5;
+
 // Space below the last system for the labels under a marker.
-const bottomLabelSpace = computed(() => {
-    const hasBottomLabels = [...resolvedSections.value, ...resolvedLines.value]
-        .some((group) => group.items.some((item) => item.label?.position === 'bottom'));
-    return hasBottomLabels ? '2rem' : '0px';
+const bottomLabelSpace = computed(() => hasBottomLabels.value ? `${BOTTOM_LABEL_HEIGHT_REM}rem` : '0px');
+
+// The labels under a marker stand between the systems, Verovio's spacing begins below the figured bass.
+const spacingSystemForBottomLabels = computed(() => {
+    if (!hasBottomLabels.value) return null;
+    const { spacingSystem = 4, scale = 100 } = props.verovioOptions ?? {};
+    const labelHeightPx = BOTTOM_LABEL_HEIGHT_REM * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    // A Verovio unit is 9px at a scale of 100.
+    return Math.max(spacingSystem, Math.ceil(labelHeightPx / (9 * scale / 100)));
 });
 
 const verovioCanvas = ref(null);
@@ -66,6 +77,7 @@ const verovioCanvasAttrs = computed(() => {
             // Repeats are not played.
             expandNever: true,
             ...props.verovioOptions,
+            ...(spacingSystemForBottomLabels.value && { spacingSystem: spacingSystemForBottomLabels.value }),
             svgBoundingBoxes: true,
             // svgViewBox: true,
         },
