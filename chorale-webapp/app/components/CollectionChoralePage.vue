@@ -36,7 +36,7 @@ const scoreOptions = useCollectionScoreOptions(props.collection);
 const { localScoreUrlGenerator, githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator(props.collection);
 
 const player = useScorePlayer();
-useScorePlayerKeyboardShortcuts(() => toggleCurrentScorePlayer(player));
+useScorePlayerKeyboardShortcuts(() => player);
 
 useChoraleKeyboardShortcuts({ prevRoute: prevChoraleRoute, nextRoute: nextChoraleRoute, scoreOptions });
 

@@ -1,3 +1,8 @@
+<script>
+// In the order of the page, the first is played until another one was used.
+const mountedPlayers = new Set();
+</script>
+
 <script setup>
 const props = defineProps({
     choraleId: { type: String, required: true },
@@ -8,6 +13,9 @@ const props = defineProps({
 const { localScoreUrlGenerator } = useScoreUrlGenerator();
 const filters = computed(() => (props.measures ? [`myank -m ${props.measures}`] : []));
 const player = useScorePlayer();
+onMounted(() => mountedPlayers.add(player));
+onBeforeUnmount(() => mountedPlayers.delete(player));
+useScorePlayerKeyboardShortcuts(() => mountedPlayers.values().next().value);
 </script>
 
 <template>

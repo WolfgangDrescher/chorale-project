@@ -208,7 +208,7 @@ const {
 } = useChoraleExport();
 
 const player = useScorePlayer();
-useScorePlayerKeyboardShortcuts(() => toggleCurrentScorePlayer(player));
+useScorePlayerKeyboardShortcuts(() => player);
 
 const modulations = computed(() => chorale.value.modulations ?? []);
 

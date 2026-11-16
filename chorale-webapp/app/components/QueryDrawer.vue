@@ -12,8 +12,15 @@ const { t } = useI18n();
 const searchLink = useSearchLink();
 const search = useChoraleSearch(props.query, { sortBy: props.sortBy });
 
+// The drawer itself takes the focus, not its first button, so the space bar plays a score.
 // Returning focus to the opening button would reopen its tooltip.
-const content = { onCloseAutoFocus: (event) => event.preventDefault() };
+const content = {
+    onOpenAutoFocus: (event) => {
+        event.preventDefault();
+        event.target.focus();
+    },
+    onCloseAutoFocus: (event) => event.preventDefault(),
+};
 
 watch(open, (isOpen) => {
     if (!isOpen || search.pending.value) return;

@@ -27,6 +27,9 @@ function seekToRingClick(event) {
     props.player.seek((angle / (2 * Math.PI) + 1) % 1 * props.player.duration);
 }
 
+// Focused by a click, the button takes the space bar but draws no focus ring for it.
+const isClicked = ref(false);
+
 // "1:05"
 function formatTime(time) {
     const seconds = Math.round(props.player.toSeconds(time));
@@ -40,9 +43,12 @@ function formatTime(time) {
             <button
                 type="button"
                 class="relative z-10 size-full inline-flex items-center justify-center rounded-full bg-primary text-inverted hover:bg-primary/85 cursor-pointer disabled:cursor-default disabled:opacity-50 transition-colors"
+                :class="isClicked && 'outline-none'"
                 :disabled="!player.hasScore"
                 :aria-label="player.isPlaying ? $t('playerPause') : $t('playerPlay')"
                 @click="player.toggle()"
+                @pointerdown="isClicked = true"
+                @blur="isClicked = false"
             >
                 <UIcon v-if="player.isLoading" name="lucide:loader-circle" class="size-1/2 animate-spin" />
                 <UIcon v-else :name="player.isPlaying ? 'lucide:pause' : 'lucide:play'" mode="svg" class="size-1/2 [&_path]:fill-current [&_rect]:fill-current" :class="!player.isPlaying && 'translate-x-[4%]'" />

@@ -107,10 +107,7 @@ function sectionsForItems(items) {
 const players = useScorePlayers(() => pagedChoraleEntries.value.map(([choraleId]) => choraleId));
 
 // Falls back to the first chorale of the page.
-useScorePlayerKeyboardShortcuts(() => {
-    const first = players.value.values().next().value;
-    if (first) toggleCurrentScorePlayer(first);
-});
+useScorePlayerKeyboardShortcuts(() => players.value.values().next().value);
 
 // The page of the chorale, with the matches to highlight there: "4:12-15~1:12-14,4:30-31" is a
 // voice and its lines for each section, joined with "~" to the sections it links in other voices;
