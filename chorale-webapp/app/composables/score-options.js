@@ -48,6 +48,7 @@ export const CHORALE_HUMDRUM_FILTERS = {
 
 // The zoom and the horizontal view, apart from the score options, so that stores can share them.
 const scoreViewStore = (createDefaults) => ({
+    persist: true,
     state: () => createDefaults(),
     getters: {
         verovioOptions: (state) => ({
@@ -87,6 +88,7 @@ export const useSearchScoreViewOptions = defineStore('search_score_view_options'
 // The score options of a store with its own defaults and filters, so the search results do not
 // share the options of the page of a chorale. The view comes from useView.
 export const scoreOptionsStore = ({ createDefaults, humdrumFilterDefinitions, useView }) => ({
+    persist: true,
     state: () => createDefaults(),
     getters: {
         humdrumFilterDefinitions: () => humdrumFilterDefinitions,

@@ -50,9 +50,14 @@ const scoreOptions = useScoreOptions();
 // ?filters=hideMiddleVoices,intervallsatz turns those on and every other filter off. A filter
 // with a value, like the transposition, cannot be turned on like that.
 const filters = String(useRoute().query.filters ?? '').split(',').filter((filter) => filter in scoreOptions.humdrumFilterDefinitions && typeof scoreOptions[filter] === 'boolean');
-if (filters.length) {
+function applyLinkedFilters() {
     scoreOptions.resetHumdrumFilters();
     for (const filter of filters) scoreOptions[filter] = true;
+}
+if (filters.length) {
+    applyLinkedFilters();
+    // Again once the stored options are restored, which happens after hydration, see persist-stores.client.js.
+    onNuxtReady(applyLinkedFilters);
 }
 
 // A link from the search results highlights its matches: ?matches=4:12-15~1:12-14,4:30-31 is a
