@@ -30,22 +30,52 @@ add_library(humlib STATIC
 target_include_directories(humlib SYSTEM PUBLIC external/humlib/min)
 target_compile_options(humlib PRIVATE -w)
 
-add_library(chorale_core STATIC
+# A designated initializer leaves out the fields it doesn't need on purpose.
+set(WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
+
+# The sources several targets need are a library of their own, so that each is compiled once.
+# Reading and validating a query, without a score.
+add_library(chorale_query STATIC
     src/ChoraleInfo.cpp
     src/ChoraleFilter.cpp
-    src/HumdrumChorale.cpp
-    src/ChoraleLyrics.cpp
-    src/KeyContext.cpp
     src/VoiceMap.cpp
     src/VoiceReference.cpp
-    src/AttributeMatcher.cpp
-    src/CorpusSearch.cpp
-    src/SplitScoreIntoVoices.cpp
     src/JsonIO.cpp
     src/QueryValidation.cpp
     src/PatternKeys.cpp
     src/Intervals.cpp
     src/PositionReference.cpp
+)
+target_include_directories(chorale_query PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
+)
+target_compile_options(chorale_query PRIVATE ${WARNING_FLAGS})
+target_link_libraries(chorale_query PUBLIC humlib)
+
+# What chorale-generate writes into a score. It links nothing else of the project, so that the
+# corpus is generated again only if one of these changed.
+add_library(chorale_generation STATIC
+    src/Modulations.cpp
+    src/LyricsSpines.cpp
+    src/ComputedSpines.cpp
+    src/LinePositions.cpp
+)
+target_include_directories(chorale_generation PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
+)
+target_compile_options(chorale_generation PRIVATE ${WARNING_FLAGS})
+find_package(Threads REQUIRED)
+target_link_libraries(chorale_generation PUBLIC humlib Threads::Threads)
+
+add_library(chorale_core STATIC
+    src/HumdrumChorale.cpp
+    src/ChoraleLyrics.cpp
+    src/KeyContext.cpp
+    src/AttributeMatcher.cpp
+    src/CorpusSearch.cpp
+    src/SplitScoreIntoVoices.cpp
     src/ScoreImport.cpp
     src/Segmentation.cpp
     src/Grouping.cpp
@@ -53,18 +83,9 @@ add_library(chorale_core STATIC
     src/GroupingJson.cpp
     src/GroupMatchQueries.cpp
     src/Check.cpp
-    src/ComputedSpines.cpp
-    src/LinePositions.cpp
 )
-target_include_directories(chorale_core PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
-)
-# A designated initializer leaves out the fields it doesn't need on purpose.
-set(WARNING_FLAGS -Wall -Wextra -Wno-missing-field-initializers)
 target_compile_options(chorale_core PRIVATE ${WARNING_FLAGS})
-find_package(Threads REQUIRED)
-target_link_libraries(chorale_core PUBLIC humlib Threads::Threads)
+target_link_libraries(chorale_core PUBLIC chorale_query chorale_generation)
 
 add_executable(chorale-search cli/chorale-search.cpp)
 target_link_libraries(chorale-search PRIVATE chorale_core)
@@ -81,13 +102,9 @@ target_link_libraries(chorale-info PRIVATE chorale_core)
 add_executable(chorale-group cli/chorale-group.cpp)
 target_link_libraries(chorale-group PRIVATE chorale_core)
 
-add_executable(chorale-generate cli/chorale-generate.cpp src/Modulations.cpp src/LyricsSpines.cpp src/ComputedSpines.cpp src/LinePositions.cpp)
-target_include_directories(chorale-generate PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/json/single_include
-)
+add_executable(chorale-generate cli/chorale-generate.cpp)
 target_compile_options(chorale-generate PRIVATE ${WARNING_FLAGS})
-target_link_libraries(chorale-generate PRIVATE humlib Threads::Threads)
+target_link_libraries(chorale-generate PRIVATE chorale_generation)
 
 install(TARGETS chorale-search chorale-segment chorale-check chorale-info chorale-group RUNTIME DESTINATION bin)
 
@@ -96,45 +113,49 @@ option(BUILD_TESTS "Build the minitest test binaries in tests/" ON)
 if(BUILD_TESTS)
     enable_testing()
 
-    add_executable(test_voicemap tests/test_voicemap.cpp src/VoiceMap.cpp)
-    target_include_directories(test_voicemap PRIVATE src tests)
+    add_executable(test_voicemap tests/test_voicemap.cpp)
+    target_include_directories(test_voicemap PRIVATE tests)
+    target_link_libraries(test_voicemap PRIVATE chorale_query)
     add_test(NAME voicemap COMMAND test_voicemap)
 
-    add_executable(test_voicereference tests/test_voicereference.cpp src/VoiceReference.cpp)
-    target_include_directories(test_voicereference PRIVATE src tests)
+    add_executable(test_voicereference tests/test_voicereference.cpp)
+    target_include_directories(test_voicereference PRIVATE tests)
+    target_link_libraries(test_voicereference PRIVATE chorale_query)
     add_test(NAME voicereference COMMAND test_voicereference)
 
-    add_executable(test_jsonio tests/test_jsonio.cpp src/JsonIO.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/PositionReference.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
-    target_include_directories(test_jsonio PRIVATE src tests external/json/single_include)
-    target_link_libraries(test_jsonio PRIVATE humlib)
+    add_executable(test_jsonio tests/test_jsonio.cpp)
+    target_include_directories(test_jsonio PRIVATE tests)
+    target_link_libraries(test_jsonio PRIVATE chorale_query)
     add_test(NAME jsonio COMMAND test_jsonio)
 
-    add_executable(test_choralefilter tests/test_choralefilter.cpp src/ChoraleFilter.cpp src/ChoraleInfo.cpp src/JsonIO.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/PositionReference.cpp src/VoiceMap.cpp src/VoiceReference.cpp)
-    target_include_directories(test_choralefilter PRIVATE src tests external/json/single_include)
-    target_link_libraries(test_choralefilter PRIVATE humlib)
+    add_executable(test_choralefilter tests/test_choralefilter.cpp)
+    target_include_directories(test_choralefilter PRIVATE tests)
+    target_link_libraries(test_choralefilter PRIVATE chorale_query)
     add_test(NAME choralefilter COMMAND test_choralefilter)
 
-    add_executable(test_modulations tests/test_modulations.cpp src/Modulations.cpp src/LinePositions.cpp)
-    target_include_directories(test_modulations PRIVATE src tests external/json/single_include)
-    target_link_libraries(test_modulations PRIVATE humlib)
+    add_executable(test_modulations tests/test_modulations.cpp)
+    target_include_directories(test_modulations PRIVATE tests)
+    target_link_libraries(test_modulations PRIVATE chorale_generation)
     add_test(NAME modulations COMMAND test_modulations)
 
-    add_executable(test_lyricsspines tests/test_lyricsspines.cpp src/LyricsSpines.cpp)
-    target_include_directories(test_lyricsspines PRIVATE src tests external/json/single_include)
-    target_link_libraries(test_lyricsspines PRIVATE humlib)
+    add_executable(test_lyricsspines tests/test_lyricsspines.cpp)
+    target_include_directories(test_lyricsspines PRIVATE tests)
+    target_link_libraries(test_lyricsspines PRIVATE chorale_generation)
     add_test(NAME lyricsspines COMMAND test_lyricsspines)
 
-    add_executable(test_positionreference tests/test_positionreference.cpp src/PositionReference.cpp src/PatternKeys.cpp src/Intervals.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
-    target_include_directories(test_positionreference PRIVATE src tests external/json/single_include)
-    target_link_libraries(test_positionreference PRIVATE humlib)
+    add_executable(test_positionreference tests/test_positionreference.cpp)
+    target_include_directories(test_positionreference PRIVATE tests)
+    target_link_libraries(test_positionreference PRIVATE chorale_query)
     add_test(NAME positionreference COMMAND test_positionreference)
 
-    add_executable(test_patternkeys tests/test_patternkeys.cpp src/PatternKeys.cpp src/Intervals.cpp src/QueryValidation.cpp src/ChoraleInfo.cpp)
-    target_include_directories(test_patternkeys PRIVATE src tests)
+    add_executable(test_patternkeys tests/test_patternkeys.cpp)
+    target_include_directories(test_patternkeys PRIVATE tests)
+    target_link_libraries(test_patternkeys PRIVATE chorale_query)
     add_test(NAME patternkeys COMMAND test_patternkeys)
 
-    add_executable(test_queryvalidation tests/test_queryvalidation.cpp src/QueryValidation.cpp src/PatternKeys.cpp src/Intervals.cpp src/ChoraleInfo.cpp)
-    target_include_directories(test_queryvalidation PRIVATE src tests)
+    add_executable(test_queryvalidation tests/test_queryvalidation.cpp)
+    target_include_directories(test_queryvalidation PRIVATE tests)
+    target_link_libraries(test_queryvalidation PRIVATE chorale_query)
     add_test(NAME queryvalidation COMMAND test_queryvalidation)
 
     add_executable(test_choralelyrics tests/test_choralelyrics.cpp)
