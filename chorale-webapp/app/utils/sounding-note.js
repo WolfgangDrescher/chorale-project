@@ -25,3 +25,10 @@ export function soundingNoteElem(container, line, voice) {
     }
     return held;
 }
+
+// The field of a voice in the drawn score, where a filter has added spines between the four voices.
+export function fieldOfVoice(container, voice) {
+    const elems = container?.querySelectorAll('g[id^="note-L"], g[id^="rest-L"], g[id^="mrest-L"]') ?? [];
+    const fields = [...new Set(Array.from(elems, (elem) => lineAndVoiceOf(elem.id).voice))].sort((a, b) => a - b);
+    return fields.length === 4 ? fields[voice - 1] : voice;
+}

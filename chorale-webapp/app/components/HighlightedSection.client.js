@@ -312,6 +312,7 @@ export default {
 
         const markers = [];
         const containerElem = props.container;
+        const voice = props.voice != null ? fieldOfVoice(containerElem, props.voice) : null;
 
         if (props.type === 'text' && props.verse && containerElem) {
             const textMarkers = createTextMarkers(props, containerElem);
@@ -325,12 +326,12 @@ export default {
                 noteElemsBySystem.set(system, [...(noteElemsBySystem.get(system) ?? []), noteElem]);
             };
             for (let line = props.startLine; line <= props.endLine; line++) {
-                const suffix = props.voice != null ? `L${line}F${props.voice}` : `L${line}F`;
+                const suffix = voice != null ? `L${line}F${voice}` : `L${line}F`;
                 containerElem.querySelectorAll(`g[id^="note-${suffix}"]`).forEach(add);
             }
             // A voice that attacks nothing there is framed by the note it holds.
-            if (!noteElemsBySystem.size && props.voice != null) {
-                const held = soundingNoteElem(containerElem, props.startLine, props.voice);
+            if (!noteElemsBySystem.size && voice != null) {
+                const held = soundingNoteElem(containerElem, props.startLine, voice);
                 if (held) add(held);
             }
             const fittedMarkers = [...noteElemsBySystem.values()]
@@ -359,16 +360,16 @@ export default {
         // have something there for horizontal/system positioning, but keep the highlight on
         // the correct voice's own staff (see findVoiceStaffIndex) rather than the fallback
         // voice's -- anchoring it to the wrong voice would misrepresent the match.
-        let notes = notesOnLines(props.voice);
-        const usedFallbackVoice = props.voice != null && !notes.length;
+        let notes = notesOnLines(voice);
+        const usedFallbackVoice = voice != null && !notes.length;
         if (usedFallbackVoice) notes = notesOnLines(null);
         const startElem = notes[0]?.elem;
         const endElem = notes.at(-1)?.elem;
 
-        const voiceStaffIndex = props.voice == null
+        const voiceStaffIndex = voice == null
             ? null
             : usedFallbackVoice
-                ? findVoiceStaffIndex(startElem?.closest('.measure') ?? startElem?.closest('.system'), props.voice)
+                ? findVoiceStaffIndex(startElem?.closest('.measure') ?? startElem?.closest('.system'), voice)
                 : getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem);
 
         markers.push(...createMarkers(splitIntoStretches(notes, props.gaps), containerElem, props.color, voiceStaffIndex, props.outline));

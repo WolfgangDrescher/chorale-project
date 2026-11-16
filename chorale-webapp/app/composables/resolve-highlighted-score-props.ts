@@ -132,6 +132,12 @@ export function lineShiftOf(filters?: Array<string>): number {
     return lineShift;
 }
 
+// The field of a voice in a score drawn through `filters`, and back: satb2gs writes the upper voice of each staff
+// first, tenor, bass, soprano, alto.
+export function voiceInScore(voice: number, filters?: Array<string>): number {
+    return filters?.includes('satb2gs') ? voice + (voice % 2 ? 1 : -1) : voice;
+}
+
 export function useResolveHighlightedScoreProps(props: {
     notes?: NotesProp;
     lines?: LinesProp;
@@ -152,7 +158,7 @@ export function useResolveHighlightedScoreProps(props: {
         if (!line || !field) return id;
 
         const shiftedLine = parseInt(line, 10) + lineShiftAmount.value;
-        return `L${shiftedLine}F${field}`;
+        return `L${shiftedLine}F${voiceInScore(parseInt(field, 10), props.filters)}`;
     };
 
     function resolveLabel(input?: Label | string | null): Label | null {
@@ -175,6 +181,11 @@ export function useResolveHighlightedScoreProps(props: {
 
     function resolveVoice(voice?: number): number | undefined {
         return Number.isInteger(voice) && voice! > 0 ? voice : undefined;
+    }
+
+    function resolveVoiceInScore(voice?: number): number | undefined {
+        const resolved = resolveVoice(voice);
+        return resolved && voiceInScore(resolved, props.filters);
     }
 
     const isValidLineField = (id: string) => /^L\d+F\d+$/.test(id);
@@ -220,7 +231,7 @@ export function useResolveHighlightedScoreProps(props: {
             .filter((linked) => isValidSection(linked) && (linked.type === 'text' ? resolveVoice(linked.verse) : resolveVoice(linked.voice)))
             .map((linked) => ({
                 type: linked.type ?? 'notes',
-                voice: linked.voice,
+                voice: resolveVoiceInScore(linked.voice),
                 verse: linked.verse,
                 startLine: applyLineShift(linked.startLine),
                 endLine: applyLineShift(linked.endLine),
@@ -238,7 +249,7 @@ export function useResolveHighlightedScoreProps(props: {
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label),
                     type: s.type ?? 'notes',
-                    voice: resolveVoice(s.voice),
+                    voice: resolveVoiceInScore(s.voice),
                     verse: resolveVoice(s.verse),
                     gaps: resolveGaps(s),
                     linkedSections: resolveLinkedSections(s),
@@ -260,7 +271,7 @@ export function useResolveHighlightedScoreProps(props: {
                     endLine: applyLineShift(s.endLine)!,
                     label: resolveLabel(s.label) ?? null,
                     type: s.type ?? 'notes',
-                    voice: resolveVoice(s.voice),
+                    voice: resolveVoiceInScore(s.voice),
                     verse: resolveVoice(s.verse),
                     gaps: resolveGaps(s),
                     linkedSections: resolveLinkedSections(s),

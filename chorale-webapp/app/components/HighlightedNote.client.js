@@ -8,14 +8,16 @@ export default defineComponent({
         container: HTMLElement,
     },
     setup(props) {
-        const selector = `g#note-${props.noteId}, g#rest-${props.noteId}, g#mrest-${props.noteId}, g#verse-${props.noteId}`;
+        const note = lineAndVoiceOf(`note-${props.noteId}`);
+        const field = note && fieldOfVoice(props.container, note.voice);
+        const id = note ? `L${note.line}F${field}` : props.noteId;
+        const selector = `g#note-${id}, g#rest-${id}, g#mrest-${id}, g#verse-${props.noteId}`;
         const noteHead = (noteElem) => noteElem?.querySelector('.notehead') || noteElem;
         let elem = props.container.querySelector(selector);
         let atLine = null;
         if (!elem) {
-            const held = lineAndVoiceOf(`note-${props.noteId}`);
-            elem = held && soundingNoteElem(props.container, held.line, held.voice);
-            atLine = held && props.container.querySelector(`g[id^="note-L${held.line}F"]`);
+            elem = note && soundingNoteElem(props.container, note.line, field);
+            atLine = note && props.container.querySelector(`g[id^="note-L${note.line}F"]`);
             // A note held across a system break has no height on the system of the line.
             if (atLine?.closest('.system') !== elem?.closest('.system')) atLine = null;
         }

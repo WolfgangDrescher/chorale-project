@@ -43,7 +43,7 @@ export default defineComponent({
     setup(props) {
         // The note a voice sounds there: for a connection to a note held from before the line, the one it
         // attacked earlier.
-        const noteOf = (position) => soundingNoteElem(props.container, position.line, position.voice);
+        const noteOf = (position) => soundingNoteElem(props.container, position.line, fieldOfVoice(props.container, position.voice));
         const noteHead = (noteElem) => noteElem?.querySelector('.notehead') ?? noteElem;
         const noteElems = [noteOf(props.from), noteOf(props.to)];
 
