@@ -32,6 +32,36 @@ function githubLink(reference) {
     };
 }
 
+// More references than this are collapsed into one popover.
+const maxGithubButtons = 2;
+
+function githubButtons(change) {
+    return change.github?.length > maxGithubButtons ? [] : change.github ?? [];
+}
+
+function linkPopovers(change) {
+    const popovers = [];
+    if (change.github?.length > maxGithubButtons) {
+        popovers.push({
+            label: `${change.github.length} issues`,
+            icon: 'i-lucide-github',
+            links: change.github.map(githubLink),
+        });
+    }
+    if (change.commits?.length) {
+        popovers.push({
+            label: change.commits.length === 1 ? '1 commit' : `${change.commits.length} commits`,
+            icon: 'i-lucide-git-commit-horizontal',
+            links: change.commits.map((commit) => ({
+                label: commit.slice(0, 7),
+                to: `${repositoryUrl}/commit/${commit}`,
+                ariaLabel: `Commit ${commit} on GitHub`,
+            })),
+        });
+    }
+    return popovers;
+}
+
 // The commits of an update on GitHub: compared with the update before, or for the first one all
 // commits up to its last.
 function compareUrl(index) {
@@ -87,7 +117,7 @@ function isoDate(date) {
                                     </div>
                                     <div class="flex flex-wrap items-center gap-1 -mx-2 sm:mx-0 sm:justify-end sm:self-start sm:mt-0.5">
                                         <UButton
-                                            v-for="reference in change.github"
+                                            v-for="reference in githubButtons(change)"
                                             :key="reference"
                                             v-bind="githubLink(reference)"
                                             target="_blank"
@@ -97,10 +127,10 @@ function isoDate(date) {
                                             size="xs"
                                             class="text-muted"
                                         />
-                                        <UPopover v-if="change.commits?.length">
+                                        <UPopover v-for="popover in linkPopovers(change)" :key="popover.icon">
                                             <UButton
-                                                :label="change.commits.length === 1 ? '1 commit' : `${change.commits.length} commits`"
-                                                icon="i-lucide-git-commit-horizontal"
+                                                :label="popover.label"
+                                                :icon="popover.icon"
                                                 color="neutral"
                                                 variant="ghost"
                                                 size="xs"
@@ -108,13 +138,13 @@ function isoDate(date) {
                                             />
                                             <template #content>
                                                 <ul class="flex flex-col p-1.5 font-mono text-xs">
-                                                    <li v-for="commit in change.commits" :key="commit">
+                                                    <li v-for="link in popover.links" :key="link.to">
                                                         <ULink
-                                                            :to="`${repositoryUrl}/commit/${commit}`"
+                                                            :to="link.to"
                                                             target="_blank"
-                                                            :aria-label="`Commit ${commit} on GitHub`"
+                                                            :aria-label="link.ariaLabel"
                                                             class="block px-2 py-1 rounded-sm text-muted hover:text-primary hover:bg-elevated"
-                                                        >{{ commit.slice(0, 7) }}</ULink>
+                                                        >{{ link.label }}</ULink>
                                                     </li>
                                                 </ul>
                                             </template>
