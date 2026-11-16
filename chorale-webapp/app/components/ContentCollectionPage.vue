@@ -13,7 +13,7 @@ const props = defineProps({
     title: { type: String, default: null },
 });
 
-const { t } = useI18n();
+const { t, d } = useI18n();
 const route = useRoute();
 const path = props.path ?? route.path;
 const key = `${props.collection}-${kebabCase(path)}`;
@@ -51,6 +51,17 @@ const navigation = computed(() => withExactMatch(navigationData.value?.[0]?.chil
 
 const headline = ref(page.value.lessonNumber ? t('lessonNumber', { number: page.value.lessonNumber }) : findPageHeadline(navigation.value, page.value.path));
 
+const localePath = useLocalePath();
+const pageTitle = computed(() => (page.value.lessonNumber ? `${page.value.lessonNumber}. ${page.value.title}` : page.value.title));
+const lessonCrumbs = computed(() => props.collection === 'lessons' && [
+    { label: t('learn'), to: localePath('/learn') },
+    ...(page.value.lessonNumber ? [{ label: t('lessons'), to: localePath('/lessons') }] : []),
+]);
+const metaItems = computed(() => [
+    page.value.exercises?.length && { icon: 'lucide:pencil-line', text: t('lessonExerciseCount', { n: page.value.exercises.length }) },
+    lastChangeItem(page.value, t, d),
+].filter(Boolean));
+
 // The queries a lesson lists in its front matter run in one drawer for the whole page, which the
 // references in the text open.
 const queryDrawerOpen = ref(false);
@@ -74,16 +85,22 @@ useSeoMeta({
         <UPage :ui="{ root: 'lg:grid-cols-[280px_minmax(0,1fr)]', left: 'lg:col-span-1', center: 'lg:col-span-1' }">
             <template #left>
                 <UPageAside>
-                    <UContentNavigation :navigation="navigation" highlight>
-                        <template #link-title="{ link }">
-                            <ProseCode v-if="link.spine" class="text-[0.8em]">{{ link.title }}</ProseCode>
-                            <template v-else>{{ link.title }}</template>
-                        </template>
-                    </UContentNavigation>
+                    <slot name="navigation">
+                        <UContentNavigation :navigation="navigation" highlight>
+                            <template #link-title="{ link }">
+                                <ProseCode v-if="link.spine" class="text-[0.8em]">{{ link.title }}</ProseCode>
+                                <template v-else>{{ link.title }}</template>
+                            </template>
+                        </UContentNavigation>
+                    </slot>
                 </UPageAside>
             </template>
 
-            <UPageHeader :title="page.title" :description="page.description" :headline="headline">
+            <UPageHeader :title="pageTitle" :description="page.description" :headline="headline">
+                <template v-if="lessonCrumbs" #headline>
+                    <UBreadcrumb :items="lessonCrumbs" />
+                </template>
+                <PageMetaLine v-if="page.lessonNumber" :items="metaItems" />
                 <template v-if="$slots.links" #links>
                     <slot name="links" :page="page" />
                 </template>

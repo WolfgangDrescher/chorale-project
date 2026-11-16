@@ -55,6 +55,14 @@
 #     and replaced only if it differs (see Nuxt Content below);
 #     `make -j analyses` generates them side by side. Never committed
 #
+# make history
+#     write the last commit of every content file to chorale-webapp/content-history.json,
+#     for builds without git (Docker). Needs the full history. Never committed
+#
+# make stats
+#     check the `stat` of each question in chorale-webapp/content/faq against ./corpus.
+#     `node chorale-webapp/scripts/check-learn-stats.mjs --write` corrects the counts
+#
 # Nuxt Content
 #     its dev server rebuilds its whole database for every file in content/ that
 #     changes, so the targets above leave unchanged files alone. The .generated
@@ -93,7 +101,7 @@
 # Single source of truth for "this is a target, not a chorale id". The catch-all
 # rule at the bottom means anything missing from this list would silently be
 # passed to chorale-generate as a chorale id instead.
-TARGETS := all build kern corpus webapp analyses clean clean-build clean-deps distclean fixtures test test-if-changed
+TARGETS := all build kern corpus webapp analyses history stats clean clean-build clean-deps distclean fixtures test test-if-changed
 
 .PHONY: $(TARGETS)
 .DEFAULT_GOAL := all
@@ -110,6 +118,9 @@ ANALYSIS_RESULTS_DIR := chorale-webapp/content/analysis-results
 ANALYSIS_MARKERS := $(patsubst chorale-webapp/analyses/%.json,$(ANALYSIS_RESULTS_DIR)/.%.generated,$(ANALYSES))
 BACH_CHORALES_MARKER := chorale-webapp/content/bach-chorales/.generated
 COLLECTION_CHORALES_MARKER := chorale-webapp/content/collection-chorales/.generated
+LEARN_STATS_MARKER := chorale-webapp/content/.stats-checked
+LEARN_STATS_PAGES := $(wildcard chorale-webapp/content/faq/*.md)
+CHORALE_SEARCH := ./chorale-search/build/chorale-search
 # The submodules of chorale-webapp/shared/utils/chorale-collections.js.
 COLLECTION_KERN := $(wildcard kittel-24-chorales/kern/*.krn schiorring-choral-bog/kern/*.krn)
 EXTRACT_SCRIPT_MODULES := chorale-webapp/scripts/humdrum-reference-records.mjs chorale-webapp/scripts/write-if-changed.mjs
@@ -117,7 +128,7 @@ MODULATIONS := annotations/bach-modulations.json
 LYRICS := annotations/bach-lyrics.json
 SOURCE_KERN := bach-370-chorales/kern
 
-all: build corpus kern webapp analyses test-if-changed
+all: build corpus kern webapp analyses history stats test-if-changed
 
 build:
 	$(MAKE) -C chorale-search
@@ -127,6 +138,7 @@ build:
 $(CHORALE_GENERATE): build ;
 $(CHORALE_GROUP): build ;
 $(CHORALE_INFO): build ;
+$(CHORALE_SEARCH): build ;
 
 # Everything the generated chorales are made of. The marker files record when they were generated
 # last, so that generating them again is left out if none of this is newer.
@@ -188,6 +200,15 @@ $(ANALYSIS_RESULTS_DIR)/.%.generated: chorale-webapp/analyses/%.json corpus/.gen
 	@mkdir -p $(@D)
 	$(CHORALE_GROUP) corpus/bach-370-chorales --verify --query-file $< > $(@D)/$*.json.tmp || { rm -f $(@D)/$*.json.tmp; exit 1; }
 	@if cmp -s $(@D)/$*.json.tmp $(@D)/$*.json; then rm $(@D)/$*.json.tmp; else mv $(@D)/$*.json.tmp $(@D)/$*.json; fi
+	@touch $@
+
+history:
+	node chorale-webapp/scripts/content-history.mjs
+
+stats: $(LEARN_STATS_MARKER)
+
+$(LEARN_STATS_MARKER): $(LEARN_STATS_PAGES) corpus/.generated $(CHORALE_SEARCH) chorale-webapp/scripts/check-learn-stats.mjs chorale-webapp/node_modules
+	node chorale-webapp/scripts/check-learn-stats.mjs
 	@touch $@
 
 clean:

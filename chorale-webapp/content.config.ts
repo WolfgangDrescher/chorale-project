@@ -18,6 +18,18 @@ const choraleSchema = z.object({
     meters: z.array(z.string()).optional(),
 });
 
+const queriesSchema = z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    query: z.string(),
+}));
+
+const learnSchema = z.object({
+    date: z.date().optional(),
+    tags: z.array(z.string()).optional(),
+    queries: queriesSchema.optional(),
+});
+
 export default defineContentConfig({
     collections: {
         // One file per chorale, generated from the `make kern` corpus by
@@ -54,11 +66,7 @@ export default defineContentConfig({
             schema: z.object({
                 icon: z.string().optional(),
                 lessonNumber: z.number().optional(),
-                queries: z.array(z.object({
-                    id: z.string(),
-                    title: z.string(),
-                    query: z.string(),
-                })).optional(),
+                queries: queriesSchema.optional(),
                 exercises: z.array(z.object({
                     type: z.enum(['composition', 'analysis', 'comparison']).optional(),
                     title: z.string(),
@@ -81,6 +89,22 @@ export default defineContentConfig({
                     labels: z.array(z.string()).optional(),
                 })).optional(),
                 analysesDescription: z.string().optional(),
+            }),
+        }),
+        faq: defineCollection({
+            type: 'page',
+            source: 'faq/*.md',
+            schema: learnSchema.extend({
+                answer: z.string(),
+                stat: z.object({
+                    value: z.string(),
+                    label: z.string(),
+                    chorales: z.string().optional(),
+                    confirm: z.array(z.object({ query: z.string(), matches: z.string() })).optional(),
+                    query: z.string().optional(),
+                    counts: z.enum(['matches', 'chorales']).optional(),
+                }).optional(),
+                verdict: z.enum(['yes', 'no']).optional(),
             }),
         }),
         analysisResults: defineCollection({

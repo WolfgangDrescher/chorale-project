@@ -48,3 +48,31 @@ metweightShort:
     hs: Halbschwer
     w: Leicht
     u: Zwischenschlag
+learn: Lernen
+faq: FAQ
+faqTitle: Häufige Fragen
+faqDescription: "Kurze Antworten auf häufige Fragen zu den vierstimmigen Chorälen von Bach."
+faqSearchPlaceholder: Fragen durchsuchen
+learnQueries: Queries zum Nachprüfen
+learnUsedIn: Kommt vor in
+learnInLessons: "Lektion {numbers}"
+learnEmpty: Hier gibt es noch keine Einträge.
+learnNoResults: Nichts gefunden.
+learnNoResultsDescription: "Kein Eintrag passt zu Suche und Tags."
+learnResetFilter: Suche und Tags zurücksetzen
+faqCount: "{n} von {total} Fragen"
+referenceMissing: "Der Verweis auf „{id}“ führt ins Leere."
+learnOpenGroup: "{group} aufklappen"
+learnCloseGroup: "{group} zuklappen"
+lessonsDescription: "Eine methodische Aufbereitung der vierstimmigen Choräle von Bach in Lektionen."
+learnSort:
+    date: Datum
+    title: Titel
+learnChanged: "geändert {date}"
+lessonExerciseCount: "eine Aufgabe | {n} Aufgaben"
+learnDescription: "In 16 Lektionen lässt sich das Komponieren von Chorälen innerhalb eines Semesters lernen. Eingebunden sind häufige Fragen, die im Unterricht immer wieder auftauchen."
+learnTagCount: "{tag}, {count} Einträge"
+faqVerdict:
+    yes: Ja
+    no: Nein
+learnStatChorales: "in einem Choral | in {n} Chorälen"

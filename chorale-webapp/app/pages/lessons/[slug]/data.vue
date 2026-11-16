@@ -16,6 +16,9 @@ if (!lesson.value?.analyses?.length) {
 
 <template>
     <ContentCollectionPage collection="lessons" :navigation-fields="['lessonNumber']" :path="path" :title="`${lesson.title}: ${t('lessonData')}`">
+        <template #navigation>
+            <LearnNavigation />
+        </template>
         <template #links>
             <UButton :label="t('lessonBackToText')" icon="lucide:arrow-left" :to="path" color="neutral" variant="outline" />
         </template>

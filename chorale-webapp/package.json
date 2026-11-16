@@ -36,7 +36,7 @@
     "vue-verovio-canvas": "^1.6.4"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.140",
+    "@iconify-json/lucide": "^1.2.155",
     "@iconify-json/simple-icons": "^1.2.99"
   }
 }

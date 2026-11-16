@@ -1,3 +1,5 @@
+const LEARN_PATHS = ['/learn', '/lessons', '/faq'];
+
 export function useNavigationItems() {
     const { t } = useI18n();
     const localePath = useLocalePath();
@@ -27,9 +29,15 @@ export function useNavigationItems() {
             to: localePath({ name: 'search' }),
         },
         {
-            label: t('lessons'),
-            to: localePath('/lessons'),
-            active: isAt(localePath('/lessons')),
+            label: t('learn'),
+            to: localePath('/learn'),
+            // Rendered as LearnMenu in TheNavigation.
+            slot: 'learn',
+            active: LEARN_PATHS.some((path) => isAt(localePath(path))),
+            children: [
+                { label: t('lessons'), icon: LEARN_PARTS.lessons.icon, ui: { linkLeadingIcon: LEARN_PARTS.lessons.color }, to: localePath('/lessons'), active: isAt(localePath('/lessons')) },
+                { label: t('faq'), icon: LEARN_PARTS.faq.icon, ui: { linkLeadingIcon: LEARN_PARTS.faq.color }, to: localePath('/faq'), active: isAt(localePath('/faq')) },
+            ],
         },
         {
             label: t('docs'),
