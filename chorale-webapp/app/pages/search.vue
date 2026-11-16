@@ -82,6 +82,18 @@ function applyHistoryQuery(historyQuery) {
     query.value = historyQuery;
 }
 
+const parsedQuery = computed(() => {
+    try {
+        return JSON.parse(query.value);
+    } catch {
+        return undefined;
+    }
+});
+
+function formatEditorQuery() {
+    query.value = formatQuery(parsedQuery.value);
+}
+
 function applyDemoQuery() {
     query.value = DEMO_QUERY;
 }
@@ -96,7 +108,22 @@ function applyDemoQuery() {
            <UForm class="space-y-4" @submit="searchAndRemember">
                 <UFormField :label="$t('query')">
                     <template #hint>
-                        <SearchHistory @apply="applyHistoryQuery" />
+                        <div class="flex gap-1">
+                            <UTooltip :text="$t('formatQueryInvalid')" :disabled="parsedQuery !== undefined">
+                                <span>
+                                    <UButton
+                                        color="neutral"
+                                        variant="ghost"
+                                        size="sm"
+                                        icon="lucide:wand-sparkles"
+                                        :label="$t('formatQuery')"
+                                        :disabled="parsedQuery === undefined"
+                                        @click="formatEditorQuery"
+                                    />
+                                </span>
+                            </UTooltip>
+                            <SearchHistory @apply="applyHistoryQuery" />
+                        </div>
                     </template>
                     <MonacoEditor
                         v-model="query"

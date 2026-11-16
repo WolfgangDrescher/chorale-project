@@ -29,6 +29,8 @@ searchResults: Suchergebnisse
 editQuery: Query bearbeiten
 openInSearch: In der Suche öffnen
 searchError: Die Suche ist fehlgeschlagen.
+formatQuery: Formatieren
+formatQueryInvalid: Der Query ist kein gültiges JSON.
 searchHistory: Verlauf
 searchHistoryEmpty: Noch keine Suchen im Verlauf.
 searchHistorySearch: Queries durchsuchen
