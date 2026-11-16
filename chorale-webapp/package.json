@@ -33,7 +33,7 @@
     "verovio": "^6.2.0",
     "vue": "^3.5.40",
     "vue-router": "^5.2.0",
-    "vue-verovio-canvas": "^1.6.4"
+    "vue-verovio-canvas": "^1.6.5"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.155",
