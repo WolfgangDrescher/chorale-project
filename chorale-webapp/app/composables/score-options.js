@@ -14,6 +14,7 @@ function createDefaultScoreOptions() {
         extendedFiguredbass: false,
         bassScaleDegree: false,
         scaleDegree: false,
+        dissonant: false,
         hideMiddleVoices: false,
         extractCantusFirmus: false,
         hideNonCantusFirmusVoices: false,
@@ -44,6 +45,7 @@ export const CHORALE_HUMDRUM_FILTERS = {
     extendedFiguredbass: { command: 'fb -acon3' },
     bassScaleDegree: { command: 'deg --circle -k 1' },
     scaleDegree: { command: 'deg --circle' },
+    dissonant: { command: 'dissonant' },
     // -k counts only **kern spines, so $ is the soprano and not its **text.
     hideMiddleVoices: { command: 'extract -k 1,$', priority: 2 },
     extractCantusFirmus: { command: 'extract -k $', priority: 2 },

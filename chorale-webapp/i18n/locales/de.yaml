@@ -233,6 +233,7 @@ intervallsatz: Intervallsatz anzeigen
 extendedFiguredbass: Generalbassbezifferung anzeigen
 bassScaleDegree: Bassstufen anzeigen
 scaleDegree: Skalenstufen anzeigen
+dissonant: Dissonanzen anzeigen
 modernClefs: Moderne Schlüssel
 hideFiguredBass: Bezifferung ausblenden
 figuresWithoutSlashes: Bezifferung ohne Schrägstriche
