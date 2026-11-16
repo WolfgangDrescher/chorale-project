@@ -147,6 +147,106 @@ TEST_CASE(matcher_kern_pitch_and_fermata_combine_in_one_value) {
     CHECK(foundPosition7);
 }
 
+TEST_CASE(matcher_kern_value_without_natural_sign_matches_a_token_with_one) {
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "2C\t2G\t2e\t2ccnX\n"
+        "2D\t2A\t2f\t2dd\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "natural-sign-in-token-test");
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"cc"}}}}).findAll(chorale, 4).size(), std::size_t{1});
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"2cc"}}}}).findAll(chorale, 4).size(), std::size_t{1});
+}
+
+TEST_CASE(matcher_kern_value_with_natural_sign_matches_a_token_without_one) {
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "2C\t2G\t2e\t2cc\n"
+        "2D\t2A\t2f\t2dd\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "natural-sign-in-value-test");
+    MatcherOptions ignoreOctave;
+    ignoreOctave.kernIgnoreOctave = true;
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"ccn"}}}}).findAll(chorale, 4).size(), std::size_t{1});
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"cn"}}}}, ignoreOctave).findAll(chorale, 4).size(), std::size_t{1});
+}
+
+TEST_CASE(matcher_kern_pitch_ignores_natural_signs) {
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "2C\t2G\t2e\t2ccn\n"
+        "2C\t2G\t2e\t2cc\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "natural-sign-kern-pitch-test");
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern.pitch", {"cc"}}}}).findAll(chorale, 4).size(), std::size_t{2});
+    CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern.pitch", {"ccn"}}}}).findAll(chorale, 4).size(), std::size_t{2});
+}
+
+TEST_CASE(matcher_position_reference_ignores_natural_signs) {
+    // The soprano repeats its c: with a natural sign, without one, and with one again.
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "4C\t4G\t4e\t4ccn\n"
+        "4C\t4G\t4e\t4cc\n"
+        "2C\t2G\t2e\t2ccn\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "natural-sign-position-reference-test");
+    const AttributeMap anyNote{{"kern", {"*"}}};
+    CHECK_EQ(AttributeMatcher("kern", {anyNote, AttributeMap{{"kern.pitch", {"#1"}}}}).findAll(chorale, 4).size(), std::size_t{2});
+    // The whole note has its rhythm too, which only the first two share.
+    auto sameNote = AttributeMatcher("kern", {anyNote, AttributeMap{{"kern", {"#1"}}}}).findAll(chorale, 4);
+    REQUIRE(sameNote.size() == 1u);
+    CHECK_EQ(sameNote[0].startPosition, 0);
+}
+
+TEST_CASE(matcher_voice_reference_ignores_natural_signs) {
+    // Alto and soprano meet on the same c, written with a natural sign in the soprano alone.
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "2C\t2G\t2cc\t2ccn\n"
+        "2D\t2A\t2f\t2dd\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "natural-sign-voice-reference-test");
+    for (const char* key : {"kern", "kern.pitch"}) {
+        CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{key, {"@3"}}}}).findAll(chorale, 4).size(), std::size_t{1});
+        CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{key, {"@4"}}}}).findAll(chorale, 3).size(), std::size_t{1});
+    }
+}
+
+TEST_CASE(matcher_duration_split_ignores_natural_signs) {
+    std::istringstream contents(
+        "**kern\t**kern\t**kern\t**kern\n"
+        "*clefF4\t*clefGv2\t*clefG2\t*clefG2\n"
+        "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+        "=1\t=1\t=1\t=1\n"
+        "4C\t4G\t4e\t4ccn\n"
+        "4D\t4A\t4f\t4cc\n"
+        "2E\t2B\t2g\t2dd\n"
+        "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(contents, "natural-sign-split-note-test");
+    MatcherOptions splitOptions;
+    splitOptions.durationAllowSplitNotes = true;
+    auto matches = AttributeMatcher("kern", {AttributeMap{{"kern", {"cc"}}, {"duration", {"2"}}}}, splitOptions).findAll(chorale, 4);
+    REQUIRE(matches.size() == 1u);
+    CHECK_EQ(matches[0].startPosition, 0);
+    CHECK_EQ(matches[0].endPosition, 1);
+}
+
 TEST_CASE(matcher_kern_rest_value_matches_any_rest_regardless_of_decoration) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
     // Position 15 is a full-measure rest: "4r" in bass/soprano, "4ry" in tenor/alto -- the

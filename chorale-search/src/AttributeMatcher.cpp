@@ -100,14 +100,15 @@ bool durationInList(const std::vector<PatternValue>& allowed, hum::HumNum durati
 }
 
 // Extracts the pitch+accidental from a **kern token (e.g. "f#" from "8f#L"), ignoring
-// rhythm/ties/beams/decoration; returns "r" for a rest. Only the first subtoken of a
+// rhythm/ties/beams/decoration; returns "r" for a rest. A natural sign alters nothing and is
+// left out, so "ccn" and "cc" are the same pitch. Only the first subtoken of a
 // chord is considered (getSubtoken(0) is a no-op when there's no space to split on).
 std::string kernToPitch(const std::string& kerndata) {
     std::string subtoken = hum::HumdrumToken(kerndata).getSubtoken(0);
     if (hum::Convert::isKernRest(subtoken)) return "r";
     std::string pitch;
     for (char c : subtoken) {
-        if ((c >= 'A' && c <= 'G') || (c >= 'a' && c <= 'g') || c == '#' || c == '-' || c == 'n') {
+        if ((c >= 'A' && c <= 'G') || (c >= 'a' && c <= 'g') || c == '#' || c == '-') {
             pitch += c;
         }
     }
@@ -118,6 +119,11 @@ std::string kernToPitch(const std::string& kerndata) {
 // mixed of both directions ("#-", "+-") alters nothing as a whole, so it is none to search for.
 bool isOneCharacterRepeated(const std::string& text) {
     return !text.empty() && text.find_first_not_of(text.front()) == std::string::npos;
+}
+
+std::string withoutNaturalSigns(std::string accidentals) {
+    std::erase(accidentals, 'n');
+    return accidentals;
 }
 
 // A **kern pattern value taken apart: rhythm, pitch-or-rest and fermata, each of them left out
@@ -141,7 +147,7 @@ std::optional<KernValue> parseKernValue(const std::string& patternValue) {
     if (!rhythm.empty()) rhythm += scan.anyOf(".");
 
     std::string pitch = scan.anyOf("ABCDEFGabcdefg");
-    if (!pitch.empty()) pitch += scan.anyOf("#n-");
+    if (!pitch.empty()) pitch += withoutNaturalSigns(scan.anyOf("#n-"));
     else if (scan.accept('r')) pitch = "r";
 
     std::optional<int> accid;
