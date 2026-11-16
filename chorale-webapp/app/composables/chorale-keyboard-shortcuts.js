@@ -6,6 +6,14 @@ function ignoreIfInput() {
     return el && (['input', 'textarea'].includes(el.tagName.toLowerCase()) || el.isContentEditable || !!el.closest('[role="slider"]'));
 }
 
+// A key held with Cmd, Ctrl or Alt is a shortcut of the browser, like Cmd+R.
+function onShortcut(key, handler) {
+    onKeyStroke(key, (event) => {
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        handler(event);
+    });
+}
+
 // keysTaken (a value, a ref or a getter) hands the arrow keys and H to something else on the page, like
 // the annotation of modulations.
 // prevRoute and nextRoute are the pages of the neighbouring chorales, or null.
@@ -13,47 +21,47 @@ export function useChoraleKeyboardShortcuts({ prevRoute, nextRoute, keysTaken = 
     const prev = computed(() => toValue(prevRoute));
     const next = computed(() => toValue(nextRoute));
 
-    onKeyStroke('ArrowLeft', () => {
+    onShortcut('ArrowLeft', () => {
         if (ignoreIfInput() || toValue(keysTaken) || !prev.value) return;
         navigateTo(prev.value);
     });
 
-    onKeyStroke('ArrowRight', () => {
+    onShortcut('ArrowRight', () => {
         if (ignoreIfInput() || toValue(keysTaken) || !next.value) return;
         navigateTo(next.value);
     });
 
-    onKeyStroke('h', () => {
+    onShortcut('h', () => {
         if (ignoreIfInput() || toValue(keysTaken)) return;
         scoreOptions.toggleHorizontalViewMode();
     });
 
-    onKeyStroke('l', () => {
+    onShortcut('l', () => {
         if (ignoreIfInput()) return;
         scoreOptions.showLyrics = !scoreOptions.showLyrics;
     });
 
-    onKeyStroke('+', () => {
+    onShortcut('+', () => {
         if (ignoreIfInput()) return;
         scoreOptions.zoomIn();
     });
 
-    onKeyStroke('-', () => {
+    onShortcut('-', () => {
         if (ignoreIfInput()) return;
         scoreOptions.zoomOut();
     });
 
-    onKeyStroke('0', () => {
+    onShortcut('0', () => {
         if (ignoreIfInput()) return;
         scoreOptions.resetZoom();
     });
 
-    onKeyStroke('m', () => {
+    onShortcut('m', () => {
         if (ignoreIfInput()) return;
         scoreOptions.showModulations = !scoreOptions.showModulations;
     });
 
-    onKeyStroke('r', () => {
+    onShortcut('r', () => {
         if (ignoreIfInput()) return;
         scoreOptions.reset();
     });
