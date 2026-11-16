@@ -24,7 +24,7 @@ useScorePlayerKeyboardShortcuts(() => mountedPlayers.values().next().value);
             <ScorePlayerControls :player="player" compact class="transition-opacity duration-300" :class="!player.hasScore && 'opacity-0'" />
             <PlayableHighlightedScore :player="player" :horizontal="true" :score-url="localScoreUrlGenerator(choraleId)" :filters="filters" :verovio-options="{ scale: 40, pageMarginLeft: 42, pageMarginRight: 0 }" />
         </div>
-        <figcaption v-if="caption" class="mt-2 text-center text-sm text-dimmed text-pretty">
+        <figcaption v-if="caption" class="mt-2 w-0 min-w-full text-center text-sm text-dimmed text-pretty">
             <NuxtLink :to="`/chorale/bach/${choraleId}`" class="hover:underline">{{ caption }}</NuxtLink>
         </figcaption>
     </figure>

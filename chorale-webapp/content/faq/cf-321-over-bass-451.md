@@ -270,23 +270,24 @@ Gezählt sind die Kadenzen, in denen der Bass in Vierteln in die Fermate geht. V
 
 Meist erreicht der Sopran die Septime im Durchgang von der :deg{v="4" upper} her. Oft löst sich die :fb{v="7"} aber bereits in der nächsten Achtel in eine :fb{v="6"} auf, wodurch eine Anticipatio der :deg{v="2" upper} über der :deg{v="4" bass} entsteht. Nur in `chor083`, T. 14, wird die Septime nicht über einen Durchgang in Vierteln erreicht, sondern über einen in Achteln: Die :deg{v="4" upper} davor ist eine Achtel auf dem Zwischenschlag.
 
-::score-example{chorale-id="chor017" measures="3-4" caption="chor017, Erschienen ist der herrliche Tag (BWV 145/5), T. 3–4"}
-::
-
-::score-example{chorale-id="chor297" measures="1-2" caption="chor297, Jesu, der du meine Seele (BWV 78/7), T. 1–2"}
-::
-
-::score-example{chorale-id="chor083" measures="13-14" caption="chor083, Jesu Leiden, Pein und Tod (BWV 245/14), T. 13–14"}
+::score-examples
+:::score-example{chorale-id="chor017" measures="3-4" caption="chor017, Erschienen ist der herrliche Tag (BWV 145/5), T. 3–4"}
+:::
+:::score-example{chorale-id="chor297" measures="1-2" caption="chor297, Jesu, der du meine Seele (BWV 78/7), T. 1–2"}
+:::
+:::score-example{chorale-id="chor083" measures="13-14" caption="chor083, Jesu Leiden, Pein und Tod (BWV 245/14), T. 13–14"}
+:::
 ::
 
 ### Syncopatio
 
 Ebenso oft ist die Septime vorbereitet. Die :deg{v="3" upper} klingt schon über dem Basston davor als Konsonanz, gehalten oder neu angeschlagen, und erst der Schritt des Basses zur :deg{v="4" bass} macht sie zur Septime. In `chor013` und `chor341` ist im Cantus firmus vor dem neuen Anschlag eine untere Wechselnote eingeschoben. Die drei gehaltenen Fälle stehen im 3/4-Takt, die Septime fällt dort auf die zweite Zählzeit.
 
-::score-example{chorale-id="chor047" measures="9-10" caption="chor047, Vater unser im Himmelreich (BWV 245/5 & 416), T. 9–10"}
-::
-
-::score-example{chorale-id="chor203" measures="6-7" caption="chor203, O Mensch, schau Jesum Christum an (BWV 403), T. 6–7"}
+::score-examples
+:::score-example{chorale-id="chor047" measures="9-10" caption="chor047, Vater unser im Himmelreich (BWV 245/5 & 416), T. 9–10"}
+:::
+:::score-example{chorale-id="chor203" measures="6-7" caption="chor203, O Mensch, schau Jesum Christum an (BWV 403), T. 6–7"}
+:::
 ::
 
 ### Sprung
