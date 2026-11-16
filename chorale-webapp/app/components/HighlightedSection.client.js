@@ -352,7 +352,7 @@ export default {
 
         let labelElem = null;
         const labelRef = ref(null);
-        const labelTop = ref(null);
+        let labelTop = ref(null);
         if (props.label && props.label.value && markers.length > 0) {
             const firstMarker = markers[0];
 
@@ -383,11 +383,18 @@ export default {
 
             if (position === 'bottom') {
                 style.top = `calc(${firstMarker.props.style.top} + ${firstMarker.props.style.height} + 0.4em)`;
+                const systemElem = (startElem ?? endElem)?.closest('g.system');
+                const markerBottom = parseFloat(firstMarker.props.style.top) + parseFloat(firstMarker.props.style.height);
+                // The labels under the markers of a system, or of one voice in it, stand in one row.
+                const rows = inject('bottomLabelRows', reactive(new Map()));
+                const row = `${systemElem?.id}-${voiceStaffIndex}`;
+                labelTop = computed(() => rows.has(row) ? `calc(${rows.get(row)}px + 0.4em)` : null);
                 // Only the label's own width tells which figures it covers, so it moves below them once rendered.
                 onMounted(() => {
                     const labelRect = labelRef.value?.getBoundingClientRect();
-                    const fbBottom = labelRect && coveredFiguredBassBottom((startElem ?? endElem)?.closest('g.system'), labelRect);
-                    if (fbBottom != null) labelTop.value = `calc(${fbBottom - containerElem.getBoundingClientRect().y}px + 0.4em)`;
+                    const fbBottom = labelRect && coveredFiguredBassBottom(systemElem, labelRect);
+                    const top = fbBottom != null ? fbBottom - containerElem.getBoundingClientRect().y : markerBottom;
+                    rows.set(row, Math.max(rows.get(row) ?? -Infinity, top));
                 });
             } else {
                 style.top = `calc(${firstMarker.props.style.top} - 2.3rem)`;

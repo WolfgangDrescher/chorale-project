@@ -90,6 +90,11 @@ const markerContainer = useTemplateRef('markerContainer');
 const wrapperElem = useTemplateRef('wrapperElem');
 const scoreKey = ref(Date.now());
 
+// The top of each row of labels under the markers, which the labels of a row agree on.
+const bottomLabelRows = reactive(new Map());
+provide('bottomLabelRows', bottomLabelRows);
+watch(scoreKey, () => bottomLabelRows.clear(), { flush: 'sync' });
+
 const markerContainerStyle = reactive<{
     width: string | undefined,
     height: string | undefined,
