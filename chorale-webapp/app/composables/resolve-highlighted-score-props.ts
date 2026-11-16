@@ -126,8 +126,9 @@ export const defaultHighlightColors = [
 export function lineShiftOf(filters?: Array<string>): number {
     let lineShift = 0;
     if (filters?.includes('meter -f')) lineShift += 1;
-    if (filters?.includes('deg -k1 --box -t')) lineShift += 1;
-    if (filters?.includes('deg -k1 --box')) lineShift += 1;
+    // All deg filters share one line.
+    if (filters?.some((filter) => filter.startsWith('deg '))) lineShift += 1;
+    if (filters?.includes('satb2gs')) lineShift += 1;
     return lineShift;
 }
 
