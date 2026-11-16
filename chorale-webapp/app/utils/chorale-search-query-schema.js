@@ -176,7 +176,7 @@ const positionFeaturesSchema = {
                 { type: 'string' },
                 { type: 'boolean' },
                 comparisonSchema,
-                { type: 'array', items: { oneOf: [{ type: 'string' }, comparisonSchema] }, minItems: 1 },
+                { type: 'array', items: { oneOf: [{ type: 'string' }, { type: 'boolean' }, comparisonSchema] }, minItems: 1 },
             ],
         },
     },

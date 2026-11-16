@@ -125,8 +125,9 @@ std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const 
     } else if (v.is_array()) {
         for (const auto& entry : v) {
             if (entry.is_string()) values.emplace_back(entry.get<std::string>());
+            else if (entry.is_boolean()) values.emplace_back(entry.get<bool>() ? "true" : "false");
             else if (entry.is_object()) values.push_back(comparisonFromJson(entry, key, context));
-            else throw std::invalid_argument(context + ": array entries must be strings or comparison objects");
+            else throw std::invalid_argument(context + ": array entries must be strings, booleans or comparison objects");
         }
         if (values.empty()) throw std::invalid_argument(context + ": OR-list must not be empty");
     } else {

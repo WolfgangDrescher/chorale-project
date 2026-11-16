@@ -589,6 +589,11 @@ TEST_CASE(query_from_json_accepts_boolean_attribute_value) {
     CHECK_EQ(q.pattern[0]["fermata"], (std::vector<choralesearch::PatternValue>{"true"}));
 }
 
+TEST_CASE(query_from_json_accepts_boolean_in_or_list) {
+    Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":[false]}]})"));
+    CHECK_EQ(q.pattern[0]["fermata"], (std::vector<choralesearch::PatternValue>{"false"}));
+}
+
 TEST_CASE(query_from_json_accepts_array_or_list_for_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":["1","3","5"]}]})"));
     CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"1", "3", "5"}));
