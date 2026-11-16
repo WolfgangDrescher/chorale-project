@@ -189,6 +189,28 @@ function createTextMarkers(props, containerElem) {
     });
 }
 
+// The box of each figure on the screen. Its <text> is as high as the font's line, far higher than
+// the figure, and the bounding box Verovio writes into it is not rendered, so it is mapped by hand.
+function figuredBassRects(systemElem) {
+    return [...(systemElem?.querySelectorAll('g.fb:not(.bounding-box) text') ?? [])].flatMap((textElem) => {
+        const ctm = textElem.getScreenCTM();
+        return [...textElem.querySelectorAll('.bounding-box rect')].map((rect) => {
+            const [x, y, width, height] = ['x', 'y', 'width', 'height'].map((name) => Number(rect.getAttribute(name)));
+            const topLeft = new DOMPoint(x, y).matrixTransform(ctm);
+            const bottomRight = new DOMPoint(x + width, y + height).matrixTransform(ctm);
+            return { left: topLeft.x, right: bottomRight.x, bottom: bottomRight.y };
+        });
+    });
+}
+
+// The bottom edge of the figured bass a label at `labelRect` would cover, or null if it covers none.
+function coveredFiguredBassBottom(systemElem, labelRect) {
+    const bottoms = figuredBassRects(systemElem)
+        .filter((rect) => rect.right > labelRect.left && rect.left < labelRect.right && rect.bottom > labelRect.top)
+        .map((rect) => rect.bottom);
+    return bottoms.length ? Math.max(...bottoms) : null;
+}
+
 function selectBBoxElem(elem, selectors) {
     const selectedElem = elem?.querySelector(selectors);
     return getBBoxElem(selectedElem);
@@ -329,6 +351,8 @@ export default {
         }
 
         let labelElem = null;
+        const labelRef = ref(null);
+        const labelTop = ref(null);
         if (props.label && props.label.value && markers.length > 0) {
             const firstMarker = markers[0];
 
@@ -359,13 +383,19 @@ export default {
 
             if (position === 'bottom') {
                 style.top = `calc(${firstMarker.props.style.top} + ${firstMarker.props.style.height} + 0.4em)`;
+                // Only the label's own width tells which figures it covers, so it moves below them once rendered.
+                onMounted(() => {
+                    const labelRect = labelRef.value?.getBoundingClientRect();
+                    const fbBottom = labelRect && coveredFiguredBassBottom((startElem ?? endElem)?.closest('g.system'), labelRect);
+                    if (fbBottom != null) labelTop.value = `calc(${fbBottom - containerElem.getBoundingClientRect().y}px + 0.4em)`;
+                });
             } else {
                 style.top = `calc(${firstMarker.props.style.top} - 2.3rem)`;
             }
 
-            labelElem = h('div', { class: baseClasses.join(' '), style }, props.label.value);
+            labelElem = () => h('div', { ref: labelRef, class: baseClasses.join(' '), style: { ...style, top: labelTop.value ?? style.top } }, props.label.value);
         }
 
-        return () => h('div', {}, labelElem ? [labelElem, ...markers] : markers);
+        return () => h('div', {}, labelElem ? [labelElem(), ...markers] : markers);
     },
 };
