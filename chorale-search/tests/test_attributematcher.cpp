@@ -171,8 +171,7 @@ TEST_CASE(matcher_kern_value_with_natural_sign_matches_a_token_without_one) {
         "2D\t2A\t2f\t2dd\n"
         "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
     HumdrumChorale chorale(contents, "natural-sign-in-value-test");
-    MatcherOptions ignoreOctave;
-    ignoreOctave.kernIgnoreOctave = true;
+    MatcherOptions ignoreOctave{.kernIgnoreOctave = true};
     CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"ccn"}}}}).findAll(chorale, 4).size(), std::size_t{1});
     CHECK_EQ(AttributeMatcher("kern", {AttributeMap{{"kern", {"cn"}}}}, ignoreOctave).findAll(chorale, 4).size(), std::size_t{1});
 }
@@ -239,8 +238,7 @@ TEST_CASE(matcher_duration_split_ignores_natural_signs) {
         "2E\t2B\t2g\t2dd\n"
         "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
     HumdrumChorale chorale(contents, "natural-sign-split-note-test");
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
     auto matches = AttributeMatcher("kern", {AttributeMap{{"kern", {"cc"}}, {"duration", {"2"}}}}, splitOptions).findAll(chorale, 4);
     REQUIRE(matches.size() == 1u);
     CHECK_EQ(matches[0].startPosition, 0);
@@ -302,8 +300,7 @@ TEST_CASE(matcher_kern_accidental_alone_matches_every_pitch_letter_spelled_with_
     // chor009 is in G major and modulates, so it has sharps on several letters; chor008 (f dorian)
     // has flats on several letters. An accidental alone finds the same notes as every pitch
     // letter spelled with it, in any register.
-    MatcherOptions ignoreOctave;
-    ignoreOctave.kernIgnoreOctave = true;
+    MatcherOptions ignoreOctave{.kernIgnoreOctave = true};
     struct Case { const char* chorale; std::string accidental; };
     for (const Case& c : {Case{"chor009", "#"}, Case{"chor008", "-"}}) {
         HumdrumChorale chorale(FIXTURE_CHORALE(c.chorale));
@@ -516,8 +513,7 @@ TEST_CASE(matcher_mint_start_at_previous_token_has_no_effect_on_other_driving_fe
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}};
     AttributeMatcher withoutFlag("kern", pattern);
-    MatcherOptions withFlagOptions;
-    withFlagOptions.mintStartAtPreviousToken = true;
+    MatcherOptions withFlagOptions{.mintStartAtPreviousToken = true};
     AttributeMatcher withFlag("kern", pattern, withFlagOptions);
 
     auto without = withoutFlag.findAll(chorale, 1);
@@ -537,8 +533,7 @@ TEST_CASE(matcher_mint_start_at_previous_token_shifts_every_start_back_by_one_on
     // the shift, which would make this test check nothing.
     std::vector<AttributeMap> pattern = {AttributeMap{}, AttributeMap{}};
     AttributeMatcher withoutShift("mint", pattern);
-    MatcherOptions withShiftOptions;
-    withShiftOptions.mintStartAtPreviousToken = true;
+    MatcherOptions withShiftOptions{.mintStartAtPreviousToken = true};
     AttributeMatcher withShift("mint", pattern, withShiftOptions);
 
     auto unshifted = withoutShift.findAll(chorale, 4);
@@ -571,8 +566,7 @@ TEST_CASE(matcher_mint_start_at_previous_token_is_a_noop_after_an_explicit_wildc
         AttributeMap{{"mint", {"*"}}},
     };
     AttributeMatcher withoutFlag("mint", pattern);
-    MatcherOptions withFlagOptions;
-    withFlagOptions.mintStartAtPreviousToken = true;
+    MatcherOptions withFlagOptions{.mintStartAtPreviousToken = true};
     AttributeMatcher withFlag("mint", pattern, withFlagOptions);
 
     auto without = withoutFlag.findAll(chorale, 4);
@@ -690,8 +684,7 @@ TEST_CASE(matcher_mint_allow_interval_complementation_also_matches_the_complemen
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher fifthDown("mint", {AttributeMap{{"mint", {"-5"}}}});
     AttributeMatcher fourthUp("mint", {AttributeMap{{"mint", {"+4"}}}});
-    MatcherOptions complementFifths;
-    complementFifths.mintAllowIntervalComplementation = {"5"};
+    MatcherOptions complementFifths{.mintAllowIntervalComplementation = {"5"}};
     AttributeMatcher fifthDownOrItsComplement("mint", {AttributeMap{{"mint", {"-5"}}}}, complementFifths);
 
     auto fifthDownMatches = fifthDown.findAll(chorale, 1);
@@ -714,8 +707,7 @@ TEST_CASE(matcher_mint_allow_interval_complementation_inverts_the_quality_too) {
     AttributeMatcher majorSecondUp("mint", {AttributeMap{{"mint", {"+M2"}}}});
     AttributeMatcher minorSeventhDown("mint", {AttributeMap{{"mint", {"-m7"}}}});
     AttributeMatcher majorSeventhDown("mint", {AttributeMap{{"mint", {"-M7"}}}});
-    MatcherOptions complementedOptions;
-    complementedOptions.mintAllowIntervalComplementation = {"2"};
+    MatcherOptions complementedOptions{.mintAllowIntervalComplementation = {"2"}};
     AttributeMatcher complemented("mint", {AttributeMap{{"mint", {"+M2"}}}}, complementedOptions);
 
     auto majorSecondUpMatches = majorSecondUp.findAll(chorale, 1);
@@ -733,11 +725,9 @@ TEST_CASE(matcher_mint_allow_interval_complementation_only_opts_in_the_listed_nu
     AttributeMatcher fifthDown("mint", {AttributeMap{{"mint", {"-5"}}}});
     // The number as written in the pattern is what opts in, so a pattern of "-5" is untouched
     // by a list of {"4"} -- that one opts in patterns written as a 4th instead.
-    MatcherOptions listedFourOptions;
-    listedFourOptions.mintAllowIntervalComplementation = {"4"};
+    MatcherOptions listedFourOptions{.mintAllowIntervalComplementation = {"4"}};
     AttributeMatcher listedFour("mint", {AttributeMap{{"mint", {"-5"}}}}, listedFourOptions);
-    MatcherOptions listedThreeAndFiveOptions;
-    listedThreeAndFiveOptions.mintAllowIntervalComplementation = {"3", "5"};
+    MatcherOptions listedThreeAndFiveOptions{.mintAllowIntervalComplementation = {"3", "5"}};
     AttributeMatcher listedThreeAndFive("mint", {AttributeMap{{"mint", {"-5"}}}}, listedThreeAndFiveOptions);
 
     auto fifthDownMatches = fifthDown.findAll(chorale, 1);
@@ -751,11 +741,9 @@ TEST_CASE(matcher_mint_allow_interval_complementation_only_opts_in_the_listed_nu
 
 TEST_CASE(matcher_mint_allow_interval_complementation_wildcard_opts_in_every_number) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    MatcherOptions listedFiveOptions;
-    listedFiveOptions.mintAllowIntervalComplementation = {"5"};
+    MatcherOptions listedFiveOptions{.mintAllowIntervalComplementation = {"5"}};
     AttributeMatcher listedFive("mint", {AttributeMap{{"mint", {"-P5"}}}}, listedFiveOptions);
-    MatcherOptions wildcardOptions;
-    wildcardOptions.mintAllowIntervalComplementation = {"*"};
+    MatcherOptions wildcardOptions{.mintAllowIntervalComplementation = {"*"}};
     AttributeMatcher wildcard("mint", {AttributeMap{{"mint", {"-P5"}}}}, wildcardOptions);
 
     auto listedFiveMatches = listedFive.findAll(chorale, 1);
@@ -770,8 +758,7 @@ TEST_CASE(matcher_mint_allow_interval_complementation_ignores_values_without_an_
     // "+" pins down a direction but no interval size, so there's nothing to complement --
     // complementing it would otherwise quietly turn it into "any motion at all".
     AttributeMatcher up("mint", {AttributeMap{{"mint", {"+"}}}});
-    MatcherOptions complementEverything;
-    complementEverything.mintAllowIntervalComplementation = {"*"};
+    MatcherOptions complementEverything{.mintAllowIntervalComplementation = {"*"}};
     AttributeMatcher upWithComplementation("mint", {AttributeMap{{"mint", {"+"}}}}, complementEverything);
 
     auto upMatches = up.findAll(chorale, 1);
@@ -786,8 +773,7 @@ TEST_CASE(matcher_mint_allow_interval_complementation_applies_to_a_cross_referen
     // Driven by kern, with mint only checked alongside it: the option is about the "mint" key,
     // not about mint being the driving feature.
     AttributeMatcher plain("kern", {AttributeMap{{"mint", {"-5"}}}});
-    MatcherOptions complementedOptions;
-    complementedOptions.mintAllowIntervalComplementation = {"5"};
+    MatcherOptions complementedOptions{.mintAllowIntervalComplementation = {"5"}};
     AttributeMatcher complemented("kern", {AttributeMap{{"mint", {"-5"}}}}, complementedOptions);
 
     auto plainMatches = plain.findAll(chorale, 1);
@@ -802,11 +788,9 @@ TEST_CASE(matcher_mint_allow_interval_complementation_composes_with_negation) {
     // Negation still flips the whole position's result, so the negated set is the complement
     // (in the set sense) of the positive one, over the same total onset count.
     AttributeMatcher total("mint", {AttributeMap{}});
-    MatcherOptions positiveOptions;
-    positiveOptions.mintAllowIntervalComplementation = {"5"};
+    MatcherOptions positiveOptions{.mintAllowIntervalComplementation = {"5"}};
     AttributeMatcher positive("mint", {AttributeMap{{"mint", {"-5"}}}}, positiveOptions);
-    MatcherOptions negatedOptions;
-    negatedOptions.mintAllowIntervalComplementation = {"5"};
+    MatcherOptions negatedOptions{.mintAllowIntervalComplementation = {"5"}};
     AttributeMatcher negated("mint", {AttributeMap{{"!mint", {"-5"}}}}, negatedOptions);
 
     auto totalMatches = total.findAll(chorale, 1);
@@ -897,8 +881,7 @@ TEST_CASE(matcher_kern_ignore_octave_matches_every_register_of_a_pitch_class) {
     // a different register) matches none of them without the flag.
     AttributeMatcher upperCaseOnly("kern", {AttributeMap{{"kern", {"G"}}}});
     AttributeMatcher lowerCaseOnly("kern", {AttributeMap{{"kern", {"g"}}}});
-    MatcherOptions ignoreOctave;
-    ignoreOctave.kernIgnoreOctave = true;
+    MatcherOptions ignoreOctave{.kernIgnoreOctave = true};
     AttributeMatcher upperCaseIgnoringOctave("kern", {AttributeMap{{"kern", {"G"}}}}, ignoreOctave);
 
     auto upperCaseMatches = upperCaseOnly.findAll(chorale, 4);
@@ -917,8 +900,7 @@ TEST_CASE(matcher_kern_ignore_octave_still_honors_rhythm_and_fermata_in_the_same
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // "4D;" (bass, position 7) is a quarter-note D with a fermata -- ignoring octave must
     // still require the rhythm and fermata components, just not the D's own register.
-    MatcherOptions matcherOptions;
-    matcherOptions.kernIgnoreOctave = true;
+    MatcherOptions matcherOptions{.kernIgnoreOctave = true};
     AttributeMatcher matcher("kern", {AttributeMap{{"kern", {"4D;"}}}}, matcherOptions);
     auto matches = matcher.findAll(chorale, 1);
     REQUIRE(matches.size() == 1u);
@@ -927,11 +909,9 @@ TEST_CASE(matcher_kern_ignore_octave_still_honors_rhythm_and_fermata_in_the_same
 
 TEST_CASE(matcher_kern_ignore_octave_does_not_conflate_rests_with_pitches) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
-    MatcherOptions restOnlyOptions;
-    restOnlyOptions.kernIgnoreOctave = true;
+    MatcherOptions restOnlyOptions{.kernIgnoreOctave = true};
     AttributeMatcher restOnly("kern", {AttributeMap{{"kern", {"r"}}}}, restOnlyOptions);
-    MatcherOptions pitchOnlyOptions;
-    pitchOnlyOptions.kernIgnoreOctave = true;
+    MatcherOptions pitchOnlyOptions{.kernIgnoreOctave = true};
     AttributeMatcher pitchOnly("kern", {AttributeMap{{"kern", {"g"}}}}, pitchOnlyOptions);
     auto restMatches = restOnly.findAll(chorale, 4);
     auto pitchMatches = pitchOnly.findAll(chorale, 4);
@@ -947,8 +927,7 @@ TEST_CASE(matcher_kern_ignore_octave_does_not_conflate_rests_with_pitches) {
 TEST_CASE(matcher_fb_compare_exact_chord_rejects_chords_with_extra_figures) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMatcher permissive("fb", {AttributeMap{{"fb", {"6 3"}}}});
-    MatcherOptions exactOptions;
-    exactOptions.fbCompareExactChord = true;
+    MatcherOptions exactOptions{.fbCompareExactChord = true};
     AttributeMatcher exact("fb", {AttributeMap{{"fb", {"6 3"}}}}, exactOptions);
 
     auto permissiveMatches = permissive.findAll(chorale, 1);
@@ -1195,8 +1174,7 @@ TEST_CASE(matcher_hint_reduce_compound_folds_both_pattern_and_actual_to_within_a
     AttributeMatcher withoutReduce("hint-14", {AttributeMap{{"hint-14", {"M3"}}}});
     AttributeMatcher m10("hint-14", {AttributeMap{{"hint-14", {"M10"}}}});
     AttributeMatcher m17("hint-14", {AttributeMap{{"hint-14", {"M17"}}}});
-    MatcherOptions withReduceOptions;
-    withReduceOptions.hintReduceCompound = true;
+    MatcherOptions withReduceOptions{.hintReduceCompound = true};
     AttributeMatcher withReduce("hint-14", {AttributeMap{{"hint-14", {"M3"}}}}, withReduceOptions);
 
     CHECK(withoutReduce.findAll(chorale, 1).empty());
@@ -1220,8 +1198,7 @@ TEST_CASE(matcher_hint_reduce_compound_folds_a_compound_mint_interval_to_within_
         "2g\t2g\t2e\t2cc\n"
         "==\t==\t==\t==\n*-\t*-\t*-\t*-\n");
     HumdrumChorale chorale(contents, "mint-compound-test");
-    MatcherOptions reduceOptions;
-    reduceOptions.hintReduceCompound = true;
+    MatcherOptions reduceOptions{.hintReduceCompound = true};
     AttributeMatcher twelfth("mint", {AttributeMap{{"mint", {"+P12"}}}});
     AttributeMatcher fifth("mint", {AttributeMap{{"mint", {"+P5"}}}});
     AttributeMatcher fifthReduced("mint", {AttributeMap{{"mint", {"+P5"}}}}, reduceOptions);
@@ -1289,8 +1266,7 @@ TEST_CASE(matcher_duration_split_matches_a_note_written_as_repeated_shorter_note
     // The alto opens on a quarter d (pickup) that is re-attacked as another quarter d in
     // measure 1 -- a half note's worth of d, but never written as one.
     AttributeMap position{{"kern", {"d"}}, {"duration", {"2"}}};
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
     AttributeMatcher withoutSplits("kern", {position});
     AttributeMatcher withSplits("kern", {position}, splitOptions);
 
@@ -1308,8 +1284,7 @@ TEST_CASE(matcher_duration_split_requires_the_onsets_to_be_the_same_note) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     // Two quarters also add up to a half note when they're different notes (the alto's
     // d-e in measure 1) -- that isn't one logical note and must not match.
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
     AttributeMatcher withSplits("kern", {AttributeMap{{"duration", {"2"}}}}, splitOptions);
 
     for (const auto& m : withSplits.findAll(chorale, 3)) {
@@ -1323,8 +1298,7 @@ TEST_CASE(matcher_duration_split_continues_the_pattern_after_the_run) {
     // the next position is checked against the third.
     std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"d"}}, {"duration", {"2"}}},
                                        AttributeMap{{"kern", {"e"}}, {"duration", {"4"}}}};
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
 
     CHECK(AttributeMatcher("kern", pattern).findAll(chorale, 3).empty());
     auto splitMatches = AttributeMatcher("kern", pattern, splitOptions).findAll(chorale, 3);
@@ -1341,8 +1315,7 @@ TEST_CASE(matcher_duration_split_leaves_a_wildcard_duration_alone) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     // Nothing to sum towards, so the position stays a plain one-onset check.
     AttributeMap position{{"duration", {"*"}}};
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
 
     CHECK_EQ(AttributeMatcher("kern", {position}, splitOptions).findAll(chorale, 3).size(),
               AttributeMatcher("kern", {position}).findAll(chorale, 3).size());
@@ -1353,8 +1326,7 @@ TEST_CASE(matcher_duration_split_works_off_a_mint_driving_feature) {
     // **mint writes a unison for a re-attacked note, which is how a split run is recognised
     // when mint is the feature being walked.
     AttributeMap position{{"mint", {"+2"}}, {"duration", {"2"}}};
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
 
     auto plainMatches = AttributeMatcher("mint", {position}).findAll(chorale, 3);
     auto splitMatches = AttributeMatcher("mint", {position}, splitOptions).findAll(chorale, 3);
@@ -1368,8 +1340,7 @@ TEST_CASE(matcher_duration_split_takes_an_octave_leap_for_a_re_attack_under_comp
     // up, twice a quarter. P8 is P1's complement, so the run only closes over it once the
     // query has opted into interval complementation.
     AttributeMap position{{"duration", {"2"}}};
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
     MatcherOptions splitAndComplementOptions = splitOptions;
     splitAndComplementOptions.mintAllowIntervalComplementation = {"1"};
 
@@ -1391,8 +1362,7 @@ TEST_CASE(matcher_duration_split_octave_re_attack_needs_the_unison_octave_pair_o
     // Only "1", "8" or "*" unlock the octave re-attack -- opting in an unrelated number says
     // nothing about octaves and leaves the run exactly as it was without the option.
     AttributeMap position{{"duration", {"2"}}};
-    MatcherOptions options;
-    options.durationAllowSplitNotes = true;
+    MatcherOptions options{.durationAllowSplitNotes = true};
     auto matchesWith = [&](std::vector<std::string> complementation) {
         options.mintAllowIntervalComplementation = std::move(complementation);
         return AttributeMatcher("mint", {position}, options).findAll(chorale, 1).size();
@@ -1412,9 +1382,10 @@ TEST_CASE(matcher_duration_split_octave_re_attack_does_not_apply_to_a_kern_drivi
     // The same GG -> G leap, walked as **kern: complementation is a mint notion, so the run
     // still needs the identical pitch and this stays two separate quarters.
     AttributeMap position{{"duration", {"2"}}};
-    MatcherOptions options;
-    options.durationAllowSplitNotes = true;
-    options.mintAllowIntervalComplementation = {"*"};
+    MatcherOptions options{
+        .mintAllowIntervalComplementation = {"*"},
+        .durationAllowSplitNotes = true,
+    };
 
     auto matches = AttributeMatcher("kern", {position}, options).findAll(chorale, 1);
     CHECK(std::none_of(matches.begin(), matches.end(),
@@ -1424,8 +1395,7 @@ TEST_CASE(matcher_duration_split_octave_re_attack_does_not_apply_to_a_kern_drivi
 TEST_CASE(matcher_duration_split_keeps_every_plain_match_it_had_without_the_option) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMap position{{"duration", {"2"}}};
-    MatcherOptions splitOptions;
-    splitOptions.durationAllowSplitNotes = true;
+    MatcherOptions splitOptions{.durationAllowSplitNotes = true};
 
     for (std::size_t voice = 1; voice <= 4; ++voice) {
         auto plainMatches = AttributeMatcher("kern", {position}).findAll(chorale, voice);
@@ -1446,8 +1416,7 @@ TEST_CASE(matcher_duration_merge_matches_positions_written_as_one_longer_note) {
     std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                        AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}};
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     CHECK(AttributeMatcher("kern", pattern).findAll(chorale, 4).empty());
     auto mergedMatches = AttributeMatcher("kern", pattern, mergeOptions).findAll(chorale, 4);
@@ -1465,8 +1434,7 @@ TEST_CASE(matcher_duration_merge_requires_the_positions_to_add_up_exactly) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
     // A quarter plus a half overshoots a half note, so no run of these two positions can
     // divide one up -- and no onset in the voice is a dotted whole either.
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
     std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"2"}}}};
 
     auto plainMatches = AttributeMatcher("kern", pattern).findAll(chorale, 4);
@@ -1481,8 +1449,7 @@ TEST_CASE(matcher_duration_merge_continues_the_pattern_after_the_run) {
     std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4"}}},
                                        AttributeMap{{"duration", {"4"}}},
                                        AttributeMap{{"kern", {"g"}}, {"fermata", {"true"}}}};
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     auto mergedMatches = AttributeMatcher("kern", pattern, mergeOptions).findAll(chorale, 4);
     bool foundBar4 = std::any_of(mergedMatches.begin(), mergedMatches.end(),
@@ -1494,8 +1461,7 @@ TEST_CASE(matcher_duration_merge_leaves_a_wildcard_duration_alone) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
     // Nothing to divide the onset up by, so the position stays a plain one-onset check.
     AttributeMap position{{"duration", {"*"}}};
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     CHECK_EQ(AttributeMatcher("kern", {position}, mergeOptions).findAll(chorale, 4).size(),
               AttributeMatcher("kern", {position}).findAll(chorale, 4).size());
@@ -1505,8 +1471,7 @@ TEST_CASE(matcher_duration_merge_checks_every_other_key_against_the_merged_onset
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
     // Both positions of the run describe the same single onset, so a fermata asked for by
     // either of them is the one that onset carries -- measure 4's half note has none.
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
     std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                        AttributeMap{{"duration", {"4"}}, {"fermata", {"true"}}}};
 
@@ -1518,8 +1483,7 @@ TEST_CASE(matcher_duration_merge_holds_a_kern_continuation_to_the_merged_notes_p
     // A merged run re-articulates the note it started on, so a "kern" pitch on a later
     // position is that same pitch. Asking for a different one must not simply be waved
     // through -- the whole run would otherwise collapse onto one note of the wrong shape.
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     std::vector<AttributeMap> samePitch{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                          AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}}};
@@ -1541,8 +1505,7 @@ TEST_CASE(matcher_duration_merge_does_not_let_a_whole_pattern_collapse_onto_one_
     // run, but only if the onset really answers all of them. A pattern whose last position
     // asks for a different pitch than its first cannot be one note, however neatly the
     // durations divide it.
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
     std::vector<AttributeMap> pattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                        AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}};
@@ -1560,8 +1523,7 @@ TEST_CASE(matcher_duration_merge_ignores_only_the_rhythm_of_a_kern_continuation)
     // for a later position: its duration is the whole note's, not that position's share of
     // it. That component is dropped -- "duration" is what constrains the share -- while the
     // pitch beside it still has to hold.
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     std::vector<AttributeMap> withRhythm{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                           AttributeMap{{"kern", {"4a"}}, {"duration", {"4"}}}};
@@ -1581,8 +1543,7 @@ TEST_CASE(matcher_duration_merge_checks_a_non_driving_features_continuation_agai
     // Everything that isn't "mint" or "kern" describes the merged note itself, which a
     // re-attack of it shares -- so a later position's "deg" is judged against the onset like
     // any other key, whether or not "deg" happens to drive the walk.
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     auto onOneOnset = [](const auto& m) { return m.startPosition == m.endPosition; };
     for (const std::string& feature : {"kern", "deg"}) {
@@ -1607,9 +1568,10 @@ TEST_CASE(matcher_duration_merge_judges_a_mint_continuation_as_a_re_attack_under
     std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4."}}},
                                        AttributeMap{{"mint", {"P1"}}, {"duration", {"8"}}},
                                        AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}}};
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
-    mergeOptions.mintAllowIntervalComplementation = {"*"};
+    MatcherOptions mergeOptions{
+        .mintAllowIntervalComplementation = {"*"},
+        .durationAllowMergedNotes = true,
+    };
 
     for (const std::string& feature : {"deg", "mint", "kern"}) {
         auto matches = AttributeMatcher(feature, pattern, mergeOptions).findAll(chorale, 1);
@@ -1626,9 +1588,10 @@ TEST_CASE(matcher_duration_merge_rejects_a_mint_continuation_that_is_no_re_attac
     std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4."}}},
                                        AttributeMap{{"mint", {"-P5"}}, {"duration", {"8"}}},
                                        AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}}};
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
-    mergeOptions.mintAllowIntervalComplementation = {"*"};
+    MatcherOptions mergeOptions{
+        .mintAllowIntervalComplementation = {"*"},
+        .durationAllowMergedNotes = true,
+    };
 
     for (const std::string& feature : {"deg", "mint", "kern"}) {
         CHECK(AttributeMatcher(feature, pattern, mergeOptions).findAll(chorale, 1).empty());
@@ -1642,8 +1605,7 @@ TEST_CASE(matcher_duration_merge_takes_an_octave_mint_continuation_only_when_opt
     std::vector<AttributeMap> pattern{AttributeMap{{"duration", {"4."}}},
                                        AttributeMap{{"mint", {"P8"}}, {"duration", {"8"}}},
                                        AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}}};
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     mergeOptions.mintAllowIntervalComplementation = {"5"}; // enough for position 2, not for the octave
     CHECK(AttributeMatcher("deg", pattern, mergeOptions).findAll(chorale, 1).empty());
@@ -1655,8 +1617,7 @@ TEST_CASE(matcher_duration_merge_takes_an_octave_mint_continuation_only_when_opt
 TEST_CASE(matcher_duration_merge_keeps_every_plain_match_it_had_without_the_option) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMap position{{"duration", {"2"}}};
-    MatcherOptions mergeOptions;
-    mergeOptions.durationAllowMergedNotes = true;
+    MatcherOptions mergeOptions{.durationAllowMergedNotes = true};
 
     for (std::size_t voice = 1; voice <= 4; ++voice) {
         auto plainMatches = AttributeMatcher("kern", {position}).findAll(chorale, voice);
@@ -1677,9 +1638,10 @@ TEST_CASE(matcher_duration_merge_and_split_can_be_combined) {
     // both on keeps each of them working. In the soprano, measure 4's half note a answers a
     // pattern of two quarters (merged), and measure 5's repeated quarter cc answers a pattern of
     // one half note (split).
-    MatcherOptions bothOptions;
-    bothOptions.durationAllowSplitNotes = true;
-    bothOptions.durationAllowMergedNotes = true;
+    MatcherOptions bothOptions{
+        .durationAllowSplitNotes = true,
+        .durationAllowMergedNotes = true,
+    };
 
     std::vector<AttributeMap> mergePattern{AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
                                             AttributeMap{{"duration", {"4"}}},
@@ -1700,8 +1662,7 @@ TEST_CASE(matcher_metweight_skip_takes_ornamental_onsets_out_of_the_walk) {
     // The soprano's measure 4 is 8a 8g 4a 4g; -- the offbeat g is a lower neighbour, unclassified
     // by **metweight. Skipped, it is no onset of its own any more, so the note right after
     // measure 4's downbeat is the second a rather than that g.
-    MatcherOptions skipOptions;
-    skipOptions.metweightSkipUnclassified = true;
+    MatcherOptions skipOptions{.metweightSkipUnclassified = true};
 
     std::vector<AttributeMap> aThenG{AttributeMap{{"kern", {"a"}}}, AttributeMap{{"kern", {"g"}}}};
     std::vector<AttributeMap> aThenA{AttributeMap{{"kern", {"a"}}}, AttributeMap{{"kern", {"a"}}}};
@@ -1723,8 +1684,7 @@ TEST_CASE(matcher_metweight_skip_hands_the_ornaments_duration_to_the_note_it_dec
     // The soprano's measure 4 is 4.b- 8a- 2a-; -- the offbeat a- anticipates the fermata note and
     // takes its time from the b- in front of it. With the ornament gone that b- is what it
     // musically is, a half note, for "duration" and for a "kern" value's own rhythm alike.
-    MatcherOptions skipOptions;
-    skipOptions.metweightSkipUnclassified = true;
+    MatcherOptions skipOptions{.metweightSkipUnclassified = true};
     auto startsAt12 = [](const auto& m) { return m.startPosition == 12; };
 
     for (const AttributeMap& halfNoteBFlat :
@@ -1741,8 +1701,7 @@ TEST_CASE(matcher_metweight_skip_measures_mint_across_the_skipped_ornament) {
     // Measure 3's last beat is 8cc 8b, measure 4 opens on 8a: **mint writes -M2 into that a,
     // measured from the passing b. With the b skipped the step is the one the phrase actually
     // makes, cc down to a -- a minor third.
-    MatcherOptions skipOptions;
-    skipOptions.metweightSkipUnclassified = true;
+    MatcherOptions skipOptions{.metweightSkipUnclassified = true};
     auto startsAt13 = [](const auto& m) { return m.startPosition == 13; };
 
     AttributeMap writtenStep{{"kern", {"a"}}, {"mint", {"-M2"}}};
@@ -1771,8 +1730,7 @@ TEST_CASE(matcher_metweight_skip_never_skips_a_rest_or_a_voices_first_onset) {
     // **metweight calls every rest unclassified wherever it falls, and chor006's measure 5 is a
     // quarter rest in all four voices -- skipping those would silently swallow the rest and
     // hand its time to the note before it.
-    MatcherOptions skipOptions;
-    skipOptions.metweightSkipUnclassified = true;
+    MatcherOptions skipOptions{.metweightSkipUnclassified = true};
     AttributeMap rest{{"kern", {"r"}}};
 
     for (std::size_t voice = 1; voice <= 4; ++voice) {
@@ -1795,8 +1753,7 @@ TEST_CASE(matcher_metweight_skip_never_skips_a_rest_or_a_voices_first_onset) {
 TEST_CASE(matcher_metweight_skip_keeps_an_ornament_free_voice_exactly_as_it_was) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
     // Nothing to fold away means nothing changes: same onsets, same durations, same intervals.
-    MatcherOptions skipOptions;
-    skipOptions.metweightSkipUnclassified = true;
+    MatcherOptions skipOptions{.metweightSkipUnclassified = true};
     AttributeMap anyOnset{{"kern", {"*"}}};
 
     auto hasNoUnclassifiedOnset = [&](std::size_t voice) {
@@ -1817,13 +1774,12 @@ TEST_CASE(matcher_metweight_skip_lets_a_split_run_close_over_an_ornament) {
     // the middle. Skipping the neighbour makes the two a's adjacent, which is what lets a split
     // run join them -- neither option finds it alone.
     AttributeMap halfNoteA{{"kern", {"a"}}, {"duration", {"2"}}};
-    MatcherOptions splitOnly;
-    splitOnly.durationAllowSplitNotes = true;
-    MatcherOptions skipOnly;
-    skipOnly.metweightSkipUnclassified = true;
-    MatcherOptions bothOptions;
-    bothOptions.durationAllowSplitNotes = true;
-    bothOptions.metweightSkipUnclassified = true;
+    MatcherOptions splitOnly{.durationAllowSplitNotes = true};
+    MatcherOptions skipOnly{.metweightSkipUnclassified = true};
+    MatcherOptions bothOptions{
+        .durationAllowSplitNotes = true,
+        .metweightSkipUnclassified = true,
+    };
     auto startsAt13 = [](const auto& m) { return m.startPosition == 13; };
 
     for (const MatcherOptions& tooLittle : {MatcherOptions{}, splitOnly, skipOnly}) {
@@ -1910,11 +1866,9 @@ TEST_CASE(matcher_a_part_key_matches_like_its_whole_key_with_the_same_value) {
         CHECK_EQ(count("kern", {{std::string("!") + same.part, {same.partValue}}}), count("kern", {{std::string("!") + same.whole, {same.wholeValue}}}));
     }
     // The options of the key hold for its parts.
-    MatcherOptions reduce;
-    reduce.hintReduceCompound = true;
+    MatcherOptions reduce{.hintReduceCompound = true};
     CHECK_EQ(count("kern", {{"hint-14.number", {"3"}}}, reduce), count("kern", {{"hint-14", {"3"}}}, reduce));
-    MatcherOptions ignoreOctave;
-    ignoreOctave.kernIgnoreOctave = true;
+    MatcherOptions ignoreOctave{.kernIgnoreOctave = true};
     CHECK_EQ(count("kern", {{"kern.pitch", {"g"}}}, ignoreOctave), count("kern", {{"kern", {"g"}}}, ignoreOctave));
     // And so do comparisons.
     CHECK_EQ(count("mint", {{"mint.number", {{ComparisonOperator::GreaterThan, "3"}}}}),
@@ -2108,8 +2062,7 @@ TEST_CASE(matcher_reference_reads_the_key_the_mode_and_the_degree_of_the_key) {
 
 TEST_CASE(matcher_reference_reads_the_pitch_class_with_the_octave_ignored) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    MatcherOptions ignoreOctave;
-    ignoreOctave.kernIgnoreOctave = true;
+    MatcherOptions ignoreOctave{.kernIgnoreOctave = true};
     std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern.pitch", {"#1"}}}};
     std::size_t sameNote = AttributeMatcher("kern", pattern).findAll(chorale, 1).size();
     std::size_t samePitchClass = AttributeMatcher("kern", pattern, ignoreOctave).findAll(chorale, 1).size();
@@ -2234,10 +2187,8 @@ TEST_CASE(matcher_reference_to_a_duration_is_judged_on_the_single_note) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // A reference names no length to divide notes up by or add them up to, so the options leave it alone.
     std::vector<AttributeMap> pattern = {AttributeMap{{"duration", {"*"}}}, AttributeMap{{"duration", {"#1"}}}};
-    MatcherOptions split;
-    split.durationAllowSplitNotes = true;
-    MatcherOptions merged;
-    merged.durationAllowMergedNotes = true;
+    MatcherOptions split{.durationAllowSplitNotes = true};
+    MatcherOptions merged{.durationAllowMergedNotes = true};
     std::size_t plain = AttributeMatcher("kern", pattern).findAll(chorale, 2).size();
     CHECK_EQ(AttributeMatcher("kern", pattern, split).findAll(chorale, 2).size(), plain);
     CHECK_EQ(AttributeMatcher("kern", pattern, merged).findAll(chorale, 2).size(), plain);
@@ -2245,8 +2196,7 @@ TEST_CASE(matcher_reference_to_a_duration_is_judged_on_the_single_note) {
 
 TEST_CASE(matcher_reference_reads_the_length_a_split_run_took) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    MatcherOptions split;
-    split.durationAllowSplitNotes = true;
+    MatcherOptions split{.durationAllowSplitNotes = true};
     // The second note is as long as the first one, which may be written as repeated shorter notes: a half note of
     // two quarters is a half note to the reference, as it is to the pattern.
     AttributeMatcher halves("kern", {AttributeMap{{"duration", {"2"}}}, AttributeMap{{"duration", {"2"}}}}, split);
@@ -2266,8 +2216,7 @@ TEST_CASE(matcher_reference_reads_the_length_a_split_run_took) {
 
 TEST_CASE(matcher_reference_reads_a_merged_run_as_the_re_attacks_it_describes) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    MatcherOptions merged;
-    merged.durationAllowMergedNotes = true;
+    MatcherOptions merged{.durationAllowMergedNotes = true};
     // Two quarters on the same note, also written as one half note: the second re-attacks the first, which is the
     // note's pitch again and a unison, and a reference to the first position reads that note.
     AttributeMatcher samePitch("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"4"}}, {"kern", {"#1"}}}}, merged);
@@ -2291,8 +2240,7 @@ TEST_CASE(matcher_reference_reads_a_merged_run_as_the_re_attacks_it_describes) {
 
 TEST_CASE(matcher_reference_reads_what_the_walk_sees_across_a_skipped_ornament) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
-    MatcherOptions skip;
-    skip.metweightSkipUnclassified = true;
+    MatcherOptions skip{.metweightSkipUnclassified = true};
     // With ornaments skipped, the duration and the interval read are the ones the walk measures: the pattern
     // reading them finds what the pattern writing them out finds.
     AttributeMatcher read("kern", {AttributeMap{{"duration", {"4"}}}, AttributeMap{{"duration", {"#1"}}, {"mint.number", {"#1"}}}}, skip);
@@ -2479,8 +2427,7 @@ TEST_CASE(matcher_phrase_chorale_end_is_the_last_position_of_a_pattern) {
 // The alto of chor001 opens with a quarter d that is repeated as a second quarter d.
 TEST_CASE(matcher_phrase_split_run_starts_a_phrase_where_its_first_part_does) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
-    MatcherOptions split;
-    split.durationAllowSplitNotes = true;
+    MatcherOptions split{.durationAllowSplitNotes = true};
     AttributeMap position{{"kern", {"d"}}, {"duration", {"2"}}, {"phrase", {"start"}}};
 
     auto plain = AttributeMatcher("kern", {position}).findAll(chorale, 3);
@@ -2501,8 +2448,7 @@ TEST_CASE(matcher_phrase_split_run_does_not_start_a_phrase_with_its_second_part)
 
 TEST_CASE(matcher_phrase_split_run_end_is_the_fermata_of_its_last_part) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
-    MatcherOptions split;
-    split.durationAllowSplitNotes = true;
+    MatcherOptions split{.durationAllowSplitNotes = true};
     for (std::size_t voice = 1; voice <= 4; ++voice) {
         auto ends = AttributeMatcher("kern", {AttributeMap{{"duration", {"2"}}, {"phrase", {"end"}}}}, split)
                         .findAll(chorale, voice);
@@ -2514,8 +2460,7 @@ TEST_CASE(matcher_phrase_split_run_end_is_the_fermata_of_its_last_part) {
 
 TEST_CASE(matcher_phrase_split_run_negation_judges_the_whole_run) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
-    MatcherOptions split;
-    split.durationAllowSplitNotes = true;
+    MatcherOptions split{.durationAllowSplitNotes = true};
     auto count = [&](const AttributeMap& position) {
         return AttributeMatcher("kern", {position}, split).findAll(chorale, 3).size();
     };
@@ -2531,8 +2476,7 @@ TEST_CASE(matcher_phrase_split_run_negation_judges_the_whole_run) {
 // half note a before the fermata g in the soprano of chor009 (quarters 13 to 15).
 TEST_CASE(matcher_phrase_merged_second_position_is_never_a_start) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
-    MatcherOptions merge;
-    merge.durationAllowMergedNotes = true;
+    MatcherOptions merge{.durationAllowMergedNotes = true};
     AttributeMap first{{"kern", {"a"}}, {"duration", {"4"}}};
     auto count = [&](const AttributeMap& second) {
         return AttributeMatcher("kern", {first, second}, merge).findAll(chorale, 4).size();
@@ -2544,8 +2488,7 @@ TEST_CASE(matcher_phrase_merged_second_position_is_never_a_start) {
 
 TEST_CASE(matcher_phrase_merged_second_position_ends_a_phrase_with_the_written_note) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
-    MatcherOptions merge;
-    merge.durationAllowMergedNotes = true;
+    MatcherOptions merge{.durationAllowMergedNotes = true};
     AttributeMap first{{"kern", {"a"}}, {"duration", {"4"}}};
     auto count = [&](const AttributeMap& second) {
         return AttributeMatcher("kern", {first, second}, merge).findAll(chorale, 4).size();
@@ -2618,9 +2561,10 @@ TEST_CASE(matcher_a_range_is_a_key_and_its_negation_in_one_position) {
 TEST_CASE(matcher_duration_comparisons_leave_split_and_merged_notes_alone) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // The options divide notes up by or add them up to a length, which a comparison does not name.
-    MatcherOptions options;
-    options.durationAllowSplitNotes = true;
-    options.durationAllowMergedNotes = true;
+    MatcherOptions options{
+        .durationAllowSplitNotes = true,
+        .durationAllowMergedNotes = true,
+    };
     AttributeMap longer{{"duration", {{ComparisonOperator::GreaterThan, "4"}}}};
     CHECK_EQ(AttributeMatcher("kern", {longer}, options).findAll(chorale, 2).size(),
               AttributeMatcher("kern", {longer}).findAll(chorale, 2).size());
@@ -2657,8 +2601,7 @@ TEST_CASE(matcher_pitch_comparison_counts_the_octave_and_equates_enharmonics) {
     // c# and d- are the same key.
     CHECK_EQ(count("c#"), count("d-"));
     // kernIgnoreOctave has no effect on comparisons.
-    MatcherOptions ignoreOctave;
-    ignoreOctave.kernIgnoreOctave = true;
+    MatcherOptions ignoreOctave{.kernIgnoreOctave = true};
     CHECK_EQ(count("g", ignoreOctave), count("g"));
 }
 
@@ -2751,8 +2694,7 @@ TEST_CASE(matcher_compares_harmonic_interval_by_size) {
 
     // hintReduceCompound folds a tenth into a third for an equal value, but a comparison asks about the
     // size as it is in the score.
-    MatcherOptions reduce;
-    reduce.hintReduceCompound = true;
+    MatcherOptions reduce{.hintReduceCompound = true};
     CHECK_EQ(count(widerThanTenth, reduce), count(widerThanTenth));
 }
 
@@ -2892,8 +2834,7 @@ TEST_CASE(matcher_reference_to_a_group_of_voices_is_any_or_all_of_them) {
 
 TEST_CASE(matcher_plain_reference_is_the_same_pitch_as_another_voice) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    MatcherOptions ignoreOctave;
-    ignoreOctave.kernIgnoreOctave = true;
+    MatcherOptions ignoreOctave{.kernIgnoreOctave = true};
     auto count = [&](const AttributeMap& position, const MatcherOptions& options = MatcherOptions()) {
         return AttributeMatcher("kern", {position}, options).findAll(chorale, 4).size();
     };
@@ -2936,8 +2877,7 @@ TEST_CASE(matcher_refuses_a_voice_reference_it_cannot_judge) {
     CHECK_THROWS(build({{"kern", {"@5"}}}));           // no such voice
     CHECK_THROWS(build({{"kern", {"@sideways"}}}));    // no such reference
 
-    MatcherOptions splitNotes;
-    splitNotes.durationAllowSplitNotes = true;
+    MatcherOptions splitNotes{.durationAllowSplitNotes = true};
     CHECK_NOTHROW(build({{"duration", {"@2"}}}, splitNotes));
     CHECK_THROWS(build({{"!duration", {"@2"}}}, splitNotes));
 }
@@ -3260,14 +3200,11 @@ TEST_CASE(lyrics_the_melisma_of_the_soprano_note_by_note) {
 }
 
 TEST_CASE(lyrics_a_word_cannot_be_divided_up_or_compared) {
-    MatcherOptions split;
-    split.durationAllowSplitNotes = true;
+    MatcherOptions split{.durationAllowSplitNotes = true};
     CHECK_THROWS(AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}}, split));
-    MatcherOptions merged;
-    merged.durationAllowMergedNotes = true;
+    MatcherOptions merged{.durationAllowMergedNotes = true};
     CHECK_THROWS(AttributeMatcher("syl", {AttributeMap{{"syl", {"*"}}}}, merged));
-    MatcherOptions skip;
-    skip.metweightSkipUnclassified = true;
+    MatcherOptions skip{.metweightSkipUnclassified = true};
     CHECK_THROWS(AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}}, skip));
     CHECK_NOTHROW(AttributeMatcher("kern", {AttributeMap{{"word", {"*"}}}}, skip));
     CHECK_THROWS(AttributeMatcher("kern", {AttributeMap{{"word", {PatternValue(ComparisonOperator::GreaterThan, "a")}}}}));

@@ -33,15 +33,13 @@ TEST_CASE(every_segment_finds_its_own_source_by_default) {
 }
 
 TEST_CASE(every_segment_finds_its_own_source_with_exact_intervals_and_kept_ornaments) {
-    SegmentQueryOptions exact;
-    exact.ignoreIntervalQuality = false;
+    SegmentQueryOptions exact{.ignoreIntervalQuality = false};
     exact.matcherOptions.metweightSkipUnclassified = false;
     for (const std::string& id : kFixtures) CHECK_EQ(segmentsMissingTheirSource(id, exact), std::size_t{0});
 }
 
 TEST_CASE(every_segment_finds_its_own_source_with_the_inner_voices) {
-    SegmentQueryOptions inner;
-    inner.innerVoices = true;
+    SegmentQueryOptions inner{.innerVoices = true};
     SegmentQueryOptions innerWithQualities = inner;
     innerWithQualities.ignoreIntervalQuality = false;
     for (const std::string& id : kFixtures) {
@@ -52,8 +50,7 @@ TEST_CASE(every_segment_finds_its_own_source_with_the_inner_voices) {
 
 TEST_CASE(the_inner_voices_are_asked_about_as_an_exact_fb_chord_in_the_groups_only_when_asked_for) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    SegmentQueryOptions inner;
-    inner.innerVoices = true;
+    SegmentQueryOptions inner{.innerVoices = true};
     SegmentQueryOptions innerWithQualities = inner;
     innerWithQualities.ignoreIntervalQuality = false;
 
@@ -97,8 +94,7 @@ TEST_CASE(the_inner_voices_are_asked_about_as_an_exact_fb_chord_in_the_groups_on
 TEST_CASE(the_inner_voices_only_narrow_what_a_segment_finds) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    SegmentQueryOptions inner;
-    inner.innerVoices = true;
+    SegmentQueryOptions inner{.innerVoices = true};
 
     const std::vector<Segment> without = segmentScore(chorale);
     const std::vector<Segment> with = segmentScore(chorale, {}, inner);
@@ -123,8 +119,7 @@ TEST_CASE(interval_complementation_is_allowed_unless_switched_off) {
 
 TEST_CASE(interval_qualities_are_left_out_of_the_patterns_unless_asked_for) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    SegmentQueryOptions exact;
-    exact.ignoreIntervalQuality = false;
+    SegmentQueryOptions exact{.ignoreIntervalQuality = false};
 
     // A unison keeps its quality on purpose ("P1" is the repeated note, "+A1" a chromatic step).
     auto hasQuality = [](const std::string& value) {
@@ -172,15 +167,13 @@ TEST_MAIN()
 
 
 TEST_CASE(segments_still_find_their_own_source_without_phrase_positions) {
-    SegmentQueryOptions options;
-    options.includePhrase = false;
+    SegmentQueryOptions options{.includePhrase = false};
     for (const std::string& id : kFixtures) CHECK_EQ(segmentsMissingTheirSource(id, options), std::size_t{0});
 }
 
 TEST_CASE(phrase_positions_only_narrow_what_a_segment_finds) {
     SegmentQueryOptions pinned;
-    SegmentQueryOptions open;
-    open.includePhrase = false;
+    SegmentQueryOptions open{.includePhrase = false};
     for (const std::string& id : kFixtures) {
         HumdrumChorale chorale(FIXTURE_CHORALE(id));
         CorpusSearch search(chorale.path());

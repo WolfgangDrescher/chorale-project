@@ -21,7 +21,7 @@ std::string lines(const std::vector<std::string>& rows) {
 std::string startIn(const std::string& key, const std::vector<std::string>& rows) {
     hum::HumdrumFile infile;
     REQUIRE(infile.readString(lines(rows)));
-    applyModulations(infile, "test", {Modulation{"0/1", 0, hum::HumNum(1), key}});
+    applyModulations(infile, "test", {Modulation{.pos = "0/1", .measure = 0, .beat = hum::HumNum(1), .key = key}});
     std::stringstream out;
     out << infile;
     return out.str();
@@ -85,7 +85,7 @@ TEST_MAIN()
 TEST_CASE(key_left_open_is_written_as_the_unknown_key_of_humdrum) {
     hum::HumdrumFile infile;
     REQUIRE(infile.readString(lines({"**kern", "*k[]", "*C:", "=1", "4c", "4d", "*-"})));
-    applyModulations(infile, "test", {Modulation{"1/2", 1, hum::HumNum(2), "?"}});
+    applyModulations(infile, "test", {Modulation{.pos = "1/2", .measure = 1, .beat = hum::HumNum(2), .key = "?"}});
     std::stringstream out;
     out << infile;
     CHECK_EQ(out.str(), lines({"**kern", "*k[]", "*C:", "=1", "4c", "*?:", "4d", "*-"}));

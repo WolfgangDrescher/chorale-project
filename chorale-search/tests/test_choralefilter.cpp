@@ -22,14 +22,15 @@ ChoraleFilter filterOf(const char* text) {
 }
 
 ChoraleInfo someChorale() {
-    ChoraleInfo info;
-    info.id = "chor029";
-    info.titles = {"Freu dich sehr, o meine Seele", "Rejoice greatly, O my soul"};
-    info.meters = {"4/4"};
-    info.measureCount = 13;
-    info.phraseCount = 6;
-    info.key = "G";
-    info.mode = "major";
+    ChoraleInfo info{
+        .id = "chor029",
+        .titles = {"Freu dich sehr, o meine Seele", "Rejoice greatly, O my soul"},
+        .meters = {"4/4"},
+        .measureCount = 13,
+        .phraseCount = 6,
+        .key = "G",
+        .mode = "major",
+    };
     return info;
 }
 
@@ -232,7 +233,7 @@ TEST_CASE(cantus_firmus_mode_is_the_mode_the_source_states) {
     ChoraleInfo info = someChorale();
     info.key = "a";
     info.mode = "minor";
-    info.cantusFirmus = choralesearch::KeyContext{"e", "phrygian", "5"};
+    info.cantusFirmus = choralesearch::KeyContext{.key = "e", .mode = "phrygian", .keyDeg = "5"};
     CHECK(filterOf(R"({"cantusFirmusMode":"phrygian"})").matches(info));
     CHECK(!filterOf(R"({"cantusFirmusMode":"minor"})").matches(info));
     CHECK(filterOf(R"({"startMode":"minor","cantusFirmusMode":["dorian","phrygian"]})").matches(info));

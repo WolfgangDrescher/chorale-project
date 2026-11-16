@@ -30,10 +30,11 @@ using choralesearch::SimultaneousGroup;
 TEST_CASE(run_one_populates_result_fields_from_a_real_match) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path()); // corpusRoot is unused by runOne, but the constructor needs one
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     auto results = search.runOne(chorale, q);
 
     REQUIRE(results.size() == 6u);
@@ -57,10 +58,11 @@ TEST_CASE(run_reports_progress_once_per_chorale_file) {
     CorpusSearch search(fixturesDir);
     std::vector<choralesearch::SearchProgress> reports;
     search.setProgressCallback([&](const choralesearch::SearchProgress& progress) { reports.push_back(progress); });
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     search.run(q);
 
     REQUIRE(reports.size() == files);
@@ -73,21 +75,23 @@ TEST_CASE(run_reports_progress_once_per_chorale_file) {
 TEST_CASE(run_one_truncates_results_at_the_query_limit) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
-    q.limit = 2; // out of 6 available
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .limit = 2, // out of 6 available
+    };
     auto results = search.runOne(chorale, q);
     CHECK_EQ(results.size(), std::size_t{2});
 }
 
 TEST_CASE(run_searches_a_single_file_used_as_the_corpus_root) {
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     auto results = search.run(q);
     REQUIRE(results.size() == 6u);
     CHECK_EQ(results[0].choraleId, std::string("chor029"));
@@ -96,10 +100,11 @@ TEST_CASE(run_searches_a_single_file_used_as_the_corpus_root) {
 TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     auto results = search.run(q);
 
     CHECK_EQ(results.size(), std::size_t{51}); // 6 fermatas x 5 fixture chorales, plus chor005's 8, chor006's 4, chor008's 9
@@ -118,17 +123,19 @@ TEST_CASE(a_query_over_all_voice_pairs_finds_what_a_query_for_each_pair_finds_an
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
     CorpusSearch search(chorale.path());
 
-    Query all;
-    all.feature = "hint-**";
-    all.voices = "@upper";
-    all.hintReduceCompound = true;
-    all.pattern = {AttributeMap{{"hint-@pair", {"P5"}}}, AttributeMap{{"hint-@pair", {"P5"}}}};
+    Query all{
+        .feature = "hint-**",
+        .voices = "@upper",
+        .pattern = {AttributeMap{{"hint-@pair", {"P5"}}}, AttributeMap{{"hint-@pair", {"P5"}}}},
+        .hintReduceCompound = true,
+    };
     for (const char* voice : {"@lower", "@upper"}) {
-        SimultaneousGroup group;
-        group.feature = "mint";
-        group.voices = voice;
-        group.pattern = {AttributeMap{{"!kern", {"r"}}}, AttributeMap{{"mint", {"-"}}}};
-        group.simultaneousAlignment = "end";
+        SimultaneousGroup group{
+            .feature = "mint",
+            .voices = voice,
+            .pattern = {AttributeMap{{"!kern", {"r"}}}, AttributeMap{{"mint", {"-"}}}},
+            .simultaneousAlignment = "end",
+        };
         all.simultaneousWith.push_back(group);
     }
     const auto found = search.runOne(chorale, all);
@@ -176,11 +183,12 @@ TEST_CASE(a_query_over_all_voice_pairs_reads_the_pair_it_searches_at_an_earlier_
     struct Reading { const char* key; const char* reference; const char* keyOfPair; };
     for (const Reading& reading : {Reading{"hint-@pair", "#1", ""}, Reading{"hint-@pair", "#1.hint-@pair", ""},
                                    Reading{"hint-@pair.number", "#1.hint-@pair.number", ".number"}}) {
-        Query all;
-        all.feature = "hint-**";
-        all.voices = "@lower";
-        all.hintReduceCompound = true;
-        all.pattern = {AttributeMap{{"hint-@pair", {"P5", "P8"}}}, AttributeMap{{reading.key, {reading.reference}}}};
+        Query all{
+            .feature = "hint-**",
+            .voices = "@lower",
+            .pattern = {AttributeMap{{"hint-@pair", {"P5", "P8"}}}, AttributeMap{{reading.key, {reading.reference}}}},
+            .hintReduceCompound = true,
+        };
         const auto found = search.runOne(chorale, all);
         REQUIRE(!found.empty());
 
@@ -204,10 +212,11 @@ TEST_CASE(a_query_over_a_set_of_voice_pairs_only_searches_the_pairs_of_the_set_a
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
     CorpusSearch search(chorale.path());
 
-    Query withSoprano;
-    withSoprano.feature = "hint-*4";
-    withSoprano.voices = "@upper";
-    withSoprano.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
+    Query withSoprano{
+        .feature = "hint-*4",
+        .voices = "@upper",
+        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+    };
     const auto found = search.runOne(chorale, withSoprano);
     REQUIRE(found.size() > 2u);
     for (const Result& r : found) {
@@ -228,10 +237,11 @@ TEST_CASE(a_set_of_voice_pairs_is_the_pairs_whose_lower_and_upper_voice_match_th
     for (const auto& [set, pairs] : std::vector<std::pair<std::string, std::set<std::string>>>{
              {"hint-2*", {"hint-23", "hint-24"}}, {"hint-*2", {"hint-12"}}, {"hint-1*", {"hint-12", "hint-13", "hint-14"}},
              {"hint-4*", {}}}) {
-        Query query;
-        query.feature = set;
-        query.voices = "@upper";
-        query.pattern = {AttributeMap{{"hint-@pair", {"*"}}}};
+        Query query{
+            .feature = set,
+            .voices = "@upper",
+            .pattern = {AttributeMap{{"hint-@pair", {"*"}}}},
+        };
         std::set<std::string> found;
         for (const Result& r : search.runOne(chorale, query)) found.insert(r.feature);
         CHECK(found == pairs);
@@ -244,10 +254,11 @@ TEST_CASE(a_query_over_all_voice_pairs_that_names_no_voice_finds_each_interval_o
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
     CorpusSearch search(chorale.path());
 
-    Query upper;
-    upper.feature = "hint-**";
-    upper.voices = "@upper";
-    upper.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
+    Query upper{
+        .feature = "hint-**",
+        .voices = "@upper",
+        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+    };
     Query all = upper;
     all.voices = "all";
     const auto expected = search.runOne(chorale, upper);
@@ -262,9 +273,10 @@ TEST_CASE(a_query_over_voice_pairs_reads_each_pair_once_and_keeps_another_set_an
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
     CorpusSearch search(chorale.path());
 
-    Query query;
-    query.feature = "hint-**";
-    query.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
+    Query query{
+        .feature = "hint-**",
+        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+    };
     const auto once = search.runOne(chorale, query);
     REQUIRE(!once.empty());
     for (const char* voices : {"ALL", "", "1234"}) {
@@ -272,9 +284,10 @@ TEST_CASE(a_query_over_voice_pairs_reads_each_pair_once_and_keeps_another_set_an
         CHECK_EQ(search.runOne(chorale, query).size(), once.size());
     }
 
-    Query anyPair;
-    anyPair.feature = "hint-*4";
-    anyPair.pattern = {AttributeMap{{"hint-@pair", {"*"}}, {"hint-**", {"P5"}}}};
+    Query anyPair{
+        .feature = "hint-*4",
+        .pattern = {AttributeMap{{"hint-@pair", {"*"}}, {"hint-**", {"P5"}}}},
+    };
     Query ownPair = anyPair;
     ownPair.pattern = {AttributeMap{{"hint-@pair", {"P5"}}}};
     CHECK(search.runOne(chorale, anyPair).size() > search.runOne(chorale, ownPair).size());
@@ -285,10 +298,11 @@ TEST_CASE(run_searches_the_voice_pairs_of_the_chorales_of_the_filter_up_to_the_l
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
 
-    Query query;
-    query.feature = "hint-**";
-    query.pattern = {AttributeMap{{"hint-@pair", {"P8"}}}};
-    query.choraleFilter.ids = {ChoraleIdRange{"8", 8, 8}};
+    Query query{
+        .feature = "hint-**",
+        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+    };
+    query.choraleFilter.ids = {ChoraleIdRange{.text = "8", .first = 8, .last = 8}};
     const auto found = search.run(query);
     REQUIRE(!found.empty());
     for (const Result& r : found) CHECK_EQ(r.choraleId, std::string("chor008"));
@@ -305,10 +319,11 @@ TEST_CASE(a_result_links_the_section_of_the_voice_searched_and_the_sections_of_i
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query fermatas;
-    fermatas.feature = "kern";
-    fermatas.voices = "soprano";
-    fermatas.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    Query fermatas{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     for (const Result& r : search.runOne(chorale, fermatas)) {
         REQUIRE(r.linkedSections.size() == 1u);
         CHECK_EQ(r.linkedSections[0].feature, std::string("kern"));
@@ -319,10 +334,11 @@ TEST_CASE(a_result_links_the_section_of_the_voice_searched_and_the_sections_of_i
     }
 
     // With the bass under it: the note the bass attacks on the same line.
-    SimultaneousGroup bass;
-    bass.feature = "kern";
-    bass.voices = "bass";
-    bass.pattern = {AttributeMap{{"kern", {"*"}}}};
+    SimultaneousGroup bass{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
     fermatas.simultaneousWith = {bass};
     const auto withBass = search.runOne(chorale, fermatas);
     REQUIRE(!withBass.empty());
@@ -339,10 +355,11 @@ TEST_CASE(a_result_of_a_pair_spine_or_a_hint_voice_key_links_the_voices_of_the_p
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query pair;
-    pair.feature = "hint-14";
-    pair.voices = "bass";
-    pair.pattern = {AttributeMap{{"hint-14", {"*"}}}, AttributeMap{{"hint-14", {"*"}}}};
+    Query pair{
+        .feature = "hint-14",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"hint-14", {"*"}}}, AttributeMap{{"hint-14", {"*"}}}},
+    };
     const auto found = search.runOne(chorale, pair);
     REQUIRE(!found.empty());
     for (const Result& r : found) {
@@ -359,10 +376,11 @@ TEST_CASE(a_result_of_a_pair_spine_or_a_hint_voice_key_links_the_voices_of_the_p
     }
 
     // The alto with the tenor: the walked voice and the voice of the key.
-    Query key;
-    key.feature = "kern";
-    key.voices = "alto";
-    key.pattern = {AttributeMap{{"hint-2", {"*"}}}};
+    Query key{
+        .feature = "kern",
+        .voices = "alto",
+        .pattern = {AttributeMap{{"hint-2", {"*"}}}},
+    };
     const auto withTenor = search.runOne(chorale, key);
     REQUIRE(!withTenor.empty());
     for (const Result& r : withTenor) {
@@ -380,11 +398,12 @@ TEST_CASE(a_hint_voice_key_links_the_other_voice_at_the_positions_that_name_it_o
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query query;
-    query.feature = "kern";
-    query.voices = "alto";
-    query.pattern = {AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}, AttributeMap{{"kern", {"*"}}},
-                     AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}};
+    Query query{
+        .feature = "kern",
+        .voices = "alto",
+        .pattern = {AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}, AttributeMap{{"kern", {"*"}}},
+                    AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}},
+    };
     const auto found = search.runOne(chorale, query);
     REQUIRE(found.size() > 2u);
     for (const Result& r : found) {
@@ -409,15 +428,17 @@ TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query fermatas;
-    fermatas.feature = "kern";
-    fermatas.voices = "soprano";
-    fermatas.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    Query fermatas{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
-    SimultaneousGroup pair;
-    pair.feature = "hint-23";
-    pair.voices = "alto";
-    pair.pattern = {AttributeMap{{"hint-23", {"*"}}}};
+    SimultaneousGroup pair{
+        .feature = "hint-23",
+        .voices = "alto",
+        .pattern = {AttributeMap{{"hint-23", {"*"}}}},
+    };
     Query withPair = fermatas;
     withPair.simultaneousWith = {pair};
     const auto foundWithPair = search.runOne(chorale, withPair);
@@ -430,10 +451,11 @@ TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_
         CHECK(linked == (std::set<std::size_t>{2, 3}));
     }
 
-    SimultaneousGroup key;
-    key.feature = "kern";
-    key.voices = "tenor";
-    key.pattern = {AttributeMap{{"hint-1", {"*"}}}};
+    SimultaneousGroup key{
+        .feature = "kern",
+        .voices = "tenor",
+        .pattern = {AttributeMap{{"hint-1", {"*"}}}},
+    };
     Query withKey = fermatas;
     withKey.simultaneousWith = {key};
     const auto foundWithKey = search.runOne(chorale, withKey);
@@ -444,10 +466,11 @@ TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_
         CHECK(linked == (std::set<std::size_t>{1, 2, 4}));
     }
 
-    SimultaneousGroup everyVoice;
-    everyVoice.feature = "kern";
-    everyVoice.voices = "all";
-    everyVoice.pattern = {AttributeMap{{"kern", {"*"}}}};
+    SimultaneousGroup everyVoice{
+        .feature = "kern",
+        .voices = "all",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
     Query withEveryVoice = fermatas;
     withEveryVoice.simultaneousWith = {everyVoice};
     const auto foundWithEveryVoice = search.runOne(chorale, withEveryVoice);
@@ -467,16 +490,18 @@ TEST_CASE(a_melodic_interval_from_the_note_before_begins_its_section_at_that_not
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query query;
-    query.feature = "mint";
-    query.voices = "soprano";
-    query.mintStartAtPreviousToken = true;
-    query.pattern = {AttributeMap{{"mint", {"+"}}}};
-    SimultaneousGroup bass;
-    bass.feature = "mint";
-    bass.voices = "bass";
-    bass.pattern = {AttributeMap{{"mint", {"-"}}}};
-    bass.simultaneousAlignment = "end";
+    Query query{
+        .feature = "mint",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"mint", {"+"}}}},
+        .mintStartAtPreviousToken = true,
+    };
+    SimultaneousGroup bass{
+        .feature = "mint",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"mint", {"-"}}}},
+        .simultaneousAlignment = "end",
+    };
     query.simultaneousWith = {bass};
     const auto found = search.runOne(chorale, query);
     REQUIRE(!found.empty());
@@ -496,11 +521,12 @@ TEST_CASE(an_fb_key_links_the_voices_that_make_its_figure_at_the_position_that_n
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query query;
-    query.feature = "kern";
-    query.voices = "bass";
-    query.pattern = {AttributeMap{{"deg", {"3"}}}, AttributeMap{{"deg", {"4"}}},
-                     AttributeMap{{"deg", {"5"}}, {"fb", {"4"}}}, AttributeMap{{"deg", {"1"}}, {"fermata", {"true"}}}};
+    Query query{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"deg", {"3"}}}, AttributeMap{{"deg", {"4"}}},
+                    AttributeMap{{"deg", {"5"}}, {"fb", {"4"}}}, AttributeMap{{"deg", {"1"}}, {"fermata", {"true"}}}},
+    };
     const auto found = search.runOne(chorale, query);
     REQUIRE(!found.empty());
     bool foundTheAlto = false;
@@ -532,11 +558,12 @@ TEST_CASE(a_set_of_voice_pairs_links_the_voices_of_the_pairs_whose_interval_it_n
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query query;
-    query.feature = "kern";
-    query.voices = "soprano";
-    query.hintReduceCompound = true;
-    query.pattern = {AttributeMap{{"kern", {"*"}}, {"hint-1*", {"4"}}}};
+    Query query{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"kern", {"*"}}, {"hint-1*", {"4"}}}},
+        .hintReduceCompound = true,
+    };
     const auto found = search.runOne(chorale, query);
     REQUIRE(!found.empty());
     bool foundQuarter48 = false;
@@ -570,14 +597,16 @@ TEST_CASE(an_fb_key_of_a_simultaneous_entry_covers_no_voice) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query query;
-    query.feature = "kern";
-    query.voices = "alto";
-    query.pattern = {AttributeMap{{"kern", {"*"}}}};
-    SimultaneousGroup figures;
-    figures.feature = "fb";
-    figures.voices = "bass";
-    figures.pattern = {AttributeMap{{"fb", {"4"}}}};
+    Query query{
+        .feature = "kern",
+        .voices = "alto",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
+    SimultaneousGroup figures{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fb", {"4"}}}},
+    };
     query.simultaneousWith = {figures};
     const auto found = search.runOne(chorale, query);
     REQUIRE(!found.empty());
@@ -595,10 +624,11 @@ TEST_CASE(a_hint_pair_key_links_both_voices_of_the_pair_at_the_position_that_nam
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
 
-    Query query;
-    query.feature = "kern";
-    query.voices = "alto";
-    query.pattern = {AttributeMap{{"kern", {"*"}}, {"hint-14", {"*"}}}, AttributeMap{{"kern", {"*"}}}};
+    Query query{
+        .feature = "kern",
+        .voices = "alto",
+        .pattern = {AttributeMap{{"kern", {"*"}}, {"hint-14", {"*"}}}, AttributeMap{{"kern", {"*"}}}},
+    };
     const auto found = search.runOne(chorale, query);
     REQUIRE(!found.empty());
     for (const Result& r : found) {
@@ -626,11 +656,12 @@ TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
     // unique to CorpusSearch::run, not something a single-file test (or AttributeMatcher) can show.
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
-    q.limit = 8;
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .limit = 8,
+    };
     auto results = search.run(q);
 
     REQUIRE(results.size() == 8u);
@@ -640,10 +671,11 @@ TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
 
 TEST_CASE(run_with_a_single_query_never_sets_query_id) {
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     auto results = search.run(q); // the plain Query overload, not the vector<Query> one
 
     REQUIRE(!results.empty());
@@ -654,16 +686,18 @@ TEST_CASE(run_with_multiple_queries_tags_each_result_with_its_own_id_or_index) {
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
 
-    Query withId;
-    withId.id = "sopranoFermatas";
-    withId.feature = "kern";
-    withId.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    withId.voices = "soprano";
+    Query withId{
+        .id = "sopranoFermatas",
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
-    Query withoutId;
-    withoutId.feature = "kern";
-    withoutId.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    withoutId.voices = "bass";
+    Query withoutId{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
     auto results = search.run(std::vector<Query>{withId, withoutId});
 
@@ -683,19 +717,21 @@ TEST_CASE(run_with_multiple_queries_respects_each_querys_own_limit_independently
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
 
-    Query capped3;
-    capped3.id = "capped3";
-    capped3.feature = "kern";
-    capped3.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    capped3.voices = "soprano";
-    capped3.limit = 3;
+    Query capped3{
+        .id = "capped3",
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .limit = 3,
+    };
 
-    Query capped5;
-    capped5.id = "capped5";
-    capped5.feature = "kern";
-    capped5.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    capped5.voices = "soprano";
-    capped5.limit = 5;
+    Query capped5{
+        .id = "capped5",
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .limit = 5,
+    };
 
     auto results = search.run(std::vector<Query>{capped3, capped5});
 
@@ -710,24 +746,27 @@ TEST_CASE(run_with_multiple_queries_respects_each_querys_own_limit_independently
 
 TEST_CASE(run_throws_when_the_corpus_root_does_not_exist) {
     CorpusSearch search("/nonexistent/corpus/root");
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    Query q{
+        .feature = "kern",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
     CHECK_THROWS(search.run(q));
 }
 
 TEST_CASE(simultaneous_with_default_alignment_keeps_matches_that_align_with_the_group) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "bass";
-    group.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     q.simultaneousWith = {group};
 
     auto results = search.runOne(chorale, q);
@@ -737,15 +776,17 @@ TEST_CASE(simultaneous_with_default_alignment_keeps_matches_that_align_with_the_
 TEST_CASE(simultaneous_with_group_that_never_matches_filters_out_every_result) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "alto";
-    group.pattern = {AttributeMap{{"kern", {"r"}}}}; // no rests anywhere in this chorale
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "alto",
+        .pattern = {AttributeMap{{"kern", {"r"}}}}, // no rests anywhere in this chorale
+    };
     q.simultaneousWith = {group};
 
     auto results = search.runOne(chorale, q);
@@ -755,20 +796,23 @@ TEST_CASE(simultaneous_with_group_that_never_matches_filters_out_every_result) {
 TEST_CASE(simultaneous_with_requires_every_group_to_have_a_match) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
-    SimultaneousGroup alwaysAligns;
-    alwaysAligns.feature = "kern";
-    alwaysAligns.voices = "bass";
-    alwaysAligns.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    SimultaneousGroup alwaysAligns{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
-    SimultaneousGroup neverMatches;
-    neverMatches.feature = "kern";
-    neverMatches.voices = "alto";
-    neverMatches.pattern = {AttributeMap{{"kern", {"r"}}}};
+    SimultaneousGroup neverMatches{
+        .feature = "kern",
+        .voices = "alto",
+        .pattern = {AttributeMap{{"kern", {"r"}}}},
+    };
 
     q.simultaneousWith = {alwaysAligns, neverMatches};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // the second group has no match
@@ -780,16 +824,18 @@ TEST_CASE(simultaneous_with_requires_every_group_to_have_a_match) {
 TEST_CASE(simultaneous_alignment_start_only_checks_the_matchs_start_position) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}};
-    q.simultaneousAlignment = "start"; // default, set explicitly for clarity
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .simultaneousAlignment = "start", // default, set explicitly for clarity
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "bass";
-    group.pattern = {AttributeMap{{"kern", {"G"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"G"}}}},
+    };
     q.simultaneousWith = {group};
 
     auto results = search.runOne(chorale, q);
@@ -800,16 +846,18 @@ TEST_CASE(simultaneous_alignment_start_only_checks_the_matchs_start_position) {
 TEST_CASE(simultaneous_alignment_end_only_checks_the_matchs_end_position) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}};
-    q.simultaneousAlignment = "end";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .simultaneousAlignment = "end",
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "bass";
-    group.pattern = {AttributeMap{{"kern", {"F#"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"F#"}}}},
+    };
     q.simultaneousWith = {group};
 
     auto results = search.runOne(chorale, q);
@@ -821,16 +869,18 @@ TEST_CASE(simultaneous_alignment_end_only_checks_the_matchs_end_position) {
 TEST_CASE(simultaneous_alignment_start_end_requires_both_positions_at_once) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}};
-    q.simultaneousAlignment = "start-end";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .simultaneousAlignment = "start-end",
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "bass";
-    group.pattern = {AttributeMap{{"kern", {"G"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"G"}}}},
+    };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0});
 
@@ -848,16 +898,18 @@ TEST_CASE(simultaneous_alignment_start_end_matches_when_both_patterns_are_single
     // identical -- "start-end" behaves exactly like the "start" default here.
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
-    q.simultaneousAlignment = "start-end";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .simultaneousAlignment = "start-end",
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "bass";
-    group.pattern = {AttributeMap{{"fermata", {"true"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     q.simultaneousWith = {group};
 
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{6});
@@ -866,17 +918,19 @@ TEST_CASE(simultaneous_alignment_start_end_matches_when_both_patterns_are_single
 TEST_CASE(simultaneous_with_group_can_override_the_querys_simultaneous_alignment) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}};
-    q.simultaneousAlignment = "end"; // would find nothing against bass "G" (see test above)
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .simultaneousAlignment = "end", // would find nothing against bass "G" (see test above)
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "bass";
-    group.pattern = {AttributeMap{{"kern", {"G"}}}};
-    group.simultaneousAlignment = "start"; // override back to "start" for this group only
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"G"}}}},
+        .simultaneousAlignment = "start", // override back to "start" for this group only
+    };
     q.simultaneousWith = {group};
 
     auto results = search.runOne(chorale, q);
@@ -890,15 +944,17 @@ TEST_CASE(simultaneous_with_group_can_override_kern_ignore_octave) {
     // together, whether that comes from the group's own override or an inherited query value.
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "bass";
-    group.pattern = {AttributeMap{{"kern", {"g"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"g"}}}},
+    };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
 
@@ -913,15 +969,17 @@ TEST_CASE(simultaneous_with_group_can_override_kern_ignore_octave) {
 TEST_CASE(simultaneous_with_group_can_override_hint_reduce_compound) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "hint-14";
-    q.voices = "1";
-    q.pattern = {AttributeMap{{"hint-14", {"*"}}}};
+    Query q{
+        .feature = "hint-14",
+        .voices = "1",
+        .pattern = {AttributeMap{{"hint-14", {"*"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "hint-14";
-    group.voices = "1";
-    group.pattern = {AttributeMap{{"hint-14", {"M3"}}}};
+    SimultaneousGroup group{
+        .feature = "hint-14",
+        .voices = "1",
+        .pattern = {AttributeMap{{"hint-14", {"M3"}}}},
+    };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
 
@@ -936,15 +994,17 @@ TEST_CASE(simultaneous_with_group_can_override_hint_reduce_compound) {
 TEST_CASE(simultaneous_with_group_can_override_duration_allow_split_notes) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "3";
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "3",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "3";
-    group.pattern = {AttributeMap{{"kern", {"d"}}, {"duration", {"2"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "3",
+        .pattern = {AttributeMap{{"kern", {"d"}}, {"duration", {"2"}}}},
+    };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{3}); // neither overridden nor inherited
 
@@ -959,19 +1019,21 @@ TEST_CASE(simultaneous_with_group_can_override_duration_allow_split_notes) {
 TEST_CASE(simultaneous_with_group_can_override_duration_allow_merged_notes) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor009"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "4";
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "4",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "4";
-    // The soprano's two cadences written as a half note a plus the fermata g, asked for as
-    // three quarters.
-    group.pattern = {AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-                      AttributeMap{{"duration", {"4"}}},
-                      AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "4",
+        // The soprano's two cadences written as a half note a plus the fermata g, asked for as
+        // three quarters.
+        .pattern = {AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+                    AttributeMap{{"duration", {"4"}}},
+                    AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}},
+    };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
 
@@ -986,19 +1048,21 @@ TEST_CASE(simultaneous_with_group_can_override_duration_allow_merged_notes) {
 TEST_CASE(simultaneous_with_group_can_override_metweight_skip_unclassified) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor005"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "4";
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "4",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "4";
-    // The soprano's cadence in measure 4 with its offbeat neighbour note folded away, so the
-    // two a's it decorates are adjacent -- see test_fixture_results.cpp.
-    group.pattern = {AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
-                      AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
-                      AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}};
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "4",
+        // The soprano's cadence in measure 4 with its offbeat neighbour note folded away, so the
+        // two a's it decorates are adjacent -- see test_fixture_results.cpp.
+        .pattern = {AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
+                    AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
+                    AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
+    };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
 
@@ -1013,15 +1077,17 @@ TEST_CASE(simultaneous_with_group_can_override_metweight_skip_unclassified) {
 TEST_CASE(simultaneous_with_group_can_override_mint_allow_interval_complementation) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "mint";
-    q.voices = "1";
-    q.pattern = {AttributeMap{{"mint", {"+4"}}}};
+    Query q{
+        .feature = "mint",
+        .voices = "1",
+        .pattern = {AttributeMap{{"mint", {"+4"}}}},
+    };
 
-    SimultaneousGroup group;
-    group.feature = "mint";
-    group.voices = "1";
-    group.pattern = {AttributeMap{{"mint", {"-5"}}}}; // never true where the primary "+4" is
+    SimultaneousGroup group{
+        .feature = "mint",
+        .voices = "1",
+        .pattern = {AttributeMap{{"mint", {"-5"}}}}, // never true where the primary "+4" is
+    };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
     
@@ -1039,11 +1105,12 @@ TEST_CASE(simultaneous_with_group_can_override_mint_allow_interval_complementati
 TEST_CASE(for_each_match_visits_the_same_matches_run_collects_with_their_chorale) {
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
-    Query q;
-    q.id = "fermatas";
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .id = "fermatas",
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
     std::size_t visited = 0;
     bool choraleMatchesResult = true;
@@ -1062,10 +1129,11 @@ TEST_CASE(for_each_match_visits_the_same_matches_run_collects_with_their_chorale
 
 TEST_CASE(a_result_has_the_onset_of_every_position_of_the_pattern) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "deg";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"deg", {"*"}}}, AttributeMap{{"deg", {"*"}}, {"fermata", {"true"}}}};
+    Query q{
+        .feature = "deg",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"deg", {"*"}}}, AttributeMap{{"deg", {"*"}}, {"fermata", {"true"}}}},
+    };
 
     const std::vector<Result> results = search.run(q);
     REQUIRE(!results.empty());
@@ -1083,10 +1151,11 @@ TEST_CASE(for_each_match_visits_one_file_at_a_time_and_in_file_order) {
     // order, with the chorale the match was found in.
     auto fixturesDir = std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path();
     CorpusSearch search(fixturesDir);
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
     std::atomic<int> visiting{0};
     bool neverTwoAtOnce = true;
@@ -1116,10 +1185,11 @@ TEST_CASE(run_throws_for_a_file_that_cannot_be_parsed) {
     std::ofstream(corpus / "chor0050.krn") << "this is not humdrum\n";
 
     CorpusSearch search(corpus);
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     bool threw = false;
     try {
         minitest::SilenceStderr silence; // humlib writes what it cannot parse to stderr
@@ -1133,10 +1203,11 @@ TEST_CASE(run_throws_for_a_file_that_cannot_be_parsed) {
 
 TEST_CASE(chorale_filter_without_filters_searches_every_chorale) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
     found.clear();
@@ -1149,13 +1220,14 @@ TEST_CASE(chorale_filter_without_filters_searches_every_chorale) {
 
 TEST_CASE(chorale_filter_ids_and_excluded_ids_pick_the_chorales_searched) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
-    q.choraleFilter.ids = {ChoraleIdRange{"29", 29, 29}, ChoraleIdRange{"chor039", 39, 39}};
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "29", .first = 29, .last = 29}, ChoraleIdRange{.text = "chor039", .first = 39, .last = 39}};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
@@ -1163,8 +1235,8 @@ TEST_CASE(chorale_filter_ids_and_excluded_ids_pick_the_chorales_searched) {
     CHECK_EQ(found, (std::vector<std::string>{"chor029", "chor039"}));
 
     q.choraleFilter = {};
-    q.choraleFilter.ids = {ChoraleIdRange{"5-9", 5, 9}};
-    q.choraleFilter.excludeIds = {ChoraleIdRange{"006", 6, 6}};
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "5-9", .first = 5, .last = 9}};
+    q.choraleFilter.excludeIds = {ChoraleIdRange{.text = "006", .first = 6, .last = 6}};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
@@ -1172,7 +1244,7 @@ TEST_CASE(chorale_filter_ids_and_excluded_ids_pick_the_chorales_searched) {
     CHECK_EQ(found, (std::vector<std::string>{"chor005", "chor008", "chor009"}));
 
     q.choraleFilter = {};
-    q.choraleFilter.excludeIds = {ChoraleIdRange{"1-100", 1, 100}};
+    q.choraleFilter.excludeIds = {ChoraleIdRange{.text = "1-100", .first = 1, .last = 100}};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
@@ -1180,16 +1252,17 @@ TEST_CASE(chorale_filter_ids_and_excluded_ids_pick_the_chorales_searched) {
     CHECK_EQ(found, (std::vector<std::string>{"chor103"}));
 
     q.choraleFilter = {};
-    q.choraleFilter.ids = {ChoraleIdRange{"2", 2, 2}};
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "2", .first = 2, .last = 2}};
     CHECK(search.run(q).empty());
 }
 
 TEST_CASE(chorale_filter_title_finds_a_chorale_by_a_word_of_either_title_without_regard_to_case) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
     // chor103 is "Nun ruhen alle W&auml;lder" in the file
@@ -1217,10 +1290,11 @@ TEST_CASE(chorale_filter_title_finds_a_chorale_by_a_word_of_either_title_without
 
 TEST_CASE(chorale_filter_meter_and_counts_pick_the_chorales_searched) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
     q.choraleFilter.meter = {"3/4", "2/2"};
@@ -1231,21 +1305,21 @@ TEST_CASE(chorale_filter_meter_and_counts_pick_the_chorales_searched) {
     CHECK_EQ(found, (std::vector<std::string>{"chor001"}));
 
     q.choraleFilter = {};
-    q.choraleFilter.measureCount = CountRange{17, std::nullopt};
+    q.choraleFilter.measureCount = CountRange{.min = 17};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
     }
     CHECK_EQ(found, (std::vector<std::string>{"chor001", "chor005", "chor008"}));
 
-    q.choraleFilter.measureCount = CountRange{std::nullopt, 8};
+    q.choraleFilter.measureCount = CountRange{.max = 8};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
     }
     CHECK_EQ(found, (std::vector<std::string>{"chor006"}));
 
-    q.choraleFilter.measureCount = CountRange{13, 13};
+    q.choraleFilter.measureCount = CountRange{.min = 13, .max = 13};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
@@ -1253,14 +1327,14 @@ TEST_CASE(chorale_filter_meter_and_counts_pick_the_chorales_searched) {
     CHECK_EQ(found, (std::vector<std::string>{"chor029"}));
 
     q.choraleFilter = {};
-    q.choraleFilter.phraseCount = CountRange{8, std::nullopt};
+    q.choraleFilter.phraseCount = CountRange{.min = 8};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
     }
     CHECK_EQ(found, (std::vector<std::string>{"chor005", "chor008"}));
 
-    q.choraleFilter.phraseCount = CountRange{4, 4};
+    q.choraleFilter.phraseCount = CountRange{.min = 4, .max = 4};
     found.clear();
     for (const Result& result : search.run(q)) {
         if (found.empty() || found.back() != result.choraleId) found.push_back(result.choraleId);
@@ -1270,10 +1344,11 @@ TEST_CASE(chorale_filter_meter_and_counts_pick_the_chorales_searched) {
 
 TEST_CASE(chorale_filter_key_and_mode_are_those_a_chorale_starts_in) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
     // chor001 modulates to e minor, but starts in G major
@@ -1311,7 +1386,7 @@ TEST_CASE(chorale_filter_key_and_mode_are_those_a_chorale_starts_in) {
 
     q.choraleFilter = {};
     q.choraleFilter.startMode = {"major"};
-    q.choraleFilter.phraseCount = CountRange{6, 6};
+    q.choraleFilter.phraseCount = CountRange{.min = 6, .max = 6};
     q.choraleFilter.meter = {"4/4"};
     q.choraleFilter.startKey = {"G", "B-"};
     found.clear();
@@ -1323,17 +1398,18 @@ TEST_CASE(chorale_filter_key_and_mode_are_those_a_chorale_starts_in) {
 
 TEST_CASE(chorale_filter_leaves_the_matches_of_the_chorales_it_lets_in_as_they_are) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
     std::vector<Result> expected;
     for (const Result& result : search.run(q)) {
         if (result.choraleId == "chor008" || result.choraleId == "chor029") expected.push_back(result);
     }
 
-    q.choraleFilter.ids = {ChoraleIdRange{"8", 8, 8}, ChoraleIdRange{"29", 29, 29}};
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "8", .first = 8, .last = 8}, ChoraleIdRange{.text = "29", .first = 29, .last = 29}};
     std::vector<Result> filtered = search.run(q);
     REQUIRE(filtered.size() == expected.size());
     for (std::size_t i = 0; i < filtered.size(); ++i) {
@@ -1345,11 +1421,12 @@ TEST_CASE(chorale_filter_leaves_the_matches_of_the_chorales_it_lets_in_as_they_a
 
 TEST_CASE(chorale_filter_applies_before_the_limit_counts) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
-    q.choraleFilter.ids = {ChoraleIdRange{"29-39", 29, 39}};
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "29-39", .first = 29, .last = 39}};
     q.limit = 8;
 
     std::vector<Result> results = search.run(q);
@@ -1361,18 +1438,19 @@ TEST_CASE(chorale_filter_applies_before_the_limit_counts) {
 
 TEST_CASE(every_query_of_a_combined_run_has_a_chorale_filter_of_its_own) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query minor;
-    minor.id = "minor";
-    minor.feature = "kern";
-    minor.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    minor.voices = "soprano";
+    Query minor{
+        .id = "minor",
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
     Query dorian = minor;
     dorian.id = "dorian";
     Query one = minor;
     one.id = "one";
     minor.choraleFilter.startMode = {"minor"};
     dorian.choraleFilter.startMode = {"dorian"};
-    one.choraleFilter.ids = {ChoraleIdRange{"103", 103, 103}};
+    one.choraleFilter.ids = {ChoraleIdRange{.text = "103", .first = 103, .last = 103}};
 
     std::map<std::string, std::vector<std::string>> chorales; // by the id of the query
     for (const Result& result : search.run(std::vector<Query>{minor, dorian, one})) {
@@ -1388,11 +1466,12 @@ TEST_CASE(chorale_filter_ids_leave_the_other_files_unopened_and_out_of_the_progr
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
     std::vector<choralesearch::SearchProgress> reports;
     search.setProgressCallback([&](const choralesearch::SearchProgress& progress) { reports.push_back(progress); });
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
-    q.choraleFilter.ids = {ChoraleIdRange{"1", 1, 1}, ChoraleIdRange{"5", 5, 5}};
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "1", .first = 1, .last = 1}, ChoraleIdRange{.text = "5", .first = 5, .last = 5}};
     search.run(q);
     REQUIRE(reports.size() == 2u);
     CHECK_EQ(reports[0].choralesTotal, std::size_t{2});
@@ -1403,7 +1482,7 @@ TEST_CASE(chorale_filter_ids_leave_the_other_files_unopened_and_out_of_the_progr
     reports.clear();
     Query one = q;
     one.choraleFilter = {};
-    one.choraleFilter.ids = {ChoraleIdRange{"1", 1, 1}};
+    one.choraleFilter.ids = {ChoraleIdRange{.text = "1", .first = 1, .last = 1}};
     Query other = q;
     other.choraleFilter = {};
     other.choraleFilter.startMode = {"minor"};
@@ -1413,10 +1492,11 @@ TEST_CASE(chorale_filter_ids_leave_the_other_files_unopened_and_out_of_the_progr
 
 TEST_CASE(chorale_filter_applies_to_for_each_match_and_to_run_one) {
     CorpusSearch search(std::filesystem::path(FIXTURE_CHORALE("chor029")).parent_path());
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"fermata", {"true"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+    };
 
     Query minor = q;
     minor.choraleFilter.startMode = {"minor"};
@@ -1429,11 +1509,11 @@ TEST_CASE(chorale_filter_applies_to_for_each_match_and_to_run_one) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CHECK(!search.runOne(chorale, q).empty());
 
-    q.choraleFilter.ids = {ChoraleIdRange{"29", 29, 29}};
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "29", .first = 29, .last = 29}};
     q.choraleFilter.startMode = {"major"};
     CHECK(!search.runOne(chorale, q).empty());
 
-    q.choraleFilter.ids = {ChoraleIdRange{"30", 30, 30}};
+    q.choraleFilter.ids = {ChoraleIdRange{.text = "30", .first = 30, .last = 30}};
     CHECK(search.runOne(chorale, q).empty());
 
     q.choraleFilter = {};
@@ -1447,10 +1527,11 @@ TEST_MAIN()
 TEST_CASE(a_query_that_reads_the_lyrics_is_run_once_and_its_results_say_the_verses) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"word", {"*"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"word", {"*"}}}},
+    };
     const auto results = search.run(q);
     // Every soprano note has text in verse 1, the 16 up to the repeat in verse 2 as well.
     REQUIRE(results.size() == 46u);
@@ -1478,10 +1559,11 @@ TEST_CASE(a_query_that_reads_the_lyrics_is_run_once_and_its_results_say_the_vers
 TEST_CASE(a_query_that_reads_no_lyrics_has_results_without_verses) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
     const auto results = search.run(q);
     CHECK_EQ(results.size(), std::size_t{46});
     for (const Result& r : results) CHECK(r.verses.empty());
@@ -1490,14 +1572,16 @@ TEST_CASE(a_query_that_reads_no_lyrics_has_results_without_verses) {
 TEST_CASE(a_group_that_reads_the_lyrics_lines_up_with_the_notes_of_the_words) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "kern";
-    q.voices = "bass";
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
-    SimultaneousGroup group;
-    group.feature = "word";
-    group.voices = "soprano";
-    group.pattern = {AttributeMap{{"word", {"Grunde", "Morgenstunde"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"*"}}}},
+    };
+    SimultaneousGroup group{
+        .feature = "word",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"word", {"Grunde", "Morgenstunde"}}}},
+    };
     q.simultaneousWith = {group};
     const auto results = search.run(q);
     // The bass notes where "Grun-" (verse 1) and "Mor-" (verse 2) start.
@@ -1510,14 +1594,16 @@ TEST_CASE(a_group_that_reads_the_lyrics_holds_in_a_verse_the_match_holds_in) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     CorpusSearch search(chorale.path());
     // Line 27 sings "Her-" in verse 1 and "Mor-" in verse 2.
-    Query q;
-    q.feature = "kern";
-    q.voices = "bass";
-    q.pattern = {AttributeMap{{"kern", {"*"}}, {"syl", {"her"}}}};
-    SimultaneousGroup group;
-    group.feature = "kern";
-    group.voices = "soprano";
-    group.pattern = {AttributeMap{{"syl", {"mor"}}}};
+    Query q{
+        .feature = "kern",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"kern", {"*"}}, {"syl", {"her"}}}},
+    };
+    SimultaneousGroup group{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"syl", {"mor"}}}},
+    };
     q.simultaneousWith = {group};
     CHECK(search.run(q).empty());
     group.pattern = {AttributeMap{{"syl", {"her"}}}};
@@ -1538,10 +1624,11 @@ TEST_CASE(a_group_that_reads_the_lyrics_holds_in_a_verse_the_match_holds_in) {
 TEST_CASE(a_chorale_without_lyrics_has_no_matches_for_a_query_that_reads_them) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor006"));
     CorpusSearch search(chorale.path());
-    Query q;
-    q.feature = "word";
-    q.voices = "soprano";
-    q.pattern = {AttributeMap{{"word", {"*"}}}};
+    Query q{
+        .feature = "word",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"word", {"*"}}}},
+    };
     CHECK(search.runOne(chorale, q).empty());
     q.feature = "kern";
     CHECK(search.runOne(chorale, q).empty());

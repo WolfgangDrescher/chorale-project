@@ -21,14 +21,15 @@ using choralesearch::SimultaneousGroup;
 // exactly these beat positions.
 
 TEST_CASE(deg_3_2_1) {
-    Query q;
-    q.feature = "deg";
-    q.pattern = {
-        AttributeMap{{"deg", {"3"}}},
-        AttributeMap{{"deg", {"2"}}},
-        AttributeMap{{"deg", {"1"}}},
+    Query q{
+        .feature = "deg",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}},
+            AttributeMap{{"deg", {"2"}}},
+            AttributeMap{{"deg", {"1"}}},
+        },
     };
-    q.voices = "all";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -46,14 +47,15 @@ TEST_CASE(deg_3_2_1) {
 }
 
 TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano) {
-    Query q;
-    q.feature = "deg";
-    q.pattern = {
-        AttributeMap{{"deg", {"3"}}},
-        AttributeMap{{"deg", {"2"}}},
-        AttributeMap{{"deg", {"1", "3"}}},
+    Query q{
+        .feature = "deg",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}},
+            AttributeMap{{"deg", {"2"}}},
+            AttributeMap{{"deg", {"1", "3"}}},
+        },
     };
-    q.voices = "soprano";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -70,14 +72,15 @@ TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano) {
 }
 
 TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano_fermata) {
-    Query q;
-    q.feature = "deg";
-    q.pattern = {
-        AttributeMap{{"deg", {"3"}}},
-        AttributeMap{{"deg", {"2"}}},
-        AttributeMap{{"deg", {"1", "3"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "deg",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}},
+            AttributeMap{{"deg", {"2"}}},
+            AttributeMap{{"deg", {"1", "3"}}, {"fermata", {"true"}}},
+        },
     };
-    q.voices = "soprano";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -91,14 +94,15 @@ TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano_fermata) {
 }
 
 TEST_CASE(deg_3_2_1_or_3_2_3_duration) {
-    Query q;
-    q.feature = "deg";
-    q.pattern = {
-        AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"1", "3"}}, {"duration", {"4"}}},
+    Query q{
+        .feature = "deg",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"4"}}},
+        },
     };
-    q.voices = "all";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -110,14 +114,15 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration) {
 }
 
 TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard) {
-    Query q;
-    q.feature = "deg";
-    q.pattern = {
-        AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}},
+    Query q{
+        .feature = "deg",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}},
+        },
     };
-    q.voices = "all";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -133,14 +138,15 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard) {
 }
 
 TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard_and_fermata) {
-    Query q;
-    q.feature = "deg";
-    q.pattern = {
-        AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "deg",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
     };
-    q.voices = "all";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -153,13 +159,14 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard_and_fermata) {
 }
 
 TEST_CASE(mint_plusM2_plusM2_in_soprano) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"mint", {"+M2"}}},
-        AttributeMap{{"mint", {"+M2"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"mint", {"+M2"}}},
+            AttributeMap{{"mint", {"+M2"}}},
+        },
     };
-    q.voices = "soprano";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -169,14 +176,15 @@ TEST_CASE(mint_plusM2_plusM2_in_soprano) {
 }
 
 TEST_CASE(mint_plusM2_plusM2_in_soprano_start_at_previous_token) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"mint", {"+M2"}}},
-        AttributeMap{{"mint", {"+M2"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"mint", {"+M2"}}},
+            AttributeMap{{"mint", {"+M2"}}},
+        },
+        .mintStartAtPreviousToken = true,
     };
-    q.voices = "soprano";
-    q.mintStartAtPreviousToken = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -186,15 +194,16 @@ TEST_CASE(mint_plusM2_plusM2_in_soprano_start_at_previous_token) {
 }
 
 TEST_CASE(mint_direction_only_plus2_plus2_in_soprano) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"mint", {"+2"}}},
-        AttributeMap{{"mint", {"+2"}}},
-        AttributeMap{{"mint", {"-2"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"mint", {"+2"}}},
+            AttributeMap{{"mint", {"+2"}}},
+            AttributeMap{{"mint", {"-2"}}},
+        },
+        .mintStartAtPreviousToken = true,
     };
-    q.voices = "soprano";
-    q.mintStartAtPreviousToken = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -207,15 +216,16 @@ TEST_CASE(mint_direction_only_plus2_plus2_in_soprano) {
 }
 
 TEST_CASE(mint_direction_only_plus2_plus2_in_soprano_with_duration) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"mint", {"+2"}}, {"duration", {"4"}}},
-        AttributeMap{{"mint", {"+2"}}},
-        AttributeMap{{"mint", {"-2"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"mint", {"+2"}}, {"duration", {"4"}}},
+            AttributeMap{{"mint", {"+2"}}},
+            AttributeMap{{"mint", {"-2"}}},
+        },
+        .mintStartAtPreviousToken = true,
     };
-    q.voices = "soprano";
-    q.mintStartAtPreviousToken = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -228,13 +238,14 @@ TEST_CASE(mint_direction_only_plus2_plus2_in_soprano_with_duration) {
 }
 
 TEST_CASE(mint_bare_number_2_or_1_in_soprano) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"mint", {"2", "1"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"mint", {"2", "1"}}},
+        },
+        .mintStartAtPreviousToken = true,
     };
-    q.voices = "soprano";
-    q.mintStartAtPreviousToken = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -245,12 +256,13 @@ TEST_CASE(mint_bare_number_2_or_1_in_soprano) {
 TEST_CASE(fb_m6_3_in_bass) {
     // fb's 6th figure pinned to minor, 3rd left quality-free -- excludes e.g. line 31's
     // "M6 m3" (major 6th) while accepting every "m6 <any 3rd quality>" chord.
-    Query q;
-    q.feature = "fb";
-    q.pattern = {
-        AttributeMap{{"fb", {"m6 3"}}},
+    Query q{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {
+            AttributeMap{{"fb", {"m6 3"}}},
+        },
     };
-    q.voices = "bass";
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -272,15 +284,17 @@ TEST_CASE(fb_m6_3_in_bass) {
 }
 
 TEST_CASE(fb_component_order_within_a_pattern_value_does_not_matter) {
-    Query withOrder;
-    withOrder.feature = "fb";
-    withOrder.pattern = {AttributeMap{{"fb", {"m6 3"}}}};
-    withOrder.voices = "bass";
+    Query withOrder{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fb", {"m6 3"}}}},
+    };
 
-    Query reversed;
-    reversed.feature = "fb";
-    reversed.pattern = {AttributeMap{{"fb", {"3 m6"}}}};
-    reversed.voices = "bass";
+    Query reversed{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fb", {"3 m6"}}}},
+    };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto a = search.run(withOrder);
@@ -293,18 +307,19 @@ TEST_CASE(fb_component_order_within_a_pattern_value_does_not_matter) {
 }
 
 TEST_CASE(mint_mixed_input) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"mint", {"m2"}}},
-        AttributeMap{{"mint", {"6"}}},
-        AttributeMap{{"mint", {"+2"}}},
-        AttributeMap{{"mint", {"-m2"}}},
-        AttributeMap{{"mint", {"-2"}}, {"duration", {"2"}}},
-        AttributeMap{{"mint", {"P1"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"mint", {"m2"}}},
+            AttributeMap{{"mint", {"6"}}},
+            AttributeMap{{"mint", {"+2"}}},
+            AttributeMap{{"mint", {"-m2"}}},
+            AttributeMap{{"mint", {"-2"}}, {"duration", {"2"}}},
+            AttributeMap{{"mint", {"P1"}}, {"fermata", {"true"}}},
+        },
+        .mintStartAtPreviousToken = true,
     };
-    q.voices = "soprano";
-    q.mintStartAtPreviousToken = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor009"));
     auto results = search.run(q);
@@ -317,13 +332,14 @@ TEST_CASE(mint_start_at_previous_token_skips_a_rest_back_to_the_last_sounding_no
     // chor006's alto has f (whole note, position 13), a quarter rest (position 15), then
     // a (position 16). **mint reports the a as +M3 because the interval is measured across
     // the rest from the f -- so the shifted start must be the f at 13, not the rest at 15.
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"mint", {"+M3"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "alto",
+        .pattern = {
+            AttributeMap{{"mint", {"+M3"}}},
+        },
+        .mintStartAtPreviousToken = true,
     };
-    q.voices = "alto";
-    q.mintStartAtPreviousToken = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor006"));
     auto results = search.run(q);
@@ -336,13 +352,14 @@ TEST_CASE(fb_6_3_exact_chord_in_bass) {
     // Same "6 3" pattern as a permissive search would use, but with fbCompareExactChord
     // set: chords voiced with an extra component beyond the 6th and 3rd (e.g. an added
     // 9th) no longer qualify, narrowing 19 permissive matches down to these 16.
-    Query q;
-    q.feature = "fb";
-    q.pattern = {
-        AttributeMap{{"fb", {"6 3"}}},
+    Query q{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {
+            AttributeMap{{"fb", {"6 3"}}},
+        },
+        .fbCompareExactChord = true,
     };
-    q.voices = "bass";
-    q.fbCompareExactChord = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -367,14 +384,15 @@ TEST_CASE(fb_6_3_exact_chord_in_bass) {
 }
 
 TEST_CASE(fb_4_2_chord_in_bass) {
-    Query q;
-    q.feature = "fb";
-    q.pattern = {
-        AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
-        AttributeMap{{"mint", {"-2"}}},
+    Query q{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {
+            AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
+            AttributeMap{{"mint", {"-2"}}},
+        },
+        .fbCompareExactChord = false,
     };
-    q.voices = "bass";
-    q.fbCompareExactChord = false;
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -385,14 +403,15 @@ TEST_CASE(fb_4_2_chord_in_bass) {
 }
 
 TEST_CASE(fb_4_2_exact_chord_in_bass) {
-    Query q;
-    q.feature = "fb";
-    q.pattern = {
-        AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
-        AttributeMap{{"mint", {"-2"}}},
+    Query q{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {
+            AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
+            AttributeMap{{"mint", {"-2"}}},
+        },
+        .fbCompareExactChord = true,
     };
-    q.voices = "bass";
-    q.fbCompareExactChord = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -401,11 +420,12 @@ TEST_CASE(fb_4_2_exact_chord_in_bass) {
 }
 
 TEST_CASE(fb_not_rule_of_the_octave_chords_on_deg_4_in_bass) {
-    Query q;
-    q.feature = "fb";
-    q.voices = "1";
-    q.pattern = {
-        AttributeMap{{"deg", {"4"}}, {"!fb", {"2 4 6", "6 5 3"}}},
+    Query q{
+        .feature = "fb",
+        .voices = "1",
+        .pattern = {
+            AttributeMap{{"deg", {"4"}}, {"!fb", {"2 4 6", "6 5 3"}}},
+        },
     };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
@@ -420,11 +440,12 @@ TEST_CASE(fb_not_rule_of_the_octave_chords_on_deg_4_in_bass) {
 }
 
 TEST_CASE(fb_excluding_soprano_mint_2_or_1_or_bracketed_first_note) {
-    Query q;
-    q.feature = "fb";
-    q.voices = "4";
-    q.pattern = {
-        AttributeMap{{"!mint", {"2", "1", "[g]"}}},
+    Query q{
+        .feature = "fb",
+        .voices = "4",
+        .pattern = {
+            AttributeMap{{"!mint", {"2", "1", "[g]"}}},
+        },
     };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
@@ -441,23 +462,25 @@ TEST_CASE(fb_excluding_soprano_mint_2_or_1_or_bracketed_first_note) {
 }
 
 TEST_CASE(deg_cadential_soprano_descent_simultaneous_with_bass_3_4_5_1) {
-    Query q;
-    q.feature = "deg";
-    q.voices = "soprano";
-    q.pattern = {
-        AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "deg",
+        .voices = "soprano",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
     };
     
-    SimultaneousGroup bass;
-    bass.feature = "deg";
-    bass.voices = "bass";
-    bass.pattern = {
-        AttributeMap{{"deg", {"3"}}, {"duration", {"8"}}},
-        AttributeMap{{"deg", {"4"}}, {"duration", {"8"}}},
-        AttributeMap{{"deg", {"5"}}, {"duration", {"4"}}},
-        AttributeMap{{"deg", {"1"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    SimultaneousGroup bass{
+        .feature = "deg",
+        .voices = "bass",
+        .pattern = {
+            AttributeMap{{"deg", {"3"}}, {"duration", {"8"}}},
+            AttributeMap{{"deg", {"4"}}, {"duration", {"8"}}},
+            AttributeMap{{"deg", {"5"}}, {"duration", {"4"}}},
+            AttributeMap{{"deg", {"1"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
     };
     q.simultaneousWith = {bass};
     q.simultaneousAlignment = "start-end";
@@ -471,26 +494,28 @@ TEST_CASE(deg_cadential_soprano_descent_simultaneous_with_bass_3_4_5_1) {
 }
 
 TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_without_split_notes) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"duration", {"2"}}},
-        AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "4",
+        .pattern = {
+            AttributeMap{{"duration", {"2"}}},
+            AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+        },
     };
-    q.voices = "4";
 
     CorpusSearch search(FIXTURE_CHORALE("chor039"));
     auto results = search.run(q);
 
     CHECK(results.empty());
 
-    Query q2;
-    q2.feature = "mint";
-    q2.pattern = {
-        AttributeMap{{"duration", {"*"}}},
-        AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+    Query q2{
+        .feature = "mint",
+        .voices = "4",
+        .pattern = {
+            AttributeMap{{"duration", {"*"}}},
+            AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+        },
     };
-    q2.voices = "4";
     
     CorpusSearch search2(FIXTURE_CHORALE("chor039"));
     auto results2 = search2.run(q2);
@@ -499,14 +524,15 @@ TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_without_split_notes) {
 }
 
 TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_with_split_notes) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"duration", {"2"}}},
-        AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "4",
+        .pattern = {
+            AttributeMap{{"duration", {"2"}}},
+            AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+        },
+        .durationAllowSplitNotes = true,
     };
-    q.voices = "4";
-    q.durationAllowSplitNotes = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor039"));
     auto results = search.run(q);
@@ -519,13 +545,14 @@ TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_with_split_notes) {
 }
 
 TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata_needs_both_options) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"duration", {"2"}}},
-        AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "bass",
+        .pattern = {
+            AttributeMap{{"duration", {"2"}}},
+            AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+        },
     };
-    q.voices = "bass";
 
     CorpusSearch search(FIXTURE_CHORALE("chor009"));
     CHECK(search.run(q).empty()); // neither option
@@ -548,15 +575,16 @@ TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata_needs_both_options) 
 }
 
 TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata) {
-    Query q;
-    q.feature = "mint";
-    q.pattern = {
-        AttributeMap{{"duration", {"2"}}},
-        AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "mint",
+        .voices = "bass",
+        .pattern = {
+            AttributeMap{{"duration", {"2"}}},
+            AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+        },
+        .mintAllowIntervalComplementation = {"*"},
+        .durationAllowSplitNotes = true,
     };
-    q.voices = "bass";
-    q.durationAllowSplitNotes = true;
-    q.mintAllowIntervalComplementation = {"*"};
 
     CorpusSearch search(FIXTURE_CHORALE("chor009"));
     auto results = search.run(q);
@@ -569,14 +597,15 @@ TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata) {
 }
 
 TEST_CASE(kern_three_quarters_onto_a_fermata_without_merged_notes) {
-    Query q;
-    q.feature = "kern";
-    q.pattern = {
-        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-        AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "kern",
+        .voices = "4",
+        .pattern = {
+            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+            AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+        },
     };
-    q.voices = "4";
 
     CorpusSearch search(FIXTURE_CHORALE("chor009"));
     CHECK(search.run(q).empty());
@@ -585,15 +614,16 @@ TEST_CASE(kern_three_quarters_onto_a_fermata_without_merged_notes) {
 TEST_CASE(kern_three_quarters_onto_a_fermata_with_merged_notes) {
     // chor009's soprano writes both of these cadences as a half note a plus the fermata g,
     // where the lower voices spell the a out as two quarters.
-    Query q;
-    q.feature = "kern";
-    q.pattern = {
-        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-        AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-        AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "kern",
+        .voices = "4",
+        .pattern = {
+            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
+            AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+        },
+        .durationAllowMergedNotes = true,
     };
-    q.voices = "4";
-    q.durationAllowMergedNotes = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor009"));
     auto results = search.run(q);
@@ -609,15 +639,16 @@ TEST_CASE(mint_dotted_quarter_plus_repeated_eighth_merged_into_a_half_note) {
     // it -- and it has to be found identically whichever feature drives the walk, since the
     // pattern says nothing about the driving feature either way.
     for (const std::string& feature : {"mint", "deg", "kern"}) {
-        Query q;
-        q.feature = feature;
-        q.pattern = {
-            AttributeMap{{"mint", {"*"}}, {"duration", {"4."}}},
-            AttributeMap{{"mint", {"P1"}}, {"duration", {"8"}}},
-            AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        Query q{
+            .feature = feature,
+            .voices = "all",
+            .pattern = {
+                AttributeMap{{"mint", {"*"}}, {"duration", {"4."}}},
+                AttributeMap{{"mint", {"P1"}}, {"duration", {"8"}}},
+                AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            },
+            .mintAllowIntervalComplementation = {"*"},
         };
-        q.voices = "all";
-        q.mintAllowIntervalComplementation = {"*"};
 
         CorpusSearch search(FIXTURE_CHORALE("chor029"));
         CHECK(search.run(q).empty()); // without the option the half note is just a half note
@@ -644,16 +675,17 @@ TEST_CASE(kern_cadence_needing_a_split_run_and_a_merged_run_in_the_same_match) {
     // drives here, so its "mint" is a cross-referenced key, and it is judged against the
     // unison the merged-away re-attack would have been rather than against the half note's
     // own token.
-    Query q;
-    q.feature = "kern";
-    q.pattern = {
-        AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
-        AttributeMap{{"mint", {"-M2"}}, {"duration", {"4"}}},
-        AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
-        AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "kern",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
+            AttributeMap{{"mint", {"-M2"}}, {"duration", {"4"}}},
+            AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
+            AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
+        .mintAllowIntervalComplementation = {"*"},
     };
-    q.voices = "all";
-    q.mintAllowIntervalComplementation = {"*"};
 
     CorpusSearch search(FIXTURE_CHORALE("chor103"));
 
@@ -678,14 +710,15 @@ TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note) {
     // worth of a decorated by a lower neighbour on the offbeat, then the step down to the
     // fermata. The plain skeleton of that -- a quarter, its repetition, the step down -- only
     // reaches it once the neighbour stops counting as a note of its own.
-    Query q;
-    q.feature = "kern";
-    q.pattern = {
-        AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
-        AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
-        AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "kern",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
+            AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
+            AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
     };
-    q.voices = "all";
 
     CorpusSearch search(FIXTURE_CHORALE("chor005"));
     CHECK(search.run(q).empty());
@@ -702,14 +735,15 @@ TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note_asked_for_as_one_half_note
     // quarters. That needs both options at once: skipping the neighbour is what makes the two
     // written a's adjacent, and only then can a split run sum them into a half note. Measure 17's
     // soprano writes that half note out for real (position 65) and is found either way.
-    Query q;
-    q.feature = "kern";
-    q.pattern = {
-        AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
-        AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "kern",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
+            AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
+        .durationAllowSplitNotes = true,
     };
-    q.voices = "all";
-    q.durationAllowSplitNotes = true;
 
     CorpusSearch search(FIXTURE_CHORALE("chor005"));
     auto withoutSkipping = search.run(q);
@@ -729,13 +763,14 @@ TEST_CASE(kern_cadence_ornamented_by_an_anticipation) {
     // 4.b- 8a- 2a-; and 4.g 8f 2f;, where the offbeat eighth is already the fermata note,
     // taking its time from the note before it. Skipping it hands that time back, which turns
     // the dotted quarter into the half note the phrase is really made of.
-    Query q;
-    q.feature = "kern";
-    q.pattern = {
-        AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
-        AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "kern",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
+            AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
     };
-    q.voices = "all";
 
     CorpusSearch search(FIXTURE_CHORALE("chor008"));
     CHECK(search.run(q).empty());
@@ -754,15 +789,16 @@ TEST_CASE(kern_cadence_ornamented_by_a_leap_away_and_back) {
     // from the 4 and leaps a fourth back up to the 5. The step from 4 to 5 the skeleton asks
     // for is only there once that eighth is out of the way -- the spine's own **mint reads the
     // fourth out of the ornament instead.
-    Query q;
-    q.feature = "kern";
-    q.pattern = {
-        AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
-        AttributeMap{{"mint", {"+2"}}, {"duration", {"4"}}},
-        AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+    Query q{
+        .feature = "kern",
+        .voices = "all",
+        .pattern = {
+            AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
+            AttributeMap{{"mint", {"+2"}}, {"duration", {"4"}}},
+            AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+        },
+        .mintAllowIntervalComplementation = {"5"},
     };
-    q.voices = "all";
-    q.mintAllowIntervalComplementation = {"5"};
 
     CorpusSearch search(FIXTURE_CHORALE("chor006"));
     auto withoutSkipping = search.run(q);
@@ -779,10 +815,11 @@ TEST_CASE(kern_cadence_ornamented_by_a_leap_away_and_back) {
 
 TEST_CASE(deg_major_third_onto_a_fermata_in_a_minor_key) {
     // The Picardy third that ends chor039.
-    Query q;
-    q.feature = "deg";
-    q.pattern = {AttributeMap{{"deg", {"3+"}}, {"mode", {"minor"}}, {"phrase", {"end"}}}};
-    q.voices = "all";
+    Query q{
+        .feature = "deg",
+        .voices = "all",
+        .pattern = {AttributeMap{{"deg", {"3+"}}, {"mode", {"minor"}}, {"phrase", {"end"}}}},
+    };
 
     CorpusSearch search(FIXTURES_DIR);
     auto results = search.run(q);
@@ -792,10 +829,11 @@ TEST_CASE(deg_major_third_onto_a_fermata_in_a_minor_key) {
 }
 
 TEST_CASE(kern_soprano_fermata_in_the_major_dominant) {
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"phrase", {"end"}}, {"keyDeg", {"5"}}, {"mode", {"major"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"phrase", {"end"}}, {"keyDeg", {"5"}}, {"mode", {"major"}}}},
+    };
 
     CorpusSearch search(FIXTURES_DIR);
     auto results = search.run(q);
@@ -844,10 +882,11 @@ TEST_CASE(lyrics_the_words_of_each_verse) {
 }
 
 TEST_CASE(word_herr_jesu_christ) {
-    Query q;
-    q.feature = "word";
-    q.pattern = {AttributeMap{{"word", {"Herr"}}}, AttributeMap{{"word", {"Jesu"}}}, AttributeMap{{"word", {"Christ"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "word",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"word", {"Herr"}}}, AttributeMap{{"word", {"Jesu"}}}, AttributeMap{{"word", {"Christ"}}}},
+    };
 
     CorpusSearch search(FIXTURES_DIR);
     auto results = search.run(q);
@@ -861,10 +900,11 @@ TEST_CASE(word_herr_jesu_christ) {
 }
 
 TEST_CASE(word_schmerz_and_what_follows) {
-    Query q;
-    q.feature = "word";
-    q.pattern = {AttributeMap{{"word", {"Schmerz*"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "word",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"word", {"Schmerz*"}}}},
+    };
 
     CorpusSearch search(FIXTURES_DIR);
     auto results = search.run(q);
@@ -882,10 +922,11 @@ TEST_CASE(word_schmerz_and_what_follows) {
 }
 
 TEST_CASE(word_sung_on_the_same_notes_in_every_verse) {
-    Query q;
-    q.feature = "word";
-    q.pattern = {AttributeMap{{"word", {"wir"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "word",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"word", {"wir"}}}},
+    };
 
     CorpusSearch search(FIXTURE_CHORALE("chor005"));
     auto results = search.run(q);
@@ -904,10 +945,11 @@ TEST_CASE(word_sung_on_the_same_notes_in_every_verse) {
 }
 
 TEST_CASE(kern_melisma_initial) {
-    Query q;
-    q.feature = "kern";
-    q.pattern = {AttributeMap{{"melisma", {"initial"}}}};
-    q.voices = "soprano";
+    Query q{
+        .feature = "kern",
+        .voices = "soprano",
+        .pattern = {AttributeMap{{"melisma", {"initial"}}}},
+    };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
@@ -921,10 +963,11 @@ TEST_CASE(kern_melisma_initial) {
 }
 
 TEST_CASE(fb_7_under_a_syllable) {
-    Query q;
-    q.feature = "fb";
-    q.pattern = {AttributeMap{{"fb", {"7"}}, {"word", {"*"}}}};
-    q.voices = "bass";
+    Query q{
+        .feature = "fb",
+        .voices = "bass",
+        .pattern = {AttributeMap{{"fb", {"7"}}, {"word", {"*"}}}},
+    };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
     auto results = search.run(q);
