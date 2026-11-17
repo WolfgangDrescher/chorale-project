@@ -37,6 +37,14 @@
     font-display: swap;
 }
 
+/* The figures of a figured bass (U+EA50 to U+EA6F), as Verovio draws them, see content/Fb.vue. */
+@font-face {
+    font-family: 'Bravura Figured Bass';
+    src: url('@fontsource/bravura-text/files/bravura-text-latin-400-normal.woff2') format('woff2');
+    unicode-range: U+EA50-EA6F;
+    font-display: swap;
+}
+
 @theme {
     /* A highlight sweeping across a placeholder, see the incipits of the chorale list. */
     --animate-shimmer: shimmer 1.5s linear infinite;
