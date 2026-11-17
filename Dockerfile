@@ -86,6 +86,7 @@ COPY --from=data /build/kern /build/kern
 COPY --from=data /build/positions /build/positions
 COPY chorale-webapp ./
 COPY chorale-search/queries /build/chorale-search/queries
+COPY annotations/bach-diminutions.json /build/annotations/
 COPY --from=data /build/chorale-webapp/content/analysis-results ./content/analysis-results
 COPY kittel-24-chorales/kern /build/kittel-24-chorales/kern
 COPY schiorring-choral-bog/kern /build/schiorring-choral-bog/kern

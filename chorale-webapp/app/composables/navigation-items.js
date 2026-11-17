@@ -29,10 +29,11 @@ export function useNavigationItems() {
             to: localePath({ name: 'search' }),
             // Rendered as SearchMenu in TheNavigation.
             slot: 'search',
-            active: isAt(localePath({ name: 'search' })) || isAt(localePath({ name: 'grouping' })),
+            active: ['search', 'grouping', 'query-comparison'].some((name) => isAt(localePath({ name }))),
             children: [
                 { label: t('search'), icon: 'lucide:search', to: localePath({ name: 'search' }) },
                 { label: t('grouping'), icon: 'lucide:chart-bar-decreasing', to: localePath({ name: 'grouping' }) },
+                { label: t('queryComparison'), icon: 'lucide:diff', to: localePath({ name: 'query-comparison' }) },
             ],
         },
         {

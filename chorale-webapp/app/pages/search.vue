@@ -82,6 +82,16 @@ function formatEditorQuery() {
     query.value = formatQuery(parsedQuery.value);
 }
 
+// The comparison of two queries starts with this one as both.
+const comparedBaseQuery = useLocalStorage('chorale-query-comparison-base', '');
+const comparedDraftQuery = useLocalStorage('chorale-query-comparison-draft', '');
+
+function compareQuery() {
+    comparedBaseQuery.value = query.value;
+    comparedDraftQuery.value = query.value;
+    navigateTo(localePath({ name: 'query-comparison' }));
+}
+
 function applyDemoQuery() {
     query.value = DEMO_QUERY;
 }
@@ -142,6 +152,7 @@ const groupQuery = computed(() => groupQueryOf(parsedQuery.value));
                                     />
                                 </span>
                             </UTooltip>
+                            <UButton color="neutral" variant="ghost" size="sm" icon="lucide:diff" :label="$t('queryComparison')" @click="compareQuery" />
                             <SearchHistory @apply="applyHistoryQuery" />
                         </div>
                     </template>

@@ -31,6 +31,36 @@ openInSearch: In der Suche öffnen
 openChoralePage: Choralseite öffnen
 searchError: Die Suche ist fehlgeschlagen.
 formatQuery: Formatieren
+queryComparison: Abfragen vergleichen
+queryComparisonDescription: Zwei Abfragen durchsuchen alle Choräle. Verglichen wird, was der Entwurf gegenüber der Basis verliert und was dazukommt.
+queryComparisonBase: Basis
+queryComparisonDraft: Entwurf
+queryComparisonSubmit: Vergleichen
+queryComparisonUseAsDraft: Als Entwurf übernehmen
+queryComparisonUseAsBase: Als Basis übernehmen
+queryComparisonLoadDiminution: Diminution laden
+queryComparisonView: Vergleich
+queryComparisonUnitNote: Benannte Positionen
+queryComparisonUnitMatch: Treffer
+queryComparisonUnitFixed: Die Erwartung ist Note für Note annotiert. Für alle Choräle die Erwartung abwählen.
+queryComparisonUnchanged: unverändert
+queryComparisonLost: verloren
+queryComparisonAdded: neu
+queryComparisonSortChanges: Unterschiede
+queryComparisonSortDeviations: Falsche
+queryComparisonSortLost: Verlorene
+queryComparisonSortAdded: Neue
+queryComparisonOnlyChanges: Nur Choräle mit Unterschieden
+queryComparisonExpected: Erwartet
+queryComparisonNoExpected: Keine Erwartung, alle Choräle
+queryComparisonExpectation: Erwartung
+queryComparisonWrong: falsch
+queryComparisonWrongTotal: falsch
+queryComparisonCorrect: richtig
+queryComparisonSurplus: zu viel gefunden
+queryComparisonMissing: erwartet, aber fehlt
+queryComparisonExpectedNotes: "Erwartet sind {notes} annotierte Noten in {n} Choral. Falsche Noten tragen in der Partitur einen Ring. | Erwartet sind {notes} annotierte Noten in {n} Chorälen. Falsche Noten tragen in der Partitur einen Ring."
+queryComparisonNoChanges: Keine Unterschiede.
 formatQueryInvalid: Der Query ist kein gültiges JSON.
 shareQuery: Teilen
 shareQueryCopied: Link kopiert
@@ -49,6 +79,7 @@ choraleAnalysis: Choralanalyse
 grouping: Gruppieren
 searchMenuSearchDescription: Einen Query im Korpus suchen und die Treffer in den Partituren anzeigen.
 searchMenuGroupingDescription: Die Treffer eines Queries nach Merkmalen der Partitur gruppieren und auszählen.
+searchMenuQueryComparisonDescription: Zwei Queries nebeneinander suchen und sehen, welche Treffer wegfallen und dazukommen.
 groupingScope: "Gruppiert werden die Treffer in den Chorälen von {name}, nicht in denen der übrigen Sammlungen."
 groupQuery: Group Query
 groupQueryUnavailable: "Gruppieren lässt sich ein einzelner, gültiger Query, nicht eine Liste von Queries oder ein Set von Stimmpaaren wie hint-**."

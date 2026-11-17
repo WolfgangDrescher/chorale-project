@@ -5,6 +5,7 @@ const localePath = useLocalePath();
 const items = computed(() => [
     { title: t('search'), description: t('searchMenuSearchDescription'), icon: 'lucide:search', tile: 'bg-primary/15 text-primary', to: localePath({ name: 'search' }) },
     { title: t('grouping'), description: t('searchMenuGroupingDescription'), icon: 'lucide:chart-bar-decreasing', tile: 'bg-violet-500/15 text-violet-600', to: localePath({ name: 'grouping' }) },
+    { title: t('queryComparison'), description: t('searchMenuQueryComparisonDescription'), icon: 'lucide:diff', tile: 'bg-amber-500/15 text-amber-600', to: localePath({ name: 'query-comparison' }) },
 ]);
 </script>
 

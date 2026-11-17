@@ -1,3 +1,4 @@
+import annotations from '../../../annotations/bach-diminutions.json';
 import queries from '../../../chorale-search/queries/diminutions.json';
 
 // The diminutions of the analysis layer. Every position their queries name ("as": "$note") is a
@@ -11,6 +12,39 @@ export const DIMINUTIONS = [
     { id: 'anticipation', color: 'yellow' },
     { id: 'leapingNeighborNote', color: 'purple' },
 ].map((diminution) => ({ ...diminution, queries: queries[diminution.id] }));
+
+// By chorale and diminution, what is annotated by hand: notes as "measure/beat" and voice where they are attacked, or
+// figures as their voice and where each of their notes sounds by its role.
+export const DIMINUTION_ANNOTATIONS = annotations;
+
+const VOICES = ['bass', 'tenor', 'alto', 'soprano'];
+
+// The notes annotated for a diminution, by chorale, each as its voice and line. Empty until loaded.
+export function useExpectedDiminutions(diminutionId) {
+    const chorales = shallowRef(new Map());
+
+    async function loadChorale(choraleId, annotationsOfDiminution) {
+        const { positions } = await $fetch(`/positions/bach-370-chorales/${choraleId}.json`);
+        // The first line of a position, as the tests of chorale-search read it.
+        const lines = Object.fromEntries(Object.entries(positions).reverse().map(([line, position]) => [position, Number(line)]));
+        const notes = annotationsOfDiminution.flatMap((annotation) => {
+            if (Array.isArray(annotation)) return [annotation];
+            const { voice, ...positionsByRole } = annotation;
+            return Object.values(positionsByRole).map((position) => [position, voice]);
+        });
+        return [choraleId, notes.map(([position, voiceName]) => ({ voice: VOICES.indexOf(voiceName) + 1, line: lines[position] }))];
+    }
+
+    watch(() => toValue(diminutionId), async (id) => {
+        chorales.value = new Map();
+        if (import.meta.server) return;
+        const annotated = Object.entries(DIMINUTION_ANNOTATIONS).filter(([, diminutions]) => diminutions[id]);
+        const loaded = await Promise.all(annotated.map(([choraleId, diminutions]) => loadChorale(choraleId, diminutions[id])));
+        if (toValue(diminutionId) === id) chorales.value = new Map(loaded);
+    }, { immediate: true });
+
+    return chorales;
+}
 
 // The notes of the diminutions of a chorale, searched once the first of them is shown.
 export function useDiminutionAnalysis(choraleId, shownIds) {
