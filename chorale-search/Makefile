@@ -34,6 +34,10 @@
 #     run-tests, but only if a test binary, chorale-search or a fixture
 #     is newer than the last passing run (build/.tests-passed)
 #
+# make run-test-diminutions
+#     check the queries of queries/diminutions.json against the chorales
+#     annotated in ../annotations/bach-diminutions.json, outside of the suite
+#
 # make clean
 #     remove build/. Leaves external/ alone on purpose, so the next build
 #     needs no network -- fetch-deps.sh sees its .fetched marker and skips
@@ -50,7 +54,7 @@ SHELL     := /bin/bash
 BUILD_DIR := build
 JOBS      ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: all deps debug clean clean-deps distclean run-cli run-segment run-check test run-tests run-tests-if-changed
+.PHONY: all deps debug clean clean-deps distclean run-cli run-segment run-check test run-tests run-tests-if-changed run-test-diminutions
 .DEFAULT_GOAL := all
 
 deps:
@@ -89,6 +93,9 @@ test: all
 # suite, instead of triggering a second configure+build through `test`.
 run-tests:
 	$(run_test_suite)
+
+run-test-diminutions:
+	cd $(BUILD_DIR) && ./test_diminutions
 
 TESTS_PASSED := $(BUILD_DIR)/.tests-passed
 

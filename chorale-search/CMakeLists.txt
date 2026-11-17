@@ -179,6 +179,11 @@ if(BUILD_TESTS)
     target_link_libraries(test_corpussearch PRIVATE chorale_core)
     add_test(NAME corpussearch COMMAND test_corpussearch)
 
+    add_executable(test_diminutions tests/test_diminutions.cpp)
+    target_include_directories(test_diminutions PRIVATE tests)
+    target_link_libraries(test_diminutions PRIVATE chorale_core)
+    # Not part of the suite until the queries find what the annotations hold, see `make test-diminutions`.
+
     add_executable(test_segmentation tests/test_segmentation.cpp)
     target_include_directories(test_segmentation PRIVATE tests)
     target_link_libraries(test_segmentation PRIVATE chorale_core)

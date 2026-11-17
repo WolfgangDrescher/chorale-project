@@ -29,6 +29,7 @@ git submodule update --init
 make            # build, corpus, kern, webapp, analyses, history, stats, tests
 make build      # rebuild the C++ tools after a change in chorale-search/
 make test       # run the chorale-search test suite
+make test-diminutions        # check the diminution queries against the annotations
 make kern chor001 chor009    # regenerate only some chorales
 ```
 

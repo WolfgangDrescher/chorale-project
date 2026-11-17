@@ -27,7 +27,7 @@ part-writing errors such as parallel fifths and octaves.
 | `bach-370-chorales/`     | Git submodule with the source `**kern` files. Source: [github.com/craigsapp/bach-370-chorales](https://github.com/craigsapp/bach-370-chorales). |
 | `kittel-24-chorales/`    | Git submodule with Kittel's 24 chorales with eight different basses. Shown in the webapp, not searched.                                         |
 | `schiorring-choral-bog/` | Git submodule with Schiørring's «Choral-Bog». Shown in the webapp, not searched.                                                                |
-| `annotations/`           | Annotations: `bach-modulations.json` (hand-made) and `bach-lyrics.json`, see [Lyrics](#lyrics).                                                 |
+| `annotations/`           | Annotations: `bach-modulations.json` and `bach-diminutions.json` (hand-made), and `bach-lyrics.json`, see [Lyrics](#lyrics).                    |
 | `chorale-search/`        | C++ tools (`chorale-generate`, `chorale-search`, `chorale-segment`, `chorale-check`, `chorale-info`, `chorale-group`) and their test suite.     |
 | `chorale-webapp/`        | Nuxt application.                                                                                                                               |
 | `chorale-tools/`         | Build setup of the tools service for Docker, see [Docker](#docker).                                                                             |

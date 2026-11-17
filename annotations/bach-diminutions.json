@@ -1,0 +1,58 @@
+{
+    "chor282": {
+        "consonantLeap": [
+            ["2/1", "tenor"],
+            ["3/2", "alto"],
+            ["3/2+1/2", "alto"],
+            ["3/2+1/2", "tenor"],
+            ["5/4+1/2", "tenor"],
+            ["6/1+1/2", "tenor"],
+            ["6/2+1/2", "alto"],
+            ["9/2+1/2", "alto"],
+            ["9/4+1/2", "tenor"],
+            ["10/2+1/2", "tenor"],
+            ["12/1", "alto"],
+            ["12/2+1/2", "bass"],
+            ["12/4+1/2", "bass"]
+        ],
+        "suspension": [
+            {"voice": "tenor", "preparation": "2/2", "suspension": "2/3", "resolution": "2/3+1/2"},
+            {"voice": "tenor", "preparation": "3/4", "suspension": "4/1", "resolution": "4/1+1/2"},
+            {"voice": "tenor", "preparation": "4/1+1/2", "suspension": "4/2", "resolution": "4/2+1/2"},
+            {"voice": "tenor", "preparation": "12/4", "suspension": "13/1", "resolution": "13/2"}
+        ],
+        "neighborNote": [
+            ["3/4+3/4", "soprano"],
+            ["5/2+3/4", "alto"],
+            ["6/2+3/4", "alto"],
+            ["8/2+1/2", "alto"],
+            ["9/3", "alto"],
+            ["12/1", "alto"]
+        ],
+        "passingNote": [
+            ["5/4", "tenor"],
+            ["6/2+1/2", "tenor"],
+            ["7/1+1/2", "tenor"],
+            ["7/3+1/2", "tenor"],
+            ["8/1+1/2", "bass"],
+            ["9/1+1/2", "tenor"],
+            ["9/4+1/2", "soprano"],
+            ["10/2+1/2", "tenor"],
+            ["11/3+1/2", "alto"],
+            ["12/2+1/2", "bass"],
+            ["12/3+1/2", "bass"]
+        ],
+        "accentedPassingNote": [
+            ["2/1", "tenor"],
+            ["3/2", "alto"]
+        ],
+        "anticipation": [
+            ["3/4+1/2", "soprano"],
+            ["4/2+3/4", "soprano"],
+            ["5/2+1/2", "alto"]
+        ],
+        "leapingNeighborNote": [
+            ["10/1+1/2", "tenor"]
+        ]
+    }
+}
