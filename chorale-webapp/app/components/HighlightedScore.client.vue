@@ -72,8 +72,8 @@ const verovioCanvasAttrs = computed(() => {
         pageMargin: 50,
         viewMode: props.horizontal ? 'horizontal' : 'vertical',
         options: {
-            // The horizontal view has no pages to orient by, so every measure gets its number.
-            ...(props.horizontal && { mnumInterval: 1 }),
+            // Every measure gets its number, to find the measures of a text by.
+            mnumInterval: 1,
             // Repeats are not played.
             expandNever: true,
             ...props.verovioOptions,
