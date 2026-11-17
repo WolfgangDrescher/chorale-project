@@ -1,5 +1,5 @@
 <script setup>
-import { useLocalStorage } from '@vueuse/core';
+import { useClipboard, useLocalStorage } from '@vueuse/core';
 
 const { t } = useI18n();
 
@@ -97,6 +97,14 @@ function formatEditorQuery() {
 function applyDemoQuery() {
     query.value = DEMO_QUERY;
 }
+
+const searchLink = useSearchLink();
+const { copy: copyToClipboard, copied: shareLinkCopied } = useClipboard();
+
+function copyShareLink() {
+    const path = router.resolve(searchLink(query.value)).href;
+    copyToClipboard(new URL(path, window.location.origin).href);
+}
 </script>
 
  <template>
@@ -109,6 +117,14 @@ function applyDemoQuery() {
                 <UFormField :label="$t('query')">
                     <template #hint>
                         <div class="flex gap-1">
+                            <UButton
+                                color="neutral"
+                                variant="ghost"
+                                size="sm"
+                                :icon="shareLinkCopied ? 'lucide:check' : 'lucide:share'"
+                                :label="shareLinkCopied ? $t('shareQueryCopied') : $t('shareQuery')"
+                                @click="copyShareLink"
+                            />
                             <UTooltip :text="$t('formatQueryInvalid')" :disabled="parsedQuery !== undefined">
                                 <span>
                                     <UButton
