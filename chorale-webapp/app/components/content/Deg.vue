@@ -31,10 +31,8 @@ const degrees = computed(() => {
         <template v-for="(degree, index) in degrees" :key="index">
             <span v-if="index" class="px-0.5">–</span>
             <span
-                :class="[
-                    (bass || upper) && 'inline-block h-[1.5em] min-w-[1.5em] rounded-full bg-neutral-500/10 px-[0.2em] text-center align-middle text-[0.85em] leading-[1.5em]',
-                    bass && 'ring-1 ring-current ring-inset',
-                ]"
+                class="inline-block h-[1.5em] min-w-[1.5em] rounded-full bg-neutral-500/10 px-[0.2em] text-center align-middle text-[0.85em] leading-[1.5em]"
+                :class="bass && 'ring-1 ring-current ring-inset'"
             >
                 <span :class="upper && 'caret'">
                     <span v-for="(alteration, alterationIndex) in degree.alterations" :key="alterationIndex" :class="{ '↑': 'arrow', '↓': 'arrow down' }[alteration] ?? 'text-[0.9em]'">{{ alteration }}</span>{{ degree.number }}
