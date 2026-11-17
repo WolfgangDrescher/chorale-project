@@ -200,6 +200,6 @@ useSeoMeta({
                 <UContentToc :links="page.body.toc.links" :title="t('learnToc')" highlight />
             </template>
         </UPage>
-        <QueryDrawer v-if="page.queries?.length" v-model:open="queryDrawerOpen" :query="activeQuery" sort-by="density" />
+        <QueryDrawer v-if="page.queries?.length" v-model:open="queryDrawerOpen" :query="activeQuery" />
     </UContainer>
 </template>

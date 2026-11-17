@@ -119,6 +119,6 @@ useSeoMeta({
                 </UContentSurround>
             </UPageBody>
         </UPage>
-        <QueryDrawer v-if="page.queries?.length" v-model:open="queryDrawerOpen" :query="activeQuery" sort-by="density" />
+        <QueryDrawer v-if="page.queries?.length" v-model:open="queryDrawerOpen" :query="activeQuery" />
     </UContainer>
 </template>
