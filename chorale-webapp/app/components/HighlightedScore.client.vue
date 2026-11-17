@@ -282,15 +282,21 @@ watch(() => props.scrollToLine, (line) => {
     else scrolledToSystem = null;
 });
 
+// The line of the first mark: the earliest of the first group that has any, sections before notes.
+const firstMarkedLine = computed(() => {
+    const sectionLines = resolvedSections.value.map(({ items }) => items.map(({ startLine }) => startLine));
+    const noteLines = resolvedNotes.value.map(({ items }) => items.map((id) => lineAndVoiceOf(`note-${id}`).line));
+    const lines = [...sectionLines, ...noteLines].find((groupLines) => groupLines.length);
+    return lines ? Math.min(...lines) : null;
+});
+
 async function onScoreIsReady() {
     if (props.scrollToLine) return scrollToLineNumber(props.scrollToLine);
     if (!props.scrollToFirstSection) return;
-    if (!resolvedSections.value?.length) return;
+    if (!firstMarkedLine.value) return;
     if (!scoreContainer.value || !wrapperElem.value) return;
 
-    const first = resolvedSections.value[0]?.items[0];
-    if (!first) return
-    const selector = `g[id^="note-L${first.startLine}"]`;
+    const selector = `g[id^="note-L${firstMarkedLine.value}"]`;
 
     await scrollElementIntoView(selector, scoreContainer.value, wrapperElem.value, true);
 }
