@@ -1,6 +1,8 @@
 interface NoteGroup {
     items: string[];
     color?: string;
+    // A border around the circle of each note.
+    borderColor?: string;
 }
 
 // The lines of a section its pattern does not ask for: what a repeat took that may be empty. Drawn fainter than

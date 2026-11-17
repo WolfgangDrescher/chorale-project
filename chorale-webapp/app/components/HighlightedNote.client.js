@@ -5,6 +5,7 @@ export default defineComponent({
     props: {
         noteId: String,
         color: String,
+        borderColor: String,
         container: HTMLElement,
     },
     setup(props) {
@@ -40,6 +41,7 @@ export default defineComponent({
             left: `${xRect.x + xRect.width / 2 - parentRect.x}px`,
             top: `${elemRect.y + elemRect.height / 2 - parentRect.y}px`,
             background: props.color ?? 'rgb(234 179 8 / 0.4)',
+            ...(props.borderColor && { border: `2px solid ${props.borderColor}` }),
         });
 
         return () => h('div', {

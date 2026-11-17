@@ -378,7 +378,7 @@ onMounted(async () => {
             <div class="absolute h-full top-0 left-0 overflow-x-clip" :class="!horizontal && 'w-full'" ref="markerContainer" :key="scoreKey" :style="markerContainerStyle">
                 <template v-if="scoreContainer">
                     <template v-for="(noteGroup, groupIndex) in resolvedNotes" :key="groupIndex">
-                        <HighlightedNote v-for="noteId in noteGroup.items" :key="`${noteId}-${noteGroup.color}`" :note-id="noteId" :color="noteGroup.color" :container="scoreContainer" />
+                        <HighlightedNote v-for="noteId in noteGroup.items" :key="`${noteId}-${noteGroup.color}-${noteGroup.borderColor}`" :note-id="noteId" :color="noteGroup.color" :border-color="noteGroup.borderColor" :container="scoreContainer" />
                     </template>
                     <template v-for="(sectionGroup, groupIndex) in resolvedSections" :key="groupIndex">
                         <HighlightedSection v-for="section in sectionGroup.items" :key="`${section.startLine}-${section.endLine}-${section.voice}-${section.type}-${section.verse}-${section.label?.value}-${sectionGroup.color}-${sectionGroup.outline}-${sectionGroup.fitBoundingBox}-${gapsKey(section)}`" :start-line="section.startLine" :end-line="section.endLine" :gaps="section.gaps" :label="section.label" :voice="section.voice" :type="section.type" :verse="section.verse" :color="sectionGroup.color" :outline="sectionGroup.outline" :fit-bounding-box="sectionGroup.fitBoundingBox" :container="scoreContainer" />
