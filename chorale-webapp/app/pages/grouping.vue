@@ -31,6 +31,13 @@ const DEMO_QUERY = `{
 const query = useLocalStorage('chorale-group-query', DEMO_QUERY);
 const verify = useLocalStorage('chorale-group-verify', false, { initOnMounted: true });
 
+const GROUPING_HISTORY_KEY = 'chorale-group-history';
+const history = useSearchHistory(GROUPING_HISTORY_KEY);
+
+function applyHistoryQuery(historyQuery) {
+    query.value = historyQuery;
+}
+
 const result = ref(null);
 const durationMs = ref(null);
 const error = ref(null);
@@ -51,9 +58,10 @@ async function group() {
     error.value = null;
     result.value = null;
     durationMs.value = null;
+    const grouping = query.value;
     try {
         const response = await fetchWithProgress(`/api/chorale-group${verify.value ? '?verify=true' : ''}`, {
-            body: query.value,
+            body: grouping,
             signal: abortController.signal,
             onProgress: (event) => {
                 progress.value = { ...progress.value, ...event };
@@ -61,6 +69,7 @@ async function group() {
         });
         result.value = response.result;
         durationMs.value = response.durationMs;
+        history.remember({ query: grouping, matches: result.value.matchCount, choraleCount: result.value.choraleCount });
     } catch (e) {
         if (e.name !== 'AbortError') error.value = e;
     } finally {
@@ -142,6 +151,7 @@ watch([tab, result], () => {
                                     />
                                 </span>
                             </UTooltip>
+                            <SearchHistory :storage-key="GROUPING_HISTORY_KEY" @apply="applyHistoryQuery" />
                         </div>
                     </template>
                     <MonacoEditor

@@ -1,10 +1,14 @@
 <script setup>
 import { onKeyStroke } from '@vueuse/core';
 
+const props = defineProps({
+    storageKey: { type: String, default: undefined },
+});
+
 const emit = defineEmits(['apply']);
 
 const { t, locale } = useI18n();
-const { entries, forget, restore, clear } = useSearchHistory();
+const { entries, forget, restore, clear } = useSearchHistory(props.storageKey);
 const toast = useToast();
 
 const open = ref(false);
@@ -38,7 +42,8 @@ function parsed(query) {
 function summaryOf(query) {
     const value = parsed(query);
     if (Array.isArray(value) && value.length > 1) return t('searchHistoryCombinedQueries', { count: value.length });
-    const single = [value].flat()[0];
+    // A group query is summed up by its query.
+    const single = [value?.query ?? value].flat()[0];
     if (!single) return '';
     return [single.feature, [single.voices].flat().join(', ')].filter(Boolean).join(' · ');
 }

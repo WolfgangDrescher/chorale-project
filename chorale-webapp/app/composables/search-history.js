@@ -11,9 +11,9 @@ function normalized(query) {
     }
 }
 
-// The last successful searches, newest first, stored for the next visit.
-export function useSearchHistory() {
-    const entries = useLocalStorage('chorale-search-history', [], { initOnMounted: true });
+// The last successful searches, newest first, stored for the next visit under `storageKey`.
+export function useSearchHistory(storageKey = 'chorale-search-history') {
+    const entries = useLocalStorage(storageKey, [], { initOnMounted: true });
 
     function remember({ query, matches, choraleCount }) {
         const key = normalized(query);
