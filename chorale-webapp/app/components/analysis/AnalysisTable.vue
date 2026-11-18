@@ -38,7 +38,7 @@ const drawerOpen = ref(false);
 const activeQuery = ref('');
 
 function openQuery(query) {
-    activeQuery.value = JSON.stringify(query, null, 4);
+    activeQuery.value = formatQuery(query);
     drawerOpen.value = true;
 }
 </script>
