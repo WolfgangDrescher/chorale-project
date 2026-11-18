@@ -56,18 +56,6 @@ async function searchAndRemember() {
 const route = useRoute();
 const router = useRouter();
 
-function parseQueryParameter(value) {
-    try {
-        return JSON.parse(value);
-    } catch {}
-    try {
-        const bytes = Uint8Array.from(atob(value.replaceAll('-', '+').replaceAll('_', '/')), (c) => c.charCodeAt(0));
-        return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
-    } catch {
-        return undefined;
-    }
-}
-
 onMounted(() => {
     // An emptied editor starts over with the demo query.
     if (!query.value.trim()) query.value = DEMO_QUERY;

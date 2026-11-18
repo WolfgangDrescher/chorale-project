@@ -27,6 +27,13 @@ export function useNavigationItems() {
         {
             label: t('search'),
             to: localePath({ name: 'search' }),
+            // Rendered as SearchMenu in TheNavigation.
+            slot: 'search',
+            active: isAt(localePath({ name: 'search' })) || isAt(localePath({ name: 'grouping' })),
+            children: [
+                { label: t('search'), icon: 'lucide:search', to: localePath({ name: 'search' }) },
+                { label: t('grouping'), icon: 'lucide:chart-bar-decreasing', to: localePath({ name: 'grouping' }) },
+            ],
         },
         {
             label: t('learn'),

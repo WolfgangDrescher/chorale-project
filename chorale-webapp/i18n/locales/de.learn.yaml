@@ -29,6 +29,7 @@ analysisMoreRows: "eine weitere Zeile in der Tabelle | {count} weitere Zeilen in
 analysisUnornamented: ohne Figuration
 analysisOrnamented: "figuriert: {voices}"
 ignoreIntervalQualityShort: Ohne Intervallqualität
+analysisVariantLabel: Variante
 analysisVariant:
     phraseStart: Phrasenanfang
     phraseMiddle: Phrasenmitte

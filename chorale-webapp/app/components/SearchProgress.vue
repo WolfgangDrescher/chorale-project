@@ -6,6 +6,8 @@ interface Progress {
     choralesSearched?: number;
     choralesTotal?: number;
     matchesSoFar?: number;
+    run?: number; // chorale-group searches once more for each variant
+    runCount?: number;
 }
 
 const props = defineProps<{ progress: Progress | null }>();
@@ -33,10 +35,22 @@ const title = computed(() => {
     return corpusSearchStarted.value ? t(PHASE_TITLES['search-corpus']) : '';
 });
 
-const choralesText = computed(() => t('progressChoralesSearched', {
+const runCount = computed(() => props.progress?.runCount ?? 1);
+
+const choralesText = computed(() => t(runCount.value > 1 ? 'progressChoralesSearchedInRun' : 'progressChoralesSearched', {
     searched: props.progress?.choralesSearched,
     total: props.progress?.choralesTotal,
+    run: props.progress?.run,
+    count: runCount.value,
 }));
+
+// All runs on one bar, each with its share.
+const barValue = computed(() => {
+    const total = props.progress?.choralesTotal;
+    if (!total) return null;
+    return ((props.progress.run ?? 1) - 1) * total + props.progress.choralesSearched;
+});
+const barMax = computed(() => (props.progress?.choralesTotal ?? 100) * runCount.value);
 
 const matchesText = computed(() => t('progressMatchesSoFar', props.progress?.matchesSoFar ?? 0));
 </script>
@@ -44,8 +58,8 @@ const matchesText = computed(() => t('progressMatchesSoFar', props.progress?.mat
 <template>
     <div class="flex flex-col gap-2 max-w-lg mx-auto">
         <UProgress
-            :model-value="progress?.choralesTotal ? progress.choralesSearched : null"
-            :max="progress?.choralesTotal ?? 100"
+            :model-value="barValue"
+            :max="barMax"
             size="2xl"
         />
         <div v-if="title" class="flex items-baseline justify-between gap-4">

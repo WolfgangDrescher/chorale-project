@@ -45,6 +45,14 @@ searchHistoryEntryRemoved: Eintrag aus dem Verlauf entfernt
 searchHistoryClear: Verlauf leeren
 searchHistoryClearConfirmation: Gesamten Verlauf löschen?
 choraleAnalysis: Choralanalyse
+grouping: Gruppieren
+searchMenuSearchDescription: Einen Query im Korpus suchen und die Treffer in den Partituren anzeigen.
+searchMenuGroupingDescription: Die Treffer eines Queries nach Merkmalen der Partitur gruppieren und auszählen.
+groupingScope: "Gruppiert werden die Treffer in den Chorälen von {name}, nicht in denen der übrigen Sammlungen."
+groupQuery: Group Query
+groupingDuration: "Gruppiert in {duration}"
+groupingError: Die Gruppierung ist fehlgeschlagen.
+groupingEmptyDescription: Gruppiert die Treffer eines Queries nach Intervall, Stufe, Metrik oder Dauer.
 segmentAnalysis: Segmente
 checkAnalysis: Satzkontrolle
 uploadScoreDescription: Vierstimmiger Satz als Humdrum-Kern oder MusicXML
@@ -111,6 +119,7 @@ progressRunChecks: Satz wird geprüft
 progressSearchCorpus: Korpus wird durchsucht
 progressCollectBassLines: Häufige Bässe werden ermittelt
 progressChoralesSearched: "{searched} von {total} Chorälen"
+progressChoralesSearchedInRun: "{searched} von {total} Chorälen, Durchgang {run} von {count}"
 progressMatchesSoFar: "kein Treffer bisher | ein Treffer bisher | {count} Treffer bisher"
 checkListTitle: Das wird geprüft
 checkParallelMotion: Quint- und Oktavparallelen
