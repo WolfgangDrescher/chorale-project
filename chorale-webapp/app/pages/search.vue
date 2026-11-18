@@ -3,6 +3,9 @@ import { useClipboard, useLocalStorage } from '@vueuse/core';
 
 const { t } = useI18n();
 
+// On a small screen the buttons of the editor show their icons only.
+const editorButtonUi = { label: 'hidden lg:inline' };
+
 const localePath = useLocalePath();
 
 useHead({
@@ -124,6 +127,8 @@ const groupQuery = computed(() => groupQueryOf(parsedQuery.value));
                                 size="sm"
                                 :icon="shareLinkCopied ? 'lucide:check' : 'lucide:share'"
                                 :label="shareLinkCopied ? $t('shareQueryCopied') : $t('shareQuery')"
+                                :aria-label="shareLinkCopied ? $t('shareQueryCopied') : $t('shareQuery')"
+                                :ui="editorButtonUi"
                                 @click="copyShareLink"
                             />
                             <UTooltip :text="$t('formatQueryInvalid')" :disabled="parsedQuery !== undefined">
@@ -134,6 +139,8 @@ const groupQuery = computed(() => groupQueryOf(parsedQuery.value));
                                         size="sm"
                                         icon="lucide:wand-sparkles"
                                         :label="$t('formatQuery')"
+                                        :aria-label="$t('formatQuery')"
+                                        :ui="editorButtonUi"
                                         :disabled="parsedQuery === undefined"
                                         @click="formatEditorQuery"
                                     />
@@ -147,13 +154,15 @@ const groupQuery = computed(() => groupQueryOf(parsedQuery.value));
                                         size="sm"
                                         icon="lucide:chart-bar-decreasing"
                                         :label="$t('grouping')"
+                                        :aria-label="$t('grouping')"
+                                        :ui="editorButtonUi"
                                         :disabled="groupQuery === undefined"
                                         :to="groupQuery && groupingLink(JSON.stringify(groupQuery))"
                                     />
                                 </span>
                             </UTooltip>
-                            <UButton color="neutral" variant="ghost" size="sm" icon="lucide:diff" :label="$t('queryComparison')" @click="compareQuery" />
-                            <SearchHistory @apply="applyHistoryQuery" />
+                            <UButton color="neutral" variant="ghost" size="sm" icon="lucide:diff" :label="$t('queryComparison')" :aria-label="$t('queryComparison')" :ui="editorButtonUi" @click="compareQuery" />
+                            <SearchHistory compact @apply="applyHistoryQuery" />
                         </div>
                     </template>
                     <MonacoEditor

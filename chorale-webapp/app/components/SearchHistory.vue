@@ -3,6 +3,8 @@ import { onKeyStroke } from '@vueuse/core';
 
 const props = defineProps({
     storageKey: { type: String, default: undefined },
+    // On a small screen the button shows its icon only.
+    compact: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['apply']);
@@ -163,6 +165,8 @@ onKeyStroke(['Delete', 'Backspace'], whileBrowsingEntries((event) => {
             size="sm"
             icon="lucide:history"
             :label="t('searchHistory')"
+            :aria-label="t('searchHistory')"
+            :ui="compact ? { label: 'hidden lg:inline' } : undefined"
             :disabled="!entries.length"
         />
         <template #body>
