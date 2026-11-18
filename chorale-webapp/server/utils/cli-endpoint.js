@@ -73,6 +73,14 @@ export class InvalidToolOutputError extends ApiError {
     }
 }
 
+// --verify found a group whose query finds other matches than the group counts: the grouping is
+// wrong, not the request.
+export class VerificationError extends ApiError {
+    constructor(message, errors) {
+        super('VerificationError', 500, message, errors);
+    }
+}
+
 // The tool could not be started at all: the binary is missing or not executable, so the corpus
 // tooling this endpoint fronts is not deployed. Nothing about the request is wrong.
 export class ServiceUnavailableError extends ApiError {

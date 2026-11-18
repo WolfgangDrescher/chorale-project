@@ -9,20 +9,23 @@ const GROUPING_TIMEOUT = 60_000;
 const EXIT_CODE_ERRORS = {
     3: (message) => new ValidationError('The group query contains one or more validation errors', message),
     2: (message) => new InvalidArgumentError('The chorale-group tool received invalid command-line arguments', message),
+    4: (message) => new VerificationError('The query of a group finds other matches than the group counts', message),
 };
 
 // Takes a group query (see /docs/grouping) and answers with its tree of groups, also as a
-// stream of progress events (see respondWithStream).
+// stream of progress events (see respondWithStream). ?verify=true checks the query of every group.
 export default defineEventHandler(async (event) => {
     setResponseHeader(event, 'Content-Type', 'application/json');
 
     try {
         const body = await parseRequestBody(event);
+        const verify = getQuery(event).verify === 'true';
         const group = ({ onEvent, signal } = {}) => {
             const args = [
                 CORPUS_DIR,
                 '--query', JSON.stringify(body),
             ];
+            if (verify) args.push('--verify');
             if (onEvent) args.push('--progress');
 
             return runCliTool({

@@ -29,6 +29,7 @@ const DEMO_QUERY = `{
 }`;
 
 const query = useLocalStorage('chorale-group-query', DEMO_QUERY);
+const verify = useLocalStorage('chorale-group-verify', false, { initOnMounted: true });
 
 const result = ref(null);
 const durationMs = ref(null);
@@ -51,7 +52,7 @@ async function group() {
     result.value = null;
     durationMs.value = null;
     try {
-        const response = await fetchWithProgress('/api/chorale-group', {
+        const response = await fetchWithProgress(`/api/chorale-group${verify.value ? '?verify=true' : ''}`, {
             body: query.value,
             signal: abortController.signal,
             onProgress: (event) => {
@@ -158,7 +159,25 @@ watch([tab, result], () => {
                         }"
                     />
                 </UFormField>
-                <UButton type="submit" :loading="pending" :trailing="true">{{ $t('submit') }}</UButton>
+                <div class="flex flex-wrap items-center gap-6">
+                    <UButton type="submit" :loading="pending" :trailing="true">{{ $t('submit') }}</UButton>
+                    <div class="flex items-center gap-1">
+                        <USwitch v-model="verify" :label="$t('groupingVerify')" />
+                        <UPopover :content="{ side: 'top' }" arrow>
+                            <UButton
+                                color="neutral"
+                                variant="link"
+                                size="xs"
+                                icon="lucide:info"
+                                class="p-0"
+                                :aria-label="$t('optionHelp', { option: $t('groupingVerify') })"
+                            />
+                            <template #content>
+                                <p class="max-w-xs p-3 text-sm">{{ $t('groupingVerifyDescription') }}</p>
+                            </template>
+                        </UPopover>
+                    </div>
+                </div>
             </UForm>
         </UCard>
 

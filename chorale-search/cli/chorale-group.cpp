@@ -136,9 +136,11 @@ int main(int argc, char** argv) {
                     choralesearch::reportEvent(event);
                 });
             }
+            if (progress && verify) choralesearch::reportPhase("search-corpus");
             const Group root = choralesearch::groupMatchesInCorpus(search, run);
             if (verify) {
                 search.setProgressCallback(nullptr); // the checks are no progress of the run
+                if (progress) choralesearch::reportPhase("verify-group-queries");
                 const std::vector<std::string> mismatches = choralesearch::verifyGroupMatchQueries(search, root);
                 for (const std::string& mismatch : mismatches) {
                     std::cerr << "Error: " << (variant.empty() ? "" : variant + ": ") << mismatch << "\n";

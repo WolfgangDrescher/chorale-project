@@ -18,7 +18,8 @@ inline void reportEvent(const nlohmann::ordered_json& event) {
 }
 
 // A stage of the work that has no count of its own, named by a short code the caller words:
-// "convert-musicxml", "split-score-into-voices", "analyze-score", "segment-score", "search-corpus", "collect-bass-lines".
+// "convert-musicxml", "split-score-into-voices", "analyze-score", "segment-score", "search-corpus", "collect-bass-lines",
+// "verify-group-queries".
 inline void reportPhase(const std::string& phase) {
     reportEvent({{"event", "phase"}, {"phase", phase}});
 }

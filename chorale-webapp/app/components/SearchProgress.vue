@@ -22,6 +22,7 @@ const PHASE_TITLES: Record<string, string> = {
     'run-checks': 'progressRunChecks',
     'search-corpus': 'progressSearchCorpus',
     'collect-bass-lines': 'progressCollectBassLines',
+    'verify-group-queries': 'progressVerifyGroupQueries',
 };
 
 // chorale-search reports no phases, so its first search progress is what tells the search began.
