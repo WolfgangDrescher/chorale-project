@@ -86,13 +86,16 @@ function applyDemoQuery() {
     query.value = DEMO_QUERY;
 }
 
-const searchLink = useSearchLink();
+const searchLink = useQueryLink();
 const { copy: copyToClipboard, copied: shareLinkCopied } = useClipboard();
 
 function copyShareLink() {
     const path = router.resolve(searchLink(query.value)).href;
     copyToClipboard(new URL(path, window.location.origin).href);
 }
+
+const groupingLink = useQueryLink('grouping');
+const groupQuery = computed(() => groupQueryOf(parsedQuery.value));
 </script>
 
  <template>
@@ -123,6 +126,19 @@ function copyShareLink() {
                                         :label="$t('formatQuery')"
                                         :disabled="parsedQuery === undefined"
                                         @click="formatEditorQuery"
+                                    />
+                                </span>
+                            </UTooltip>
+                            <UTooltip :text="$t('groupQueryUnavailable')" :disabled="groupQuery !== undefined">
+                                <span>
+                                    <UButton
+                                        color="neutral"
+                                        variant="ghost"
+                                        size="sm"
+                                        icon="lucide:chart-bar-decreasing"
+                                        :label="$t('grouping')"
+                                        :disabled="groupQuery === undefined"
+                                        :to="groupQuery && groupingLink(JSON.stringify(groupQuery))"
                                     />
                                 </span>
                             </UTooltip>

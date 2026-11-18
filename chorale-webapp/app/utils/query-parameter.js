@@ -1,4 +1,4 @@
-// ?query= as useSearchLink writes it: JSON or base64url-encoded JSON.
+// ?query= as useQueryLink writes it: JSON or base64url-encoded JSON.
 export function parseQueryParameter(value) {
     try {
         return JSON.parse(value);

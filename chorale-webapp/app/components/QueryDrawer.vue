@@ -9,7 +9,7 @@ const props = defineProps({
 const open = defineModel('open', { type: Boolean, default: false });
 
 const { t } = useI18n();
-const searchLink = useSearchLink();
+const searchLink = useQueryLink();
 const search = useChoraleSearch(props.query, { sortBy: props.sortBy });
 
 // The drawer itself takes the focus, not its first button, so the space bar plays a score.

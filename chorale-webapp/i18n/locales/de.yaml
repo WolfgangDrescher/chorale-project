@@ -50,6 +50,7 @@ searchMenuSearchDescription: Einen Query im Korpus suchen und die Treffer in den
 searchMenuGroupingDescription: Die Treffer eines Queries nach Merkmalen der Partitur gruppieren und auszählen.
 groupingScope: "Gruppiert werden die Treffer in den Chorälen von {name}, nicht in denen der übrigen Sammlungen."
 groupQuery: Group Query
+groupQueryUnavailable: "Gruppieren lässt sich ein einzelner, gültiger Query, nicht eine Liste von Queries oder ein Set von Stimmpaaren wie hint-**."
 groupingDuration: "Gruppiert in {duration}"
 groupingError: Die Gruppierung ist fehlgeschlagen.
 groupingEmptyDescription: Gruppiert die Treffer eines Queries nach Intervall, Stufe, Metrik oder Dauer.

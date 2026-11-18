@@ -23,7 +23,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const searchLink = useSearchLink();
+const searchLink = useQueryLink();
 const { t: tUi } = useLocale();
 const { copy: copyToClipboard, copied } = useClipboard();
 const appConfig = useAppConfig();
