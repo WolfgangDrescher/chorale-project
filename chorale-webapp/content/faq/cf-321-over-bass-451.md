@@ -5,9 +5,9 @@ verdict: yes
 date: 2026-11-16
 tags: [Kadenz, Außenstimmen, Dissonanz]
 stat:
-    value: "20"
+    value: "25"
     label: Kadenzen
-    chorales: "15"
+    chorales: "19"
     query: seventh
 queries:
     - id: seventh
@@ -18,7 +18,7 @@ queries:
                     "voices": "bass",
                     "pattern": [
                         { "mint": "*", "duration": "4", "hint-14": "7" },
-                        { "mint": "+M2", "duration": "4" },
+                        { "mint": ["+M2", "+m2"], "duration": "4" },
                         { "mint": "-P5", "fermata": true }
                     ],
                     "simultaneousWith": [
@@ -45,7 +45,7 @@ queries:
                     "voices": "bass",
                     "pattern": [
                         { "mint": "*", "duration": "4", "hint-14": "7" },
-                        { "mint": "+M2", "duration": "4" },
+                        { "mint": ["+M2", "+m2"], "duration": "4" },
                         { "mint": "-P5", "fermata": true }
                     ],
                     "simultaneousWith": [
@@ -73,7 +73,7 @@ queries:
                     "voices": "bass",
                     "pattern": [
                         { "mint": "*", "duration": "4", "hint-14": "7" },
-                        { "mint": "+M2", "duration": "4" },
+                        { "mint": ["+M2", "+m2"], "duration": "4" },
                         { "mint": "-P5", "fermata": true }
                     ],
                     "simultaneousWith": [
@@ -113,7 +113,7 @@ queries:
                     "voices": "bass",
                     "pattern": [
                         { "mint": "*", "duration": "4", "hint-14": "7" },
-                        { "mint": "+M2", "duration": "4" },
+                        { "mint": ["+M2", "+m2"], "duration": "4" },
                         { "mint": "-P5", "fermata": true }
                     ],
                     "simultaneousWith": [
@@ -141,7 +141,7 @@ queries:
                     "voices": "bass",
                     "pattern": [
                         { "mint": "*", "duration": "4", "hint-14": "7" },
-                        { "mint": "+M2", "duration": "4" },
+                        { "mint": ["+M2", "+m2"], "duration": "4" },
                         { "mint": "-P5", "fermata": true }
                     ],
                     "simultaneousWith": [
@@ -159,7 +159,44 @@ queries:
                             "feature": "mint",
                             "voices": "soprano",
                             "pattern": [
-                                { "!mint": "-2" }
+                                { "!mint": ["-2", "+2"] }
+                            ],
+                            "metweightSkipUnclassified": false,
+                            "simultaneousAlignment": "start"
+                        }
+                    ],
+                    "mintAllowIntervalComplementation": "5",
+                    "hintReduceCompound": true,
+                    "metweightSkipUnclassified": true,
+                    "simultaneousAlignment": "end"
+                }
+    - id: step-below
+      title: Septime stufenweise von unten
+      query: |
+                {
+                    "feature": "mint",
+                    "voices": "bass",
+                    "pattern": [
+                        { "mint": "*", "duration": "4", "hint-14": "7" },
+                        { "mint": ["+M2", "+m2"], "duration": "4" },
+                        { "mint": "-P5", "fermata": true }
+                    ],
+                    "simultaneousWith": [
+                        {
+                            "feature": "mint",
+                            "voices": "soprano",
+                            "pattern": [
+                                { "mint": "*" },
+                                { "!mint": "P1", "duration": "4" },
+                                { "mint": "-2" },
+                                { "mint": "-2", "fermata": true }
+                            ]
+                        },
+                        {
+                            "feature": "mint",
+                            "voices": "soprano",
+                            "pattern": [
+                                { "mint": "+2" }
                             ],
                             "metweightSkipUnclassified": false,
                             "simultaneousAlignment": "start"
@@ -254,8 +291,9 @@ queries:
 ---
 
 Steht in der Kadenz im Cantus firmus :deg{v="3 2 1" upper} und im
-Bass :deg{v="4 5 1" bass}, entsteht über der :deg{v="4" bass} eine Septime
-zwischen den Außenstimmen. Die eigentliche Frage ist, ob diese Septime
+Bass :deg{v="4 5 1" bass} oder :deg{v="4+ 5 1" bass}, entsteht über
+der :deg{v="4" bass} bzw. :deg{v="4+" bass} eine Septime zwischen den
+Außenstimmen. Die eigentliche Frage ist, ob diese Septime
 satztechnisch vertretbar ist. Bach zeigt: ja, wenn sie gut eingeführt wird.
 
 Gezählt sind die Kadenzen, in denen der Bass in Vierteln in die Fermate geht.
@@ -265,10 +303,11 @@ Verzierungen auf Zwischenschlägen werden dabei ignoriert.
 
 | Behandlung | Anz. Kadenzen | Query |
 |---|---|---|
-| Durchgang in Vierteln | 10 | :query-ref{show-title id="passing-quarter"} |
+| Durchgang in Vierteln | 12 | :query-ref{show-title id="passing-quarter"} |
 | Durchgang in Achteln | 1 | :query-ref{show-title id="passing-eighth"} |
-| Syncopatio | 8 | :query-ref{show-title id="syncopation"} |
-| Sprung | 1 | :query-ref{show-title id="leap"} |
+| Syncopatio | 9 | :query-ref{show-title id="syncopation"} |
+| Sprung | 2 | :query-ref{show-title id="leap"} |
+| Schritt von unten | 1 | :query-ref{show-title id="step-below"} |
 
 ### Durchgang
 
@@ -292,7 +331,8 @@ Achteln: Die :deg{v="4" upper} davor ist eine Achtel auf dem Zwischenschlag.
 
 Ebenso oft ist die Septime vorbereitet. Die :deg{v="3" upper} klingt schon über
 dem Basston davor als Konsonanz, gehalten oder neu angeschlagen, und erst der
-Schritt des Basses zur :deg{v="4" bass} macht sie zur Septime.
+Schritt des Basses zur :deg{v="4" bass} bzw. :deg{v="4+" bass} macht sie zur
+Septime.
 In :chorale{id="chor013"} und :chorale{id="chor341"} ist im Cantus firmus vor
 dem neuen Anschlag eine untere Wechselnote eingeschoben. Die drei gehaltenen
 Fälle stehen im 3/4-Takt, die Septime fällt dort auf die zweite Zählzeit.
@@ -306,10 +346,17 @@ Fälle stehen im 3/4-Takt, die Septime fällt dort auf die zweite Zählzeit.
 
 ### Sprung
 
-Frei angesprungen wird die Septime nur einmal: In :chorale{id="chor292"} springt
-der Sopran eine Terz abwärts in sie hinein.
+Frei angesprungen wird die Septime nur zweimal: In :chorale{id="chor292"}
+springt der Sopran eine Terz abwärts in sie hinein, in :chorale{id="chor321"}
+eine Terz aufwärts in die verminderte Septime über :deg{v="4+" bass}. In
+:chorale{id="chor146"} erreicht er die verminderte Septime stufenweise von
+unten.
 
-::score-example{chorale-id="chor292" measures="1-2"}
+::score-examples
+:::score-example{chorale-id="chor292" measures="1-2"}
+:::
+:::score-example{chorale-id="chor321" measures="1-2"}
+:::
 ::
 
 ## Große, kleine und verminderte Septime
