@@ -728,12 +728,8 @@ bool kernReAttackInList(const std::vector<PatternValue>& allowed, hum::HTp tok, 
     });
 }
 
-// The token `spineStart`'s spine has on the line `tok` sits on. The spines run side by side
-// down the file, so this is a step sideways along one line -- the line `tok` already knows it
-// belongs to -- rather than going by a line number as HumdrumChorale::tokenAtLine() does.
-// buildOnsets() asks this of every onset it walks, which that one would make quadratic.
-// A null token (the voice holds a note) is nullptr, or with `resolveNull` the note it stands for.
-hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull = false) {
+// The field `spineStart`'s spine has on the line `tok` sits on, a null token included.
+hum::HTp fieldBesideOnLine(hum::HTp tok, hum::HTp spineStart) {
     if (!tok || !spineStart) return nullptr;
     int track = spineStart->getTrack();
     hum::HLp line = tok->getOwner();
@@ -741,12 +737,38 @@ hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull =
         hum::HTp candidate = line->token(field);
         // The leftmost field of the track, which for a split spine is the branch
         // tokenAtLine() reaches too -- getNextToken() follows the left side of a split.
-        if (candidate->getTrack() != track) continue;
-        if (!candidate->isNull()) return candidate;
-        hum::HTp note = resolveNull ? candidate->resolveNull() : nullptr;
-        return note && note->isData() ? note : nullptr;
+        if (candidate->getTrack() == track) return candidate;
     }
     return nullptr;
+}
+
+// The token `spineStart`'s spine has on the line `tok` sits on. The spines run side by side
+// down the file, so this is a step sideways along one line -- the line `tok` already knows it
+// belongs to -- rather than going by a line number as HumdrumChorale::tokenAtLine() does.
+// buildOnsets() asks this of every onset it walks, which that one would make quadratic.
+// A null token (the voice holds a note) is nullptr, or with `resolveNull` the note it stands for.
+hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull = false) {
+    hum::HTp field = fieldBesideOnLine(tok, spineStart);
+    if (!field || !field->isNull()) return field;
+    hum::HTp note = resolveNull ? field->resolveNull() : nullptr;
+    return note && note->isData() ? note : nullptr;
+}
+
+// What `voice` does on the line `lineToken` sits on: begins a note, holds one, or rests.
+enum class NoteState { Attack, Sustain, Rest };
+
+std::optional<NoteState> noteStateOnLine(const HumdrumChorale& chorale, std::size_t voice, hum::HTp lineToken) {
+    hum::HTp field = fieldBesideOnLine(lineToken, chorale.spine(kKernKey, voice));
+    if (!field) return std::nullopt;
+    hum::HTp note = field->isNull() ? field->resolveNull() : field;
+    if (!note || !note->isData() || note->isRest()) return NoteState::Rest;
+    return field->isNull() || field->isSecondaryTiedNote() ? NoteState::Sustain : NoteState::Attack;
+}
+
+// "attack" or "sustain" held against what `voice` does on that line.
+bool noteStateInList(const PositionKey& positionKey, NoteState state) {
+    const NoteState asked = positionKey.is(PatternKeyId::Attack) ? NoteState::Attack : NoteState::Sustain;
+    return inList(positionKey.values, state == asked ? "true" : "false");
 }
 
 // Whether a voice reference ("@2", "@anyBelow", ...) among the pattern values of kern or duration (`id`)
@@ -1098,6 +1120,10 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         const KeyContext* context = chorale.keyContextAtLine(lineNumber);
         if (!context) return std::nullopt;
         matched = keyContextInList(positionKey.patternKey->id, allowed, *context);
+    } else if (positionKey.is(PatternKeyId::Attack) || positionKey.is(PatternKeyId::Sustain)) {
+        const std::optional<NoteState> state = noteStateOnLine(chorale, voice, tok);
+        if (!state) return std::nullopt;
+        matched = noteStateInList(positionKey, *state);
     } else {
         if (!positionKey.patternKey) return std::nullopt; // a key the table does not know
         std::optional<KeyValue> value = valueOfKey(chorale, voice, onset, positionKey.patternKey->id, key);

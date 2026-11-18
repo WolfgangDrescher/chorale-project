@@ -23,12 +23,14 @@ inline const std::string kKeyKey = "key";
 inline const std::string kKeyDegKey = "keyDeg";
 inline const std::string kSylposKey = "sylpos";
 inline const std::string kMelismaKey = "melisma";
+inline const std::string kAttackKey = "attack";
+inline const std::string kSustainKey = "sustain";
 
 // HintPair is "hint-14", HintVoice "hint-2", HintPairWildcard "hint-*4", HintPairCurrent "hint-@pair".
 enum class PatternKeyId {
     Kern, Deg, Mint, Fb, Metweight, Word, Syl, HintPair,
     Duration, Fermata, Phrase, Mode, Key, KeyDeg, Sylpos, Melisma,
-    HintVoice, HintPairWildcard, HintPairCurrent,
+    HintVoice, HintPairWildcard, HintPairCurrent, Attack, Sustain,
 };
 
 // Whether a value of the query is valid: "+M2" for mint, "4." for duration.

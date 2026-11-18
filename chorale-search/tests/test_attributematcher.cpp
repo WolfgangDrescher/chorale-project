@@ -48,6 +48,17 @@ TEST_CASE(matcher_kern_rhythm_only_value_matches_any_pitch_with_that_rhythm) {
     CHECK_EQ(rhythmOnlyMatches.size(), durationMatches.size());
 }
 
+TEST_CASE(matcher_attack_tells_a_note_from_a_rest_and_sustain_holds_on_no_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    const auto count = [&](const char* key, const char* value) {
+        return AttributeMatcher("kern", {AttributeMap{{key, {value}}}}).findAll(chorale, 4).size();
+    };
+    CHECK_EQ(count("attack", "true") + count("attack", "false"), count("kern", "*"));
+    CHECK_EQ(count("attack", "false"), count("kern", "r"));
+    // An onset of the voice searched is never a note it holds.
+    CHECK_EQ(count("sustain", "true"), std::size_t{0});
+}
+
 TEST_CASE(matcher_secondary_tied_kern_note_is_not_a_separate_onset) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // Position 2, voice 2 is "[4G" (tie start); position 3 is its tied continuation

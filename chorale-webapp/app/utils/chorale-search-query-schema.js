@@ -134,7 +134,7 @@ const melismaPatternSchema = {
 
 // The keys a position can check, negated or not, and the parts of their values: "mint", "!mint.direction", "hint-14.number".
 const positionKeyPattern =
-    '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
+    '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|attack|sustain|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
 
 // The direction of a melodic interval; a unison has none.
 const directionValueSchema = {

@@ -45,7 +45,7 @@ bool isValidPhraseValue(const std::string& v) {
     return v == "start" || v == "end" || v == "choraleStart" || v == "choraleEnd";
 }
 
-bool isValidFermataValue(const std::string& v) {
+bool isValidBooleanValue(const std::string& v) {
     return v == "true" || v == "false";
 }
 
@@ -273,7 +273,7 @@ std::vector<PatternKey> buildPatternKeys() {
         {
             .id = Id::Fermata,
             .name = kFermataKey,
-            .valueSpec = {.positionReference = true, .isValidValue = isValidFermataValue},
+            .valueSpec = {.positionReference = true, .isValidValue = isValidBooleanValue},
         },
         {
             .id = Id::Phrase,
@@ -306,6 +306,16 @@ std::vector<PatternKey> buildPatternKeys() {
             .name = kMelismaKey,
             .perVerse = true,
             .valueSpec = {.positionReference = true, .isValidValue = isValidMelismaValue},
+        },
+        {
+            .id = Id::Attack,
+            .name = kAttackKey,
+            .valueSpec = {.isValidValue = isValidBooleanValue},
+        },
+        {
+            .id = Id::Sustain,
+            .name = kSustainKey,
+            .valueSpec = {.isValidValue = isValidBooleanValue},
         },
         {
             .id = Id::HintVoice,
