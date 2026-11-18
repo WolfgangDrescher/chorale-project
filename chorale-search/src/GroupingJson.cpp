@@ -77,7 +77,7 @@ Categories categoriesFromJson(const nlohmann::json& j, const std::string& contex
 }
 
 FeatureRead featureReadFromJson(const nlohmann::json& j, std::size_t positionCount, const std::string& context) {
-    rejectUnknownKeys(j, {"feature", "positions", "notesOfVoice", "ignoreQuality", "mintAllowIntervalComplementation", "categories"}, context);
+    rejectUnknownKeys(j, {"feature", "positions", "notesOfVoice", "voice", "ignoreQuality", "mintAllowIntervalComplementation", "categories"}, context);
     FeatureRead read;
     if (!j.contains("feature") || !j["feature"].is_string()) throw std::invalid_argument(fieldLocation("feature", context) + " must be a string");
     read.feature = j["feature"].get<std::string>();
@@ -95,6 +95,13 @@ FeatureRead featureReadFromJson(const nlohmann::json& j, std::size_t positionCou
         if (voices.size() != 1) throw std::invalid_argument(where + " must name a single voice");
         if (read.feature != "mint" || !read.positions.empty()) throw std::invalid_argument(where + " reads the feature mint, and takes no 'positions'");
         read.notesOfVoice = voices.front();
+    }
+    if (j.contains("voice")) {
+        const std::string where = fieldLocation("voice", context);
+        const std::vector<std::size_t> voices = j["voice"].is_string() ? resolveVoices(j["voice"].get<std::string>()) : std::vector<std::size_t>{};
+        if (voices.size() != 1) throw std::invalid_argument(where + " must name a single voice");
+        if (read.feature != "deg" || read.notesOfVoice) throw std::invalid_argument(where + " reads the feature deg, and not with 'notesOfVoice'");
+        read.voice = voices.front();
     }
     read.ignoreQuality = booleanFromJson(j, "ignoreQuality", context);
     read.mintAllowIntervalComplementation = booleanFromJson(j, "mintAllowIntervalComplementation", context);

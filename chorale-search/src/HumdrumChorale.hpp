@@ -50,6 +50,8 @@ public:
     // spine is missing, the line is no data line, or the voice holds its note there (a null
     // token). It goes straight to the line, so asking it of every onset of a corpus stays cheap.
     hum::HTp tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const;
+    // The same, but where the voice holds its note, the token of that note.
+    hum::HTp soundingTokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const;
 
     // The key of the last key designation above `lineNumber` (1-indexed), nullptr before the first. keyDeg is
     // reckoned from the key of the first note.
@@ -59,6 +61,8 @@ private:
     // What both constructors do once the file is parsed: add the computed spines, then note
     // down which spine answers to which feature name.
     void prepare(bool withComputedSpines);
+    // The field of the spine on `lineNumber`, a null token included.
+    hum::HTp fieldAtLine(const std::string& feature, std::size_t voice, int lineNumber) const;
 
     std::string m_path;
     std::string m_id;

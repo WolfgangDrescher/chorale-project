@@ -46,6 +46,13 @@ TEST_CASE(a_group_query_rejects_what_it_cannot_read) {
         "groupBy": [{"reads": [{"feature": "deg", "notesOfVoice": "bass"}]}]})"));
     CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
         "groupBy": [{"reads": [{"feature": "mint", "notesOfVoice": "bass", "positions": [0]}]}]})"));
+    // Another voice at the positions, by its scale degree only.
+    CHECK_NOTHROW(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
+        "groupBy": [{"reads": [{"feature": "deg", "voice": "bass"}]}]})"));
+    CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
+        "groupBy": [{"reads": [{"feature": "mint", "voice": "bass"}]}]})"));
+    CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
+        "groupBy": [{"reads": [{"feature": "deg", "voice": "all"}]}]})"));
     // The complement of an interval only in the rhythm of another voice.
     CHECK_THROWS(parse(R"({"query": {"feature": "mint", "voices": "soprano", "pattern": [{"mint": "*"}]},
         "groupBy": [{"reads": [{"feature": "mint", "mintAllowIntervalComplementation": true}]}]})"));

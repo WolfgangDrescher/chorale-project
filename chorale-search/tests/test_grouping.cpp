@@ -205,6 +205,28 @@ TEST_CASE(a_voice_read_by_interval_classes_lists_how_each_group_is_written) {
     CHECK(choralesearch::verifyGroupMatchQueries(search, root).empty());
 }
 
+TEST_CASE(another_voice_is_read_by_the_scale_degree_it_sounds_at_each_position) {
+    const GroupQuery groupQuery = choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
+        "query": {
+            "feature": "deg",
+            "voices": "soprano",
+            "pattern": [{ "deg": "3" }, { "deg": "2" }, { "deg": "1" }]
+        },
+        "groupBy": [{ "reads": [{ "feature": "deg", "voice": "bass" }] }]
+    })"));
+    CorpusSearch search(FIXTURES_DIR);
+    const Group root = choralesearch::groupMatchesInCorpus(search, groupQuery);
+    REQUIRE(!root.groups.empty());
+    for (const Group& group : root.groups) {
+        REQUIRE(group.values.size() == 1u);
+        CHECK_EQ(group.values[0].size(), std::size_t{3});
+        // A note the bass holds is read too.
+        for (const std::string& degree : group.values[0]) CHECK(!degree.empty());
+        CHECK(group.query);
+    }
+    CHECK(choralesearch::verifyGroupMatchQueries(search, root).empty());
+}
+
 TEST_CASE(a_held_note_of_a_voice_is_a_member_of_its_group) {
     const GroupQuery groupQuery = choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
         "query": {

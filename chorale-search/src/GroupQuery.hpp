@@ -38,6 +38,8 @@ struct FeatureRead {
     std::vector<std::size_t> positions;
     // Instead the intervals this voice (1 = bass) sings across the match, in its own rhythm.
     std::optional<std::size_t> notesOfVoice;
+    // The scale degree this voice sounds at each position, instead of the voice searched.
+    std::optional<std::size_t> voice;
 
     bool ignoreQuality = false;                    // "-M2" counts as "-2"
     bool mintAllowIntervalComplementation = false; // "-P5" counts as "+P4", only with notesOfVoice

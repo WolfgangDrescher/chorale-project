@@ -50,6 +50,10 @@ const readSchema = {
             type: 'string',
             description: 'Read every note this voice attacks across the match instead, in its own rhythm: a single voice, such as "bass". Only with mint, and not with positions.',
         },
+        voice: {
+            type: 'string',
+            description: 'Read the scale degree this voice sounds at each position instead, also a note it holds: a single voice, such as "bass". Only with deg, and not with notesOfVoice.',
+        },
         ignoreQuality: {
             type: 'boolean',
             description: '"-M2" and "-m2" count as "-2"; a unison keeps its quality. For mint and voice pairs.',
@@ -67,6 +71,15 @@ const readSchema = {
                 properties: {
                     feature: { const: 'mint', description: 'notesOfVoice reads the feature mint.' },
                     positions: { not: {}, description: 'notesOfVoice takes no positions.' },
+                },
+            },
+        },
+        {
+            if: { required: ['voice'] },
+            then: {
+                properties: {
+                    feature: { const: 'deg', description: 'voice reads the feature deg.' },
+                    notesOfVoice: { not: {}, description: 'voice and notesOfVoice exclude each other.' },
                 },
             },
         },

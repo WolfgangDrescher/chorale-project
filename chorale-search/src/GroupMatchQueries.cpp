@@ -96,7 +96,8 @@ void GroupMatchQueryBuilder::askForPatternPositions(const FeatureRead& read, con
         if (values[i].empty()) {
             m_askable = false; // a held note
         } else {
-            m_query.pattern[queryPositionOf(positions[i])][read.feature] = {PatternValue(values[i])};
+            const std::string key = read.voice ? otherVoiceKey("@" + std::to_string(*read.voice), read.feature) : read.feature;
+            m_query.pattern[queryPositionOf(positions[i])][key] = {PatternValue(values[i])};
         }
     }
 }

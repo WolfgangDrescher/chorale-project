@@ -206,6 +206,16 @@ const KeyContext* HumdrumChorale::keyContextAtLine(int lineNumber) const {
 }
 
 hum::HTp HumdrumChorale::tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {
+    hum::HTp token = fieldAtLine(feature, voice, lineNumber);
+    return token && !token->isNull() ? token : nullptr;
+}
+
+hum::HTp HumdrumChorale::soundingTokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {
+    hum::HTp token = fieldAtLine(feature, voice, lineNumber);
+    return token && token->isNull() ? token->resolveNull() : token;
+}
+
+hum::HTp HumdrumChorale::fieldAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {
     hum::HTp start = spine(feature, voice);
     if (!start) return nullptr;
     hum::HumdrumFile* file = start->getOwner()->getOwner();
@@ -218,8 +228,7 @@ hum::HTp HumdrumChorale::tokenAtLine(const std::string& feature, std::size_t voi
         hum::HTp candidate = line->token(field);
         // The leftmost field of the track, which for a split spine is the branch
         // getNextToken() follows.
-        if (candidate->getTrack() != track) continue;
-        return candidate->isNull() ? nullptr : candidate;
+        if (candidate->getTrack() == track) return candidate;
     }
     return nullptr;
 }

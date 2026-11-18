@@ -107,6 +107,10 @@ std::string valueAt(const FeatureRead& read, const FoundMatch& match, std::size_
     if (read.feature == "duration") return match.durationOfNoteAt(position);
     const std::size_t line = match.lineAt(position);
     if (read.feature == "mint" && match.query.metweightSkipUnclassified) return intervalAsSearched(match, line);
+    if (read.voice) {
+        hum::HTp token = match.chorale.soundingTokenAtLine(read.feature, *read.voice, static_cast<int>(line));
+        return token ? std::string(*token) : "";
+    }
     // The hint pair spines belong to the bass.
     const std::size_t spineVoice = isHintPairFeature(read.feature) ? 1 : match.result.voice;
     hum::HTp token = match.chorale.tokenAtLine(read.feature, spineVoice, static_cast<int>(line));
