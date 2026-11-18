@@ -148,6 +148,28 @@ const directionPatternSchema = {
     ...valueOrListSchema(directionValueSchema),
 };
 
+const positionValueSchema = {
+    oneOf: [
+        { type: 'string' },
+        { type: 'boolean' },
+        comparisonSchema,
+        { type: 'array', items: { oneOf: [{ type: 'string' }, { type: 'boolean' }, comparisonSchema] }, minItems: 1 },
+    ],
+};
+
+const voiceReferenceKeyPattern = '^@([1-4]|below|above|anyBelow|allBelow|anyAbove|allAbove|anyOther|allOther)$';
+const otherVoiceKeyPattern = '^!?(kern(\\.pitch)?|deg|duration|fermata|attack|sustain)$';
+
+// "@1": { "deg": "5" }: what another voice sounds at this position.
+const otherVoiceSchema = {
+    type: 'object',
+    minProperties: 1,
+    additionalProperties: false,
+    description: 'Another voice at this position: the note it sounds there, also one it holds. It is checked for kern, kern.pitch, deg, duration (the whole note), fermata, attack (the voice begins a note here) and sustain (the voice is still holding a note it began earlier), all for the same voice.',
+    patternProperties: { [otherVoiceKeyPattern]: positionValueSchema },
+    propertyNames: { pattern: otherVoiceKeyPattern },
+};
+
 // The keys of everyPosition: what one position checks.
 const positionFeaturesSchema = {
     type: 'object',
@@ -172,16 +194,12 @@ const positionFeaturesSchema = {
     patternProperties: {
         [positionKeyPattern]: {
             description: 'An OR-list of acceptable values for this feature at this position (or a single value). A value is a string, or for kern, duration, mint and the hint keys a comparison ({ "operator": "gt", "value": "4" }). For kern, kern.pitch and duration a value may also be a voice reference ("@2", "@below", "@anyAbove", ...), what another voice sounds at the same time. For any key but phrase and hint-<pair> with a "*" it may be a position reference ("#1", "$start", "#1.hint-14"): what the score has at the note an earlier position of the pattern matched, under the same key, or under the key named after the dot. A key with a part, like mint.number, checks only that part of the value, with the values the whole key takes for it. word and syl are the word and the syllable the soprano sings at the note, compared in small letters without the punctuation around them; a "*" in the value stands for any characters ("Her*", "*zen"), without one the whole word has to be the value. Prefix the key with "!" to negate the whole position.',
-            oneOf: [
-                { type: 'string' },
-                { type: 'boolean' },
-                comparisonSchema,
-                { type: 'array', items: { oneOf: [{ type: 'string' }, { type: 'boolean' }, comparisonSchema] }, minItems: 1 },
-            ],
+            ...positionValueSchema,
         },
+        [voiceReferenceKeyPattern]: otherVoiceSchema,
     },
     propertyNames: {
-        pattern: positionKeyPattern,
+        pattern: `${positionKeyPattern}|${voiceReferenceKeyPattern}`,
         description: 'A feature to check at this position, optionally prefixed with "!" to negate the whole position, and optionally a part of its value after a dot: kern.pitch, fb.numbers, mint.direction, mint.number, mint.interval, hint-<pair>.number. hint-<pair> (e.g. hint-14) names a fixed pair, optionally with "*" for either digit (e.g. hint-*4); hint-@pair is the pair a query over voice pairs is searching; hint-<voice> (e.g. hint-2) is relative to whichever voice is currently being walked. word, syl, sylpos and melisma read the lyrics the soprano sings at the note.',
     },
 };
@@ -199,7 +217,7 @@ export const patternPositionSchema = {
     },
     propertyNames: {
         ...positionFeaturesSchema.propertyNames,
-        pattern: `^as$|${positionKeyPattern}`,
+        pattern: `^as$|${positionKeyPattern}|${voiceReferenceKeyPattern}`,
     },
 };
 

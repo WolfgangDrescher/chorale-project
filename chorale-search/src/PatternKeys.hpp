@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace choralesearch {
@@ -79,6 +80,24 @@ struct PatternKeyLookup {
     // The part's values, or the key's own.
     const ValueSpec& valueSpec() const { return patternKeyPart ? patternKeyPart->valueSpec : patternKey->valueSpec; }
 };
+
+// Another voice at a position, under its voice reference: "@1": {"deg": "5"}. Inside a pattern each of
+// its keys is kept on its own, as "@1:deg".
+inline bool isOtherVoiceKey(const std::string& rawKey) {
+    return !rawKey.empty() && rawKey[0] == '@';
+}
+inline std::string otherVoiceKey(const std::string& voiceReference, const std::string& rawKey) {
+    return voiceReference + ':' + rawKey;
+}
+// "@1:!deg" as {"@1", "!deg"}.
+inline std::pair<std::string, std::string> splitOtherVoiceKey(const std::string& key) {
+    const std::size_t colon = key.find(':');
+    return {key.substr(0, colon), key.substr(colon + 1)};
+}
+// The key without its negation: "!deg" as "deg", "@1:!deg" as "@1:deg".
+std::string unnegatedKey(const std::string& rawKey);
+// The keys another voice can be checked for: kern, kern.pitch, deg, duration, fermata, attack and sustain.
+bool isOtherVoicePatternKey(const PatternKeyLookup& lookup);
 
 // Every key: the driving features first.
 const std::vector<PatternKey>& patternKeys();

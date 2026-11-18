@@ -17,6 +17,9 @@ namespace choralesearch {
 // A key of a position of the pattern with its values, looked up in the table of keys once.
 struct PositionKey : PatternKeyLookup {
     std::vector<PatternValue> values;
+    // Another voice under its voice reference ("@1"), checked for all its keys at once.
+    std::string otherVoice;
+    std::vector<PositionKey> otherVoiceKeys;
 };
 
 using PatternPosition = std::vector<PositionKey>;

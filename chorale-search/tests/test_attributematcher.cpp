@@ -59,6 +59,26 @@ TEST_CASE(matcher_attack_tells_a_note_from_a_rest_and_sustain_holds_on_no_onset)
     CHECK_EQ(count("sustain", "true"), std::size_t{0});
 }
 
+TEST_CASE(matcher_checks_another_voice_at_a_position) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
+    const auto count = [&](AttributeMap position, MatcherOptions options = {}) {
+        return AttributeMatcher("kern", {std::move(position)}, options).findAll(chorale, 4).size();
+    };
+    // The bass on the scale degree of the soprano is a unison or an octave between them.
+    CHECK_EQ(count({{"deg", {"1"}}, {"@1:deg", {"1"}}}),
+             count({{"deg", {"1"}}, {"hint-14", {"P1", "P8"}}}, MatcherOptions{.hintReduceCompound = true}));
+    // Without its register, a pitch of the bass is that pitch in every octave.
+    CHECK_EQ(count({{"@1:kern.pitch", {"G"}}}, MatcherOptions{.kernIgnoreOctave = true}),
+             count({{"@1:kern.pitch", {"GG", "G", "g", "gg"}}}));
+    CHECK(count({{"@1:fermata", {"true"}}}) > 0);
+    // The bass is one of the voices below.
+    CHECK(count({{"@anyBelow:deg", {"1"}}}) >= count({{"@1:deg", {"1"}}}));
+    // The bass begins a note, holds one or rests, one of the three.
+    CHECK_EQ(count({{"@1:attack", {"true"}}}) + count({{"@1:sustain", {"true"}}}) +
+                 count({{"@1:attack", {"false"}}, {"@1:sustain", {"false"}}}),
+             count({{"kern", {"*"}}}));
+}
+
 TEST_CASE(matcher_secondary_tied_kern_note_is_not_a_separate_onset) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     // Position 2, voice 2 is "[4G" (tie start); position 3 is its tied continuation

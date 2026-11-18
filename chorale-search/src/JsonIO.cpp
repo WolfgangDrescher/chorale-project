@@ -149,11 +149,39 @@ std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const 
     return values;
 }
 
+// "@1": {"deg": "5", "attack": true}, each key kept as "@1:deg".
+void addOtherVoiceKeys(AttributeMap& pos, const std::string& voiceReference, const nlohmann::json& keys, const std::string& name) {
+    const std::string context = name + "[" + voiceReference + "]'";
+    if (!isValidVoiceReference(voiceReference)) {
+        throw std::invalid_argument(context + " is no voice reference (@1 to @4, @below, @above, @anyBelow, @allBelow, "
+                                              "@anyAbove, @allAbove, @anyOther, @allOther)");
+    }
+    if (!keys.is_object() || keys.empty()) throw std::invalid_argument(context + " must be an object of the keys that voice is checked for");
+    for (auto it = keys.begin(); it != keys.end(); ++it) {
+        const std::string& rawKey = it.key();
+        if (!isOtherVoicePatternKey(findPatternKey(rawKey))) {
+            throw std::invalid_argument(context + " has the key '" + rawKey + "', another voice is checked for kern, kern.pitch, deg, duration, fermata, attack and sustain");
+        }
+        const std::string where = context + "[" + rawKey + "]'";
+        std::vector<PatternValue> values = attributeValueFromJson(it.value(), rawKey, where);
+        for (const PatternValue& value : values) {
+            if (value.isVoiceReference() || value.isPositionReference()) {
+                throw std::invalid_argument(where + ": '" + value.text + "' refers to another voice or position, which another voice cannot");
+            }
+        }
+        pos[otherVoiceKey(voiceReference, rawKey)] = std::move(values);
+    }
+}
+
 // `name` locates the errors: "'pattern[...]" or "'everyPosition".
 AttributeMap positionFromJson(const nlohmann::json& posJson, const std::string& name) {
     AttributeMap pos;
     for (auto it = posJson.begin(); it != posJson.end(); ++it) {
         const std::string& rawKey = it.key();
+        if (isOtherVoiceKey(rawKey)) {
+            addOtherVoiceKeys(pos, rawKey, it.value(), name);
+            continue;
+        }
         // isKnownPatternKey/isValidPatternValue both accept a "!"-negated key directly (see
         // docs/patterns#negating-a-feature) -- negation doesn't change what's known or valid.
         if (!isKnownPatternKey(rawKey)) {
@@ -188,9 +216,9 @@ std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
 void applyEveryPosition(std::vector<AttributeMap>& pattern, const AttributeMap& everyPosition) {
     for (AttributeMap& position : pattern) {
         for (const auto& [rawKey, values] : everyPosition) {
-            const std::string key = rawKey.size() > 1 && rawKey[0] == '!' ? rawKey.substr(1) : rawKey;
-            if (position.count(key) || position.count("!" + key)) continue;
-            position[rawKey] = values;
+            const std::string key = unnegatedKey(rawKey);
+            const bool hasOwn = std::any_of(position.begin(), position.end(), [&](const auto& own) { return unnegatedKey(own.first) == key; });
+            if (!hasOwn) position[rawKey] = values;
         }
     }
 }

@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 
 #include "ChoraleFilter.hpp"
+#include "PatternKeys.hpp"
 
 namespace choralesearch {
 
@@ -232,11 +233,17 @@ inline nlohmann::json patternToJson(const std::vector<AttributeMap>& pattern) {
             // as, not as a one-entry OR-list -- the two mean the same thing (see
             // docs/patterns#values), and the array form only earns its brackets with a choice
             // in it.
-            if (values.size() == 1) posJson[key] = patternValueToJson(values.front());
+            nlohmann::json valuesJson;
+            if (values.size() == 1) valuesJson = patternValueToJson(values.front());
             else {
-                nlohmann::json list = nlohmann::json::array();
-                for (const PatternValue& value : values) list.push_back(patternValueToJson(value));
-                posJson[key] = std::move(list);
+                valuesJson = nlohmann::json::array();
+                for (const PatternValue& value : values) valuesJson.push_back(patternValueToJson(value));
+            }
+            if (isOtherVoiceKey(key)) {
+                const auto [voiceReference, otherKey] = splitOtherVoiceKey(key);
+                posJson[voiceReference][otherKey] = std::move(valuesJson);
+            } else {
+                posJson[key] = std::move(valuesJson);
             }
         }
         arr.push_back(posJson);

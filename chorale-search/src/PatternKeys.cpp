@@ -347,6 +347,22 @@ const std::vector<PatternKey>& patternKeys() {
     return keys;
 }
 
+std::string unnegatedKey(const std::string& rawKey) {
+    if (isOtherVoiceKey(rawKey)) {
+        const auto [voiceReference, key] = splitOtherVoiceKey(rawKey);
+        return otherVoiceKey(voiceReference, unnegatedKey(key));
+    }
+    return rawKey.substr(isNegatedKey(rawKey) ? 1 : 0);
+}
+
+bool isOtherVoicePatternKey(const PatternKeyLookup& lookup) {
+    if (!lookup.patternKey) return false;
+    const PatternKeyId id = lookup.patternKey->id;
+    if (lookup.patternKeyPart) return id == PatternKeyId::Kern && lookup.partName() == "pitch";
+    return id == PatternKeyId::Kern || id == PatternKeyId::Deg || id == PatternKeyId::Duration || id == PatternKeyId::Fermata ||
+           id == PatternKeyId::Attack || id == PatternKeyId::Sustain;
+}
+
 PatternKeyLookup findPatternKey(const std::string& rawKey) {
     PatternKeyLookup lookup;
     lookup.rawKey = rawKey;

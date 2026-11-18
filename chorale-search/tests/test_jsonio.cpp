@@ -25,6 +25,33 @@ TEST_CASE(query_from_json_parses_minimal_query) {
     CHECK(!q.mintStartAtPreviousToken); // default when omitted
 }
 
+TEST_CASE(query_from_json_reads_another_voice_at_a_position_and_writes_it_back_as_written) {
+    const json written = json::parse(R"({"feature":"deg","voices":"soprano","pattern":[{"deg":"3","@1":{"deg":"5","!attack":"true"}}]})");
+    Query q = queryFromJson(written);
+    CHECK_EQ(q.pattern[0].at("@1:deg"), (std::vector<PatternValue>{"5"}));
+    CHECK_EQ(q.pattern[0].at("@1:!attack"), (std::vector<PatternValue>{"true"}));
+    CHECK_EQ(choralesearch::queryToJson(q)["pattern"], written["pattern"]);
+}
+
+TEST_CASE(query_from_json_rejects_another_voice_it_cannot_check) {
+    const auto parse = [](const char* position) {
+        return queryFromJson(json::parse(std::string(R"({"feature":"deg","pattern":[)") + position + "]}"));
+    };
+    CHECK_THROWS(parse(R"({"@5": {"deg": "1"}})"));
+    CHECK_THROWS(parse(R"({"@1": {}})"));
+    CHECK_THROWS(parse(R"({"@1": {"mint": "+2"}})"));
+    CHECK_THROWS(parse(R"({"@1:deg": "1"})"));
+    CHECK_NOTHROW(parse(R"({"@1": {"kern.pitch": {"operator": "lt", "value": "c"}, "fermata": true}})"));
+    CHECK_THROWS(parse(R"({"@1": {"deg": "9"}})"));
+    CHECK_THROWS(parse(R"({"@1": {"duration": "@2"}})"));
+}
+
+TEST_CASE(query_from_json_keeps_the_own_value_of_another_voice_over_every_position) {
+    Query q = queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"@1":{"deg":"1"}},"pattern":[{"@1":{"!deg":"1"}},{"deg":"2"}]})"));
+    CHECK(!q.pattern[0].count("@1:deg"));
+    CHECK(q.pattern[1].count("@1:deg"));
+}
+
 TEST_CASE(query_from_json_reads_the_key_a_note_is_in) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"3+","mode":"minor","!key":["e","b"],"keyDeg":"5"}]})"));
     CHECK_EQ(q.pattern[0].at("mode"), (std::vector<PatternValue>{"minor"}));

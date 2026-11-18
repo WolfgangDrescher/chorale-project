@@ -754,6 +754,12 @@ hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull =
     return note && note->isData() ? note : nullptr;
 }
 
+// The attack a tied part of a note belongs to.
+hum::HTp attackOf(hum::HTp note) {
+    while (note && note->isSecondaryTiedNote()) note = note->getPreviousNonNullDataToken();
+    return note;
+}
+
 // What `voice` does on the line `lineToken` sits on: begins a note, holds one, or rests.
 enum class NoteState { Attack, Sustain, Rest };
 
@@ -769,6 +775,45 @@ std::optional<NoteState> noteStateOnLine(const HumdrumChorale& chorale, std::siz
 bool noteStateInList(const PositionKey& positionKey, NoteState state) {
     const NoteState asked = positionKey.is(PatternKeyId::Attack) ? NoteState::Attack : NoteState::Sustain;
     return inList(positionKey.values, state == asked ? "true" : "false");
+}
+
+// A key of another voice held against the note `voice` sounds on the line `lineToken` sits on, a held one too.
+std::optional<bool> otherVoiceKeyMatches(const HumdrumChorale& chorale, std::size_t voice, hum::HTp lineToken,
+                                         const PositionKey& positionKey, bool kernIgnoreOctave) {
+    const std::vector<PatternValue>& allowed = positionKey.values;
+    bool matched;
+    if (positionKey.is(PatternKeyId::Attack) || positionKey.is(PatternKeyId::Sustain)) {
+        const std::optional<NoteState> state = noteStateOnLine(chorale, voice, lineToken);
+        if (!state) return std::nullopt;
+        matched = noteStateInList(positionKey, *state);
+    } else if (positionKey.is(PatternKeyId::Deg)) {
+        hum::HTp degree = tokenBesideOnLine(lineToken, chorale.spine(kDegKey, voice), true);
+        if (!degree) return std::nullopt;
+        matched = isWildcard(allowed) || degInList(allowed, std::string(*degree));
+    } else {
+        // The whole note, from where it was struck.
+        hum::HTp note = attackOf(tokenBesideOnLine(lineToken, chorale.spine(kKernKey, voice), true));
+        if (!note) return std::nullopt;
+        if (positionKey.is(PatternKeyId::Kern)) matched = isWildcard(allowed) || kernInList(allowed, note, kernIgnoreOctave, note->getTiedDuration());
+        else if (positionKey.is(PatternKeyId::Fermata)) matched = inList(allowed, note->hasFermata() ? "true" : "false");
+        else matched = isWildcard(allowed) || durationInList(allowed, note->getTiedDuration());
+    }
+    return positionKey.negated ? !matched : matched;
+}
+
+// The voices `group` refers to from `voice`, each checked for all the keys of the group.
+bool otherVoiceMatches(const HumdrumChorale& chorale, std::size_t voice, hum::HTp lineToken, const PositionKey& group,
+                       bool kernIgnoreOctave) {
+    const std::optional<ResolvedVoiceReference> reference = resolveVoiceReference(group.otherVoice, voice);
+    if (!reference || reference->voices.empty()) return false;
+    const auto holdsFor = [&](std::size_t other) {
+        return std::all_of(group.otherVoiceKeys.begin(), group.otherVoiceKeys.end(), [&](const PositionKey& positionKey) {
+            return otherVoiceKeyMatches(chorale, other, lineToken, positionKey, kernIgnoreOctave).value_or(false);
+        });
+    };
+    const std::vector<std::size_t>& voices = reference->voices;
+    return reference->quantifier == ReferenceQuantifier::All ? std::all_of(voices.begin(), voices.end(), holdsFor)
+                                                             : std::any_of(voices.begin(), voices.end(), holdsFor);
 }
 
 // Whether a voice reference ("@2", "@anyBelow", ...) among the pattern values of kern or duration (`id`)
@@ -791,8 +836,7 @@ bool voiceReferenceInList(const HumdrumChorale& chorale, std::size_t voice, Patt
             if (!note) return false;
             // A tied note is one note, and its duration is counted from where it was struck.
             auto tiedDuration = [&]() -> std::optional<hum::HumNum> {
-                hum::HTp start = note;
-                while (start && start->isSecondaryTiedNote()) start = start->getPreviousNNDT();
+                hum::HTp start = attackOf(note);
                 if (!start) return std::nullopt;
                 return start->getTiedDuration();
             };
@@ -908,6 +952,21 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
         bool hasReferences = false;
         for (const auto& [rawKey, values] : position) {
             if (rawKey == kPositionNameKey) continue; // only needed to resolve the references
+            if (isOtherVoiceKey(rawKey)) {
+                const auto [voiceReference, key] = splitOtherVoiceKey(rawKey);
+                PositionKey otherVoiceKey{findPatternKey(key), values};
+                checkValues(otherVoiceKey, m_options);
+                for (PatternValue& value : otherVoiceKey.values) normalizePatternValue(otherVoiceKey, value);
+                auto group = std::find_if(patternPosition.begin(), patternPosition.end(),
+                                          [&](const PositionKey& positionKey) { return positionKey.otherVoice == voiceReference; });
+                if (group == patternPosition.end()) {
+                    group = patternPosition.emplace(patternPosition.end());
+                    group->rawKey = voiceReference;
+                    group->otherVoice = voiceReference;
+                }
+                group->otherVoiceKeys.push_back(std::move(otherVoiceKey));
+                continue;
+            }
             hasReferences = hasReferences || hasPositionReference(values);
             PositionKey& positionKey = patternPosition.emplace_back(PositionKey{findPatternKey(rawKey), values});
             checkValues(positionKey, m_options);
@@ -1081,6 +1140,8 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
     int lineNumber = tok->getLineNumber();
     // fermata and the end of a phrase are judged on the last note of a word or a syllable.
     hum::HTp lastTok = onset.lastToken;
+
+    if (!positionKey.otherVoice.empty()) return otherVoiceMatches(chorale, voice, tok, positionKey, m_options.kernIgnoreOctave);
 
     // Some verse has to match the key here; that one verse matches every key of the pattern is checked once
     // the walk is through, see walkPattern.
