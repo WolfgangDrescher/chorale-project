@@ -100,6 +100,22 @@ function applyDemoQuery() {
 }
 
 const hasGroups = computed(() => !!result.value?.groups?.length);
+
+const tab = ref('statistics');
+const tabItems = computed(() => [
+    { label: t('groupingStatistics'), icon: 'lucide:chart-bar-decreasing', value: 'statistics' },
+    { label: t('groupingMatches'), icon: 'lucide:search', value: 'matches' },
+]);
+
+// Searched only once its tab is opened, for the query of the result shown.
+const matchesSearch = useChoraleSearch();
+watch([tab, result], () => {
+    if (tab.value !== 'matches' || !result.value) return;
+    const queryOfResult = JSON.stringify(result.value.query);
+    if (matchesSearch.query.value === queryOfResult) return;
+    matchesSearch.query.value = queryOfResult;
+    matchesSearch.fetchSearchResults();
+});
 </script>
 
 <template>
@@ -178,12 +194,16 @@ const hasGroups = computed(() => !!result.value?.groups?.length);
             ]"
         />
         <template v-else>
-            <p v-if="durationMs !== null" class="text-sm text-dimmed tabular-nums">
-                {{ $t('groupingDuration', { duration: formatDuration(durationMs) }) }}
-            </p>
-            <Suspense>
-                <AnalysisView :result="result" />
-            </Suspense>
+            <UTabs v-model="tab" :items="tabItems" :content="false" variant="link" class="mb-4" />
+            <div v-show="tab === 'statistics'">
+                <p v-if="durationMs !== null" class="text-sm text-dimmed tabular-nums">
+                    {{ $t('groupingDuration', { duration: formatDuration(durationMs) }) }}
+                </p>
+                <Suspense>
+                    <AnalysisView :result="result" />
+                </Suspense>
+            </div>
+            <SearchResults v-if="tab === 'matches'" :search="matchesSearch" />
         </template>
     </UContainer>
 </template>
