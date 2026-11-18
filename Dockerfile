@@ -3,8 +3,8 @@
 # The two services of compose.yaml are the targets of this file:
 #
 #   tools   runs the command line tools of chorale-search (the search, the
-#           segmentation and the check) for the webapp, together with the
-#           corpus they read
+#           segmentation, the check and the grouping) for the webapp, together
+#           with the corpus they read
 #   webapp  the Nuxt application, which is a plain Node application: it has
 #           none of the C++ tools
 #
@@ -65,6 +65,7 @@ WORKDIR /app/chorale-tools
 COPY --from=toolchain /build/chorale-search/build/chorale-search \
     /build/chorale-search/build/chorale-segment \
     /build/chorale-search/build/chorale-check \
+    /build/chorale-search/build/chorale-group \
     /app/chorale-search/build/
 COPY --from=data /build/corpus /app/corpus
 COPY --from=tools-build /build/chorale-tools/.output ./.output

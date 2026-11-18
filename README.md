@@ -160,11 +160,11 @@ For changes to the C++ sources, `make build` is enough to rebuild the binaries.
 
 `Dockerfile` and `compose.yaml` run the project as two services: `webapp`, the
 Nuxt application without the C++ tools, published on `127.0.0.1:3000` for the
-reverse proxy of the host, and `tools`, which runs the search, the segmentation
-and the check with the corpus. Only the webapp can reach `tools`, over a network
-without access to the outside. It passes those requests on to it when
-`CHORALE_TOOLS_URL` is set; without it the endpoints run the tools directly, so
-`npm run dev` needs no Docker.
+reverse proxy of the host, and `tools`, which runs the search, the segmentation,
+the check and the grouping with the corpus. Only the webapp can reach `tools`,
+over a network without access to the outside. It passes those requests on to it
+when `CHORALE_TOOLS_URL` is set; without it the endpoints run the tools
+directly, so `npm run dev` needs no Docker.
 
 Every push to master runs `.github/workflows/build.yaml`. If the tests pass,
 both images are pushed to ghcr.io as `sha-<commit>` and `latest`.

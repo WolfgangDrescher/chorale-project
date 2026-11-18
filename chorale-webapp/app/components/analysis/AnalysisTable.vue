@@ -1,6 +1,6 @@
 <script setup>
 const props = defineProps({
-    // The result of an analysis, or one of the variants it states (see analyses/README.md).
+    // The result of an analysis, or one of the variants it states (see /docs/grouping).
     analysis: { type: Object, required: true },
     labels: { type: Array, default: () => [] },
 });

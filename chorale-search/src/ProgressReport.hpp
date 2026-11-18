@@ -25,14 +25,16 @@ inline void reportPhase(const std::string& phase) {
 
 // The corpus search's progress as events: one per chorale file gone through, each carrying
 // the total so that a single line says everything.
+inline nlohmann::ordered_json searchProgressEvent(const SearchProgress& progress) {
+    return {{"event", "search-progress"},
+            {"chorale", progress.choraleId},
+            {"choralesSearched", progress.choralesSearched},
+            {"choralesTotal", progress.choralesTotal},
+            {"matchesSoFar", progress.matchesSoFar}};
+}
+
 inline ProgressCallback progressToStderr() {
-    return [](const SearchProgress& progress) {
-        reportEvent({{"event", "search-progress"},
-                     {"chorale", progress.choraleId},
-                     {"choralesSearched", progress.choralesSearched},
-                     {"choralesTotal", progress.choralesTotal},
-                     {"matchesSoFar", progress.matchesSoFar}});
-    };
+    return [](const SearchProgress& progress) { reportEvent(searchProgressEvent(progress)); };
 }
 
 } // namespace choralesearch

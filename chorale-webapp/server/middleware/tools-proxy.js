@@ -1,5 +1,5 @@
 // The endpoints that run a command line tool of chorale-search.
-const TOOL_PATHS = new Set(['/api/chorale-search', '/api/chorale-segment', '/api/chorale-check']);
+const TOOL_PATHS = new Set(['/api/chorale-search', '/api/chorale-segment', '/api/chorale-check', '/api/chorale-group']);
 
 // The request headers that matter to those endpoints, and the response headers
 // to hand back.

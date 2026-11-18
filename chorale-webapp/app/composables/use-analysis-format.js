@@ -1,5 +1,5 @@
 // How the parts of an analysis result are written: its numbers in the locale of the page, and a
-// group that is named after a category of one of its reads (see analyses/README.md) in words.
+// group that is named after a category of one of its reads (see /docs/grouping) in words.
 export function useAnalysisFormat(result) {
     const { t, locale } = useI18n();
     const percent = new Intl.NumberFormat(locale.value, { style: 'percent', maximumFractionDigits: 1 });

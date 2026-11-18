@@ -10,7 +10,7 @@ export default defineNitroConfig({
     compatibilityDate: '2025-07-15',
     // Only these endpoints run here. An endpoint that should run in this
     // service has to be added by hand.
-    handlers: ['chorale-search', 'chorale-segment', 'chorale-check'].map((name) => ({
+    handlers: ['chorale-search', 'chorale-segment', 'chorale-check', 'chorale-group'].map((name) => ({
         route: `/api/${name}`,
         handler: `${webappServer}/api/${name}.js`,
     })),

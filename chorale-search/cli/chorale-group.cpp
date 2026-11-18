@@ -15,6 +15,7 @@
 using choralesearch::GroupQuery;
 using choralesearch::CorpusSearch;
 using choralesearch::Group;
+using choralesearch::SearchProgress;
 
 namespace {
 
@@ -36,8 +37,8 @@ void printUsage(const char* argv0) {
         "                          recursively), or a path to a single .krn file\n"
         "\n"
         "Options:\n"
-        "    --query JSON          the group query; its keys are documented in\n"
-        "                          chorale-webapp/analyses/README.md\n"
+        "    --query JSON          the group query; its keys are documented in the\n"
+        "                          docs, /docs/grouping\n"
         "    --query-file FILE.json\n"
         "                          the group query from a file, or '-' for stdin\n"
         "    --verify              run the query of every group and fail when it finds another\n"
@@ -116,15 +117,28 @@ int main(int argc, char** argv) {
         const GroupQuery groupQuery = choralesearch::groupQueryFromJson(j);
 
         CorpusSearch search(corpusDir);
-        if (progress) search.setProgressCallback(choralesearch::progressToStderr());
         // The group query, then each of its variants.
         std::vector<std::pair<std::string, GroupQuery>> runs = {{"", groupQuery}};
         for (const auto& variant : groupQuery.variants) runs.emplace_back(variant.name, choralesearch::applyVariant(groupQuery, variant));
 
         nlohmann::json output;
-        for (const auto& [variant, run] : runs) {
+        std::size_t matchesOfGroupQuery = 0;
+        for (std::size_t runIndex = 0; runIndex < runs.size(); ++runIndex) {
+            const auto& [variant, run] = runs[runIndex];
+            // Every run searches the corpus again; the matches stay those of the group query.
+            if (progress) {
+                search.setProgressCallback([&, runIndex](const SearchProgress& step) {
+                    if (runIndex == 0) matchesOfGroupQuery = step.matchesSoFar;
+                    nlohmann::ordered_json event = choralesearch::searchProgressEvent(step);
+                    event["matchesSoFar"] = matchesOfGroupQuery;
+                    event["run"] = runIndex + 1;
+                    event["runCount"] = runs.size();
+                    choralesearch::reportEvent(event);
+                });
+            }
             const Group root = choralesearch::groupMatchesInCorpus(search, run);
             if (verify) {
+                search.setProgressCallback(nullptr); // the checks are no progress of the run
                 const std::vector<std::string> mismatches = choralesearch::verifyGroupMatchQueries(search, root);
                 for (const std::string& mismatch : mismatches) {
                     std::cerr << "Error: " << (variant.empty() ? "" : variant + ": ") << mismatch << "\n";

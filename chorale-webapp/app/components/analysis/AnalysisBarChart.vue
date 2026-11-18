@@ -4,7 +4,7 @@ import { useDebounceFn, useResizeObserver } from '@vueuse/core';
 
 const props = defineProps({
     result: { type: Object, required: true },
-    // The result, or one of the variants it states (see analyses/README.md).
+    // The result, or one of the variants it states (see /docs/grouping).
     analysis: { type: Object, required: true },
     // How many groups of the first level get a bar: as many as the table shows before it opens.
     top: { type: Number, default: 10 },
