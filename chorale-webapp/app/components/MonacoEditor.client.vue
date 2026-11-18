@@ -13,6 +13,11 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    // Each schema needs its own URI, or Monaco keeps the one of another page.
+    schemaUri: {
+        type: String,
+        default: 'inmemory://schema/chorale-search-query.json',
+    },
     // Without a maxHeight the editor fills its parent, at least as tall as minHeight. With one,
     // it grows with its content between minHeight and maxHeight (in px) and scrolls beyond that.
     minHeight: {
@@ -44,7 +49,7 @@ onMounted(() => {
                 validate: true,
                 schemas: [
                     {
-                        uri: 'inmemory://schema/chorale-search-query.json',
+                        uri: props.schemaUri,
                         fileMatch: ['*'],
                         schema: props.schema,
                     },

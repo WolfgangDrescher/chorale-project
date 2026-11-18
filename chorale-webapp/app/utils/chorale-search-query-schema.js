@@ -187,7 +187,7 @@ const positionFeaturesSchema = {
 };
 
 // One position of a pattern: what it checks, and its name.
-const patternPositionSchema = {
+export const patternPositionSchema = {
     ...positionFeaturesSchema,
     properties: {
         as: {
@@ -205,7 +205,7 @@ const patternPositionSchema = {
 
 // Fields shared by the top-level query and each simultaneousWith entry, defined once so
 // both schemas below stay in sync.
-const searchRequestFieldSchemas = {
+export const searchRequestFieldSchemas = {
     feature: {
         type: 'string',
         enum: ['kern', 'deg', 'mint', 'fb', 'metweight', 'word', 'syl', 'hint-12', 'hint-13', 'hint-14', 'hint-23', 'hint-24', 'hint-34'],
@@ -402,7 +402,7 @@ const choraleFilterSchema = {
     },
 };
 
-const singleQuerySchema = {
+export const singleQuerySchema = {
     type: 'object',
     title: 'Chorale Search Query',
     required: ['feature', 'pattern'],

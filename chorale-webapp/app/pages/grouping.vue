@@ -129,6 +129,8 @@ const hasGroups = computed(() => !!result.value?.groups?.length);
                     </template>
                     <MonacoEditor
                         v-model="query"
+                        :schema="choraleGroupQuerySchema"
+                        schema-uri="inmemory://schema/chorale-group-query.json"
                         :options="{
                             fontSize: 14,
                             tabSize: 12,
