@@ -28,6 +28,7 @@ showQueryResults: Ergebnis dieses Queries anzeigen
 searchResults: Suchergebnisse
 editQuery: Query bearbeiten
 openInSearch: In der Suche öffnen
+openChoralePage: Choralseite öffnen
 searchError: Die Suche ist fehlgeschlagen.
 formatQuery: Formatieren
 formatQueryInvalid: Der Query ist kein gültiges JSON.

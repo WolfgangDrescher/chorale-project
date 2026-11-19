@@ -42,8 +42,6 @@ const choraleRoute = (item) => item && localePath({ name: 'chorale-bach-id', par
 const prevChoraleRoute = computed(() => choraleRoute(prevChorale.value));
 const nextChoraleRoute = computed(() => choraleRoute(nextChorale.value));
 
-const { localScoreUrlGenerator, githubScoreUrlGenerator, vhvScoreUrlGenerator } = useScoreUrlGenerator();
-
 const scoreOptions = useScoreOptions();
 
 // A link can open the score with its filters set, as an exercise of a lesson does:
@@ -76,165 +74,12 @@ const matches = String(useRoute().query.matches ?? '').split(',').flatMap((match
 // The lyrics show for a match of them.
 if (matches.some((match) => match.type === 'text' || match.linkedSections.some((linked) => linked.type === 'text'))) scoreOptions.showLyrics = true;
 
-// The downloads of a chorale, or of a worksheet with only the cantus firmus written out: as a PDF to print or as MEI for notation programs.
-function useChoraleExport() {
-    const { t } = useI18n();
-
-    const exportFormat = ref('pdf');
-    const exportContent = ref('cantus-firmus');
-    const exportVoices = ref('4');
-    const exportLayout = ref('piano');
-    const pageOrientation = ref('portrait');
-
-    const exportFormatItems = [
-        { label: 'PDF', value: 'pdf' },
-        { label: 'MEI', value: 'mei' },
-    ];
-    const exportContentItems = computed(() => [
-        { label: t('cantusFirmusOnly'), value: 'cantus-firmus' },
-        { label: t('completeChorale'), value: 'complete' },
-    ]);
-    const exportVoicesItems = computed(() => [
-        { label: t('fourVoices'), value: '4' },
-        { label: t('twoVoices'), value: '2' },
-    ]);
-    const exportLayoutItems = computed(() => [
-        { label: t('scoreLayout'), value: 'score' },
-        { label: t('pianoSetting'), value: 'piano' },
-    ]);
-    const pageOrientationItems = computed(() => [
-        { label: t('portrait'), value: 'portrait' },
-        { label: t('landscape'), value: 'landscape' },
-    ]);
-
-    // The URL and the file name of a download. The number of voices is a matter of the MEI only,
-    // the page orientation of the PDF.
-    function exportLink({ format, content, layout, voices, orientation }) {
-        const isMei = format === 'mei';
-        const query = new URLSearchParams({ format, content, layout });
-        if (isMei) query.set('voices', voices);
-        else query.set('orientation', orientation);
-        return {
-            to: `/api/chorales/${chorale.value.choraleId}/export?${query}`,
-            download: `${chorale.value.choraleId}-${content}-${layout}-${isMei ? voices : orientation}.${format}`,
-        };
-    }
-
-    // Every combination there is, for trying them all out.
-    function allExportLinks() {
-        const links = [];
-        for (const content of ['cantus-firmus', 'complete']) {
-            for (const layout of ['score', 'piano']) {
-                for (const orientation of ['portrait', 'landscape']) links.push(exportLink({ format: 'pdf', content, layout, orientation }));
-                links.push(exportLink({ format: 'mei', content, layout, voices: '4' }));
-                links.push(exportLink({ format: 'mei', content, layout, voices: '2' }));
-            }
-        }
-        return links;
-    }
-
-    // All of them in one ZIP file, which a browser takes without asking, as opposed to a dozen
-    // downloads that start at once. What does not come out right is in it as a text file.
-    async function downloadAll() {
-        const { zipSync, strToU8 } = await import('fflate');
-        const files = {};
-        for (const { to, download } of allExportLinks()) {
-            try {
-                const response = await fetch(to);
-                if (response.ok) {
-                    files[download] = new Uint8Array(await response.arrayBuffer());
-                } else {
-                    files[`${download}.error.txt`] = strToU8(`${response.status} ${response.statusText}\n${await response.text()}`);
-                }
-            } catch (error) {
-                files[`${download}.error.txt`] = strToU8(String(error));
-            }
-        }
-        const url = URL.createObjectURL(new Blob([zipSync(files)], { type: 'application/zip' }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${chorale.value.choraleId}-all.zip`;
-        link.click();
-        URL.revokeObjectURL(url);
-    }
-
-    const downloadItems = computed(() => {
-        const link = exportLink({
-            format: exportFormat.value,
-            content: exportContent.value,
-            layout: exportLayout.value,
-            voices: exportVoices.value,
-            orientation: pageOrientation.value,
-        });
-        const items = [[{
-            label: t('downloadFormat', { format: exportFormat.value.toUpperCase() }),
-            icon: 'lucide:download',
-            external: true,
-            ...link,
-        }]];
-        if (import.meta.dev) {
-            items.push([{ label: t('downloadAll'), icon: 'lucide:bug', onSelect: downloadAll }]);
-        }
-        return items;
-    });
-
-    return {
-        exportFormat,
-        exportContent,
-        exportVoices,
-        exportLayout,
-        pageOrientation,
-        exportFormatItems,
-        exportContentItems,
-        exportVoicesItems,
-        exportLayoutItems,
-        pageOrientationItems,
-        downloadItems,
-    };
-}
-
-const {
-    exportFormat,
-    exportContent,
-    exportVoices,
-    exportLayout,
-    pageOrientation,
-    exportFormatItems,
-    exportContentItems,
-    exportVoicesItems,
-    exportLayoutItems,
-    pageOrientationItems,
-    downloadItems,
-} = useChoraleExport();
-
-const player = useScorePlayer();
-useScorePlayerKeyboardShortcuts(() => player);
-
-const modulations = computed(() => chorale.value.modulations ?? []);
-
-const { t } = useI18n();
-const keyNotation = useKeyNotation();
-
-const modulationLines = computed(() => [{
-    color: 'rgb(34 197 94 / 0.4)',
-    items: modulations.value.map(({ line, key, mode }) => ({
-        lineNumber: line,
-        label: { value: key === '?' ? key : keyNameInNotation(key, mode, keyNotation.value, t), position: 'bottom' },
-    })),
-}]);
-
-// The modulations are annotated on the page, see useModulationAnnotator; the development server
-// writes them to the file. The state carries over to the next chorale.
+// The modulations are annotated on the page, see ChoraleView. The state carries over to the next chorale.
 const annotating = useState('annotating', () => false);
-const annotator = useModulationAnnotator(id, player, annotating, import.meta.dev);
-
-useChoraleKeyboardShortcuts({ prevRoute: prevChoraleRoute, nextRoute: nextChoraleRoute, keysTaken: () => annotator.active });
 
 // The key as the score writes it, e.g. "G major" or "f# minor".
 const keyName = computed(() => [chorale.value.key, chorale.value.mode].filter(Boolean).join(' '));
 const subtitle = computed(() => [chorale.value.bwv, keyName.value, chorale.value.meters?.join(' ')].filter(Boolean).join(' · '));
-
-const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHORALE_PAGE_VEROVIO_OPTIONS }));
 </script>
 
 <template>
@@ -279,77 +124,7 @@ const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHOR
                 </UModal>
             </ChoraleHeader>
 
-            <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
-                <ScoreOptionsPalette :chorale="chorale" />
-                <ScorePlayerControls :player="player" :file-name="chorale.choraleId" />
-                <div class="shrink-0 flex gap-2 ml-auto">
-                    <ChoraleScoreLinks :github-url="githubScoreUrlGenerator(chorale.choraleId)" :vhv-url="vhvScoreUrlGenerator(chorale.choraleId)">
-                        <UTooltip v-if="chorale.urlScan" :text="$t('scan')">
-                            <UButton :to="chorale.urlScan" target="_blank" icon="lucide:book-image" color="neutral" variant="outline" :aria-label="$t('scan')" />
-                        </UTooltip>
-                    </ChoraleScoreLinks>
-                    <UDropdownMenu :items="downloadItems" arrow>
-                        <UButton icon="lucide:download" trailing-icon="lucide:chevron-down" color="neutral" variant="outline" :aria-label="$t('download')" />
-                        <template #content-top>
-                            <div class="flex flex-col gap-2 p-1.5 pb-1">
-                                <div>
-                                    <div class="text-xs text-muted mb-1">
-                                        {{ $t('exportFormat') }}
-                                    </div>
-                                    <UTabs v-model="exportFormat" :items="exportFormatItems" :content="false" size="xs" class="w-full" />
-                                </div>
-                                <div>
-                                    <div class="text-xs text-muted mb-1">
-                                        {{ $t('exportContent') }}
-                                    </div>
-                                    <UTabs v-model="exportContent" :items="exportContentItems" :content="false" size="xs" class="w-full" />
-                                </div>
-                                <div v-if="exportFormat === 'mei'">
-                                    <div class="text-xs text-muted mb-1">
-                                        {{ $t('exportVoices') }}
-                                    </div>
-                                    <UTabs v-model="exportVoices" :items="exportVoicesItems" :content="false" size="xs" class="w-full" />
-                                </div>
-                                <div>
-                                    <div class="text-xs text-muted mb-1">
-                                        {{ $t('exportLayout') }}
-                                    </div>
-                                    <UTabs v-model="exportLayout" :items="exportLayoutItems" :content="false" size="xs" class="w-full" />
-                                </div>
-                                <div v-if="exportFormat === 'pdf'">
-                                    <div class="text-xs text-muted mb-1">
-                                        {{ $t('pageOrientation') }}
-                                    </div>
-                                    <UTabs v-model="pageOrientation" :items="pageOrientationItems" :content="false" size="xs" class="w-full" />
-                                </div>
-                            </div>
-                        </template>
-                    </UDropdownMenu>
-                </div>
-            </div>
-
-            <PlayableHighlightedScore
-                :player="player"
-                :score-url="localScoreUrlGenerator(chorale.choraleId)"
-                :horizontal="scoreOptions.showHorizontalViewMode"
-                :verovio-options="verovioOptions"
-                :base-filters="scoreOptions.baseFilters"
-                :filters="scoreOptions.humdrumFilters"
-                :sections="matches"
-                :lines="annotator.active ? annotator.markers : (scoreOptions.showModulations ? modulationLines : undefined)"
-                :scroll-to-first-section="matches.length > 0"
-            />
-
-            <ModulationAnnotator v-if="annotator.active" :annotator="annotator" />
-
-            <ModulationTimeline
-                v-model:annotating="annotating"
-                :player="player"
-                :modulations="annotator.modulations ?? modulations"
-                :cantus-firmus="chorale.cantusFirmus"
-                :line-shift="lineShiftOf(scoreOptions.humdrumFilters)"
-                :outdated="annotator.active && !annotator.saves && annotator.changed"
-            />
+            <ChoraleView v-model:annotating="annotating" :chorale="chorale" :matches="matches" :prev-route="prevChoraleRoute" :next-route="nextChoraleRoute" />
         </div>
     </UContainer>
 </template>
