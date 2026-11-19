@@ -298,6 +298,7 @@ allOptions: Alle
 multiSelectHint: Mit gedrückter Umschalt- oder Befehlstaste mehrere auswählen
 multiSelectShortHint: "{key} + Klick: mehrere"
 choraleNumber: "Nr. {number}"
+quoted: "«{text}»"
 choraleCount: "ein Choral | {count} Choräle"
 key: Tonart
 mode: Modus
