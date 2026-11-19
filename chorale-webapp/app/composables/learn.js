@@ -40,7 +40,7 @@ export function lastChangeItem(page, t, d) {
     const lastCommit = contentHistory[page.stem];
     if (!lastCommit) return null;
     const date = d(new Date(lastCommit.date), { dateStyle: 'medium', timeZone: 'UTC' });
-    return { icon: 'lucide:history', text: t('learnChanged', { date }), commit: lastCommit.commit };
+    return { icon: 'lucide:history', text: t('learnChanged', { date }), commit: lastCommit.commit, file: `chorale-webapp/content/${page.stem}.md` };
 }
 
 // Settings of LearnFilteredCollectionPage. The first entry of `sortBy` is the default.

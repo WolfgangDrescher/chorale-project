@@ -1,10 +1,11 @@
 <script setup>
 defineProps({
-    // { icon, text, title?, commit? }
+    // { icon, text, title?, commit?, file? }; with a file, the commit links to its history.
     items: { type: Array, required: true },
 });
 
-const commitUrl = (commit) => `https://github.com/WolfgangDrescher/chorale-project/commit/${commit}`;
+const REPOSITORY_URL = 'https://github.com/WolfgangDrescher/chorale-project';
+const commitUrl = ({ commit, file }) => (file ? `${REPOSITORY_URL}/commits/${commit}/${file}` : `${REPOSITORY_URL}/commit/${commit}`);
 </script>
 
 <template>
@@ -12,7 +13,7 @@ const commitUrl = (commit) => `https://github.com/WolfgangDrescher/chorale-proje
         <span v-for="item in items" :key="item.icon" class="inline-flex items-center gap-1.5" :title="item.title">
             <UIcon :name="item.icon" class="size-4 shrink-0" />
             {{ item.text }}
-            <NuxtLink v-if="item.commit" :to="commitUrl(item.commit)" target="_blank" class="rounded bg-elevated px-1 font-mono text-xs hover:text-primary">{{ item.commit.slice(0, 7) }}</NuxtLink>
+            <NuxtLink v-if="item.commit" :to="commitUrl(item)" target="_blank" class="rounded bg-elevated px-1 font-mono text-xs hover:text-primary">{{ item.commit.slice(0, 7) }}</NuxtLink>
         </span>
     </p>
 </template>
