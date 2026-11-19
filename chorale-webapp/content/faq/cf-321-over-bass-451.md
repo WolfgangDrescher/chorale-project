@@ -275,9 +275,9 @@ Verzierungen auf Zwischenschlägen werden dabei ignoriert.
 Meist erreicht der Sopran die Septime im Durchgang von der :deg{v="4" upper}
 her. Oft löst sich die :fb{v="7"} aber bereits in der nächsten Achtel in
 eine :fb{v="6"} auf, wodurch eine Anticipatio der :deg{v="2" upper} über
-der :deg{v="4" bass} entsteht. Nur in `chor083`, T. 14, wird die Septime nicht
-über einen Durchgang in Vierteln erreicht, sondern über einen in Achteln:
-Die :deg{v="4" upper} davor ist eine Achtel auf dem Zwischenschlag.
+der :deg{v="4" bass} entsteht. Nur in :chorale{id="chor083"}, T. 14, wird die
+Septime nicht über einen Durchgang in Vierteln erreicht, sondern über einen in
+Achteln: Die :deg{v="4" upper} davor ist eine Achtel auf dem Zwischenschlag.
 
 ::score-examples
 :::score-example{chorale-id="chor017" measures="3-4"}
@@ -292,10 +292,10 @@ Die :deg{v="4" upper} davor ist eine Achtel auf dem Zwischenschlag.
 
 Ebenso oft ist die Septime vorbereitet. Die :deg{v="3" upper} klingt schon über
 dem Basston davor als Konsonanz, gehalten oder neu angeschlagen, und erst der
-Schritt des Basses zur :deg{v="4" bass} macht sie zur Septime. In `chor013` und
-`chor341` ist im Cantus firmus vor dem neuen Anschlag eine untere Wechselnote
-eingeschoben. Die drei gehaltenen Fälle stehen im 3/4-Takt, die Septime fällt
-dort auf die zweite Zählzeit.
+Schritt des Basses zur :deg{v="4" bass} macht sie zur Septime.
+In :chorale{id="chor013"} und :chorale{id="chor341"} ist im Cantus firmus vor
+dem neuen Anschlag eine untere Wechselnote eingeschoben. Die drei gehaltenen
+Fälle stehen im 3/4-Takt, die Septime fällt dort auf die zweite Zählzeit.
 
 ::score-examples
 :::score-example{chorale-id="chor047" measures="9-10"}
@@ -306,8 +306,8 @@ dort auf die zweite Zählzeit.
 
 ### Sprung
 
-Frei angesprungen wird die Septime nur einmal: In `chor292` springt der Sopran
-eine Terz abwärts in sie hinein.
+Frei angesprungen wird die Septime nur einmal: In :chorale{id="chor292"} springt
+der Sopran eine Terz abwärts in sie hinein.
 
 ::score-example{chorale-id="chor292" measures="1-2"}
 ::
