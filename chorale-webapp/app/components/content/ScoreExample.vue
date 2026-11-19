@@ -6,9 +6,12 @@ const mountedPlayers = new Set();
 <script setup>
 const props = defineProps({
     choraleId: { type: String, required: true },
-    caption: { type: String, default: '' },
     measures: { type: String, default: '' },
+    // Follows the chorale and its measures in the caption.
+    caption: { type: String, default: '' },
 });
+
+const measuresLabel = computed(() => props.measures && `T. ${props.measures.replace('-', '–')}`);
 
 const { localScoreUrlGenerator } = useScoreUrlGenerator();
 const filters = computed(() => (props.measures ? [`myank -m ${props.measures}`] : []));
@@ -24,8 +27,8 @@ useScorePlayerKeyboardShortcuts(() => mountedPlayers.values().next().value);
             <ScorePlayerControls :player="player" compact class="transition-opacity duration-300" :class="!player.hasScore && 'opacity-0'" />
             <PlayableHighlightedScore :player="player" :horizontal="true" :score-url="localScoreUrlGenerator(choraleId)" :filters="filters" :verovio-options="{ scale: 40, pageMarginLeft: 42, pageMarginRight: 0 }" />
         </div>
-        <figcaption v-if="caption" class="mt-2 w-0 min-w-full text-center text-sm text-dimmed text-pretty">
-            <NuxtLink :to="`/chorale/bach/${choraleId}`" class="hover:underline">{{ caption }}</NuxtLink>
+        <figcaption class="mt-2 w-0 min-w-full text-center text-sm text-dimmed text-pretty">
+            <Chorale :id="choraleId" />{{ [measuresLabel, caption].filter(Boolean).map((part) => `, ${part}`).join('') }}
         </figcaption>
     </figure>
 </template>

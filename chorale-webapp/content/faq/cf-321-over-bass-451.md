@@ -280,11 +280,11 @@ der :deg{v="4" bass} entsteht. Nur in `chor083`, T. 14, wird die Septime nicht
 Die :deg{v="4" upper} davor ist eine Achtel auf dem Zwischenschlag.
 
 ::score-examples
-:::score-example{chorale-id="chor017" measures="3-4" caption="chor017, Erschienen ist der herrliche Tag (BWV 145/5), T. 3–4"}
+:::score-example{chorale-id="chor017" measures="3-4"}
 :::
-:::score-example{chorale-id="chor297" measures="1-2" caption="chor297, Jesu, der du meine Seele (BWV 78/7), T. 1–2"}
+:::score-example{chorale-id="chor297" measures="1-2"}
 :::
-:::score-example{chorale-id="chor083" measures="13-14" caption="chor083, Jesu Leiden, Pein und Tod (BWV 245/14), T. 13–14"}
+:::score-example{chorale-id="chor083" measures="13-14"}
 :::
 ::
 
@@ -298,9 +298,9 @@ eingeschoben. Die drei gehaltenen Fälle stehen im 3/4-Takt, die Septime fällt
 dort auf die zweite Zählzeit.
 
 ::score-examples
-:::score-example{chorale-id="chor047" measures="9-10" caption="chor047, Vater unser im Himmelreich (BWV 245/5 & 416), T. 9–10"}
+:::score-example{chorale-id="chor047" measures="9-10"}
 :::
-:::score-example{chorale-id="chor203" measures="6-7" caption="chor203, O Mensch, schau Jesum Christum an (BWV 403), T. 6–7"}
+:::score-example{chorale-id="chor203" measures="6-7"}
 :::
 ::
 
@@ -309,7 +309,7 @@ dort auf die zweite Zählzeit.
 Frei angesprungen wird die Septime nur einmal: In `chor292` springt der Sopran
 eine Terz abwärts in sie hinein.
 
-::score-example{chorale-id="chor292" measures="1-2" caption="chor292, Nimm von uns, Herr, du treuer Gott (BWV 101/7), T. 1–2"}
+::score-example{chorale-id="chor292" measures="1-2"}
 ::
 
 ## Große, kleine und verminderte Septime
@@ -326,5 +326,5 @@ Moll eine kleine.
 Geht der Bass :deg{v="4+ 5 1" bass}, ist die Septime über :deg{v="4+" bass}
 immer vermindert, die Wendung steht also nur in Moll.
 
-::score-example{chorale-id="chor047" measures="11-12" caption="chor047, Vater unser im Himmelreich (BWV 245/5 & 416), T. 11–12"}
+::score-example{chorale-id="chor047" measures="11-12"}
 ::
