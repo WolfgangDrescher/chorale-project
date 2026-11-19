@@ -197,5 +197,5 @@ zur nächsten Phrase. Sonst gibt es Bewegung nur in den Mittelstimmen, etwa wenn
 ein Vorhalt erst unter der Fermate aufgelöst wird.
 
 Für das Komponieren eigener Choräle heißt das: Wiederholt der Cantus firmus
-seinen Schlusston auf leichter Zählzeit, gehört der Schlussklang (die Finalis)
+seinen Schlusston auf leichter Zählzeit, gehört der Schlussklang (die Ultima)
 der Kadenz bereits auf die Zählzeit davor.
