@@ -79,9 +79,9 @@ useSeoMeta({ title: props.title, description: props.description });
     <UContainer>
         <UPage :ui="{ root: 'lg:grid-cols-[280px_minmax(0,1fr)]', left: 'lg:col-span-1', center: 'lg:col-span-1' }">
             <template #left>
-                <UPageAside>
+                <ResponsivePageAside :title="t('learn')">
                     <LearnNavigation />
-                </UPageAside>
+                </ResponsivePageAside>
             </template>
 
             <UPageHeader :title="title" :description="description">

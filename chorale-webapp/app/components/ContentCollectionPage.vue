@@ -84,7 +84,7 @@ useSeoMeta({
     <UContainer>
         <UPage :ui="{ root: 'lg:grid-cols-[280px_minmax(0,1fr)]', left: 'lg:col-span-1', center: 'lg:col-span-1' }">
             <template #left>
-                <UPageAside>
+                <ResponsivePageAside :title="collection === 'docs' ? t('docs') : t('learn')">
                     <slot name="navigation">
                         <UContentNavigation :navigation="navigation" highlight>
                             <template #link-title="{ link }">
@@ -93,7 +93,7 @@ useSeoMeta({
                             </template>
                         </UContentNavigation>
                     </slot>
-                </UPageAside>
+                </ResponsivePageAside>
             </template>
 
             <UPageHeader :title="pageTitle" :description="page.description" :headline="headline">

@@ -90,9 +90,9 @@ useSeoMeta({
     <UContainer>
         <UPage :ui="hasToc ? { root: 'lg:grid-cols-[280px_minmax(0,1fr)_220px]', left: 'lg:col-span-1', center: 'lg:col-span-1', right: 'lg:col-span-1' } : { root: 'lg:grid-cols-[280px_minmax(0,1fr)]', left: 'lg:col-span-1', center: 'lg:col-span-1' }">
             <template #left>
-                <UPageAside>
+                <ResponsivePageAside :title="t('learn')" :toc-links="hasToc ? page.body.toc.links : []">
                     <LearnNavigation />
-                </UPageAside>
+                </ResponsivePageAside>
             </template>
 
             <UPageHeader
@@ -197,7 +197,7 @@ useSeoMeta({
             </UPageBody>
 
             <template v-if="hasToc" #right>
-                <UContentToc :links="page.body.toc.links" :title="t('learnToc')" highlight />
+                <UContentToc :links="page.body.toc.links" :title="t('learnToc')" highlight class="hidden lg:flex" />
             </template>
         </UPage>
         <QueryDrawer v-if="page.queries?.length" v-model:open="queryDrawerOpen" :query="activeQuery" />
