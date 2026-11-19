@@ -171,7 +171,7 @@ queries:
                     "simultaneousAlignment": "end"
                 }
     - id: step-below
-      title: Septime stufenweise von unten
+      title: Septime schrittweise von unten
       query: |
                 {
                     "feature": "mint",
@@ -349,7 +349,7 @@ Fälle stehen im 3/4-Takt, die Septime fällt dort auf die zweite Zählzeit.
 Frei angesprungen wird die Septime nur zweimal: In :chorale{id="chor292"}
 springt der Sopran eine Terz abwärts in sie hinein, in :chorale{id="chor321"}
 eine Terz aufwärts in die verminderte Septime über :deg{v="4+" bass}. In
-:chorale{id="chor146"} erreicht er die verminderte Septime stufenweise von
+:chorale{id="chor146"} erreicht er die verminderte Septime schrittweise von
 unten.
 
 ::score-examples
