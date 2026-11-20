@@ -747,12 +747,11 @@ std::vector<std::size_t> voicesOfDrivingSpine(const HumdrumChorale& chorale, con
     return voices;
 }
 
-// Every voice of the driving spine keeps its pitch, whichever feature is walked. A **mint walk
-// also takes an opted-in octave leap.
-bool continuesLogicalNote(const HumdrumChorale& chorale, std::optional<PatternKeyId> drivingFeatureId,
-                          const std::string& drivingFeature, std::size_t voice, hum::HTp previous, hum::HTp tok,
-                          const std::vector<std::string>& mintAllowComplementation) {
-    const bool octaveIsReAttack = drivingFeatureId == PatternKeyId::Mint && mintOctaveIsReAttack(mintAllowComplementation);
+// Every voice of the driving spine keeps its pitch or, opted in, leaps an octave, whichever
+// feature is walked.
+bool continuesLogicalNote(const HumdrumChorale& chorale, const std::string& drivingFeature, std::size_t voice,
+                          hum::HTp previous, hum::HTp tok, const std::vector<std::string>& mintAllowComplementation) {
+    const bool octaveIsReAttack = mintOctaveIsReAttack(mintAllowComplementation);
     for (std::size_t v : voicesOfDrivingSpine(chorale, drivingFeature, voice)) {
         hum::HTp kernSpine = chorale.spine(kKernKey, v);
         hum::HTp before = tokenBesideOnLine(previous, kernSpine, true);
@@ -1237,8 +1236,8 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
         const Onset& onset = onsets[idx];
         bool isContinuation = idx != onsetIndex;
         if (isContinuation &&
-            !continuesLogicalNote(chorale, m_drivingFeatureId, m_drivingFeature, voice, onsets[idx - 1].token,
-                                  onset.token, m_options.mintAllowIntervalComplementation)) {
+            !continuesLogicalNote(chorale, m_drivingFeature, voice, onsets[idx - 1].token, onset.token,
+                                  m_options.mintAllowIntervalComplementation)) {
             return std::nullopt;
         }
 

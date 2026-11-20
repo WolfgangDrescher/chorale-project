@@ -1414,19 +1414,22 @@ TEST_CASE(matcher_duration_split_octave_re_attack_needs_the_unison_octave_pair_o
     CHECK_EQ(matchesWith({"5", "8"}), withoutOctaves + 1);
 }
 
-TEST_CASE(matcher_duration_split_octave_re_attack_does_not_apply_to_a_kern_driving_feature) {
+TEST_CASE(matcher_duration_split_octave_re_attack_applies_whichever_feature_is_walked) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
-    // The same GG -> G leap, walked as **kern: complementation is a mint notion, so the run
-    // still needs the identical pitch and this stays two separate quarters.
+    // The same GG -> G leap holds the run in the other walks too.
     AttributeMap position{{"duration", {"2"}}};
-    MatcherOptions options{
-        .mintAllowIntervalComplementation = {"*"},
-        .durationAllowSplitNotes = true,
+    MatcherOptions options{.durationAllowSplitNotes = true};
+    auto startsAtZero = [&](const char* feature) {
+        auto matches = AttributeMatcher(feature, {position}, options).findAll(chorale, 1);
+        return std::any_of(matches.begin(), matches.end(), [](const auto& m) { return m.startPosition == 0; });
     };
 
-    auto matches = AttributeMatcher("kern", {position}, options).findAll(chorale, 1);
-    CHECK(std::none_of(matches.begin(), matches.end(),
-                        [](const auto& m) { return m.startPosition == 0; }));
+    for (const char* feature : {"kern", "deg", "metweight"}) {
+        options.mintAllowIntervalComplementation = {};
+        CHECK(!startsAtZero(feature));
+        options.mintAllowIntervalComplementation = {"*"};
+        CHECK(startsAtZero(feature));
+    }
 }
 
 TEST_CASE(matcher_duration_split_run_is_the_same_note_whichever_feature_is_walked) {
