@@ -669,24 +669,7 @@ bool mintOctaveIsReAttack(const std::vector<std::string>& mintAllowComplementati
     return containsNumberOrWildcard(mintAllowComplementation, "1") || containsNumberOrWildcard(mintAllowComplementation, "8");
 }
 
-// Whether the onset whose token is `tok` (and whose interval into it is `mint`, already
-// measured across any skipped ornament) re-articulates the note `first` started rather than
-// moving to a new one: the same pitch for **kern (rhythm and beam/slur markup differ between
-// the onsets, so only the pitch is compared), a unison -- or, opted in, an octave -- for
-// **mint, which records the step *into* each note, and its own token repeated for every
-// other spine.
-bool continuesLogicalNote(std::optional<PatternKeyId> drivingFeature, hum::HTp first, hum::HTp tok,
-                           const std::string& mint,
-                           const std::vector<std::string>& mintAllowComplementation) {
-    if (drivingFeature == PatternKeyId::Kern) return kernToPitch(std::string(*first)) == kernToPitch(std::string(*tok));
-    if (drivingFeature == PatternKeyId::Mint) {
-        if (mintValueMatches("P1", mint)) return true;
-        return mintOctaveIsReAttack(mintAllowComplementation) && mintValueMatches("P8", mint);
-    }
-    return std::string(*first) == std::string(*tok);
-}
-
-// The mirror image of continuesLogicalNote's **mint case, for a note the score merged rather
+// The mirror image of continuesLogicalNote's octave case, for a note the score merged rather
 // than split: whether an OR-list of **mint pattern values would be satisfied by a re-attack of
 // the note a merged run started on. Such a re-attack is a unison by definition -- or an
 // octave, with the same opt-in continuesLogicalNote asks for. Nothing in the score is
@@ -752,6 +735,33 @@ hum::HTp tokenBesideOnLine(hum::HTp tok, hum::HTp spineStart, bool resolveNull =
     if (!field || !field->isNull()) return field;
     hum::HTp note = resolveNull ? field->resolveNull() : nullptr;
     return note && note->isData() ? note : nullptr;
+}
+
+// A hint pair stands for its two voices, fb for all of them.
+std::vector<std::size_t> voicesOfDrivingSpine(const HumdrumChorale& chorale, const std::string& drivingFeature,
+                                              std::size_t voice) {
+    if (std::vector<std::size_t> pair = voicesOfHintPair(drivingFeature); !pair.empty()) return pair;
+    if (drivingFeature != kFbKey) return {voice};
+    std::vector<std::size_t> voices;
+    for (std::size_t v = 1; v <= chorale.voiceCount(); ++v) voices.push_back(v);
+    return voices;
+}
+
+// Every voice of the driving spine keeps its pitch, whichever feature is walked. A **mint walk
+// also takes an opted-in octave leap.
+bool continuesLogicalNote(const HumdrumChorale& chorale, std::optional<PatternKeyId> drivingFeatureId,
+                          const std::string& drivingFeature, std::size_t voice, hum::HTp previous, hum::HTp tok,
+                          const std::vector<std::string>& mintAllowComplementation) {
+    const bool octaveIsReAttack = drivingFeatureId == PatternKeyId::Mint && mintOctaveIsReAttack(mintAllowComplementation);
+    for (std::size_t v : voicesOfDrivingSpine(chorale, drivingFeature, voice)) {
+        hum::HTp kernSpine = chorale.spine(kKernKey, v);
+        hum::HTp before = tokenBesideOnLine(previous, kernSpine, true);
+        hum::HTp now = tokenBesideOnLine(tok, kernSpine, true);
+        if (!before || !now) return false;
+        if (kernToPitch(*before) == kernToPitch(*now)) continue;
+        if (!octaveIsReAttack || !mintValueMatches("P8", mintIntervalToken(before, now))) return false;
+    }
+    return true;
 }
 
 // The attack a tied part of a note belongs to.
@@ -1227,9 +1237,8 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
         const Onset& onset = onsets[idx];
         bool isContinuation = idx != onsetIndex;
         if (isContinuation &&
-            !continuesLogicalNote(m_drivingFeatureId, onsets[onsetIndex].token, onset.token,
-                                  onset.mint.value_or(std::string(*onset.token)),
-                                  m_options.mintAllowIntervalComplementation)) {
+            !continuesLogicalNote(chorale, m_drivingFeatureId, m_drivingFeature, voice, onsets[idx - 1].token,
+                                  onset.token, m_options.mintAllowIntervalComplementation)) {
             return std::nullopt;
         }
 

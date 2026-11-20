@@ -1423,6 +1423,41 @@ TEST_CASE(matcher_duration_split_octave_re_attack_does_not_apply_to_a_kern_drivi
                         [](const auto& m) { return m.startPosition == 0; }));
 }
 
+TEST_CASE(matcher_duration_split_run_is_the_same_note_whichever_feature_is_walked) {
+    // kern, deg, mint and metweight have the same onsets, so they find the same runs.
+    MatcherOptions split{.durationAllowSplitNotes = true};
+    const std::vector<AttributeMap> positions = {
+        {{"duration", {"1"}}},
+        {{"mint", {"+2"}}, {"duration", {"2"}}},
+        {{"metweight", {"s"}}, {"duration", {"2"}}},
+        {{"kern", {"4d"}}, {"duration", {"2"}}},
+        {{"deg", {"1"}}, {"duration", {"2"}}},
+    };
+    auto starts = [&](const HumdrumChorale& chorale, const char* feature, const AttributeMap& position, std::size_t voice) {
+        std::vector<hum::HumNum> found;
+        for (const auto& m : AttributeMatcher(feature, {position}, split).findAll(chorale, voice)) found.push_back(m.startPosition);
+        return found;
+    };
+
+    for (const char* id : {"chor001", "chor005", "chor006", "chor008", "chor009", "chor029", "chor039", "chor103"}) {
+        HumdrumChorale chorale(FIXTURE_CHORALE(id));
+        for (const AttributeMap& position : positions) {
+            for (std::size_t voice = 1; voice <= 4; ++voice) {
+                auto byKern = starts(chorale, "kern", position, voice);
+                for (const char* feature : {"deg", "mint", "metweight"}) CHECK(starts(chorale, feature, position, voice) == byKern);
+            }
+        }
+    }
+}
+
+TEST_CASE(matcher_duration_split_does_not_join_a_scale_degree_repeated_an_octave_away) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    // Soprano f (half note), then ff twice: the same degree, but no whole note.
+    MatcherOptions split{.durationAllowSplitNotes = true};
+    auto matches = AttributeMatcher("deg", {AttributeMap{{"duration", {"1"}}}}, split).findAll(chorale, 4);
+    CHECK(std::none_of(matches.begin(), matches.end(), [](const auto& m) { return m.startPosition == 46; }));
+}
+
 TEST_CASE(matcher_duration_split_keeps_every_plain_match_it_had_without_the_option) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     AttributeMap position{{"duration", {"2"}}};
