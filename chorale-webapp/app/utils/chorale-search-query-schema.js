@@ -277,7 +277,7 @@ export const searchRequestFieldSchemas = {
     fbCompareExactChord: {
         type: 'boolean',
         default: true,
-        description: 'Only relevant for feature "fb": requires the actual chord to have exactly as many figures as the pattern value, no extras.',
+        description: 'Affects any "fb" pattern key: requires the actual chord to have exactly as many figures as the pattern value, no extras.',
         suggestSortText: '5',
     },
     kernIgnoreOctave: {
@@ -289,7 +289,7 @@ export const searchRequestFieldSchemas = {
     hintReduceCompound: {
         type: 'boolean',
         default: true,
-        description: 'Affects any "hint-<pair>"/"hint-<voice>" pattern key: folds both the pattern value and the actual interval to within an octave before comparing, so e.g. "3" also matches a 10th.',
+        description: 'Affects any "hint-<pair>"/"hint-<voice>" and "mint" pattern key: folds both the pattern value and the actual interval to within an octave before comparing, so e.g. "3" also matches a 10th.',
         suggestSortText: '6.5',
     },
     durationAllowSplitNotes: {
