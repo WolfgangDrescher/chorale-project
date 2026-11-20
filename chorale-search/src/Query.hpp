@@ -191,8 +191,9 @@ struct Query {
     // same pitch for "kern", a unison step -- or an octave leap, with "1"/"8"/"*" in
     // mintAllowIntervalComplementation -- for "mint", the same token otherwise) and whose
     // durations add up to one of the position's allowed values -- so a pattern asking for a
-    // half note also finds it written as two repeated quarters. Every other key of that
-    // position must hold for the whole run; "fermata" is checked on its closing onset.
+    // half note also finds it written as two repeated quarters. Of the other keys of that
+    // position those with PatternKey::everyOnset hold for the whole run, the others for its
+    // first onset; "fermata" is checked on its closing onset.
     bool durationAllowSplitNotes = false;
 
     // The converse of durationAllowSplitNotes, and independent of it: when set, a *single*

@@ -62,6 +62,9 @@ struct PatternKey {
     bool (*coversQueryKey)(const std::string& queryKey) = nullptr;
     bool driving = false;  // can be the feature of a query
     bool perVerse = false; // the lyrics, read verse by verse
+    // For a note written as repeated notes (durationAllowSplitNotes): true checks the key at every repetition, as
+    // for the harmony; false only at the first, as each repetition has its own rhythm, step and syllable.
+    bool everyOnset = false;
     ValueSpec valueSpec;
     std::vector<PatternKeyPart> parts = {};
 };
@@ -76,6 +79,7 @@ struct PatternKeyLookup {
 
     bool is(PatternKeyId id) const { return patternKey && patternKey->id == id; }
     bool readsLyrics() const { return patternKey && patternKey->perVerse; }
+    bool checksEveryOnset() const { return patternKey && patternKey->everyOnset; }
     std::string partName() const { return patternKeyPart ? patternKeyPart->name : ""; } // "" for the whole key
     // The part's values, or the key's own.
     const ValueSpec& valueSpec() const { return patternKeyPart ? patternKeyPart->valueSpec : patternKey->valueSpec; }

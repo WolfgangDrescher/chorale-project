@@ -20,6 +20,9 @@ struct PositionKey : PatternKeyLookup {
     // Another voice under its voice reference ("@1"), checked for all its keys at once.
     std::string otherVoice;
     std::vector<PositionKey> otherVoiceKeys;
+
+    // A key of another voice ("@1") holds while the note sounds, as the harmony does.
+    bool checksEveryOnset() const { return !otherVoice.empty() || PatternKeyLookup::checksEveryOnset(); }
 };
 
 using PatternPosition = std::vector<PositionKey>;

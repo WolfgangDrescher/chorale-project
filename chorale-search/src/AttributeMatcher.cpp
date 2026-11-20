@@ -1239,13 +1239,7 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
             // phrase, which opens with the run's first onset and ends with its last.
             if (positionKey.is(PatternKeyId::Duration) || positionKey.is(PatternKeyId::Fermata) ||
                 positionKey.is(PatternKeyId::Phrase)) continue;
-            // The driving feature describes the logical note itself, which continuesLogicalNote
-            // has already vouched for; on a continuation onset it says something else entirely
-            // (a **mint unison, a re-attack's own rhythm) and isn't re-checked. Every other
-            // attribute has to hold for the whole run, not just its first onset.
-            if (isContinuation && positionKey.baseKey == m_drivingFeature) continue;
-            // A re-attack may carry the next syllable: lyrics are read at the run's first onset, see walkPattern.
-            if (isContinuation && positionKey.readsLyrics()) continue;
+            if (isContinuation && !positionKey.checksEveryOnset()) continue;
             auto matched = matchKey(chorale, voice, onset, positionKey);
             if (!matched || !*matched) return std::nullopt;
         }

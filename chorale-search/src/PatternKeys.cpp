@@ -209,6 +209,7 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::Deg,
             .name = kDegKey,
             .driving = true,
+            .everyOnset = true,
             .valueSpec = {.positionReference = true, .isValidValue = isValidDegValue},
         },
         {
@@ -229,6 +230,7 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::Fb,
             .name = kFbKey,
             .driving = true,
+            .everyOnset = true,
             .valueSpec = {.positionReference = true, .isValidValue = isValidFbValue},
             .parts = {
                 {"numbers", kFigureNumbersPart},
@@ -259,6 +261,7 @@ std::vector<PatternKey> buildPatternKeys() {
             .name = "hint-<pair>",
             .coversQueryKey = isHintPairFeature,
             .driving = true,
+            .everyOnset = true,
             .valueSpec = kHintValues,
             .parts = hintParts,
         },
@@ -283,16 +286,19 @@ std::vector<PatternKey> buildPatternKeys() {
         {
             .id = Id::Mode,
             .name = kModeKey,
+            .everyOnset = true,
             .valueSpec = {.positionReference = true, .isValidValue = isValidModeValue},
         },
         {
             .id = Id::Key,
             .name = kKeyKey,
+            .everyOnset = true,
             .valueSpec = {.positionReference = true, .isValidValue = isValidKeyValue},
         },
         {
             .id = Id::KeyDeg,
             .name = kKeyDegKey,
+            .everyOnset = true,
             .valueSpec = {.positionReference = true, .isValidValue = isValidKeyDegValue},
         },
         {
@@ -321,6 +327,7 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::HintVoice,
             .name = "hint-<voice>",
             .coversQueryKey = isHintRelativeKey,
+            .everyOnset = true,
             .valueSpec = kHintValues,
             .parts = hintParts,
         },
@@ -328,12 +335,14 @@ std::vector<PatternKey> buildPatternKeys() {
             .id = Id::HintPairWildcard,
             .name = "hint-<pairWildcard>",
             .coversQueryKey = isHintPairWildcardKey,
+            .everyOnset = true,
             .valueSpec = kHintPairWildcardValues,
             .parts = hintPairWildcardParts,
         },
         {
             .id = Id::HintPairCurrent,
             .name = kPairSearchedKey,
+            .everyOnset = true,
             .valueSpec = kHintValues,
             .parts = hintParts,
         },

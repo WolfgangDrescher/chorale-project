@@ -3230,6 +3230,30 @@ TEST_CASE(lyrics_the_melisma_of_the_soprano_note_by_note) {
     CHECK(std::find(bassPositions.begin(), bassPositions.end(), "6") == bassPositions.end());
 }
 
+// chor008: the soprano opens on two quarters cc, and at quarter 24 holds cc over F major while the bass steps to A.
+TEST_CASE(matcher_duration_split_checks_how_a_note_is_struck_on_its_first_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    MatcherOptions split{.durationAllowSplitNotes = true};
+    // The second quarter is on a weak beat.
+    auto strong = AttributeMatcher("kern", {AttributeMap{{"metweight", {"s"}}, {"duration", {"2"}}}}, split).findAll(chorale, 4);
+    REQUIRE(!strong.empty());
+    CHECK_EQ(startPositionsOf(strong).front(), std::string("0"));
+}
+
+TEST_CASE(matcher_duration_split_checks_the_harmony_on_every_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    MatcherOptions split{.durationAllowSplitNotes = true};
+    auto startsAt24 = [&](const AttributeMap& position) {
+        auto found = startPositionsOf(AttributeMatcher("kern", {position}, split).findAll(chorale, 4));
+        return std::find(found.begin(), found.end(), "24") != found.end();
+    };
+    CHECK(startsAt24({{"fb", {"P5 M3"}}, {"duration", {"4"}}}));
+    CHECK(!startsAt24({{"fb", {"P5 M3"}}, {"duration", {"2"}}}));
+    // Another voice sounds beside the whole note, whatever its key.
+    CHECK(startsAt24({{"@1:kern", {"F"}}, {"duration", {"4"}}}));
+    CHECK(!startsAt24({{"@1:kern", {"F"}}, {"duration", {"2"}}}));
+}
+
 TEST_CASE(lyrics_of_a_split_note_are_read_at_its_first_onset) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
     // The soprano opens on "Freu-et" as two quarters cc: one half note, struck on an initial syllable.
