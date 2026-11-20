@@ -1244,6 +1244,8 @@ std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumCho
             // (a **mint unison, a re-attack's own rhythm) and isn't re-checked. Every other
             // attribute has to hold for the whole run, not just its first onset.
             if (isContinuation && positionKey.baseKey == m_drivingFeature) continue;
+            // A re-attack may carry the next syllable: lyrics are read at the run's first onset, see walkPattern.
+            if (isContinuation && positionKey.readsLyrics()) continue;
             auto matched = matchKey(chorale, voice, onset, positionKey);
             if (!matched || !*matched) return std::nullopt;
         }

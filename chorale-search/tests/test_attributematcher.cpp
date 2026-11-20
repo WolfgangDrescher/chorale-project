@@ -3230,6 +3230,17 @@ TEST_CASE(lyrics_the_melisma_of_the_soprano_note_by_note) {
     CHECK(std::find(bassPositions.begin(), bassPositions.end(), "6") == bassPositions.end());
 }
 
+TEST_CASE(lyrics_of_a_split_note_are_read_at_its_first_onset) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor008"));
+    // The soprano opens on "Freu-et" as two quarters cc: one half note, struck on an initial syllable.
+    MatcherOptions split{.durationAllowSplitNotes = true};
+    auto found = AttributeMatcher("kern", {AttributeMap{{"duration", {"2"}}, {"sylpos", {"initial"}}}}, split)
+                     .findAll(chorale, 4);
+    REQUIRE(!found.empty());
+    CHECK_EQ(found[0].startPosition, hum::HumNum(0));
+    CHECK_EQ(found[0].endPosition, hum::HumNum(1));
+}
+
 TEST_CASE(lyrics_a_word_cannot_be_divided_up_or_compared) {
     MatcherOptions split{.durationAllowSplitNotes = true};
     CHECK_THROWS(AttributeMatcher("word", {AttributeMap{{"word", {"*"}}}}, split));
