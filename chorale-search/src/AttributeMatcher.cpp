@@ -1409,13 +1409,16 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
     std::size_t minOnsets = m_options.durationAllowMergedNotes ? 1 : n;
     if (onsets.size() < minOnsets) return matches;
 
+    // An explicit {"mint": "*"} first position already includes the note before, and so does a
+    // word or syllable, which is matched with all its notes.
     bool shiftStartToPreviousToken = false;
-    if (m_options.mintStartAtPreviousToken && m_drivingFeatureId == PatternKeyId::Mint) {
+    if (m_options.mintStartAtPreviousToken && !isDrivenByLyrics()) {
         bool firstPositionIsExplicitWildcard = std::any_of(m_pattern[0].begin(), m_pattern[0].end(), [&](const PositionKey& positionKey) {
-            return positionKey.rawKey == m_drivingFeature && isWildcard(positionKey.values);
+            return positionKey.rawKey == kMintKey && isWildcard(positionKey.values);
         });
         shiftStartToPreviousToken = !firstPositionIsExplicitWildcard;
     }
+    hum::HTp walkedKernSpine = chorale.spine(kKernKey, voice);
 
     for (std::size_t start = 0; start + minOnsets <= onsets.size(); ++start) {
         // A position may consume more than one onset (matchSplitPosition) and an onset may
@@ -1490,15 +1493,12 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
         }
         if (verses.empty()) continue;
 
-        // The note the first interval was measured from is the nearest preceding onset that
-        // actually sounds -- rests carry a **mint token of their own but are transparent to
-        // the interval calculation, so they must be skipped here too. If nothing sounds before
-        // the match (the voice starts here, or only rests precede it) there is nothing to shift
-        // back to and the match keeps its own first onset.
+        // Back to the nearest earlier note of the walked voice, rests skipped as **mint does.
         hum::HTp startTok = onsets[start].token;
         if (shiftStartToPreviousToken) {
             for (std::size_t i = start; i-- > 0;) {
-                if (std::string(*onsets[i].token) !=  "r") {
+                hum::HTp walkedNote = tokenBesideOnLine(onsets[i].token, walkedKernSpine, true);
+                if (walkedNote && !walkedNote->isRest()) {
                     startTok = onsets[i].token;
                     break;
                 }

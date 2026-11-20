@@ -252,7 +252,7 @@ export const searchRequestFieldSchemas = {
     mintStartAtPreviousToken: {
         type: 'boolean',
         default: true,
-        description: 'Only relevant for feature "mint": shifts the reported match start back by one onset.',
+        description: 'Shifts the reported match start back by one onset, to the note the first "mint" interval is measured from.',
         suggestSortText: '4',
     },
     mintAllowIntervalComplementation: {
@@ -319,27 +319,6 @@ export const searchRequestFieldSchemas = {
     },
 };
 
-// mintStartAtPreviousToken shifts the reported start by one onset of the driving feature, which
-// only means anything while walking mint itself -- the backend rejects `true` next to any other
-// feature, so flag it here too instead of letting the editor suggest a query that can't run.
-// Applies per object: a simultaneousWith group is judged by its own feature, not the query's.
-const mintStartAtPreviousTokenOnlyForMint = [
-    {
-        if: {
-            required: ['feature'],
-            properties: { feature: { not: { const: 'mint' } } },
-        },
-        then: {
-            properties: {
-                mintStartAtPreviousToken: {
-                    const: false,
-                    description: 'mintStartAtPreviousToken can only be true when feature is "mint".',
-                },
-            },
-        },
-    },
-];
-
 // The backend rejects these options for word and syl, which are matched with all their notes.
 const noteOptionsNotForWordOrSyl = [
     {
@@ -349,6 +328,7 @@ const noteOptionsNotForWordOrSyl = [
         },
         then: {
             properties: {
+                mintStartAtPreviousToken: { const: false, description: 'mintStartAtPreviousToken cannot be true when feature is "word" or "syl".' },
                 durationAllowSplitNotes: { const: false, description: 'durationAllowSplitNotes cannot be true when feature is "word" or "syl".' },
                 durationAllowMergedNotes: { const: false, description: 'durationAllowMergedNotes cannot be true when feature is "word" or "syl".' },
                 metweightSkipUnclassified: { const: false, description: 'metweightSkipUnclassified cannot be true when feature is "word" or "syl".' },
@@ -425,7 +405,7 @@ export const singleQuerySchema = {
     title: 'Chorale Search Query',
     required: ['feature', 'pattern'],
     additionalProperties: false,
-    allOf: [...mintStartAtPreviousTokenOnlyForMint, ...noteOptionsNotForWordOrSyl],
+    allOf: noteOptionsNotForWordOrSyl,
     properties: {
         id: {
             type: 'string',
@@ -454,7 +434,7 @@ export const singleQuerySchema = {
                 type: 'object',
                 required: ['feature', 'pattern'],
                 additionalProperties: false,
-                allOf: [...mintStartAtPreviousTokenOnlyForMint, ...noteOptionsNotForWordOrSyl],
+                allOf: noteOptionsNotForWordOrSyl,
                 properties: searchRequestFieldSchemas,
             },
         },

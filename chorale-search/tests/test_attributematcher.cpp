@@ -540,21 +540,27 @@ TEST_CASE(matcher_returns_empty_when_the_pattern_is_longer_than_the_voice_has_on
     CHECK(matcher.findAll(chorale, 1).empty());
 }
 
-TEST_CASE(matcher_mint_start_at_previous_token_has_no_effect_on_other_driving_features) {
+TEST_CASE(matcher_mint_start_at_previous_token_shifts_the_same_whichever_feature_is_walked) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
-    std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"*"}}}, AttributeMap{{"kern", {"*"}}}};
-    AttributeMatcher withoutFlag("kern", pattern);
-    MatcherOptions withFlagOptions{.mintStartAtPreviousToken = true};
-    AttributeMatcher withFlag("kern", pattern, withFlagOptions);
+    // kern, deg, mint and metweight have the same onsets, so they shift to the same note.
+    std::vector<AttributeMap> pattern = {AttributeMap{{"mint", {"-2"}}}, AttributeMap{{"mint", {"-2"}}}};
+    MatcherOptions shift{.mintStartAtPreviousToken = true};
+    auto starts = [&](const char* feature, std::size_t voice) {
+        std::vector<std::size_t> lines;
+        for (const auto& m : AttributeMatcher(feature, pattern, shift).findAll(chorale, voice)) lines.push_back(m.startLineNumber);
+        return lines;
+    };
 
-    auto without = withoutFlag.findAll(chorale, 1);
-    auto with = withFlag.findAll(chorale, 1);
-
-    REQUIRE(!without.empty());
-    REQUIRE(with.size() == without.size());
-    for (std::size_t i = 0; i < with.size(); ++i) {
-        CHECK_EQ(with[i].startLineNumber, without[i].startLineNumber);
+    for (std::size_t voice = 1; voice <= 4; ++voice) {
+        auto byMint = starts("mint", voice);
+        for (const char* feature : {"kern", "deg", "metweight"}) CHECK(starts(feature, voice) == byMint);
     }
+    // Without the option a kern walk starts one note later.
+    auto unshifted = AttributeMatcher("kern", pattern).findAll(chorale, 4);
+    auto shifted = AttributeMatcher("kern", pattern, shift).findAll(chorale, 4);
+    REQUIRE(!unshifted.empty());
+    REQUIRE(shifted.size() == unshifted.size());
+    CHECK(shifted[0].startLineNumber < unshifted[0].startLineNumber);
 }
 
 TEST_CASE(matcher_mint_start_at_previous_token_shifts_every_start_back_by_one_onset) {

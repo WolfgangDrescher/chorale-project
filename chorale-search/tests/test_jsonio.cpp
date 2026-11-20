@@ -118,12 +118,11 @@ TEST_CASE(query_from_json_reads_mint_start_at_previous_token) {
     CHECK(q.mintStartAtPreviousToken);
 }
 
-TEST_CASE(query_from_json_rejects_mint_start_at_previous_token_for_another_driving_feature) {
-    // The shift only means anything while walking mint's own onsets.
-    CHECK_THROWS(queryFromJson(json::parse(
-        R"({"feature":"kern","pattern":[{"kern":"G"}],"mintStartAtPreviousToken":true})")));
-    CHECK_THROWS(queryFromJson(json::parse(
-        R"({"feature":"hint-14","pattern":[{"hint-14":"3"}],"mintStartAtPreviousToken":true})")));
+TEST_CASE(query_from_json_accepts_mint_start_at_previous_token_for_any_driving_feature) {
+    CHECK(queryFromJson(json::parse(
+        R"({"feature":"kern","pattern":[{"kern":"G"}],"mintStartAtPreviousToken":true})")).mintStartAtPreviousToken);
+    CHECK(queryFromJson(json::parse(
+        R"({"feature":"hint-14","pattern":[{"hint-14":"3"}],"mintStartAtPreviousToken":true})")).mintStartAtPreviousToken);
 }
 
 TEST_CASE(query_from_json_accepts_mint_start_at_previous_token_set_to_false_for_any_feature) {
@@ -132,10 +131,8 @@ TEST_CASE(query_from_json_accepts_mint_start_at_previous_token_set_to_false_for_
     CHECK(!q.mintStartAtPreviousToken);
 }
 
-TEST_CASE(query_from_json_rejects_mint_start_at_previous_token_for_a_non_mint_simultaneous_group) {
-    // Each group carries its own driving feature, so the check follows that one, not the
-    // top-level query's.
-    CHECK_THROWS(queryFromJson(json::parse(R"({
+TEST_CASE(query_from_json_accepts_mint_start_at_previous_token_for_a_non_mint_simultaneous_group) {
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({
         "feature":"mint",
         "pattern":[{"mint":"-2"}],
         "simultaneousWith":[{
@@ -1330,13 +1327,13 @@ TEST_CASE(query_from_json_rejects_what_the_lyrics_keys_cannot_hold) {
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"word":"@4"}]})")));
     CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"!word":["Gott","Herr"],"sylpos":["initial","medial"]}]})")));
     // A word or a syllable is matched as a whole.
-    for (const char* option : {"durationAllowSplitNotes", "durationAllowMergedNotes", "metweightSkipUnclassified"}) {
+    for (const char* option : {"mintStartAtPreviousToken", "durationAllowSplitNotes", "durationAllowMergedNotes",
+                               "metweightSkipUnclassified"}) {
         const std::string name = std::string("\"") + option + "\"";
         CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],)" + name + ":true}")));
         CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"syl":"*"}],)" + name + ":false}")));
         CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"*"}],"simultaneousWith":[{"feature":"word","pattern":[{"word":"*"}],)" + name + ":true}]}")));
     }
-    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],"mintStartAtPreviousToken":true})")));
     try {
         queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],"durationAllowSplitNotes":true})"));
         CHECK(false);

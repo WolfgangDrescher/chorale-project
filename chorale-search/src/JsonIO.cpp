@@ -378,14 +378,6 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         if (!j["mintStartAtPreviousToken"].is_boolean()) {
             throw std::invalid_argument("'mintStartAtPreviousToken' in " + context + " must be a boolean");
         }
-        // The shift is only meaningful while walking mint's own onsets, so switching it on for
-        // any other driving feature would silently do nothing -- a mistake worth naming instead
-        // of a query that quietly reports the starts the author didn't ask for. Explicitly
-        // switching it *off* stays legal everywhere.
-        if (j["mintStartAtPreviousToken"].get<bool>() && target.feature != "mint") {
-            throw std::invalid_argument("'mintStartAtPreviousToken' in " + context +
-                                         " can only be true when 'feature' is 'mint' (got '" + target.feature + "')");
-        }
         target.mintStartAtPreviousToken = j["mintStartAtPreviousToken"].get<bool>();
     }
 
@@ -438,7 +430,8 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
 
     // A word or a syllable is matched with all its notes, so these options would do nothing.
     if (isLyricsDrivingFeature(target.feature)) {
-        for (const char* option : {"durationAllowSplitNotes", "durationAllowMergedNotes", "metweightSkipUnclassified"}) {
+        for (const char* option : {"mintStartAtPreviousToken", "durationAllowSplitNotes", "durationAllowMergedNotes",
+                                   "metweightSkipUnclassified"}) {
             if (j.value(option, false)) {
                 throw std::invalid_argument("'" + std::string(option) + "' in " + context + " cannot be true when 'feature' is '" +
                                             target.feature + "'");
