@@ -631,7 +631,7 @@ VerseSet versesMatchingKey(const HumdrumChorale& chorale, const PositionKey& pos
 }
 
 // The key of `position` with that id, negated or not; nullptr where the position does not check it.
-const PositionKey* findPositionKey(const PatternPosition& position, PatternKeyId id, bool negated) {
+const PositionKey* findPositionKey(const PositionKeys& position, PatternKeyId id, bool negated) {
     for (const PositionKey& positionKey : position) {
         if (positionKey.is(id) && positionKey.negated == negated) return &positionKey;
     }
@@ -640,7 +640,7 @@ const PositionKey* findPositionKey(const PatternPosition& position, PatternKeyId
 
 // Whether "duration" holds only exact lengths, which split and merged notes add up to. A comparison or a
 // reference describes one whole note: such a position is judged on the single note it lands on.
-bool hasOnlyExactDurations(const PatternPosition& position) {
+bool hasOnlyExactDurations(const PositionKeys& position) {
     const PositionKey* duration = findPositionKey(position, PatternKeyId::Duration, false);
     return duration && !isWildcard(duration->values) &&
            std::none_of(duration->values.begin(), duration->values.end(), [](const PatternValue& v) {
@@ -957,7 +957,7 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
     }
     m_readsLyrics = isDrivenByLyrics();
     for (const AttributeMap& position : pattern) {
-        PatternPosition& patternPosition = m_pattern.emplace_back();
+        PositionKeys& positionKeys = m_pattern.emplace_back();
         bool hasReferences = false;
         for (const auto& [rawKey, values] : position) {
             if (rawKey == kPositionNameKey) continue; // only needed to resolve the references
@@ -966,10 +966,10 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
                 PositionKey otherVoiceKey{findPatternKey(key), values};
                 validateValues(otherVoiceKey, m_options);
                 for (PatternValue& value : otherVoiceKey.values) normalizePatternValue(otherVoiceKey, value);
-                auto group = std::find_if(patternPosition.begin(), patternPosition.end(),
+                auto group = std::find_if(positionKeys.begin(), positionKeys.end(),
                                           [&](const PositionKey& positionKey) { return positionKey.otherVoice == voiceReference; });
-                if (group == patternPosition.end()) {
-                    group = patternPosition.emplace(patternPosition.end());
+                if (group == positionKeys.end()) {
+                    group = positionKeys.emplace(positionKeys.end());
                     group->rawKey = voiceReference;
                     group->otherVoice = voiceReference;
                 }
@@ -977,7 +977,7 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
                 continue;
             }
             hasReferences = hasReferences || hasPositionReference(values);
-            PositionKey& positionKey = patternPosition.emplace_back(PositionKey{findPatternKey(rawKey), values});
+            PositionKey& positionKey = positionKeys.emplace_back(PositionKey{findPatternKey(rawKey), values});
             validateValues(positionKey, m_options);
             for (PatternValue& value : positionKey.values) normalizePatternValue(positionKey, value);
             if (positionKey.readsLyrics()) m_readsLyrics = true;
@@ -1116,9 +1116,9 @@ std::optional<std::string> AttributeMatcher::readPositionReference(const Humdrum
     return value;
 }
 
-PatternPosition AttributeMatcher::withReferencesRead(const HumdrumChorale& chorale, std::size_t voice,
-                                                     const PatternPosition& position, const MatchedOnsets& matched) const {
-    PatternPosition read = position;
+PositionKeys AttributeMatcher::withReferencesRead(const HumdrumChorale& chorale, std::size_t voice,
+                                                  const PositionKeys& position, const MatchedOnsets& matched) const {
+    PositionKeys read = position;
     for (PositionKey& positionKey : read) {
         if (positionKey.readsLyrics()) continue;
         const bool intoOctave = positionKey.is(PatternKeyId::Fb); // fb has its figures within the octave
@@ -1222,7 +1222,7 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
 std::optional<std::size_t> AttributeMatcher::matchSplitPosition(const HumdrumChorale& chorale, std::size_t voice,
                                                                  const std::vector<Onset>& onsets,
                                                                  std::size_t onsetIndex,
-                                                                 const PatternPosition& position) const {
+                                                                 const PositionKeys& position) const {
     const std::vector<PatternValue>& allowedDurations = findPositionKey(position, PatternKeyId::Duration, false)->values;
     if (allowedDurations.empty()) return std::nullopt;
 
@@ -1324,9 +1324,9 @@ std::optional<std::size_t> AttributeMatcher::matchMergedPositions(const HumdrumC
     Onset& matchedOnset = matched[patternIndex].emplace(onset);
     matchedOnset.duration = remaining;
     if (isContinuation) matchedOnset.mint = "P1";
-    const PatternPosition read = m_hasReferences[patternIndex] ? withReferencesRead(chorale, voice, m_pattern[patternIndex], matched)
-                                                               : PatternPosition();
-    const PatternPosition& position = m_hasReferences[patternIndex] ? read : m_pattern[patternIndex];
+    const PositionKeys read = m_hasReferences[patternIndex] ? withReferencesRead(chorale, voice, m_pattern[patternIndex], matched)
+                                                            : PositionKeys();
+    const PositionKeys& position = m_hasReferences[patternIndex] ? read : m_pattern[patternIndex];
     const PositionKey* duration = findPositionKey(position, PatternKeyId::Duration, false);
 
     for (const PositionKey& positionKey : position) {
@@ -1432,9 +1432,9 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
         while (offset < n) {
             bool concreteDuration = hasOnlyExactDurations(m_pattern[offset]);
             if (idx < onsets.size()) matched[offset] = onsets[idx];
-            const PatternPosition read = m_hasReferences[offset] ? withReferencesRead(chorale, voice, m_pattern[offset], matched)
-                                                                 : PatternPosition();
-            const PatternPosition& position = m_hasReferences[offset] ? read : m_pattern[offset];
+            const PositionKeys read = m_hasReferences[offset] ? withReferencesRead(chorale, voice, m_pattern[offset], matched)
+                                                              : PositionKeys();
+            const PositionKeys& position = m_hasReferences[offset] ? read : m_pattern[offset];
 
             if (concreteDuration && m_options.durationAllowSplitNotes) {
                 auto consumed = matchSplitPosition(chorale, voice, onsets, idx, position);

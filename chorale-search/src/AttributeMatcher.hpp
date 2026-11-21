@@ -25,7 +25,7 @@ struct PositionKey : PatternKeyLookup {
     bool checksEveryOnset() const { return !otherVoice.empty() || PatternKeyLookup::checksEveryOnset(); }
 };
 
-using PatternPosition = std::vector<PositionKey>;
+using PositionKeys = std::vector<PositionKey>;
 
 struct AttributeMatch {
     std::size_t voice;           // 1-indexed voice (spine) the match was found in
@@ -123,8 +123,8 @@ private:
 
     // `position` with each position reference replaced by what it reads, or dropped where it reads nothing. The
     // lyrics are left as they are: they are read verse by verse, see walkPattern.
-    PatternPosition withReferencesRead(const HumdrumChorale& chorale, std::size_t voice, const PatternPosition& position,
-                                       const MatchedOnsets& matched) const;
+    PositionKeys withReferencesRead(const HumdrumChorale& chorale, std::size_t voice, const PositionKeys& position,
+                                    const MatchedOnsets& matched) const;
 
     // Consumes one or more consecutive onsets starting at onsets[onsetIndex] that together
     // make up one "logical note" for this pattern position, until their summed duration hits
@@ -134,7 +134,7 @@ private:
     // MatcherOptions::durationAllowSplitNotes is set.
     std::optional<std::size_t> matchSplitPosition(const HumdrumChorale& chorale, std::size_t voice,
                                                    const std::vector<Onset>& onsets, std::size_t onsetIndex,
-                                                   const PatternPosition& position) const;
+                                                   const PositionKeys& position) const;
 
     // Judges a "mint" or "kern" key (possibly "!"-negated) that a merged run's later position
     // states about the re-attack the merged onset doesn't have, against what that re-attack
@@ -160,7 +160,7 @@ private:
 
     std::string m_drivingFeature;
     std::optional<PatternKeyId> m_drivingFeatureId; // nullopt for an unknown feature
-    std::vector<PatternPosition> m_pattern;
+    std::vector<PositionKeys> m_pattern;
     std::vector<bool> m_hasReferences; // per position: whether it has a position reference
     MatcherOptions m_options;
     bool m_readsLyrics = false; // driven by word or syl, or with a lyrics key in the pattern
