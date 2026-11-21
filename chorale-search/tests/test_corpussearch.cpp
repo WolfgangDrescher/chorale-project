@@ -486,6 +486,24 @@ TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_
 
 // A melodic interval that starts at the note before begins its section at that note, in the voice searched and in a
 // group alike.
+TEST_CASE(a_result_links_the_voices_a_key_of_another_voice_names) {
+    HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
+    CorpusSearch search(chorale.path());
+    auto voicesLinkedTo = [&](const std::string& reference) {
+        Query query{.feature = "kern", .voices = "soprano", .pattern = {AttributeMap{{reference + ":deg", {"*"}}}}};
+        const auto found = search.runOne(chorale, query);
+        std::set<std::size_t> voices;
+        for (const NoteSection& section : found.front().linkedSections) {
+            if (section.feature == reference) voices.insert(section.voice);
+        }
+        return voices;
+    };
+    CHECK(voicesLinkedTo("@1") == (std::set<std::size_t>{1}));
+    CHECK(voicesLinkedTo("@allBelow") == (std::set<std::size_t>{1, 2, 3}));
+    // Which of the voices below matched is not known.
+    CHECK(voicesLinkedTo("@anyBelow").empty());
+}
+
 TEST_CASE(a_melodic_interval_from_the_note_before_begins_its_section_at_that_note) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor029"));
     CorpusSearch search(chorale.path());

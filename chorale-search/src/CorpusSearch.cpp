@@ -12,7 +12,9 @@
 #include "HintPairs.hpp"
 #include "HumdrumChorale.hpp"
 #include "HumdrumUtils.hpp"
+#include "PatternKeys.hpp"
 #include "VoiceMap.hpp"
+#include "VoiceReference.hpp"
 
 namespace fs = std::filesystem;
 
@@ -207,8 +209,8 @@ std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMat
 
 // The sections of notes a match is made of, by the feature and the pattern it was found with: the voices it spans,
 // except those in `coveredVoices`, which another match covers, and at each position the voice of a hint-<voice> key,
-// both voices of a hint-<pair> key, the voices of the matching pairs of a set ("hint-1*") and the voices forming the
-// figures of an fb key, with the bass they are figures above.
+// both voices of a hint-<pair> key, the voices of the matching pairs of a set ("hint-1*"), the voices forming the
+// figures of an fb key, with the bass they are figures above, and the voices a key of another voice ("@1") names.
 std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, const AttributeMatch& attributeMatch,
                                              const std::string& feature, const std::vector<AttributeMap>& pattern,
                                              bool hintReduceCompound,
@@ -249,6 +251,14 @@ std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, cons
                 std::vector<std::size_t> voices = voicesOfFbFigures(chorale, onset.line, values);
                 if (!voices.empty()) voices.push_back(1);
                 for (std::size_t voice : voices) atPosition(name, voice);
+            }
+            // A key of another voice; of "@anyBelow" and the like it is not known which one matched.
+            if (isOtherVoiceKey(name)) {
+                const std::string reference = splitOtherVoiceKey(name).first;
+                const auto resolved = resolveVoiceReference(reference, attributeMatch.voice);
+                if (resolved && (resolved->voices.size() == 1 || resolved->quantifier == ReferenceQuantifier::All)) {
+                    for (std::size_t voice : resolved->voices) atPosition(reference, voice);
+                }
             }
         }
     }
