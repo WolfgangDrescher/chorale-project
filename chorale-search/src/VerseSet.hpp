@@ -19,6 +19,7 @@ public:
     VerseSet& operator|=(VerseSet other) { m_bits |= other.m_bits; return *this; }
     friend VerseSet operator&(VerseSet a, VerseSet b) { return VerseSet(a.m_bits & b.m_bits); }
     bool operator==(VerseSet other) const { return m_bits == other.m_bits; }
+    unsigned bits() const { return m_bits; }
 
     // The numbers of the verses, for a set a lyrics key narrowed down to a chorale's verses.
     std::vector<std::size_t> list() const {

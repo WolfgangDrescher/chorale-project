@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -124,6 +125,7 @@ private:
         MatchedOnsets matched;
         VerseSet verses = VerseSet::all();
         std::size_t end = 0; // the index after the last onset of the match
+        std::set<std::vector<std::size_t>> failedStates;
     };
     using Continuation = std::function<bool(std::size_t onsetIndex)>;
 
@@ -144,6 +146,8 @@ private:
     bool matchesAllKeys(const HumdrumChorale& chorale, std::size_t voice, const Onset& onset, const PositionKeys& position) const;
     // Whether the lyrics keys of `position` hold in some verse at `line`, narrowing the verses of the walk.
     bool narrowVerses(Walk& walk, const PositionKeys& position, int line) const;
+    // What the walk from `offset` on depends on besides the onset: the onsets later positions read, the verses.
+    std::vector<std::size_t> walkState(const Walk& walk, std::size_t offset, std::size_t count, std::size_t onsetIndex) const;
 
     CompiledPosition compilePosition(const PatternPosition& position, std::vector<std::size_t> path);
 
@@ -209,7 +213,9 @@ private:
     std::string m_drivingFeature;
     std::optional<PatternKeyId> m_drivingFeatureId; // nullopt for an unknown feature
     std::vector<CompiledPosition> m_pattern;
+    std::vector<std::vector<std::size_t>> m_earlierPositionsStillRead; // per position: those before it that it or a later one reads
     std::size_t m_minimumOnsets = 0;
+    bool m_hasRepeats = false; // a position of the pattern repeats
     MatcherOptions m_options;
     bool m_readsLyrics = false; // driven by word or syl, or with a lyrics key in the pattern
 };

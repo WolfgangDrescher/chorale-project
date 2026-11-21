@@ -3780,3 +3780,16 @@ TEST_CASE(repeat_holds_its_lyrics_keys_in_one_verse_with_the_rest) {
         CHECK_EQ(count({word, initialTwice}), count({word, initial, initial}));
     }
 }
+
+TEST_CASE(repeat_does_not_try_every_way_of_dividing_up_the_onsets) {
+    std::string kern = "**kern\n";
+    for (int i = 0; i < 400; ++i) kern += "4c\n";
+    std::istringstream score(kern + "*-\n");
+    HumdrumChorale chorale(score, "melody", false);
+    PatternPosition gap;
+    gap.repeat = PatternRepeat{.min = 0};
+    // Three gaps before a note that is not there, and a reference across them.
+    CHECK(AttributeMatcher("kern", {gap, gap, gap, PatternPosition{.keys = {{"kern", {"d"}}}}}).findAll(chorale, 1).empty());
+    CHECK(AttributeMatcher("kern", {PatternPosition{.keys = {{"kern", {"*"}}}}, gap, gap,
+                                    PatternPosition{.keys = {{"!kern.pitch", {"#1"}}}}}).findAll(chorale, 1).empty());
+}

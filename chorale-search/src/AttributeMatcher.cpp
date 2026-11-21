@@ -15,6 +15,7 @@
 #include <iterator>
 #include <map>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
@@ -942,6 +943,15 @@ void validateValues(const PositionKey& positionKey, const MatcherOptions& option
     }
 }
 
+void forEachPositionReference(const CompiledPosition& position, const std::function<void(const PositionReference&)>& visit) {
+    for (const PositionKey& positionKey : position.keys) {
+        for (const PatternValue& value : positionKey.values) {
+            if (value.positionReference) visit(*value.positionReference);
+        }
+    }
+    for (const CompiledPosition& inner : position.subPattern) forEachPositionReference(inner, visit);
+}
+
 // How long the onsets [first, end) last together.
 hum::HumNum totalDuration(const std::vector<AttributeMatcher::Onset>& onsets, std::size_t first, std::size_t end) {
     hum::HumNum duration(0);
@@ -980,6 +990,17 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Patte
     validateRepeats(pattern, m_options.durationAllowSplitNotes || m_options.durationAllowMergedNotes);
     for (std::size_t offset = 0; offset < pattern.size(); ++offset) m_pattern.push_back(compilePosition(pattern[offset], {offset}));
     m_minimumOnsets = minimumOnsets(pattern);
+    m_hasRepeats = std::any_of(m_pattern.begin(), m_pattern.end(), [](const CompiledPosition& position) { return position.repeat.has_value(); });
+
+    for (std::size_t offset = 0; offset < m_pattern.size(); ++offset) {
+        std::set<std::size_t> stillRead;
+        for (std::size_t later = offset; later < m_pattern.size(); ++later) {
+            forEachPositionReference(m_pattern[later], [&](const PositionReference& reference) {
+                if (reference.position < offset) stillRead.insert(reference.position);
+            });
+        }
+        m_earlierPositionsStillRead.emplace_back(stillRead.begin(), stillRead.end());
+    }
 }
 
 CompiledPosition AttributeMatcher::compilePosition(const PatternPosition& position, std::vector<std::size_t> path) {
@@ -1500,11 +1521,29 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
     return matches;
 }
 
+std::vector<std::size_t> AttributeMatcher::walkState(const Walk& walk, std::size_t offset, std::size_t count,
+                                                     std::size_t onsetIndex) const {
+    std::vector<std::size_t> state{offset, count, onsetIndex, walk.verses.bits()};
+    for (std::size_t read : m_earlierPositionsStillRead[offset]) {
+        // The onset the position matched, by its line, with what a split or a merged run changed about it.
+        const Onset& onset = *walk.matched[read];
+        state.push_back(static_cast<std::size_t>(onset.token->getLineNumber()));
+        state.push_back(static_cast<std::size_t>(onset.duration.getNumerator()));
+        state.push_back(static_cast<std::size_t>(onset.duration.getDenominator()));
+        state.push_back(onset.mint ? 1 : 0);
+    }
+    return state;
+}
+
 bool AttributeMatcher::matchFrom(Walk& walk, std::size_t offset, std::size_t onsetIndex) const {
     if (offset == m_pattern.size()) {
         walk.end = onsetIndex;
         return true;
     }
+    // Only a repeat tries the rest of the pattern from the same state again and again.
+    std::optional<std::vector<std::size_t>> state;
+    if (m_hasRepeats) state = walkState(walk, offset, 0, onsetIndex);
+    if (state && walk.failedStates.count(*state)) return false;
     const VerseSet verses = walk.verses;
     const CompiledPosition& position = m_pattern[offset];
     const auto rest = [&](std::size_t after) { return matchFrom(walk, offset + 1, after); };
@@ -1512,6 +1551,7 @@ bool AttributeMatcher::matchFrom(Walk& walk, std::size_t offset, std::size_t ons
                                          : matchSinglePosition(walk, offset, onsetIndex);
     if (matched) return true;
     walk.verses = verses;
+    if (state) walk.failedStates.insert(std::move(*state));
     return false;
 }
 
@@ -1582,6 +1622,14 @@ bool AttributeMatcher::matchSinglePosition(Walk& walk, std::size_t offset, std::
 bool AttributeMatcher::matchRepeat(Walk& walk, const CompiledPosition& position, std::optional<std::size_t> offset,
                                    std::size_t count, std::size_t runStart, std::size_t onsetIndex, const Continuation& next) const {
     const PatternRepeat& repeat = *position.repeat;
+    // Only where the pattern itself goes on from is kept: in a subPattern that depends on the repeat around it.
+    std::optional<std::vector<std::size_t>> state;
+    if (offset) {
+        // Past its min, an unbounded repeat goes on the same way however often it has matched.
+        state = walkState(walk, *offset, count < repeat.min || repeat.max ? count : repeat.min, onsetIndex);
+        if (walk.failedStates.count(*state)) return false;
+    }
+
     const auto stop = [&] {
         if (count < repeat.min) return false;
         if (offset) walk.positionOnsets[*offset] = buildPositionOnset(walk.onsets, runStart, onsetIndex);
@@ -1593,7 +1641,9 @@ bool AttributeMatcher::matchRepeat(Walk& walk, const CompiledPosition& position,
             return matchRepeat(walk, position, offset, count + 1, runStart, after, next);
         });
     };
-    return repeat.greedy ? matchOnceMore() || stop() : stop() || matchOnceMore();
+    const bool matched = repeat.greedy ? matchOnceMore() || stop() : stop() || matchOnceMore();
+    if (!matched && state) walk.failedStates.insert(std::move(*state));
+    return matched;
 }
 
 bool AttributeMatcher::matchOnce(Walk& walk, const CompiledPosition& position, std::optional<std::size_t> offset,
