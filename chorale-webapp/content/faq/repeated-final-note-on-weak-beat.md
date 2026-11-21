@@ -152,9 +152,9 @@ queries:
                 {
                     "feature": "mint",
                     "voices": "soprano",
-                    "mintStartAtPreviousToken": true,
                     "simultaneousAlignment": "start",
                     "pattern": [
+                        { "kern": "*" },
                         { "fermata": true, "metweight": "w", "mint": "P1" }
                     ],
                     "simultaneousWith": [
