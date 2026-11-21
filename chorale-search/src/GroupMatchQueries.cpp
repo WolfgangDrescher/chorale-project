@@ -39,29 +39,29 @@ std::size_t GroupMatchQueryBuilder::queryPositionOf(std::size_t position) const 
 // "P1") or starting a new one ("!mint": "P1").
 void GroupMatchQueryBuilder::askForNotesAtPositions() {
     for (const auto& position : m_searchQuery.pattern) {
-        const auto duration = position.find("duration");
-        if (duration != position.end() && duration->second.size() != 1) m_askable = false;
+        const auto duration = position.keys.find("duration");
+        if (duration != position.keys.end() && duration->second.size() != 1) m_askable = false;
     }
     for (std::size_t p = 1; p < m_query.pattern.size(); ++p) {
-        if (!m_searchQuery.pattern[p - 1].count("duration") || !m_searchQuery.pattern[p].count("duration")) continue;
+        if (!m_searchQuery.pattern[p - 1].keys.count("duration") || !m_searchQuery.pattern[p].keys.count("duration")) continue;
         const bool sameNote = m_notes.noteIndexOfPosition[p] == m_notes.noteIndexOfPosition[p - 1];
-        m_query.pattern[p][sameNote ? "mint" : "!mint"] = {PatternValue("P1")};
+        m_query.pattern[p].keys[sameNote ? "mint" : "!mint"] = {PatternValue("P1")};
     }
 }
 
 // One position per note, with the duration of its note where the group query asks for one.
 void GroupMatchQueryBuilder::askForOneNotePerPosition() {
     m_query.durationAllowMergedNotes = false;
-    m_query.pattern.assign(m_notes.noteDurations.size(), AttributeMap{});
+    m_query.pattern.assign(m_notes.noteDurations.size(), PatternPosition{});
     for (std::size_t p = 0; p < m_searchQuery.pattern.size(); ++p) {
         const std::size_t note = m_notes.noteIndexOfPosition[p];
-        for (const auto& [key, patternValues] : m_searchQuery.pattern[p]) {
+        for (const auto& [key, patternValues] : m_searchQuery.pattern[p].keys) {
             if (key != "duration") {
-                m_query.pattern[note].emplace(key, patternValues);
+                m_query.pattern[note].keys.emplace(key, patternValues);
             } else if (m_notes.noteDurations[note].empty()) {
                 m_askable = false;
             } else {
-                m_query.pattern[note]["duration"] = {PatternValue(m_notes.noteDurations[note])};
+                m_query.pattern[note].keys["duration"] = {PatternValue(m_notes.noteDurations[note])};
             }
         }
     }
@@ -77,8 +77,8 @@ void GroupMatchQueryBuilder::askForNotesOfVoice(const FeatureRead& read, const s
     SimultaneousGroup voiceLine;
     voiceLine.feature = read.feature;
     voiceLine.voices = std::to_string(*read.notesOfVoice);
-    voiceLine.pattern.push_back({{read.feature, {PatternValue("*")}}});
-    for (const std::string& interval : intervals) voiceLine.pattern.push_back({{read.feature, {PatternValue(interval)}}});
+    voiceLine.pattern.push_back({.keys = {{read.feature, {PatternValue("*")}}}});
+    for (const std::string& interval : intervals) voiceLine.pattern.push_back({.keys = {{read.feature, {PatternValue(interval)}}}});
     voiceLine.simultaneousAlignment = "start-end";
     m_query.simultaneousWith.push_back(std::move(voiceLine));
 }
@@ -88,7 +88,7 @@ void GroupMatchQueryBuilder::askForPatternPositions(const FeatureRead& read, con
     // With the positions kept, the pattern already asks for the durations where it has them.
     if (m_keepsPositions && read.feature == "duration") {
         for (std::size_t position : positions) {
-            if (!m_searchQuery.pattern[position].count("duration")) m_askable = false;
+            if (!m_searchQuery.pattern[position].keys.count("duration")) m_askable = false;
         }
         return;
     }
@@ -97,7 +97,7 @@ void GroupMatchQueryBuilder::askForPatternPositions(const FeatureRead& read, con
             m_askable = false; // a held note
         } else {
             const std::string key = read.voice ? otherVoiceKey("@" + std::to_string(*read.voice), read.feature) : read.feature;
-            m_query.pattern[queryPositionOf(positions[i])][key] = {PatternValue(values[i])};
+            m_query.pattern[queryPositionOf(positions[i])].keys[key] = {PatternValue(values[i])};
         }
     }
 }

@@ -114,7 +114,7 @@ TEST_CASE(a_variant_adds_keys_to_a_position_of_the_pattern) {
     std::size_t matches = 0;
     for (const auto& variant : groupQuery.variants) {
         const GroupQuery read = choralesearch::applyVariant(groupQuery, variant);
-        CHECK(read.query.pattern[0].count("kern") == 1u);
+        CHECK(read.query.pattern[0].keys.count("kern") == 1u);
         const Group root = choralesearch::groupMatchesInCorpus(search, read);
         CHECK(root.matchCount > 0u);
         CHECK(root.matchCount < all.matchCount);

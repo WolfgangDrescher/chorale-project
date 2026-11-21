@@ -8,8 +8,8 @@
 #include "JsonIO.hpp"
 #include "Query.hpp"
 
-using choralesearch::AttributeMap;
 using choralesearch::CorpusSearch;
+using choralesearch::PatternPosition;
 using choralesearch::Query;
 using choralesearch::SimultaneousGroup;
 
@@ -25,9 +25,9 @@ TEST_CASE(deg_3_2_1) {
         .feature = "deg",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}},
-            AttributeMap{{"deg", {"2"}}},
-            AttributeMap{{"deg", {"1"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}}},
+            PatternPosition{.keys = {{"deg", {"2"}}}},
+            PatternPosition{.keys = {{"deg", {"1"}}}},
         },
     };
 
@@ -51,9 +51,9 @@ TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano) {
         .feature = "deg",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}},
-            AttributeMap{{"deg", {"2"}}},
-            AttributeMap{{"deg", {"1", "3"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}}},
+            PatternPosition{.keys = {{"deg", {"2"}}}},
+            PatternPosition{.keys = {{"deg", {"1", "3"}}}},
         },
     };
 
@@ -76,9 +76,9 @@ TEST_CASE(deg_3_2_1_or_3_2_3_in_soprano_fermata) {
         .feature = "deg",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}},
-            AttributeMap{{"deg", {"2"}}},
-            AttributeMap{{"deg", {"1", "3"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}}},
+            PatternPosition{.keys = {{"deg", {"2"}}}},
+            PatternPosition{.keys = {{"deg", {"1", "3"}}, {"fermata", {"true"}}}},
         },
     };
 
@@ -98,9 +98,9 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration) {
         .feature = "deg",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"4"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"2"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"1", "3"}}, {"duration", {"4"}}}},
         },
     };
 
@@ -118,9 +118,9 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard) {
         .feature = "deg",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"2"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"1", "3"}}, {"duration", {"*"}}}},
         },
     };
 
@@ -142,9 +142,9 @@ TEST_CASE(deg_3_2_1_or_3_2_3_duration_with_wildcard_and_fermata) {
         .feature = "deg",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"2"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
     };
 
@@ -163,8 +163,8 @@ TEST_CASE(mint_plusM2_plusM2_in_soprano) {
         .feature = "mint",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"mint", {"+M2"}}},
-            AttributeMap{{"mint", {"+M2"}}},
+            PatternPosition{.keys = {{"mint", {"+M2"}}}},
+            PatternPosition{.keys = {{"mint", {"+M2"}}}},
         },
     };
 
@@ -180,8 +180,8 @@ TEST_CASE(mint_plusM2_plusM2_in_soprano_start_at_previous_token) {
         .feature = "mint",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"mint", {"+M2"}}},
-            AttributeMap{{"mint", {"+M2"}}},
+            PatternPosition{.keys = {{"mint", {"+M2"}}}},
+            PatternPosition{.keys = {{"mint", {"+M2"}}}},
         },
         .mintStartAtPreviousToken = true,
     };
@@ -198,9 +198,9 @@ TEST_CASE(mint_direction_only_plus2_plus2_in_soprano) {
         .feature = "mint",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"mint", {"+2"}}},
-            AttributeMap{{"mint", {"+2"}}},
-            AttributeMap{{"mint", {"-2"}}},
+            PatternPosition{.keys = {{"mint", {"+2"}}}},
+            PatternPosition{.keys = {{"mint", {"+2"}}}},
+            PatternPosition{.keys = {{"mint", {"-2"}}}},
         },
         .mintStartAtPreviousToken = true,
     };
@@ -220,9 +220,9 @@ TEST_CASE(mint_direction_only_plus2_plus2_in_soprano_with_duration) {
         .feature = "mint",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"mint", {"+2"}}, {"duration", {"4"}}},
-            AttributeMap{{"mint", {"+2"}}},
-            AttributeMap{{"mint", {"-2"}}},
+            PatternPosition{.keys = {{"mint", {"+2"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"+2"}}}},
+            PatternPosition{.keys = {{"mint", {"-2"}}}},
         },
         .mintStartAtPreviousToken = true,
     };
@@ -242,7 +242,7 @@ TEST_CASE(mint_bare_number_2_or_1_in_soprano) {
         .feature = "mint",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"mint", {"2", "1"}}},
+            PatternPosition{.keys = {{"mint", {"2", "1"}}}},
         },
         .mintStartAtPreviousToken = true,
     };
@@ -260,7 +260,7 @@ TEST_CASE(fb_m6_3_in_bass) {
         .feature = "fb",
         .voices = "bass",
         .pattern = {
-            AttributeMap{{"fb", {"m6 3"}}},
+            PatternPosition{.keys = {{"fb", {"m6 3"}}}},
         },
     };
 
@@ -287,13 +287,13 @@ TEST_CASE(fb_component_order_within_a_pattern_value_does_not_matter) {
     Query withOrder{
         .feature = "fb",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fb", {"m6 3"}}}},
+        .pattern = {PatternPosition{.keys = {{"fb", {"m6 3"}}}}},
     };
 
     Query reversed{
         .feature = "fb",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fb", {"3 m6"}}}},
+        .pattern = {PatternPosition{.keys = {{"fb", {"3 m6"}}}}},
     };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
@@ -311,12 +311,12 @@ TEST_CASE(mint_mixed_input) {
         .feature = "mint",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"mint", {"m2"}}},
-            AttributeMap{{"mint", {"6"}}},
-            AttributeMap{{"mint", {"+2"}}},
-            AttributeMap{{"mint", {"-m2"}}},
-            AttributeMap{{"mint", {"-2"}}, {"duration", {"2"}}},
-            AttributeMap{{"mint", {"P1"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"mint", {"m2"}}}},
+            PatternPosition{.keys = {{"mint", {"6"}}}},
+            PatternPosition{.keys = {{"mint", {"+2"}}}},
+            PatternPosition{.keys = {{"mint", {"-m2"}}}},
+            PatternPosition{.keys = {{"mint", {"-2"}}, {"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"P1"}}, {"fermata", {"true"}}}},
         },
         .mintStartAtPreviousToken = true,
     };
@@ -336,7 +336,7 @@ TEST_CASE(mint_start_at_previous_token_skips_a_rest_back_to_the_last_sounding_no
         .feature = "mint",
         .voices = "alto",
         .pattern = {
-            AttributeMap{{"mint", {"+M3"}}},
+            PatternPosition{.keys = {{"mint", {"+M3"}}}},
         },
         .mintStartAtPreviousToken = true,
     };
@@ -356,7 +356,7 @@ TEST_CASE(fb_6_3_exact_chord_in_bass) {
         .feature = "fb",
         .voices = "bass",
         .pattern = {
-            AttributeMap{{"fb", {"6 3"}}},
+            PatternPosition{.keys = {{"fb", {"6 3"}}}},
         },
         .fbCompareExactChord = true,
     };
@@ -388,8 +388,8 @@ TEST_CASE(fb_4_2_chord_in_bass) {
         .feature = "fb",
         .voices = "bass",
         .pattern = {
-            AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
-            AttributeMap{{"mint", {"-2"}}},
+            PatternPosition{.keys = {{"fb", {"M2 A4"}}, {"deg", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"-2"}}}},
         },
         .fbCompareExactChord = false,
     };
@@ -407,8 +407,8 @@ TEST_CASE(fb_4_2_exact_chord_in_bass) {
         .feature = "fb",
         .voices = "bass",
         .pattern = {
-            AttributeMap{{"fb", {"M2 A4"}}, {"deg", {"4"}}},
-            AttributeMap{{"mint", {"-2"}}},
+            PatternPosition{.keys = {{"fb", {"M2 A4"}}, {"deg", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"-2"}}}},
         },
         .fbCompareExactChord = true,
     };
@@ -424,7 +424,7 @@ TEST_CASE(fb_not_rule_of_the_octave_chords_on_deg_4_in_bass) {
         .feature = "fb",
         .voices = "1",
         .pattern = {
-            AttributeMap{{"deg", {"4"}}, {"!fb", {"2 4 6", "6 5 3"}}},
+            PatternPosition{.keys = {{"deg", {"4"}}, {"!fb", {"2 4 6", "6 5 3"}}}},
         },
     };
 
@@ -444,7 +444,7 @@ TEST_CASE(fb_excluding_soprano_mint_2_or_1_or_bracketed_first_note) {
         .feature = "fb",
         .voices = "4",
         .pattern = {
-            AttributeMap{{"!mint", {"2", "1", "[g]"}}},
+            PatternPosition{.keys = {{"!mint", {"2", "1", "[g]"}}}},
         },
     };
 
@@ -466,9 +466,9 @@ TEST_CASE(deg_cadential_soprano_descent_simultaneous_with_bass_3_4_5_1) {
         .feature = "deg",
         .voices = "soprano",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"2"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"2"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"1", "3"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
     };
     
@@ -476,10 +476,10 @@ TEST_CASE(deg_cadential_soprano_descent_simultaneous_with_bass_3_4_5_1) {
         .feature = "deg",
         .voices = "bass",
         .pattern = {
-            AttributeMap{{"deg", {"3"}}, {"duration", {"8"}}},
-            AttributeMap{{"deg", {"4"}}, {"duration", {"8"}}},
-            AttributeMap{{"deg", {"5"}}, {"duration", {"4"}}},
-            AttributeMap{{"deg", {"1"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"deg", {"3"}}, {"duration", {"8"}}}},
+            PatternPosition{.keys = {{"deg", {"4"}}, {"duration", {"8"}}}},
+            PatternPosition{.keys = {{"deg", {"5"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"deg", {"1"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
     };
     q.simultaneousWith = {bass};
@@ -498,8 +498,8 @@ TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_without_split_notes) {
         .feature = "mint",
         .voices = "4",
         .pattern = {
-            AttributeMap{{"duration", {"2"}}},
-            AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"-M2"}}, {"fermata", {"true"}}}},
         },
     };
 
@@ -512,8 +512,8 @@ TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_without_split_notes) {
         .feature = "mint",
         .voices = "4",
         .pattern = {
-            AttributeMap{{"duration", {"*"}}},
-            AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"duration", {"*"}}}},
+            PatternPosition{.keys = {{"mint", {"-M2"}}, {"fermata", {"true"}}}},
         },
     };
     
@@ -528,8 +528,8 @@ TEST_CASE(mint_half_note_then_descending_M2_onto_fermata_with_split_notes) {
         .feature = "mint",
         .voices = "4",
         .pattern = {
-            AttributeMap{{"duration", {"2"}}},
-            AttributeMap{{"mint", {"-M2"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"-M2"}}, {"fermata", {"true"}}}},
         },
         .durationAllowSplitNotes = true,
     };
@@ -549,8 +549,8 @@ TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata_needs_both_options) 
         .feature = "mint",
         .voices = "bass",
         .pattern = {
-            AttributeMap{{"duration", {"2"}}},
-            AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"-P5"}}, {"fermata", {"true"}}}},
         },
     };
 
@@ -579,8 +579,8 @@ TEST_CASE(mint_dominant_split_by_an_octave_onto_the_fermata) {
         .feature = "mint",
         .voices = "bass",
         .pattern = {
-            AttributeMap{{"duration", {"2"}}},
-            AttributeMap{{"mint", {"-P5"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"-P5"}}, {"fermata", {"true"}}}},
         },
         .mintAllowIntervalComplementation = {"*"},
         .durationAllowSplitNotes = true,
@@ -601,9 +601,9 @@ TEST_CASE(kern_three_quarters_onto_a_fermata_without_merged_notes) {
         .feature = "kern",
         .voices = "4",
         .pattern = {
-            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-            AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"kern", {"a"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"kern", {"a"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}},
         },
     };
 
@@ -618,9 +618,9 @@ TEST_CASE(kern_three_quarters_onto_a_fermata_with_merged_notes) {
         .feature = "kern",
         .voices = "4",
         .pattern = {
-            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-            AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-            AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"kern", {"a"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"kern", {"a"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}},
         },
         .durationAllowMergedNotes = true,
     };
@@ -643,9 +643,9 @@ TEST_CASE(mint_dotted_quarter_plus_repeated_eighth_merged_into_a_half_note) {
             .feature = feature,
             .voices = "all",
             .pattern = {
-                AttributeMap{{"mint", {"*"}}, {"duration", {"4."}}},
-                AttributeMap{{"mint", {"P1"}}, {"duration", {"8"}}},
-                AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+                PatternPosition{.keys = {{"mint", {"*"}}, {"duration", {"4."}}}},
+                PatternPosition{.keys = {{"mint", {"P1"}}, {"duration", {"8"}}}},
+                PatternPosition{.keys = {{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
             },
             .mintAllowIntervalComplementation = {"*"},
         };
@@ -679,10 +679,10 @@ TEST_CASE(kern_cadence_needing_a_split_run_and_a_merged_run_in_the_same_match) {
         .feature = "kern",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
-            AttributeMap{{"mint", {"-M2"}}, {"duration", {"4"}}},
-            AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
-            AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"mint", {"*"}}, {"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"-M2"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"P1"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
         .mintAllowIntervalComplementation = {"*"},
     };
@@ -714,9 +714,9 @@ TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note) {
         .feature = "kern",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
-            AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
-            AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"mint", {"*"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"P1"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
     };
 
@@ -739,8 +739,8 @@ TEST_CASE(kern_cadence_ornamented_by_a_neighbour_note_asked_for_as_one_half_note
         .feature = "kern",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
-            AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"mint", {"*"}}, {"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
         .durationAllowSplitNotes = true,
     };
@@ -767,8 +767,8 @@ TEST_CASE(kern_cadence_ornamented_by_an_anticipation) {
         .feature = "kern",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"mint", {"*"}}, {"duration", {"2"}}},
-            AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"mint", {"*"}}, {"duration", {"2"}}}},
+            PatternPosition{.keys = {{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
     };
 
@@ -793,9 +793,9 @@ TEST_CASE(kern_cadence_ornamented_by_a_leap_away_and_back) {
         .feature = "kern",
         .voices = "all",
         .pattern = {
-            AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
-            AttributeMap{{"mint", {"+2"}}, {"duration", {"4"}}},
-            AttributeMap{{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}},
+            PatternPosition{.keys = {{"mint", {"*"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"+2"}}, {"duration", {"4"}}}},
+            PatternPosition{.keys = {{"mint", {"-P5"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
         },
         .mintAllowIntervalComplementation = {"5"},
     };
@@ -818,7 +818,7 @@ TEST_CASE(deg_major_third_onto_a_fermata_in_a_minor_key) {
     Query q{
         .feature = "deg",
         .voices = "all",
-        .pattern = {AttributeMap{{"deg", {"3+"}}, {"mode", {"minor"}}, {"phrase", {"end"}}}},
+        .pattern = {PatternPosition{.keys = {{"deg", {"3+"}}, {"mode", {"minor"}}, {"phrase", {"end"}}}}},
     };
 
     CorpusSearch search(FIXTURES_DIR);
@@ -832,7 +832,7 @@ TEST_CASE(kern_soprano_fermata_in_the_major_dominant) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"phrase", {"end"}}, {"keyDeg", {"5"}}, {"mode", {"major"}}}},
+        .pattern = {PatternPosition{.keys = {{"phrase", {"end"}}, {"keyDeg", {"5"}}, {"mode", {"major"}}}}},
     };
 
     CorpusSearch search(FIXTURES_DIR);
@@ -885,7 +885,9 @@ TEST_CASE(word_herr_jesu_christ) {
     Query q{
         .feature = "word",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"word", {"Herr"}}}, AttributeMap{{"word", {"Jesu"}}}, AttributeMap{{"word", {"Christ"}}}},
+        .pattern = {PatternPosition{.keys = {{"word", {"Herr"}}}},
+                    PatternPosition{.keys = {{"word", {"Jesu"}}}},
+                    PatternPosition{.keys = {{"word", {"Christ"}}}}},
     };
 
     CorpusSearch search(FIXTURES_DIR);
@@ -903,7 +905,7 @@ TEST_CASE(word_schmerz_and_what_follows) {
     Query q{
         .feature = "word",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"word", {"Schmerz*"}}}},
+        .pattern = {PatternPosition{.keys = {{"word", {"Schmerz*"}}}}},
     };
 
     CorpusSearch search(FIXTURES_DIR);
@@ -917,7 +919,7 @@ TEST_CASE(word_schmerz_and_what_follows) {
     CHECK_EQ(results[0].verses, (std::vector<std::size_t>{1}));
 
     // Without the star only the word itself.
-    q.pattern = {AttributeMap{{"word", {"Schmerz"}}}};
+    q.pattern = {PatternPosition{.keys = {{"word", {"Schmerz"}}}}};
     CHECK(search.run(q).empty());
 }
 
@@ -925,7 +927,7 @@ TEST_CASE(word_sung_on_the_same_notes_in_every_verse) {
     Query q{
         .feature = "word",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"word", {"wir"}}}},
+        .pattern = {PatternPosition{.keys = {{"word", {"wir"}}}}},
     };
 
     CorpusSearch search(FIXTURE_CHORALE("chor005"));
@@ -948,7 +950,7 @@ TEST_CASE(kern_melisma_initial) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"melisma", {"initial"}}}},
+        .pattern = {PatternPosition{.keys = {{"melisma", {"initial"}}}}},
     };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));
@@ -966,7 +968,7 @@ TEST_CASE(fb_7_under_a_syllable) {
     Query q{
         .feature = "fb",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fb", {"7"}}, {"word", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"fb", {"7"}}, {"word", {"*"}}}}},
     };
 
     CorpusSearch search(FIXTURE_CHORALE("chor029"));

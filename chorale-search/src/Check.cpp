@@ -61,10 +61,10 @@ std::string queryId(const char* type, const char* direction, std::size_t lower, 
 // is reached by a move in the given direction. A rest in between is no sonority, the hint spine has no token on
 // it, so this is also what keeps a move out of a rest from being taken for one between two consecutive sonorities.
 SimultaneousGroup movesInto(const std::string& voices, const std::string& sign, const AttributeMap& moveExtra = {}) {
-    AttributeMap before;
-    before["!kern"] = {"r"};
-    AttributeMap move = moveExtra;
-    move["mint"] = {sign};
+    PatternPosition before;
+    before.keys["!kern"] = {"r"};
+    PatternPosition move{.keys = moveExtra};
+    move.keys["mint"] = {sign};
 
     return SimultaneousGroup{
         .feature = "mint",
@@ -85,8 +85,8 @@ std::vector<FindingQuery> buildParallelQueries() {
     std::vector<FindingQuery> queries;
     for (const PerfectInterval& kind : perfectIntervals()) {
         for (const auto& [direction, sign] : directions()) {
-            AttributeMap sonority;
-            sonority[kPairSearchedKey] = toPatternValues(kind.intervals);
+            PatternPosition sonority;
+            sonority.keys[kPairSearchedKey] = toPatternValues(kind.intervals);
 
             Query query{
                 .id = queryId(kind.parallelType, direction),
@@ -122,10 +122,10 @@ std::vector<FindingQuery> buildHiddenMotionQueries(bool allowStepwiseSoprano) {
     std::vector<FindingQuery> queries;
     for (const PerfectInterval& kind : perfectIntervals()) {
         for (const auto& [direction, sign] : directions()) {
-            AttributeMap before;
-            before["!" + pairKey] = toPatternValues(kind.intervals);
-            AttributeMap into;
-            into[pairKey] = toPatternValues(kind.intervals);
+            PatternPosition before;
+            before.keys["!" + pairKey] = toPatternValues(kind.intervals);
+            PatternPosition into;
+            into.keys[pairKey] = toPatternValues(kind.intervals);
 
             AttributeMap leap;
             if (allowStepwiseSoprano) leap["!mint"] = {sign + "2", sign + "1"};
@@ -162,10 +162,10 @@ std::vector<FindingQuery> buildBassPhraseEndQueries() {
 
     std::vector<FindingQuery> queries;
     for (const auto& [direction, move] : std::vector<std::pair<const char*, std::string>>{{"up", "+"}, {"down", "-"}, {"", "P1"}}) {
-        AttributeMap position;
-        position["mint"] = {move};
-        position["fermata"] = {"true"};
-        position["!mint"] = toPatternValues(cadenceSteps);
+        PatternPosition position;
+        position.keys["mint"] = {move};
+        position.keys["fermata"] = {"true"};
+        position.keys["!mint"] = toPatternValues(cadenceSteps);
 
         Query query{
             .id = queryId("bassPhraseEnd", direction, kBass, kBass),
@@ -195,13 +195,13 @@ std::vector<FindingQuery> buildLargeLeapQueries() {
     std::vector<FindingQuery> queries;
     for (std::size_t voice = 1; voice <= kVoiceCount; ++voice) {
         for (const auto& [direction, sign] : directions()) {
-            AttributeMap before;
-            before["!kern"] = {"r"};
-            before["!fermata"] = {"true"};
+            PatternPosition before;
+            before.keys["!kern"] = {"r"};
+            before.keys["!fermata"] = {"true"};
 
-            AttributeMap leap;
-            leap["mint"] = {PatternValue(ComparisonOperator::GreaterThan, sign + "P5")};
-            leap["!mint"] = sign == "+" ? std::vector<PatternValue>{"+m6", "+P8"} : std::vector<PatternValue>{"-P8"};
+            PatternPosition leap;
+            leap.keys["mint"] = {PatternValue(ComparisonOperator::GreaterThan, sign + "P5")};
+            leap.keys["!mint"] = sign == "+" ? std::vector<PatternValue>{"+m6", "+P8"} : std::vector<PatternValue>{"-P8"};
 
             Query query{
                 .id = queryId("largeLeap", direction, voice, voice),
@@ -238,7 +238,7 @@ std::vector<FindingQuery> buildVoiceRangeQueries(const VoiceRanges& limits) {
                 .id = queryId("voiceRange", direction, voice, voice),
                 .feature = "kern",
                 .voices = std::to_string(voice),
-                .pattern = {{{"kern", {PatternValue(comparisonOperator, hum::Convert::base12ToKern(limit))}}}},
+                .pattern = {{.keys = {{"kern", {PatternValue(comparisonOperator, hum::Convert::base12ToKern(limit))}}}}},
             };
 
             queries.push_back(FindingQuery{

@@ -174,12 +174,12 @@ void addOtherVoiceKeys(AttributeMap& pos, const std::string& voiceReference, con
 }
 
 // `name` locates the errors: "'pattern[...]" or "'everyPosition".
-AttributeMap positionFromJson(const nlohmann::json& posJson, const std::string& name) {
-    AttributeMap pos;
+PatternPosition positionFromJson(const nlohmann::json& posJson, const std::string& name) {
+    PatternPosition pos;
     for (auto it = posJson.begin(); it != posJson.end(); ++it) {
         const std::string& rawKey = it.key();
         if (isOtherVoiceKey(rawKey)) {
-            addOtherVoiceKeys(pos, rawKey, it.value(), name);
+            addOtherVoiceKeys(pos.keys, rawKey, it.value(), name);
             continue;
         }
         // isKnownPatternKey/isValidPatternValue both accept a "!"-negated key directly (see
@@ -192,17 +192,17 @@ AttributeMap positionFromJson(const nlohmann::json& posJson, const std::string& 
                 throw std::invalid_argument(name + "[" + kPositionNameKey + "]' must be a name: '$', a letter, then letters, "
                                             "digits or underscores (got " + it.value().dump() + ")");
             }
-            pos[rawKey] = {PatternValue(it.value().get<std::string>())};
+            pos.keys[rawKey] = {PatternValue(it.value().get<std::string>())};
             continue;
         }
-        pos[rawKey] = attributeValueFromJson(it.value(), rawKey, name + "[" + rawKey + "]'");
+        pos.keys[rawKey] = attributeValueFromJson(it.value(), rawKey, name + "[" + rawKey + "]'");
     }
     return pos;
 }
 
-std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
+std::vector<PatternPosition> patternFromJson(const nlohmann::json& j) {
     if (!j.is_array()) throw std::invalid_argument("'pattern' must be an array");
-    std::vector<AttributeMap> result;
+    std::vector<PatternPosition> result;
     for (const auto& posJson : j) {
         if (!posJson.is_object()) throw std::invalid_argument("'pattern' entries must be objects");
         result.push_back(positionFromJson(posJson, "'pattern[...]"));
@@ -213,12 +213,12 @@ std::vector<AttributeMap> patternFromJson(const nlohmann::json& j) {
 }
 
 // A position keeps its own value of a key, negated or not.
-void applyEveryPosition(std::vector<AttributeMap>& pattern, const AttributeMap& everyPosition) {
-    for (AttributeMap& position : pattern) {
+void applyEveryPosition(std::vector<PatternPosition>& pattern, const AttributeMap& everyPosition) {
+    for (PatternPosition& position : pattern) {
         for (const auto& [rawKey, values] : everyPosition) {
             const std::string key = unnegatedKey(rawKey);
-            const bool hasOwn = std::any_of(position.begin(), position.end(), [&](const auto& own) { return unnegatedKey(own.first) == key; });
-            if (!hasOwn) position[rawKey] = values;
+            const bool hasOwn = std::any_of(position.keys.begin(), position.keys.end(), [&](const auto& own) { return unnegatedKey(own.first) == key; });
+            if (!hasOwn) position.keys[rawKey] = values;
         }
     }
 }
@@ -267,12 +267,12 @@ std::string simultaneousAlignmentFromJson(const nlohmann::json& j, const std::st
 // hint-@pair is the pair a query over voice pairs searches, so only such a query has it, and a position names that pair
 // once only: hint-@pair and one of the pairs of `pairSet` would be the same key for that pair, and one of the two
 // would not be checked. Once negated and once not is two keys.
-void validatePairSearchedKeys(const std::vector<AttributeMap>& pattern, const std::string& pairSet,
+void validatePairSearchedKeys(const std::vector<PatternPosition>& pattern, const std::string& pairSet,
                               const std::string& context) {
     const std::vector<std::string> pairs = pairSet.empty() ? std::vector<std::string>{} : expandHintPairKey(pairSet);
     for (std::size_t position = 0; position < pattern.size(); ++position) {
         const std::string where = "'pattern[" + std::to_string(position) + "]' in " + context;
-        for (const auto& [key, values] : pattern[position]) {
+        for (const auto& [key, values] : pattern[position].keys) {
             if (!isPairSearchedKey(key)) continue;
             if (pairSet.empty()) {
                 throw std::invalid_argument(where + " has '" + key + "', the pair a query over voice pairs "
@@ -282,7 +282,7 @@ void validatePairSearchedKeys(const std::vector<AttributeMap>& pattern, const st
             const std::size_t at = key.find(kPairSearchedKey);
             for (const std::string& pair : pairs) {
                 const std::string sameKey = key.substr(0, at) + pair + key.substr(at + kPairSearchedKey.size());
-                if (!pattern[position].count(sameKey)) continue;
+                if (!pattern[position].keys.count(sameKey)) continue;
                 throw std::invalid_argument(where + " can't have both '" + key + "' and '" + sameKey +
                                             "': while that pair is searched, both are the key '" + sameKey + "'");
             }
@@ -360,11 +360,11 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         if (!j["everyPosition"].is_object()) {
             throw std::invalid_argument("'everyPosition' in " + context + " must be an object");
         }
-        const AttributeMap everyPosition = positionFromJson(j["everyPosition"], "'everyPosition");
-        if (everyPosition.count(kPositionNameKey)) {
+        const PatternPosition everyPosition = positionFromJson(j["everyPosition"], "'everyPosition");
+        if (everyPosition.keys.count(kPositionNameKey)) {
             throw std::invalid_argument("'everyPosition' in " + context + " cannot name the positions: a name belongs to one position");
         }
-        applyEveryPosition(target.pattern, everyPosition);
+        applyEveryPosition(target.pattern, everyPosition.keys);
         // The pattern as written is resolved already, so what fails now is a reference of everyPosition.
         try {
             target.pattern = resolvePositionReferences(target.pattern);

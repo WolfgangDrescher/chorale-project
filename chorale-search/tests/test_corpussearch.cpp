@@ -11,12 +11,12 @@
 #include "HumdrumChorale.hpp"
 #include "Query.hpp"
 
-using choralesearch::AttributeMap;
 using choralesearch::ChoraleIdRange;
 using choralesearch::CorpusSearch;
 using choralesearch::CountRange;
 using choralesearch::HumdrumChorale;
 using choralesearch::NoteSection;
+using choralesearch::PatternPosition;
 using choralesearch::Query;
 using choralesearch::Result;
 using choralesearch::SimultaneousGroup;
@@ -33,7 +33,7 @@ TEST_CASE(run_one_populates_result_fields_from_a_real_match) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     auto results = search.runOne(chorale, q);
 
@@ -61,7 +61,7 @@ TEST_CASE(run_reports_progress_once_per_chorale_file) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     search.run(q);
 
@@ -78,7 +78,7 @@ TEST_CASE(run_one_truncates_results_at_the_query_limit) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
         .limit = 2, // out of 6 available
     };
     auto results = search.runOne(chorale, q);
@@ -90,7 +90,7 @@ TEST_CASE(run_searches_a_single_file_used_as_the_corpus_root) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     auto results = search.run(q);
     REQUIRE(results.size() == 6u);
@@ -103,7 +103,7 @@ TEST_CASE(run_aggregates_matches_across_every_file_in_a_directory_corpus_root) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     auto results = search.run(q);
 
@@ -126,14 +126,14 @@ TEST_CASE(a_query_over_all_voice_pairs_finds_what_a_query_for_each_pair_finds_an
     Query all{
         .feature = "hint-**",
         .voices = "@upper",
-        .pattern = {AttributeMap{{"hint-@pair", {"P5"}}}, AttributeMap{{"hint-@pair", {"P5"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-@pair", {"P5"}}}}, PatternPosition{.keys = {{"hint-@pair", {"P5"}}}}},
         .hintReduceCompound = true,
     };
     for (const char* voice : {"@lower", "@upper"}) {
         SimultaneousGroup group{
             .feature = "mint",
             .voices = voice,
-            .pattern = {AttributeMap{{"!kern", {"r"}}}, AttributeMap{{"mint", {"-"}}}},
+            .pattern = {PatternPosition{.keys = {{"!kern", {"r"}}}}, PatternPosition{.keys = {{"mint", {"-"}}}}},
             .simultaneousAlignment = "end",
         };
         all.simultaneousWith.push_back(group);
@@ -162,7 +162,7 @@ TEST_CASE(a_query_over_all_voice_pairs_finds_what_a_query_for_each_pair_finds_an
         Query one = all;
         one.feature = "hint-" + pair;
         one.voices = pair.substr(1);
-        one.pattern = {AttributeMap{{one.feature, {"P5"}}}, AttributeMap{{one.feature, {"P5"}}}};
+        one.pattern = {PatternPosition{.keys = {{one.feature, {"P5"}}}}, PatternPosition{.keys = {{one.feature, {"P5"}}}}};
         one.simultaneousWith[0].voices = pair.substr(0, 1);
         one.simultaneousWith[1].voices = pair.substr(1);
         const auto expectedForPair = search.runOne(chorale, one);
@@ -186,7 +186,7 @@ TEST_CASE(a_query_over_all_voice_pairs_reads_the_pair_it_searches_at_an_earlier_
         Query all{
             .feature = "hint-**",
             .voices = "@lower",
-            .pattern = {AttributeMap{{"hint-@pair", {"P5", "P8"}}}, AttributeMap{{reading.key, {reading.reference}}}},
+            .pattern = {PatternPosition{.keys = {{"hint-@pair", {"P5", "P8"}}}}, PatternPosition{.keys = {{reading.key, {reading.reference}}}}},
             .hintReduceCompound = true,
         };
         const auto found = search.runOne(chorale, all);
@@ -197,7 +197,8 @@ TEST_CASE(a_query_over_all_voice_pairs_reads_the_pair_it_searches_at_an_earlier_
             Query one = all;
             one.feature = "hint-" + pair;
             one.voices = pair.substr(0, 1);
-            one.pattern = {AttributeMap{{one.feature, {"P5", "P8"}}}, AttributeMap{{one.feature + reading.keyOfPair, {"#1"}}}};
+            one.pattern = {PatternPosition{.keys = {{one.feature, {"P5", "P8"}}}},
+                           PatternPosition{.keys = {{one.feature + reading.keyOfPair, {"#1"}}}}};
             const auto expectedForPair = search.runOne(chorale, one);
             const auto foundForPair = std::count_if(found.begin(), found.end(),
                                                     [&](const Result& r) { return r.feature == one.feature; });
@@ -215,7 +216,7 @@ TEST_CASE(a_query_over_a_set_of_voice_pairs_only_searches_the_pairs_of_the_set_a
     Query withSoprano{
         .feature = "hint-*4",
         .voices = "@upper",
-        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-@pair", {"P8"}}}}},
     };
     const auto found = search.runOne(chorale, withSoprano);
     REQUIRE(found.size() > 2u);
@@ -240,7 +241,7 @@ TEST_CASE(a_set_of_voice_pairs_is_the_pairs_whose_lower_and_upper_voice_match_th
         Query query{
             .feature = set,
             .voices = "@upper",
-            .pattern = {AttributeMap{{"hint-@pair", {"*"}}}},
+            .pattern = {PatternPosition{.keys = {{"hint-@pair", {"*"}}}}},
         };
         std::set<std::string> found;
         for (const Result& r : search.runOne(chorale, query)) found.insert(r.feature);
@@ -257,7 +258,7 @@ TEST_CASE(a_query_over_all_voice_pairs_that_names_no_voice_finds_each_interval_o
     Query upper{
         .feature = "hint-**",
         .voices = "@upper",
-        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-@pair", {"P8"}}}}},
     };
     Query all = upper;
     all.voices = "all";
@@ -275,7 +276,7 @@ TEST_CASE(a_query_over_voice_pairs_reads_each_pair_once_and_keeps_another_set_an
 
     Query query{
         .feature = "hint-**",
-        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-@pair", {"P8"}}}}},
     };
     const auto once = search.runOne(chorale, query);
     REQUIRE(!once.empty());
@@ -286,10 +287,10 @@ TEST_CASE(a_query_over_voice_pairs_reads_each_pair_once_and_keeps_another_set_an
 
     Query anyPair{
         .feature = "hint-*4",
-        .pattern = {AttributeMap{{"hint-@pair", {"*"}}, {"hint-**", {"P5"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-@pair", {"*"}}, {"hint-**", {"P5"}}}}},
     };
     Query ownPair = anyPair;
-    ownPair.pattern = {AttributeMap{{"hint-@pair", {"P5"}}}};
+    ownPair.pattern = {PatternPosition{.keys = {{"hint-@pair", {"P5"}}}}};
     CHECK(search.runOne(chorale, anyPair).size() > search.runOne(chorale, ownPair).size());
 }
 
@@ -300,7 +301,7 @@ TEST_CASE(run_searches_the_voice_pairs_of_the_chorales_of_the_filter_up_to_the_l
 
     Query query{
         .feature = "hint-**",
-        .pattern = {AttributeMap{{"hint-@pair", {"P8"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-@pair", {"P8"}}}}},
     };
     query.choraleFilter.ids = {ChoraleIdRange{.text = "8", .first = 8, .last = 8}};
     const auto found = search.run(query);
@@ -322,7 +323,7 @@ TEST_CASE(a_result_links_the_section_of_the_voice_searched_and_the_sections_of_i
     Query fermatas{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     for (const Result& r : search.runOne(chorale, fermatas)) {
         REQUIRE(r.linkedSections.size() == 1u);
@@ -337,7 +338,7 @@ TEST_CASE(a_result_links_the_section_of_the_voice_searched_and_the_sections_of_i
     SimultaneousGroup bass{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
     fermatas.simultaneousWith = {bass};
     const auto withBass = search.runOne(chorale, fermatas);
@@ -358,7 +359,7 @@ TEST_CASE(a_result_of_a_pair_spine_or_a_hint_voice_key_links_the_voices_of_the_p
     Query pair{
         .feature = "hint-14",
         .voices = "bass",
-        .pattern = {AttributeMap{{"hint-14", {"*"}}}, AttributeMap{{"hint-14", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-14", {"*"}}}}, PatternPosition{.keys = {{"hint-14", {"*"}}}}},
     };
     const auto found = search.runOne(chorale, pair);
     REQUIRE(!found.empty());
@@ -379,7 +380,7 @@ TEST_CASE(a_result_of_a_pair_spine_or_a_hint_voice_key_links_the_voices_of_the_p
     Query key{
         .feature = "kern",
         .voices = "alto",
-        .pattern = {AttributeMap{{"hint-2", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-2", {"*"}}}}},
     };
     const auto withTenor = search.runOne(chorale, key);
     REQUIRE(!withTenor.empty());
@@ -401,8 +402,8 @@ TEST_CASE(a_hint_voice_key_links_the_other_voice_at_the_positions_that_name_it_o
     Query query{
         .feature = "kern",
         .voices = "alto",
-        .pattern = {AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}, AttributeMap{{"kern", {"*"}}},
-                    AttributeMap{{"kern", {"*"}}, {"hint-4", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}, {"hint-4", {"*"}}}}, PatternPosition{.keys = {{"kern", {"*"}}}},
+                    PatternPosition{.keys = {{"kern", {"*"}}, {"hint-4", {"*"}}}}},
     };
     const auto found = search.runOne(chorale, query);
     REQUIRE(found.size() > 2u);
@@ -431,13 +432,13 @@ TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_
     Query fermatas{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     SimultaneousGroup pair{
         .feature = "hint-23",
         .voices = "alto",
-        .pattern = {AttributeMap{{"hint-23", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-23", {"*"}}}}},
     };
     Query withPair = fermatas;
     withPair.simultaneousWith = {pair};
@@ -454,7 +455,7 @@ TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_
     SimultaneousGroup key{
         .feature = "kern",
         .voices = "tenor",
-        .pattern = {AttributeMap{{"hint-1", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-1", {"*"}}}}},
     };
     Query withKey = fermatas;
     withKey.simultaneousWith = {key};
@@ -469,7 +470,7 @@ TEST_CASE(a_group_links_the_voices_of_its_pair_its_hint_keys_and_every_voice_it_
     SimultaneousGroup everyVoice{
         .feature = "kern",
         .voices = "all",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
     Query withEveryVoice = fermatas;
     withEveryVoice.simultaneousWith = {everyVoice};
@@ -490,7 +491,7 @@ TEST_CASE(a_result_links_the_voices_a_key_of_another_voice_names) {
     HumdrumChorale chorale(FIXTURE_CHORALE("chor001"));
     CorpusSearch search(chorale.path());
     auto voicesLinkedTo = [&](const std::string& reference) {
-        Query query{.feature = "kern", .voices = "soprano", .pattern = {AttributeMap{{reference + ":deg", {"*"}}}}};
+        Query query{.feature = "kern", .voices = "soprano", .pattern = {PatternPosition{.keys = {{reference + ":deg", {"*"}}}}}};
         const auto found = search.runOne(chorale, query);
         std::set<std::size_t> voices;
         for (const NoteSection& section : found.front().linkedSections) {
@@ -511,13 +512,13 @@ TEST_CASE(a_melodic_interval_from_the_note_before_begins_its_section_at_that_not
     Query query{
         .feature = "mint",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"mint", {"+"}}}},
+        .pattern = {PatternPosition{.keys = {{"mint", {"+"}}}}},
         .mintStartAtPreviousToken = true,
     };
     SimultaneousGroup bass{
         .feature = "mint",
         .voices = "bass",
-        .pattern = {AttributeMap{{"mint", {"-"}}}},
+        .pattern = {PatternPosition{.keys = {{"mint", {"-"}}}}},
         .simultaneousAlignment = "end",
     };
     query.simultaneousWith = {bass};
@@ -542,8 +543,8 @@ TEST_CASE(an_fb_key_links_the_voices_that_make_its_figure_at_the_position_that_n
     Query query{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"deg", {"3"}}}, AttributeMap{{"deg", {"4"}}},
-                    AttributeMap{{"deg", {"5"}}, {"fb", {"4"}}}, AttributeMap{{"deg", {"1"}}, {"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"deg", {"3"}}}}, PatternPosition{.keys = {{"deg", {"4"}}}},
+                    PatternPosition{.keys = {{"deg", {"5"}}, {"fb", {"4"}}}}, PatternPosition{.keys = {{"deg", {"1"}}, {"fermata", {"true"}}}}},
     };
     const auto found = search.runOne(chorale, query);
     REQUIRE(!found.empty());
@@ -565,7 +566,7 @@ TEST_CASE(an_fb_key_links_the_voices_that_make_its_figure_at_the_position_that_n
     CHECK(foundTheAlto);
 
     // An fb key that names no figure links nothing.
-    query.pattern[2] = AttributeMap{{"deg", {"5"}}, {"fb", {"*"}}};
+    query.pattern[2] = PatternPosition{.keys = {{"deg", {"5"}}, {"fb", {"*"}}}};
     for (const Result& r : search.runOne(chorale, query)) {
         for (const NoteSection& section : r.linkedSections) CHECK(section.feature != std::string("fb"));
     }
@@ -579,7 +580,7 @@ TEST_CASE(a_set_of_voice_pairs_links_the_voices_of_the_pairs_whose_interval_it_n
     Query query{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"kern", {"*"}}, {"hint-1*", {"4"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}, {"hint-1*", {"4"}}}}},
         .hintReduceCompound = true,
     };
     const auto found = search.runOne(chorale, query);
@@ -603,7 +604,7 @@ TEST_CASE(a_set_of_voice_pairs_links_the_voices_of_the_pairs_whose_interval_it_n
     CHECK(foundQuarter48);
 
     // A negated set links nothing.
-    query.pattern = {AttributeMap{{"kern", {"*"}}, {"!hint-1*", {"4"}}}};
+    query.pattern = {PatternPosition{.keys = {{"kern", {"*"}}, {"!hint-1*", {"4"}}}}};
     for (const Result& r : search.runOne(chorale, query)) {
         for (const NoteSection& section : r.linkedSections) CHECK(section.feature.find("hint-1*") == std::string::npos);
     }
@@ -618,12 +619,12 @@ TEST_CASE(an_fb_key_of_a_simultaneous_entry_covers_no_voice) {
     Query query{
         .feature = "kern",
         .voices = "alto",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
     SimultaneousGroup figures{
         .feature = "fb",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fb", {"4"}}}},
+        .pattern = {PatternPosition{.keys = {{"fb", {"4"}}}}},
     };
     query.simultaneousWith = {figures};
     const auto found = search.runOne(chorale, query);
@@ -645,7 +646,7 @@ TEST_CASE(a_hint_pair_key_links_both_voices_of_the_pair_at_the_position_that_nam
     Query query{
         .feature = "kern",
         .voices = "alto",
-        .pattern = {AttributeMap{{"kern", {"*"}}, {"hint-14", {"*"}}}, AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}, {"hint-14", {"*"}}}}, PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
     const auto found = search.runOne(chorale, query);
     REQUIRE(!found.empty());
@@ -661,7 +662,7 @@ TEST_CASE(a_hint_pair_key_links_both_voices_of_the_pair_at_the_position_that_nam
     }
 
     // A set of pairs that names no interval names no voices.
-    query.pattern[0] = AttributeMap{{"kern", {"*"}}, {"hint-*4", {"*"}}};
+    query.pattern[0] = PatternPosition{.keys = {{"kern", {"*"}}, {"hint-*4", {"*"}}}};
     for (const Result& r : search.runOne(chorale, query)) {
         for (const NoteSection& section : r.linkedSections) CHECK_EQ(section.voice, std::size_t{3});
     }
@@ -677,7 +678,7 @@ TEST_CASE(run_stops_at_the_limit_partway_through_a_later_file) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
         .limit = 8,
     };
     auto results = search.run(q);
@@ -692,7 +693,7 @@ TEST_CASE(run_with_a_single_query_never_sets_query_id) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     auto results = search.run(q); // the plain Query overload, not the vector<Query> one
 
@@ -708,13 +709,13 @@ TEST_CASE(run_with_multiple_queries_tags_each_result_with_its_own_id_or_index) {
         .id = "sopranoFermatas",
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     Query withoutId{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     auto results = search.run(std::vector<Query>{withId, withoutId});
@@ -739,7 +740,7 @@ TEST_CASE(run_with_multiple_queries_respects_each_querys_own_limit_independently
         .id = "capped3",
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
         .limit = 3,
     };
 
@@ -747,7 +748,7 @@ TEST_CASE(run_with_multiple_queries_respects_each_querys_own_limit_independently
         .id = "capped5",
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
         .limit = 5,
     };
 
@@ -766,7 +767,7 @@ TEST_CASE(run_throws_when_the_corpus_root_does_not_exist) {
     CorpusSearch search("/nonexistent/corpus/root");
     Query q{
         .feature = "kern",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
     CHECK_THROWS(search.run(q));
 }
@@ -777,13 +778,13 @@ TEST_CASE(simultaneous_with_default_alignment_keeps_matches_that_align_with_the_
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     q.simultaneousWith = {group};
 
@@ -797,13 +798,13 @@ TEST_CASE(simultaneous_with_group_that_never_matches_filters_out_every_result) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "alto",
-        .pattern = {AttributeMap{{"kern", {"r"}}}}, // no rests anywhere in this chorale
+        .pattern = {PatternPosition{.keys = {{"kern", {"r"}}}}}, // no rests anywhere in this chorale
     };
     q.simultaneousWith = {group};
 
@@ -817,19 +818,19 @@ TEST_CASE(simultaneous_with_requires_every_group_to_have_a_match) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     SimultaneousGroup alwaysAligns{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     SimultaneousGroup neverMatches{
         .feature = "kern",
         .voices = "alto",
-        .pattern = {AttributeMap{{"kern", {"r"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"r"}}}}},
     };
 
     q.simultaneousWith = {alwaysAligns, neverMatches};
@@ -845,14 +846,14 @@ TEST_CASE(simultaneous_alignment_start_only_checks_the_matchs_start_position) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"g"}}}}, PatternPosition{.keys = {{"kern", {"a"}}}}},
         .simultaneousAlignment = "start", // default, set explicitly for clarity
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"G"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"G"}}}}},
     };
     q.simultaneousWith = {group};
 
@@ -867,14 +868,14 @@ TEST_CASE(simultaneous_alignment_end_only_checks_the_matchs_end_position) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"g"}}}}, PatternPosition{.keys = {{"kern", {"a"}}}}},
         .simultaneousAlignment = "end",
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"F#"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"F#"}}}}},
     };
     q.simultaneousWith = {group};
 
@@ -890,23 +891,23 @@ TEST_CASE(simultaneous_alignment_start_end_requires_both_positions_at_once) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"g"}}}}, PatternPosition{.keys = {{"kern", {"a"}}}}},
         .simultaneousAlignment = "start-end",
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"G"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"G"}}}}},
     };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0});
 
-    group.pattern = {AttributeMap{{"kern", {"F#"}}}};
+    group.pattern = {PatternPosition{.keys = {{"kern", {"F#"}}}}};
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0});
 
-    group.pattern = {AttributeMap{{"kern", {"G"}}}, AttributeMap{{"kern", {"F#"}}}};
+    group.pattern = {PatternPosition{.keys = {{"kern", {"G"}}}}, PatternPosition{.keys = {{"kern", {"F#"}}}}};
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{1});
 }
@@ -919,14 +920,14 @@ TEST_CASE(simultaneous_alignment_start_end_matches_when_both_patterns_are_single
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
         .simultaneousAlignment = "start-end",
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     q.simultaneousWith = {group};
 
@@ -939,14 +940,14 @@ TEST_CASE(simultaneous_with_group_can_override_the_querys_simultaneous_alignment
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"g"}}}}, PatternPosition{.keys = {{"kern", {"a"}}}}},
         .simultaneousAlignment = "end", // would find nothing against bass "G" (see test above)
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"G"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"G"}}}}},
         .simultaneousAlignment = "start", // override back to "start" for this group only
     };
     q.simultaneousWith = {group};
@@ -965,13 +966,13 @@ TEST_CASE(simultaneous_with_group_can_override_kern_ignore_octave) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"kern", {"g"}}}, AttributeMap{{"kern", {"a"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"g"}}}}, PatternPosition{.keys = {{"kern", {"a"}}}}},
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"g"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"g"}}}}},
     };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
@@ -990,13 +991,13 @@ TEST_CASE(simultaneous_with_group_can_override_hint_reduce_compound) {
     Query q{
         .feature = "hint-14",
         .voices = "1",
-        .pattern = {AttributeMap{{"hint-14", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-14", {"*"}}}}},
     };
 
     SimultaneousGroup group{
         .feature = "hint-14",
         .voices = "1",
-        .pattern = {AttributeMap{{"hint-14", {"M3"}}}},
+        .pattern = {PatternPosition{.keys = {{"hint-14", {"M3"}}}}},
     };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
@@ -1015,13 +1016,13 @@ TEST_CASE(simultaneous_with_group_can_override_duration_allow_split_notes) {
     Query q{
         .feature = "kern",
         .voices = "3",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
 
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "3",
-        .pattern = {AttributeMap{{"kern", {"d"}}, {"duration", {"2"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"d"}}, {"duration", {"2"}}}}},
     };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{3}); // neither overridden nor inherited
@@ -1040,7 +1041,7 @@ TEST_CASE(simultaneous_with_group_can_override_duration_allow_merged_notes) {
     Query q{
         .feature = "kern",
         .voices = "4",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
 
     SimultaneousGroup group{
@@ -1048,9 +1049,9 @@ TEST_CASE(simultaneous_with_group_can_override_duration_allow_merged_notes) {
         .voices = "4",
         // The soprano's two cadences written as a half note a plus the fermata g, asked for as
         // three quarters.
-        .pattern = {AttributeMap{{"kern", {"a"}}, {"duration", {"4"}}},
-                    AttributeMap{{"duration", {"4"}}},
-                    AttributeMap{{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"a"}}, {"duration", {"4"}}}},
+                    PatternPosition{.keys = {{"duration", {"4"}}}},
+                    PatternPosition{.keys = {{"kern", {"g"}}, {"duration", {"4"}}, {"fermata", {"true"}}}}},
     };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
@@ -1069,7 +1070,7 @@ TEST_CASE(simultaneous_with_group_can_override_metweight_skip_unclassified) {
     Query q{
         .feature = "kern",
         .voices = "4",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
 
     SimultaneousGroup group{
@@ -1077,9 +1078,9 @@ TEST_CASE(simultaneous_with_group_can_override_metweight_skip_unclassified) {
         .voices = "4",
         // The soprano's cadence in measure 4 with its offbeat neighbour note folded away, so the
         // two a's it decorates are adjacent -- see test_fixture_results.cpp.
-        .pattern = {AttributeMap{{"mint", {"*"}}, {"duration", {"4"}}},
-                    AttributeMap{{"mint", {"P1"}}, {"duration", {"4"}}},
-                    AttributeMap{{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"mint", {"*"}}, {"duration", {"4"}}}},
+                    PatternPosition{.keys = {{"mint", {"P1"}}, {"duration", {"4"}}}},
+                    PatternPosition{.keys = {{"mint", {"-M2"}}, {"duration", {"*"}}, {"fermata", {"true"}}}}},
     };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
@@ -1098,13 +1099,13 @@ TEST_CASE(simultaneous_with_group_can_override_mint_allow_interval_complementati
     Query q{
         .feature = "mint",
         .voices = "1",
-        .pattern = {AttributeMap{{"mint", {"+4"}}}},
+        .pattern = {PatternPosition{.keys = {{"mint", {"+4"}}}}},
     };
 
     SimultaneousGroup group{
         .feature = "mint",
         .voices = "1",
-        .pattern = {AttributeMap{{"mint", {"-5"}}}}, // never true where the primary "+4" is
+        .pattern = {PatternPosition{.keys = {{"mint", {"-5"}}}}}, // never true where the primary "+4" is
     };
     q.simultaneousWith = {group};
     CHECK_EQ(search.runOne(chorale, q).size(), std::size_t{0}); // neither overridden nor inherited
@@ -1127,7 +1128,7 @@ TEST_CASE(for_each_match_visits_the_same_matches_run_collects_with_their_chorale
         .id = "fermatas",
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     std::size_t visited = 0;
@@ -1150,7 +1151,7 @@ TEST_CASE(a_result_has_the_onset_of_every_position_of_the_pattern) {
     Query q{
         .feature = "deg",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"deg", {"*"}}}, AttributeMap{{"deg", {"*"}}, {"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"deg", {"*"}}}}, PatternPosition{.keys = {{"deg", {"*"}}, {"fermata", {"true"}}}}},
     };
 
     const std::vector<Result> results = search.run(q);
@@ -1172,7 +1173,7 @@ TEST_CASE(for_each_match_visits_one_file_at_a_time_and_in_file_order) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     std::atomic<int> visiting{0};
@@ -1206,7 +1207,7 @@ TEST_CASE(run_throws_for_a_file_that_cannot_be_parsed) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     bool threw = false;
     try {
@@ -1224,7 +1225,7 @@ TEST_CASE(chorale_filter_without_filters_searches_every_chorale) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
@@ -1241,7 +1242,7 @@ TEST_CASE(chorale_filter_ids_and_excluded_ids_pick_the_chorales_searched) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
@@ -1279,7 +1280,7 @@ TEST_CASE(chorale_filter_title_finds_a_chorale_by_a_word_of_either_title_without
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
@@ -1311,7 +1312,7 @@ TEST_CASE(chorale_filter_meter_and_counts_pick_the_chorales_searched) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
@@ -1365,7 +1366,7 @@ TEST_CASE(chorale_filter_key_and_mode_are_those_a_chorale_starts_in) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     std::vector<std::string> found; // the chorales with a match, in the order of the results
 
@@ -1419,7 +1420,7 @@ TEST_CASE(chorale_filter_leaves_the_matches_of_the_chorales_it_lets_in_as_they_a
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     std::vector<Result> expected;
@@ -1442,7 +1443,7 @@ TEST_CASE(chorale_filter_applies_before_the_limit_counts) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     q.choraleFilter.ids = {ChoraleIdRange{.text = "29-39", .first = 29, .last = 39}};
     q.limit = 8;
@@ -1460,7 +1461,7 @@ TEST_CASE(every_query_of_a_combined_run_has_a_chorale_filter_of_its_own) {
         .id = "minor",
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     Query dorian = minor;
     dorian.id = "dorian";
@@ -1487,7 +1488,7 @@ TEST_CASE(chorale_filter_ids_leave_the_other_files_unopened_and_out_of_the_progr
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
     q.choraleFilter.ids = {ChoraleIdRange{.text = "1", .first = 1, .last = 1}, ChoraleIdRange{.text = "5", .first = 5, .last = 5}};
     search.run(q);
@@ -1513,7 +1514,7 @@ TEST_CASE(chorale_filter_applies_to_for_each_match_and_to_run_one) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"fermata", {"true"}}}},
+        .pattern = {PatternPosition{.keys = {{"fermata", {"true"}}}}},
     };
 
     Query minor = q;
@@ -1548,7 +1549,7 @@ TEST_CASE(a_query_that_reads_the_lyrics_is_run_once_and_its_results_say_the_vers
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"word", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"word", {"*"}}}}},
     };
     const auto results = search.run(q);
     // Every soprano note has text in verse 1, the 16 up to the repeat in verse 2 as well.
@@ -1580,7 +1581,7 @@ TEST_CASE(a_query_that_reads_no_lyrics_has_results_without_verses) {
     Query q{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
     const auto results = search.run(q);
     CHECK_EQ(results.size(), std::size_t{46});
@@ -1593,12 +1594,12 @@ TEST_CASE(a_group_that_reads_the_lyrics_lines_up_with_the_notes_of_the_words) {
     Query q{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}},
     };
     SimultaneousGroup group{
         .feature = "word",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"word", {"Grunde", "Morgenstunde"}}}},
+        .pattern = {PatternPosition{.keys = {{"word", {"Grunde", "Morgenstunde"}}}}},
     };
     q.simultaneousWith = {group};
     const auto results = search.run(q);
@@ -1615,16 +1616,16 @@ TEST_CASE(a_group_that_reads_the_lyrics_holds_in_a_verse_the_match_holds_in) {
     Query q{
         .feature = "kern",
         .voices = "bass",
-        .pattern = {AttributeMap{{"kern", {"*"}}, {"syl", {"her"}}}},
+        .pattern = {PatternPosition{.keys = {{"kern", {"*"}}, {"syl", {"her"}}}}},
     };
     SimultaneousGroup group{
         .feature = "kern",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"syl", {"mor"}}}},
+        .pattern = {PatternPosition{.keys = {{"syl", {"mor"}}}}},
     };
     q.simultaneousWith = {group};
     CHECK(search.run(q).empty());
-    group.pattern = {AttributeMap{{"syl", {"her"}}}};
+    group.pattern = {PatternPosition{.keys = {{"syl", {"her"}}}}};
     q.simultaneousWith = {group};
     q.limit = 1;
     const auto results = search.run(q);
@@ -1632,7 +1633,7 @@ TEST_CASE(a_group_that_reads_the_lyrics_holds_in_a_verse_the_match_holds_in) {
     CHECK_EQ(results[0].startLineNumber, std::size_t{27});
     CHECK_EQ(results[0].verses, (std::vector<std::size_t>{1}));
     // A group alone narrows the verses too.
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    q.pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}};
     const auto narrowed = search.run(q);
     REQUIRE(narrowed.size() == 1u);
     CHECK_EQ(narrowed[0].startLineNumber, std::size_t{27});
@@ -1645,13 +1646,13 @@ TEST_CASE(a_chorale_without_lyrics_has_no_matches_for_a_query_that_reads_them) {
     Query q{
         .feature = "word",
         .voices = "soprano",
-        .pattern = {AttributeMap{{"word", {"*"}}}},
+        .pattern = {PatternPosition{.keys = {{"word", {"*"}}}}},
     };
     CHECK(search.runOne(chorale, q).empty());
     q.feature = "kern";
     CHECK(search.runOne(chorale, q).empty());
-    q.pattern = {AttributeMap{{"!word", {"*"}}}};
+    q.pattern = {PatternPosition{.keys = {{"!word", {"*"}}}}};
     CHECK(search.runOne(chorale, q).empty());
-    q.pattern = {AttributeMap{{"kern", {"*"}}}};
+    q.pattern = {PatternPosition{.keys = {{"kern", {"*"}}}}};
     CHECK(!search.runOne(chorale, q).empty());
 }

@@ -61,7 +61,7 @@ bool hintInList(const std::vector<PatternValue>& allowed, const std::string& act
 
 class AttributeMatcher {
 public:
-    AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> pattern,
+    AttributeMatcher(std::string drivingFeature, std::vector<PatternPosition> pattern,
                       MatcherOptions options = {});
 
     std::vector<AttributeMatch> findAll(const HumdrumChorale& chorale, std::size_t voice) const;

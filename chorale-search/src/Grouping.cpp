@@ -371,8 +371,8 @@ FoundMatch::FoundMatch(const HumdrumChorale& chorale, const Query& query, const 
         }
         const std::size_t previousLine = lineAt(p - 1);
         const std::size_t line = lineAt(p);
-        const bool splitNote = query.durationAllowSplitNotes && query.pattern[p - 1].count("duration") &&
-                               query.pattern[p].count("duration") && repeatsPitch(chorale, result.voice, previousLine, line);
+        const bool splitNote = query.durationAllowSplitNotes && query.pattern[p - 1].keys.count("duration") &&
+                               query.pattern[p].keys.count("duration") && repeatsPitch(chorale, result.voice, previousLine, line);
         const bool sameNote = line == previousLine || splitNote;
         noteIndex.push_back(noteIndex.back() + (sameNote ? 0 : 1));
     }
@@ -380,7 +380,7 @@ FoundMatch::FoundMatch(const HumdrumChorale& chorale, const Query& query, const 
         if (p > 0 && noteIndex[p] == noteIndex[p - 1]) continue;
         bool durationAsked = false;
         for (std::size_t q = p; q < noteIndex.size() && noteIndex[q] == noteIndex[p]; ++q) {
-            durationAsked = durationAsked || query.pattern[q].count("duration");
+            durationAsked = durationAsked || query.pattern[q].keys.count("duration");
         }
         notes.noteDurations.push_back(durationAsked ? durationOfNoteAt(p) : "");
     }

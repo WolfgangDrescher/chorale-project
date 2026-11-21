@@ -58,11 +58,11 @@ TEST_CASE(the_inner_voices_are_asked_about_as_an_exact_fb_chord_in_the_groups_on
         std::vector<std::string> values;
         for (const Segment& segment : segments) {
             // The query's own pattern stays the plain melody.
-            for (const auto& position : segment.query.pattern) CHECK(position.find("fb") == position.end());
+            for (const auto& position : segment.query.pattern) CHECK(position.keys.find("fb") == position.keys.end());
             for (const auto& group : segment.query.simultaneousWith) {
                 for (const auto& position : group.pattern) {
-                    auto it = position.find("fb");
-                    if (it != position.end() && !it->second.empty()) values.push_back(it->second.front().text);
+                    auto it = position.keys.find("fb");
+                    if (it != position.keys.end() && !it->second.empty()) values.push_back(it->second.front().text);
                 }
             }
         }
@@ -129,8 +129,8 @@ TEST_CASE(interval_qualities_are_left_out_of_the_patterns_unless_asked_for) {
     auto anyQuality = [&](const std::vector<Segment>& segments) {
         for (const Segment& segment : segments) {
             for (const auto& position : segment.query.pattern) {
-                auto it = position.find("mint");
-                if (it != position.end() && !it->second.empty() && it->second.front().text != "*" &&
+                auto it = position.keys.find("mint");
+                if (it != position.keys.end() && !it->second.empty() && it->second.front().text != "*" &&
                     hasQuality(it->second.front().text)) {
                     return true;
                 }

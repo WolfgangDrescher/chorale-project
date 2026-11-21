@@ -19,8 +19,8 @@ TEST_CASE(query_from_json_parses_minimal_query) {
     CHECK_EQ(q.feature, std::string("deg"));
     CHECK_EQ(q.voices, std::string("all")); // default when omitted
     REQUIRE(q.pattern.size() == 1u);
-    REQUIRE(q.pattern[0].count("deg") == 1u);
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"1"}));
+    REQUIRE(q.pattern[0].keys.count("deg") == 1u);
+    CHECK_EQ(q.pattern[0].keys["deg"], (std::vector<choralesearch::PatternValue>{"1"}));
     CHECK(!q.limit.has_value());
     CHECK(!q.mintStartAtPreviousToken); // default when omitted
 }
@@ -28,8 +28,8 @@ TEST_CASE(query_from_json_parses_minimal_query) {
 TEST_CASE(query_from_json_reads_another_voice_at_a_position_and_writes_it_back_as_written) {
     const json written = json::parse(R"({"feature":"deg","voices":"soprano","pattern":[{"deg":"3","@1":{"deg":"5","!attack":"true"}}]})");
     Query q = queryFromJson(written);
-    CHECK_EQ(q.pattern[0].at("@1:deg"), (std::vector<PatternValue>{"5"}));
-    CHECK_EQ(q.pattern[0].at("@1:!attack"), (std::vector<PatternValue>{"true"}));
+    CHECK_EQ(q.pattern[0].keys.at("@1:deg"), (std::vector<PatternValue>{"5"}));
+    CHECK_EQ(q.pattern[0].keys.at("@1:!attack"), (std::vector<PatternValue>{"true"}));
     CHECK_EQ(choralesearch::queryToJson(q)["pattern"], written["pattern"]);
 }
 
@@ -48,15 +48,15 @@ TEST_CASE(query_from_json_rejects_another_voice_it_cannot_check) {
 
 TEST_CASE(query_from_json_keeps_the_own_value_of_another_voice_over_every_position) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"@1":{"deg":"1"}},"pattern":[{"@1":{"!deg":"1"}},{"deg":"2"}]})"));
-    CHECK(!q.pattern[0].count("@1:deg"));
-    CHECK(q.pattern[1].count("@1:deg"));
+    CHECK(!q.pattern[0].keys.count("@1:deg"));
+    CHECK(q.pattern[1].keys.count("@1:deg"));
 }
 
 TEST_CASE(query_from_json_reads_the_key_a_note_is_in) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"3+","mode":"minor","!key":["e","b"],"keyDeg":"5"}]})"));
-    CHECK_EQ(q.pattern[0].at("mode"), (std::vector<PatternValue>{"minor"}));
-    CHECK_EQ(q.pattern[0].at("!key"), (std::vector<PatternValue>{"e", "b"}));
-    CHECK_EQ(q.pattern[0].at("keyDeg"), (std::vector<PatternValue>{"5"}));
+    CHECK_EQ(q.pattern[0].keys.at("mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[0].keys.at("!key"), (std::vector<PatternValue>{"e", "b"}));
+    CHECK_EQ(q.pattern[0].keys.at("keyDeg"), (std::vector<PatternValue>{"5"}));
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"mode":"blues"}]})")));
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"key":"H"}]})")));
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"keyDeg":"r"}]})")));
@@ -71,13 +71,13 @@ TEST_CASE(query_from_json_adds_every_position_to_each_position_without_the_key) 
         "pattern": [{ "deg": "2" }, { "deg": "1", "fermata": true }, { "deg": "5", "!mode": "minor" }]
     })"));
     REQUIRE(q.pattern.size() == 3u);
-    CHECK_EQ(q.pattern[0].at("mode"), (std::vector<PatternValue>{"minor"}));
-    CHECK_EQ(q.pattern[0].at("fermata"), (std::vector<PatternValue>{"false"}));
-    CHECK_EQ(q.pattern[1].at("mode"), (std::vector<PatternValue>{"minor"}));
-    CHECK_EQ(q.pattern[1].at("fermata"), (std::vector<PatternValue>{"true"})); // the position's own value
-    CHECK(!q.pattern[2].count("mode")); // "!mode" is the same key
-    CHECK_EQ(q.pattern[2].at("!mode"), (std::vector<PatternValue>{"minor"}));
-    CHECK_EQ(q.pattern[2].size(), std::size_t{3});
+    CHECK_EQ(q.pattern[0].keys.at("mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[0].keys.at("fermata"), (std::vector<PatternValue>{"false"}));
+    CHECK_EQ(q.pattern[1].keys.at("mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[1].keys.at("fermata"), (std::vector<PatternValue>{"true"})); // the position's own value
+    CHECK(!q.pattern[2].keys.count("mode")); // "!mode" is the same key
+    CHECK_EQ(q.pattern[2].keys.at("!mode"), (std::vector<PatternValue>{"minor"}));
+    CHECK_EQ(q.pattern[2].keys.size(), std::size_t{3});
 }
 
 TEST_CASE(query_from_json_applies_every_position_of_a_group_to_the_group_only) {
@@ -87,10 +87,10 @@ TEST_CASE(query_from_json_applies_every_position_of_a_group_to_the_group_only) {
         "pattern": [{ "deg": "1" }],
         "simultaneousWith": [{ "feature": "deg", "voices": "bass", "everyPosition": { "keyDeg": "5" }, "pattern": [{ "deg": "1" }] }]
     })"));
-    CHECK_EQ(q.pattern[0].at("mode"), (std::vector<PatternValue>{"major"}));
+    CHECK_EQ(q.pattern[0].keys.at("mode"), (std::vector<PatternValue>{"major"}));
     REQUIRE(q.simultaneousWith.size() == 1u);
-    CHECK_EQ(q.simultaneousWith[0].pattern[0].at("keyDeg"), (std::vector<PatternValue>{"5"}));
-    CHECK(!q.simultaneousWith[0].pattern[0].count("mode"));
+    CHECK_EQ(q.simultaneousWith[0].pattern[0].keys.at("keyDeg"), (std::vector<PatternValue>{"5"}));
+    CHECK(!q.simultaneousWith[0].pattern[0].keys.count("mode"));
 }
 
 TEST_CASE(query_from_json_rejects_an_every_position_it_cannot_read) {
@@ -610,23 +610,23 @@ TEST_CASE(result_to_json_lists_the_linked_sections_only_when_there_are_some) {
 
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
-    CHECK_EQ(q.pattern[0]["fermata"], (std::vector<choralesearch::PatternValue>{"true"}));
+    CHECK_EQ(q.pattern[0].keys["fermata"], (std::vector<choralesearch::PatternValue>{"true"}));
 }
 
 TEST_CASE(query_from_json_accepts_boolean_in_or_list) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":[false]}]})"));
-    CHECK_EQ(q.pattern[0]["fermata"], (std::vector<choralesearch::PatternValue>{"false"}));
+    CHECK_EQ(q.pattern[0].keys["fermata"], (std::vector<choralesearch::PatternValue>{"false"}));
 }
 
 TEST_CASE(query_from_json_accepts_array_or_list_for_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":["1","3","5"]}]})"));
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"1", "3", "5"}));
+    CHECK_EQ(q.pattern[0].keys["deg"], (std::vector<choralesearch::PatternValue>{"1", "3", "5"}));
 }
 
 TEST_CASE(query_from_json_preserves_a_negated_key_as_is) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"!deg":["1","3"]}]})"));
-    REQUIRE(q.pattern[0].count("!deg") == 1u);
-    CHECK_EQ(q.pattern[0]["!deg"], (std::vector<choralesearch::PatternValue>{"1", "3"}));
+    REQUIRE(q.pattern[0].keys.count("!deg") == 1u);
+    CHECK_EQ(q.pattern[0].keys["!deg"], (std::vector<choralesearch::PatternValue>{"1", "3"}));
 }
 
 TEST_CASE(query_from_json_requires_feature_field) {
@@ -709,7 +709,7 @@ TEST_CASE(query_from_json_accepts_every_known_pattern_key) {
     for (const std::string& key : {"kern", "deg", "mint", "fb", "metweight", "duration", "fermata", "hint-12", "hint-1",
                                     "hint-2", "hint-3", "hint-4", "hint-*4", "hint-1*", "hint-**"}) {
         Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{")" + key + R"(":"*"}]})"));
-        REQUIRE(q.pattern[0].count(key) == 1u);
+        REQUIRE(q.pattern[0].keys.count(key) == 1u);
     }
 }
 
@@ -723,7 +723,7 @@ TEST_CASE(query_from_json_rejects_a_hint_wildcard_key_with_a_non_voice_digit) {
 
 TEST_CASE(query_from_json_accepts_valid_deg_values) {
     Query q = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":["1","4+","6--","r"]}]})"));
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"1", "4+", "6--", "r"}));
+    CHECK_EQ(q.pattern[0].keys["deg"], (std::vector<choralesearch::PatternValue>{"1", "4+", "6--", "r"}));
 }
 
 TEST_CASE(query_from_json_rejects_invalid_deg_values) {
@@ -737,13 +737,13 @@ TEST_CASE(query_from_json_rejects_invalid_fermata_values) {
 
 TEST_CASE(query_from_json_accepts_fermata_bool_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
-    CHECK_EQ(q.pattern[0]["fermata"], std::vector<choralesearch::PatternValue>{"true"});
+    CHECK_EQ(q.pattern[0].keys["fermata"], std::vector<choralesearch::PatternValue>{"true"});
 }
 
 TEST_CASE(query_from_json_accepts_every_way_to_write_a_metweight_value) {
     for (const std::string& v : {"s", "hs", "w", "u", "strong", "half-strong", "weak", "unclassified", "1", "2", "3", "4"}) {
         Query q = queryFromJson(json::parse(R"({"feature":"metweight","pattern":[{"metweight":")" + v + R"("}]})"));
-        CHECK_EQ(q.pattern[0]["metweight"], (std::vector<choralesearch::PatternValue>{v}));
+        CHECK_EQ(q.pattern[0].keys["metweight"], (std::vector<choralesearch::PatternValue>{v}));
     }
 }
 
@@ -753,7 +753,7 @@ TEST_CASE(query_from_json_rejects_an_invalid_metweight_value) {
 
 TEST_CASE(query_from_json_accepts_the_mint_first_note_bracket_literal) {
     Query q = queryFromJson(json::parse(R"({"feature":"mint","pattern":[{"mint":"[gg]"}]})"));
-    CHECK_EQ(q.pattern[0]["mint"], (std::vector<choralesearch::PatternValue>{"[gg]"}));
+    CHECK_EQ(q.pattern[0].keys["mint"], (std::vector<choralesearch::PatternValue>{"[gg]"}));
 }
 
 TEST_CASE(query_from_json_rejects_an_invalid_mint_value) {
@@ -776,7 +776,7 @@ TEST_CASE(query_from_json_rejects_an_invalid_duration_value) {
 TEST_CASE(query_from_json_accepts_wildcard_for_any_key) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"kern","pattern":[{"kern":"*","deg":"*","mint":"*","fb":"*","hint-14":"*","metweight":"*","duration":"*","fermata":"*"}]})"));
-    CHECK_EQ(q.pattern[0]["deg"], (std::vector<choralesearch::PatternValue>{"*"}));
+    CHECK_EQ(q.pattern[0].keys["deg"], (std::vector<choralesearch::PatternValue>{"*"}));
 }
 
 TEST_CASE(query_from_json_rejects_an_empty_pattern_value) {
@@ -962,8 +962,8 @@ TEST_CASE(results_grouped_by_chorale_to_json_handles_empty_list) {
 TEST_CASE(query_from_json_parses_a_comparison_object) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"kern","pattern":[{"duration":{"operator":"gt","value":"4"}}]})"));
-    REQUIRE(q.pattern[0]["duration"].size() == 1u);
-    const PatternValue& v = q.pattern[0]["duration"][0];
+    REQUIRE(q.pattern[0].keys["duration"].size() == 1u);
+    const PatternValue& v = q.pattern[0].keys["duration"][0];
     CHECK(v.comparisonOperator == ComparisonOperator::GreaterThan);
     CHECK_EQ(v.text, std::string("4"));
 }
@@ -977,7 +977,7 @@ TEST_CASE(query_from_json_accepts_the_name_the_abbreviation_and_the_symbol_of_ev
         for (const char* spelling : c.spellings) {
             json j = {{"feature", "kern"}, {"pattern", {{{"kern", {{"operator", spelling}, {"value", "g"}}}}}}};
             Query q = queryFromJson(j);
-            CHECK(q.pattern[0]["kern"][0].comparisonOperator == c.comparisonOperator);
+            CHECK(q.pattern[0].keys["kern"][0].comparisonOperator == c.comparisonOperator);
         }
     }
 }
@@ -985,15 +985,15 @@ TEST_CASE(query_from_json_accepts_the_name_the_abbreviation_and_the_symbol_of_ev
 TEST_CASE(query_from_json_mixes_plain_values_and_comparisons_in_one_list) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"mint","pattern":[{"mint":[{"operator":"gt","value":"+3"},"P1"]}]})"));
-    REQUIRE(q.pattern[0]["mint"].size() == 2u);
-    CHECK(q.pattern[0]["mint"][0] == PatternValue(ComparisonOperator::GreaterThan, "+3"));
-    CHECK(q.pattern[0]["mint"][1] == PatternValue("P1"));
+    REQUIRE(q.pattern[0].keys["mint"].size() == 2u);
+    CHECK(q.pattern[0].keys["mint"][0] == PatternValue(ComparisonOperator::GreaterThan, "+3"));
+    CHECK(q.pattern[0].keys["mint"][1] == PatternValue("P1"));
 }
 
 TEST_CASE(query_from_json_accepts_a_comparison_under_a_negated_key) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"kern","pattern":[{"!kern":{"operator":"lte","value":"c"}}]})"));
-    CHECK(q.pattern[0]["!kern"][0] == PatternValue(ComparisonOperator::LessThanOrEqual, "c"));
+    CHECK(q.pattern[0].keys["!kern"][0] == PatternValue(ComparisonOperator::LessThanOrEqual, "c"));
 }
 
 TEST_CASE(query_from_json_accepts_comparisons_for_hint_keys) {
@@ -1060,21 +1060,21 @@ TEST_CASE(query_to_json_writes_a_comparison_back_as_the_object_it_came_from) {
 TEST_CASE(query_from_json_reads_a_voice_reference_as_a_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"@2","duration":["4","@below"]}]})"));
     REQUIRE(q.pattern.size() == 1u);
-    CHECK_EQ(q.pattern[0]["kern"], (std::vector<PatternValue>{"@2"}));
-    CHECK_EQ(q.pattern[0]["duration"], (std::vector<PatternValue>{"4", "@below"}));
-    CHECK(q.pattern[0]["kern"][0].isVoiceReference());
-    CHECK(!q.pattern[0]["duration"][0].isVoiceReference());
+    CHECK_EQ(q.pattern[0].keys["kern"], (std::vector<PatternValue>{"@2"}));
+    CHECK_EQ(q.pattern[0].keys["duration"], (std::vector<PatternValue>{"4", "@below"}));
+    CHECK(q.pattern[0].keys["kern"][0].isVoiceReference());
+    CHECK(!q.pattern[0].keys["duration"][0].isVoiceReference());
 }
 
 TEST_CASE(query_from_json_reads_a_voice_reference_in_a_comparison) {
     Query q = queryFromJson(json::parse(
         R"({"feature":"kern","voices":"all","pattern":[{"kern":{"operator":"lt","value":"@anyBelow"}}]})"));
     REQUIRE(q.pattern.size() == 1u);
-    CHECK_EQ(q.pattern[0]["kern"], (std::vector<PatternValue>{{ComparisonOperator::LessThan, "@anyBelow"}}));
+    CHECK_EQ(q.pattern[0].keys["kern"], (std::vector<PatternValue>{{ComparisonOperator::LessThan, "@anyBelow"}}));
 
     Query negated = queryFromJson(json::parse(
         R"({"feature":"kern","pattern":[{"!duration":[{"operator":">","value":"@2"},"@3"]}]})"));
-    CHECK_EQ(negated.pattern[0]["!duration"],
+    CHECK_EQ(negated.pattern[0].keys["!duration"],
               (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "@2"}, "@3"}));
 }
 
@@ -1084,9 +1084,9 @@ TEST_CASE(query_from_json_reads_part_keys) {
         {"kern.pitch":"@4","fb.numbers":"6 3"}
     ]})"));
     REQUIRE(q.pattern.size() == 2u);
-    CHECK_EQ(q.pattern[0]["mint.direction"], (std::vector<PatternValue>{"+"}));
-    CHECK_EQ(q.pattern[0]["mint.number"], (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "2"}}));
-    CHECK_EQ(q.pattern[1]["kern.pitch"], (std::vector<PatternValue>{"@4"}));
+    CHECK_EQ(q.pattern[0].keys["mint.direction"], (std::vector<PatternValue>{"+"}));
+    CHECK_EQ(q.pattern[0].keys["mint.number"], (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "2"}}));
+    CHECK_EQ(q.pattern[1].keys["kern.pitch"], (std::vector<PatternValue>{"@4"}));
 }
 
 TEST_CASE(query_from_json_rejects_a_part_key_it_does_not_know_and_a_value_its_part_does_not_take) {
@@ -1119,15 +1119,15 @@ TEST_CASE(query_from_json_reads_a_position_name_and_a_reference_to_it) {
         {"kern":["$first","#1"],"mint.direction":"#2","duration":{"operator":"gt","value":"#1"}}
     ]})"));
     REQUIRE(q.pattern.size() == 3u);
-    CHECK_EQ(q.pattern[0]["as"], (std::vector<PatternValue>{"$first"}));
-    CHECK_EQ(q.pattern[2]["kern"], (std::vector<PatternValue>{"$first", "#1"}));
-    CHECK_EQ(q.pattern[2]["duration"], (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "#1"}}));
-    CHECK(q.pattern[2]["kern"][0].isPositionReference());
-    CHECK(!q.pattern[0]["kern"][0].isPositionReference());
+    CHECK_EQ(q.pattern[0].keys["as"], (std::vector<PatternValue>{"$first"}));
+    CHECK_EQ(q.pattern[2].keys["kern"], (std::vector<PatternValue>{"$first", "#1"}));
+    CHECK_EQ(q.pattern[2].keys["duration"], (std::vector<PatternValue>{{ComparisonOperator::GreaterThan, "#1"}}));
+    CHECK(q.pattern[2].keys["kern"][0].isPositionReference());
+    CHECK(!q.pattern[0].keys["kern"][0].isPositionReference());
     // Resolved against the pattern as read: the name is the first position, the part is the direction.
-    REQUIRE(q.pattern[2]["kern"][0].positionReference.has_value());
-    CHECK_EQ(q.pattern[2]["kern"][0].positionReference->position, std::size_t{0});
-    CHECK_EQ(q.pattern[2]["mint.direction"][0].positionReference->key, std::string("mint.direction"));
+    REQUIRE(q.pattern[2].keys["kern"][0].positionReference.has_value());
+    CHECK_EQ(q.pattern[2].keys["kern"][0].positionReference->position, std::size_t{0});
+    CHECK_EQ(q.pattern[2].keys["mint.direction"][0].positionReference->key, std::string("mint.direction"));
 
     // Written back out as it was read, the name included.
     json out = choralesearch::queryToJson(q);
@@ -1174,11 +1174,11 @@ TEST_CASE(query_from_json_applies_a_reference_of_every_position_to_every_positio
     REQUIRE(q.pattern.size() == 3u);
     // Every position reads the key of the first; the first reads itself, and the last keeps its own value.
     for (std::size_t position = 0; position < 2; ++position) {
-        REQUIRE(q.pattern[position]["key"].size() == 1u);
-        REQUIRE(q.pattern[position]["key"][0].positionReference.has_value());
-        CHECK_EQ(q.pattern[position]["key"][0].positionReference->position, std::size_t{0});
+        REQUIRE(q.pattern[position].keys["key"].size() == 1u);
+        REQUIRE(q.pattern[position].keys["key"][0].positionReference.has_value());
+        CHECK_EQ(q.pattern[position].keys["key"][0].positionReference->position, std::size_t{0});
     }
-    CHECK_EQ(q.pattern[2]["key"], (std::vector<PatternValue>{"G"}));
+    CHECK_EQ(q.pattern[2].keys["key"], (std::vector<PatternValue>{"G"}));
     // By name too.
     CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"deg","everyPosition":{"mode":"$a"},
         "pattern":[{"as":"$a","deg":"3"},{"deg":"2"}]})")));
@@ -1209,8 +1209,8 @@ TEST_CASE(query_from_json_reads_a_reference_to_the_pair_a_query_over_voice_pairs
         {"hint-@pair":["P5","P8"]},{"hint-@pair":"#1"},{"hint-@pair.number":"#1"}
     ]})"));
     REQUIRE(q.pattern.size() == 3u);
-    CHECK_EQ(q.pattern[1]["hint-@pair"][0].positionReference->key, std::string("hint-@pair"));
-    CHECK_EQ(q.pattern[2]["hint-@pair.number"][0].positionReference->key, std::string("hint-@pair.number"));
+    CHECK_EQ(q.pattern[1].keys["hint-@pair"][0].positionReference->key, std::string("hint-@pair"));
+    CHECK_EQ(q.pattern[2].keys["hint-@pair.number"][0].positionReference->key, std::string("hint-@pair.number"));
     // A part does not stand under its whole key.
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"hint-**","voices":"@lower","pattern":[
         {"hint-@pair":"*"},{"hint-@pair":"#1.hint-@pair.number"}]})")));
@@ -1296,18 +1296,18 @@ TEST_MAIN()
 TEST_CASE(query_from_json_reads_the_lyrics_keys) {
     Query q = queryFromJson(json::parse(R"({"feature":"word","voices":"soprano","pattern":[{"word":"Jesu"},{"word":"*","sylpos":"initial"}]})"));
     CHECK_EQ(q.feature, std::string("word"));
-    CHECK_EQ(q.pattern[0].at("word"), (std::vector<PatternValue>{"Jesu"}));
+    CHECK_EQ(q.pattern[0].keys.at("word"), (std::vector<PatternValue>{"Jesu"}));
     CHECK_EQ(choralesearch::queryToJson(q)["pattern"][1]["sylpos"], json("initial"));
     Query syl = queryFromJson(json::parse(R"({"feature":"syl","pattern":[{"syl":"*"}]})"));
     CHECK_EQ(syl.feature, std::string("syl"));
     Query keyed = queryFromJson(json::parse(R"({"feature":"deg","pattern":[{"deg":"1","!sylpos":["single","i"]}]})"));
-    CHECK_EQ(keyed.pattern[0].at("!sylpos"), (std::vector<PatternValue>{"single", "i"}));
+    CHECK_EQ(keyed.pattern[0].keys.at("!sylpos"), (std::vector<PatternValue>{"single", "i"}));
     Query melisma = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"melisma":["initial","m","t"]},{"melisma":true},{"!melisma":false}]})"));
-    CHECK_EQ(melisma.pattern[0].at("melisma"), (std::vector<PatternValue>{"initial", "m", "t"}));
-    CHECK_EQ(melisma.pattern[1].at("melisma"), (std::vector<PatternValue>{"true"}));
-    CHECK_EQ(melisma.pattern[2].at("!melisma"), (std::vector<PatternValue>{"false"}));
+    CHECK_EQ(melisma.pattern[0].keys.at("melisma"), (std::vector<PatternValue>{"initial", "m", "t"}));
+    CHECK_EQ(melisma.pattern[1].keys.at("melisma"), (std::vector<PatternValue>{"true"}));
+    CHECK_EQ(melisma.pattern[2].keys.at("!melisma"), (std::vector<PatternValue>{"false"}));
     Query glob = queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":["Her*","*zen","*erz*"]}]})"));
-    CHECK_EQ(glob.pattern[0].at("word"), (std::vector<PatternValue>{"Her*", "*zen", "*erz*"}));
+    CHECK_EQ(glob.pattern[0].keys.at("word"), (std::vector<PatternValue>{"Her*", "*zen", "*erz*"}));
 
     // The search reads every verse itself, a query names none.
     CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"word","pattern":[{"word":"*"}],"verse":1})")));

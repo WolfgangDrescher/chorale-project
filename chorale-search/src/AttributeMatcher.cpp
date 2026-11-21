@@ -943,12 +943,12 @@ void validateValues(const PositionKey& positionKey, const MatcherOptions& option
 
 } // namespace
 
-AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<AttributeMap> writtenPattern, MatcherOptions options)
+AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<PatternPosition> writtenPattern, MatcherOptions options)
     : m_drivingFeature(std::move(drivingFeature)), m_options(std::move(options)) {
     // An unknown feature finds nothing.
     const PatternKeyLookup driving = findPatternKey(m_drivingFeature);
     if (driving.patternKey && driving.patternKey->driving && !driving.negated) m_drivingFeatureId = driving.patternKey->id;
-    const std::vector<AttributeMap> pattern = resolvePositionReferences(writtenPattern);
+    const std::vector<PatternPosition> pattern = resolvePositionReferences(writtenPattern);
     // A word or a syllable is matched as a whole, with all its notes: these options have nothing to work on.
     if (isDrivenByLyrics() &&
         (m_options.durationAllowSplitNotes || m_options.durationAllowMergedNotes || m_options.metweightSkipUnclassified)) {
@@ -956,10 +956,10 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
                                     "durationAllowMergedNotes or metweightSkipUnclassified");
     }
     m_readsLyrics = isDrivenByLyrics();
-    for (const AttributeMap& position : pattern) {
+    for (const PatternPosition& position : pattern) {
         PositionKeys& positionKeys = m_pattern.emplace_back();
         bool hasReferences = false;
-        for (const auto& [rawKey, values] : position) {
+        for (const auto& [rawKey, values] : position.keys) {
             if (rawKey == kPositionNameKey) continue; // only needed to resolve the references
             if (isOtherVoiceKey(rawKey)) {
                 const auto [voiceReference, key] = splitOtherVoiceKey(rawKey);

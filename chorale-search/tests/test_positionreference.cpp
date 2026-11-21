@@ -6,8 +6,8 @@
 #include "PositionReference.hpp"
 #include "QueryValidation.hpp"
 
-using choralesearch::AttributeMap;
 using choralesearch::ComparisonOperator;
+using choralesearch::PatternPosition;
 using choralesearch::isValidPositionName;
 using choralesearch::PatternValue;
 using choralesearch::PositionReference;
@@ -17,14 +17,14 @@ using choralesearch::resolvePositionReferences;
 namespace {
 
 // Any note, then `value` under `key`.
-std::vector<AttributeMap> afterAnyNote(const std::string& key, const PatternValue& value) {
-    return {AttributeMap{{"kern", {"*"}}}, AttributeMap{{key, {value}}}};
+std::vector<PatternPosition> afterAnyNote(const std::string& key, const PatternValue& value) {
+    return {PatternPosition{.keys = {{"kern", {"*"}}}}, PatternPosition{.keys = {{key, {value}}}}};
 }
 
 // The reference the first value of `key` at `position` resolves to.
-std::optional<PositionReference> resolvedReference(const std::vector<AttributeMap>& pattern, std::size_t position,
+std::optional<PositionReference> resolvedReference(const std::vector<PatternPosition>& pattern, std::size_t position,
                                                    const std::string& key) {
-    return resolvePositionReferences(pattern)[position].at(key).at(0).positionReference;
+    return resolvePositionReferences(pattern)[position].keys.at(key).at(0).positionReference;
 }
 
 } // namespace
@@ -45,38 +45,38 @@ TEST_CASE(position_name_is_a_dollar_sign_a_letter_and_then_letters_digits_and_un
 }
 
 TEST_CASE(position_names_are_read_off_the_as_keys) {
-    std::vector<AttributeMap> pattern = {
-        AttributeMap{{"as", {"$first"}}, {"kern", {"*"}}},
-        AttributeMap{{"kern", {"*"}}},
-        AttributeMap{{"as", {"$last"}}, {"kern", {"*"}}},
+    std::vector<PatternPosition> pattern = {
+        PatternPosition{.keys = {{"as", {"$first"}}, {"kern", {"*"}}}},
+        PatternPosition{.keys = {{"kern", {"*"}}}},
+        PatternPosition{.keys = {{"as", {"$last"}}, {"kern", {"*"}}}},
     };
     auto names = positionNames(pattern);
     REQUIRE(names.size() == 3u);
     CHECK_EQ(*names[0], std::string("$first"));
     CHECK(!names[1].has_value());
     CHECK_EQ(*names[2], std::string("$last"));
-    CHECK_THROWS(positionNames({AttributeMap{{"as", {"start"}}}}));
-    CHECK_THROWS(positionNames({AttributeMap{{"as", {"$a", "$b"}}}}));
-    CHECK_THROWS(positionNames({AttributeMap{{"as", {"$a"}}}, AttributeMap{{"as", {"$a"}}}}));
+    CHECK_THROWS(positionNames({PatternPosition{.keys = {{"as", {"start"}}}}}));
+    CHECK_THROWS(positionNames({PatternPosition{.keys = {{"as", {"$a", "$b"}}}}}));
+    CHECK_THROWS(positionNames({PatternPosition{.keys = {{"as", {"$a"}}}}, PatternPosition{.keys = {{"as", {"$a"}}}}}));
 }
 
 TEST_CASE(reference_reads_the_key_it_stands_under_parts_included) {
-    std::vector<AttributeMap> pattern = {
-        AttributeMap{{"as", {"$a"}}, {"mint", {"*"}}},
-        AttributeMap{{"kern", {"#1"}}, {"!mint.direction", {"$a"}}, {"mint.number", {PatternValue(ComparisonOperator::GreaterThan, "#1")}}},
+    std::vector<PatternPosition> pattern = {
+        PatternPosition{.keys = {{"as", {"$a"}}, {"mint", {"*"}}}},
+        PatternPosition{.keys = {{"kern", {"#1"}}, {"!mint.direction", {"$a"}}, {"mint.number", {PatternValue(ComparisonOperator::GreaterThan, "#1")}}}},
     };
     CHECK_EQ(resolvedReference(pattern, 1, "kern"), std::optional(PositionReference{0, "kern"}));
     CHECK_EQ(resolvedReference(pattern, 1, "!mint.direction"), std::optional(PositionReference{0, "mint.direction"}));
     CHECK_EQ(resolvedReference(pattern, 1, "mint.number"), std::optional(PositionReference{0, "mint.number"}));
     // The names stay in the pattern: what reads the pattern back out needs them.
-    CHECK(resolvePositionReferences(pattern)[0].count("as") == 1u);
+    CHECK(resolvePositionReferences(pattern)[0].keys.count("as") == 1u);
 }
 
 TEST_CASE(reference_may_read_its_own_position_and_leaves_other_values_alone) {
-    CHECK_EQ(resolvedReference({AttributeMap{{"kern", {"*"}}, {"duration", {"#1"}}}}, 0, "duration"), std::optional(PositionReference{0, "duration"}));
-    std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"#", "@2", "g", "*", {ComparisonOperator::LessThan, "c"}}}}};
-    const std::vector<AttributeMap> resolved = resolvePositionReferences(pattern);
-    for (const PatternValue& value : resolved[0].at("kern")) CHECK(!value.positionReference.has_value());
+    CHECK_EQ(resolvedReference({PatternPosition{.keys = {{"kern", {"*"}}, {"duration", {"#1"}}}}}, 0, "duration"), std::optional(PositionReference{0, "duration"}));
+    std::vector<PatternPosition> pattern = {PatternPosition{.keys = {{"kern", {"#", "@2", "g", "*", {ComparisonOperator::LessThan, "c"}}}}}};
+    const std::vector<PatternPosition> resolved = resolvePositionReferences(pattern);
+    for (const PatternValue& value : resolved[0].keys.at("kern")) CHECK(!value.positionReference.has_value());
 }
 
 TEST_CASE(reference_reads_another_key_where_an_interval_or_its_number_stands) {
@@ -114,13 +114,13 @@ TEST_CASE(reference_rejects_a_key_that_takes_or_gives_no_reference) {
 }
 
 TEST_CASE(reference_rejects_a_position_the_pattern_does_not_have_or_a_later_one) {
-    CHECK_THROWS(resolvePositionReferences({AttributeMap{{"kern", {"#0"}}}}));
-    CHECK_THROWS(resolvePositionReferences({AttributeMap{{"kern", {"#2"}}}}));
-    CHECK_THROWS(resolvePositionReferences({AttributeMap{{"kern", {"#1x"}}}}));
-    CHECK_THROWS(resolvePositionReferences({AttributeMap{{"kern", {"$start"}}}}));
-    std::vector<AttributeMap> pattern = {AttributeMap{{"kern", {"#2"}}}, AttributeMap{{"as", {"$b"}}, {"kern", {"*"}}}};
+    CHECK_THROWS(resolvePositionReferences({PatternPosition{.keys = {{"kern", {"#0"}}}}}));
+    CHECK_THROWS(resolvePositionReferences({PatternPosition{.keys = {{"kern", {"#2"}}}}}));
+    CHECK_THROWS(resolvePositionReferences({PatternPosition{.keys = {{"kern", {"#1x"}}}}}));
+    CHECK_THROWS(resolvePositionReferences({PatternPosition{.keys = {{"kern", {"$start"}}}}}));
+    std::vector<PatternPosition> pattern = {PatternPosition{.keys = {{"kern", {"#2"}}}}, PatternPosition{.keys = {{"as", {"$b"}}, {"kern", {"*"}}}}};
     CHECK_THROWS(resolvePositionReferences(pattern));
-    pattern[0]["kern"] = {"$b"};
+    pattern[0].keys["kern"] = {"$b"};
     CHECK_THROWS(resolvePositionReferences(pattern));
 }
 

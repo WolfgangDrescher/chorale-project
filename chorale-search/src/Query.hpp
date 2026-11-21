@@ -88,6 +88,13 @@ inline std::vector<PatternValue> toPatternValues(const std::vector<std::string>&
 // feature name -> OR-list of acceptable values ("*" anywhere in the list = wildcard)
 using AttributeMap = std::map<std::string, std::vector<PatternValue>>;
 
+// A position of a pattern: the keys it checks.
+struct PatternPosition {
+    AttributeMap keys;
+
+    bool operator==(const PatternPosition&) const = default;
+};
+
 // What AttributeMatcher is allowed to treat as equal beyond a literal comparison
 struct MatcherOptions {
     bool mintStartAtPreviousToken = false;
@@ -109,7 +116,7 @@ struct SimultaneousGroup {
     std::string feature;
     std::string voices = "all";
     // With its own "everyPosition" applied, not the query's.
-    std::vector<AttributeMap> pattern;
+    std::vector<PatternPosition> pattern;
 
     // nullopt means "inherit the top-level Query's own value of the same name" -- these
     // are only ever overrides, not independent defaults.
@@ -138,7 +145,7 @@ struct Query {
     std::string voices = "all";
 
     // With "everyPosition" applied.
-    std::vector<AttributeMap> pattern;
+    std::vector<PatternPosition> pattern;
 
     // Which chorales are searched at all. The default filter lets every chorale in. See ChoraleFilter.hpp.
     ChoraleFilter choraleFilter;
@@ -221,11 +228,11 @@ inline nlohmann::json patternValueToJson(const PatternValue& value) {
     return {{"operator", comparisonOperatorName(value.comparisonOperator)}, {"value", value.text}};
 }
 
-inline nlohmann::json patternToJson(const std::vector<AttributeMap>& pattern) {
+inline nlohmann::json patternToJson(const std::vector<PatternPosition>& pattern) {
     nlohmann::json arr = nlohmann::json::array();
     for (const auto& position : pattern) {
         nlohmann::json posJson = nlohmann::json::object();
-        for (const auto& [key, values] : position) {
+        for (const auto& [key, values] : position.keys) {
             // A single acceptable value is written as the plain string a query would spell it
             // as, not as a one-entry OR-list -- the two mean the same thing (see
             // docs/patterns#values), and the array form only earns its brackets with a choice

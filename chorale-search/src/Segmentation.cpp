@@ -78,15 +78,15 @@ std::vector<std::string> equivalentMetricWeights(const std::string& weight) {
 // spine has nothing at that line is left out rather than written as a wildcard: a rest, for
 // instance, has no interval to the soprano, and demanding one there would keep the segment from
 // matching even its own source.
-std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std::vector<Onset>& onsets,
-                                        std::size_t voice, hum::HumNum windowEnd,
-                                        const SegmentQueryOptions& options, bool crossReferenceHintPairs) {
-    std::vector<AttributeMap> pattern;
+std::vector<PatternPosition> buildPattern(const HumdrumChorale& chorale, const std::vector<Onset>& onsets,
+                                           std::size_t voice, hum::HumNum windowEnd,
+                                           const SegmentQueryOptions& options, bool crossReferenceHintPairs) {
+    std::vector<PatternPosition> pattern;
 
     for (std::size_t i = 0; i < onsets.size(); ++i) {
         hum::HTp token = onsets[i].token;
         int lineNumber = token->getLineNumber();
-        AttributeMap position;
+        PatternPosition position;
 
         // A **mint token is the interval *into* its note, so the first one of a segment
         // measures from the note before it -- something about the passage that came earlier,
@@ -98,7 +98,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
         // across them, which is not what the spine's own token says.
         std::string value = onsets[i].mint ? *onsets[i].mint : std::string(*token);
         if (options.ignoreIntervalQuality && options.feature == kMintFeature) value = withoutQuality(value);
-        position[options.feature] = {isMintLeadIn ? kWildcard : value};
+        position.keys[options.feature] = {isMintLeadIn ? kWildcard : value};
 
         // The last note of a segment routinely goes on sounding past the window -- a half note
         // it cuts in two. Only the part inside belongs to the segment, and a pattern can't ask
@@ -106,7 +106,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
         // length the segment doesn't actually cover.
         bool soundsPastTheEnd = token->getDurationFromStart() + onsets[i].duration > windowEnd;
         if (options.includeDuration && !soundsPastTheEnd) {
-            position[kDurationKey] = {hum::Convert::durationToRecip(onsets[i].duration)};
+            position.keys[kDurationKey] = {hum::Convert::durationToRecip(onsets[i].duration)};
         }
         if (options.includePhrase) {
             if (hum::HTp kernToken = chorale.tokenAtLine(kKernFeature, voice, lineNumber)) {
@@ -114,13 +114,13 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
                 if (startsPhrase(kernToken)) roles.push_back("start");
                 if (kernToken->hasFermata()) roles.push_back("end");
                 // A note in the middle of a phrase is neither, which is how a pattern asks for it.
-                if (roles.empty()) position["!" + kPhraseKey] = {"start", "end"};
-                else position[kPhraseKey] = toPatternValues(roles);
+                if (roles.empty()) position.keys["!" + kPhraseKey] = {"start", "end"};
+                else position.keys[kPhraseKey] = toPatternValues(roles);
             }
         }
         if (options.metricPositions) {
             if (hum::HTp metweightToken = chorale.tokenAtLine(kMetweightFeature, voice, lineNumber)) {
-                position[kMetweightFeature] = toPatternValues(equivalentMetricWeights(std::string(*metweightToken)));
+                position.keys[kMetweightFeature] = toPatternValues(equivalentMetricWeights(std::string(*metweightToken)));
             }
         }
         if (crossReferenceHintPairs) {
@@ -130,7 +130,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
                 if (hum::HTp hintToken = chorale.tokenAtLine(pair, 1, lineNumber)) {
                     std::string interval = std::string(*hintToken);
                     if (options.ignoreIntervalQuality) interval = withoutQuality(interval);
-                    position[pair] = {interval};
+                    position.keys[pair] = {interval};
                 }
             }
             if (options.innerVoices) {
@@ -138,7 +138,7 @@ std::vector<AttributeMap> buildPattern(const HumdrumChorale& chorale, const std:
                 if (hum::HTp fbToken = chorale.tokenAtLine(kFbFeature, 1, lineNumber)) {
                     std::string chord = std::string(*fbToken);
                     if (options.ignoreIntervalQuality) chord = chordWithoutQuality(chord);
-                    position[kFbFeature] = {chord};
+                    position.keys[kFbFeature] = {chord};
                 }
             }
         }

@@ -115,12 +115,12 @@ std::string voicesOfPair(const std::string& voices, const std::string& pair) {
 
 // A pattern with the pair in place of hint-@pair, the interval of the pair being searched, also when negated, in a
 // part ("hint-@pair.number") and in a position reference ("#1.hint-@pair").
-std::vector<AttributeMap> patternOfPair(const std::vector<AttributeMap>& pattern, const std::string& pair) {
-    std::vector<AttributeMap> pairPattern;
-    for (const AttributeMap& position : pattern) {
-        AttributeMap pairPosition;
-        for (const auto& [key, values] : position) {
-            std::vector<PatternValue>& pairValues = pairPosition[isPairSearchedKey(key) ? replaceAll(key, kPairSearchedKey, pair) : key];
+std::vector<PatternPosition> patternOfPair(const std::vector<PatternPosition>& pattern, const std::string& pair) {
+    std::vector<PatternPosition> pairPattern;
+    for (const PatternPosition& position : pattern) {
+        PatternPosition pairPosition;
+        for (const auto& [key, values] : position.keys) {
+            std::vector<PatternValue>& pairValues = pairPosition.keys[isPairSearchedKey(key) ? replaceAll(key, kPairSearchedKey, pair) : key];
             pairValues = values;
             for (PatternValue& value : pairValues) {
                 if (value.isPositionReference()) value.text = replaceAll(value.text, kPairSearchedKey, pair);
@@ -212,7 +212,7 @@ std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMat
 // both voices of a hint-<pair> key, the voices of the matching pairs of a set ("hint-1*"), the voices forming the
 // figures of an fb key, with the bass they are figures above, and the voices a key of another voice ("@1") names.
 std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, const AttributeMatch& attributeMatch,
-                                             const std::string& feature, const std::vector<AttributeMap>& pattern,
+                                             const std::string& feature, const std::vector<PatternPosition>& pattern,
                                              bool hintReduceCompound,
                                              const std::vector<std::size_t>& coveredVoices = {}) {
     std::vector<NoteSection> sections;
@@ -231,7 +231,7 @@ std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, cons
             sections.push_back({key, voice, humNumToString(onset.position), humNumToString(onset.position), onset.line,
                                 onset.line});
         };
-        for (const auto& [name, values] : pattern[position]) {
+        for (const auto& [name, values] : pattern[position].keys) {
             const std::string key = name.substr(!name.empty() && name[0] == '!' ? 1 : 0);
             // A hint-<voice> key: the other voice it compares the voice searched with.
             const std::size_t other = otherVoiceOfHintKey(key);

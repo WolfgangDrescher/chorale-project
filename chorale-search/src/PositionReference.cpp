@@ -88,11 +88,11 @@ PositionReference resolve(const PatternValue& value, std::size_t ownPosition, co
 
 } // namespace
 
-std::vector<std::optional<std::string>> positionNames(const std::vector<AttributeMap>& pattern) {
+std::vector<std::optional<std::string>> positionNames(const std::vector<PatternPosition>& pattern) {
     std::vector<std::optional<std::string>> names(pattern.size());
     for (std::size_t position = 0; position < pattern.size(); ++position) {
-        auto it = pattern[position].find(kPositionNameKey);
-        if (it == pattern[position].end()) continue;
+        auto it = pattern[position].keys.find(kPositionNameKey);
+        if (it == pattern[position].keys.end()) continue;
         if (it->second.size() != 1 || it->second.front().hasComparisonOperator() || !isValidPositionName(it->second.front().text)) {
             throw std::invalid_argument(patternKeyLocation(position, kPositionNameKey) +
                                         " must be one name: '$', a letter, then letters, digits or underscores");
@@ -106,11 +106,11 @@ std::vector<std::optional<std::string>> positionNames(const std::vector<Attribut
     return names;
 }
 
-std::vector<AttributeMap> resolvePositionReferences(const std::vector<AttributeMap>& pattern) {
+std::vector<PatternPosition> resolvePositionReferences(const std::vector<PatternPosition>& pattern) {
     const std::vector<std::optional<std::string>> names = positionNames(pattern);
-    std::vector<AttributeMap> resolved = pattern;
+    std::vector<PatternPosition> resolved = pattern;
     for (std::size_t position = 0; position < resolved.size(); ++position) {
-        for (auto& [rawKey, values] : resolved[position]) {
+        for (auto& [rawKey, values] : resolved[position].keys) {
             if (rawKey == kPositionNameKey) continue;
             for (PatternValue& value : values) {
                 if (value.isPositionReference()) value.positionReference = resolve(value, position, rawKey, names);
