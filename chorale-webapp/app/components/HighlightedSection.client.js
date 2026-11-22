@@ -36,10 +36,32 @@ function getAccidRect(elem) {
     return rect?.width > 0 ? rect : null;
 }
 
-// The markers of a section, one on each system it is on: a box around its notes over the staff of the voice, or
-// over all staves, filled, or as an outline a frame. Where the section goes on to the next system the box runs on
-// to the edge of the system and comes from the edge of the next, with a zig-zag there, a frame left open.
-function createMarkers(noteElems, containerElem, color, voiceStaffIndex, outline) {
+// What a section is made of, in the order of the score: the stretches its pattern asks for and the gaps between
+// them, each with its notes. `notes` are the notes of the section with their lines.
+function splitIntoStretches(notes, gaps) {
+    const stretches = [];
+    for (const { line, elem } of notes) {
+        const isGap = gaps.some((gap) => gap.startLine <= line && line <= gap.endLine);
+        if (stretches.at(-1)?.isGap === isGap) stretches.at(-1).noteElems.push(elem);
+        else stretches.push({ isGap, noteElems: [elem] });
+    }
+    return stretches;
+}
+
+// The fill of a gap: the color of the section, far fainter, with stripes a little less faint.
+function gapStyle(color) {
+    const faint = (percent) => `color-mix(in srgb, ${color} ${percent}%, transparent)`;
+    return {
+        background: `repeating-linear-gradient(135deg, ${faint(22.5)} 0 3px, transparent 3px 8px), ${faint(32.5)}`,
+        '--zig-zag-color': faint(41),
+    };
+}
+
+// The markers of a section, one for each of its stretches on each system. A stretch the pattern asks for is a box
+// around its notes over the staff of the voice, or over all staves: filled, or as an outline a frame. A gap fills
+// what lies between: hatched, or in a frame as dashed lines. What stands at the end of a system runs on to its
+// edge and what stands at its start comes from it, with a zig-zag there, a frame left open.
+function createMarkers(stretches, containerElem, color, voiceStaffIndex, outline) {
     const containerRect = containerElem.getBoundingClientRect();
     // An outline sits a little further out than a fill, so its 5px border starts at the fill's edge
     // of another marker underneath instead of leaving a white gap to it.
@@ -47,21 +69,24 @@ function createMarkers(noteElems, containerElem, color, voiceStaffIndex, outline
     const xOffset = 2;
 
     const systems = [];
-    for (const noteElem of noteElems) {
-        const systemElem = noteElem.closest('g.system');
-        const rect = getBBoxElem(noteElem).getBoundingClientRect();
-        const left = Math.min(rect.x, getAccidRect(noteElem)?.x ?? rect.x);
-        const system = systems.at(-1);
-        if (system?.systemElem === systemElem) {
-            system.left = Math.min(system.left, left);
-            system.right = Math.max(system.right, rect.right);
-        } else {
-            systems.push({ systemElem, left, right: rect.right });
+    stretches.forEach((stretch, index) => {
+        for (const noteElem of stretch.noteElems) {
+            const systemElem = noteElem.closest('g.system');
+            if (systems.at(-1)?.systemElem !== systemElem) systems.push({ systemElem, parts: [] });
+            const rect = getBBoxElem(noteElem).getBoundingClientRect();
+            const left = Math.min(rect.x, getAccidRect(noteElem)?.x ?? rect.x);
+            const part = systems.at(-1).parts.at(-1);
+            if (part?.index === index) {
+                part.left = Math.min(part.left, left);
+                part.right = Math.max(part.right, rect.right);
+            } else {
+                systems.at(-1).parts.push({ index, isGap: stretch.isGap, left, right: rect.right });
+            }
         }
-    }
+    });
 
-    return systems.map((system, systemIndex) => {
-        const { systemElem } = system;
+    const markers = [];
+    systems.forEach(({ systemElem, parts }, systemIndex) => {
         const voiceStaffRect = voiceStaffIndex != null ? getVoiceStaffRect(systemElem, voiceStaffIndex) : null;
         const staffs = systemElem.querySelectorAll('.measure .staff');
         const firstStaffRect = voiceStaffRect ?? getBBoxElem(staffs[0]).getBoundingClientRect();
@@ -69,29 +94,52 @@ function createMarkers(noteElems, containerElem, color, voiceStaffIndex, outline
         const top = firstStaffRect.y - (extender / 2) - containerRect.y;
         const height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y + extender;
 
-        const openLeft = systemIndex > 0;
-        const openRight = systemIndex < systems.length - 1;
-        if (openLeft) system.left = (selectBBoxElem(systemElem, '.measure .staff') ?? getBBoxElem(systemElem)).getBoundingClientRect().x;
-        if (openRight) {
+        const comesFromBefore = systemIndex > 0;
+        const goesOn = systemIndex < systems.length - 1;
+        if (comesFromBefore) parts[0].left = (selectBBoxElem(systemElem, '.measure .staff') ?? getBBoxElem(systemElem)).getBoundingClientRect().x;
+        if (goesOn) {
             const lastMeasure = [...systemElem.querySelectorAll('.measure:not(.bounding-box)')].at(-1);
-            system.right = getBBoxElem(lastMeasure.querySelector('.staff:not(.bounding-box)')).getBoundingClientRect().right;
+            parts.at(-1).right = getBBoxElem(lastMeasure.querySelector('.staff:not(.bounding-box)')).getBoundingClientRect().right;
         }
 
-        const left = system.left - (extender / 2) - containerRect.x + xOffset;
-        const place = { left: `${left}px`, top: `${top}px`, width: `${system.right - system.left + extender}px`, height: `${height}px` };
-        const corners = { borderRadius: [openLeft, openRight, openRight, openLeft].map((flat) => flat ? '0' : '0.25rem').join(' ') };
+        parts.forEach((part, partIndex) => {
+            const before = parts[partIndex - 1];
+            const after = parts[partIndex + 1];
+            const openLeft = !before && comesFromBefore;
+            const openRight = !after && goesOn;
+            // A gap reaches from the stretch before it to the one after it.
+            const left = (part.isGap && before ? before.right + (extender / 2) : part.left - (extender / 2)) - containerRect.x + xOffset;
+            const right = (part.isGap && after ? after.left - (extender / 2) : part.right + (extender / 2)) - containerRect.x + xOffset;
+            const place = { left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${height}px` };
+            const corners = { borderRadius: [openLeft || before, openRight || after, openRight || after, openLeft || before].map((flat) => flat ? '0' : '0.25rem').join(' ') };
 
-        if (outline) {
-            return h('div', {
-                class: ['absolute z-30 border-[5px] border-solid', openLeft && 'border-l-0', openRight && 'border-r-0'],
-                style: { ...place, ...corners, borderColor: color },
-            });
-        }
-        return h('div', {
-            class: ['absolute', openLeft && 'bg-zig-zag-left', openRight && 'bg-zig-zag-right'],
-            style: { ...place, ...corners, backgroundColor: color, '--zig-zag-color': color },
+            if (outline && part.isGap) {
+                // The dashes keep a little off the frames beside them.
+                const inset = (neighbour) => neighbour ? 3 : 0;
+                markers.push(h('div', {
+                    class: 'absolute z-30',
+                    style: {
+                        ...place,
+                        left: `${left + inset(before)}px`,
+                        width: `${right - left - inset(before) - inset(after)}px`,
+                        borderTop: `5px dashed ${color}`,
+                        borderBottom: `5px dashed ${color}`,
+                    },
+                }));
+            } else if (outline) {
+                markers.push(h('div', {
+                    class: ['absolute z-30 border-[5px] border-solid', openLeft && 'border-l-0', openRight && 'border-r-0'],
+                    style: { ...place, ...corners, borderColor: color },
+                }));
+            } else {
+                markers.push(h('div', {
+                    class: ['absolute', openLeft && 'bg-zig-zag-left', openRight && 'bg-zig-zag-right'],
+                    style: { ...place, ...corners, ...(part.isGap ? gapStyle(color) : { backgroundColor: color, '--zig-zag-color': color }) },
+                }));
+            }
         });
     });
+    return markers;
 }
 
 // A frame around exactly the given notes of one system, from the outermost edge of any of them to
@@ -234,6 +282,12 @@ export default {
             default: null,
         },
         color: String,
+        // The lines of the section its pattern does not ask for, { startLine, endLine } each: drawn hatched, or in
+        // a frame as dashed lines.
+        gaps: {
+            type: Array,
+            default: () => [],
+        },
         // Draws the section as a frame around the notes instead of filling it.
         outline: Boolean,
         // Fits the frame to the notes of the section (those of `voice`, or of every voice) instead of
@@ -294,7 +348,7 @@ export default {
             const notes = [];
             for (let line = props.startLine; line <= props.endLine; line++) {
                 const elem = containerElem?.querySelector(noteSelector(line, voice));
-                if (elem) notes.push(elem);
+                if (elem) notes.push({ line, elem });
             }
             return notes;
         };
@@ -308,8 +362,8 @@ export default {
         let notes = notesOnLines(props.voice);
         const usedFallbackVoice = props.voice != null && !notes.length;
         if (usedFallbackVoice) notes = notesOnLines(null);
-        const startElem = notes[0];
-        const endElem = notes.at(-1);
+        const startElem = notes[0]?.elem;
+        const endElem = notes.at(-1)?.elem;
 
         const voiceStaffIndex = props.voice == null
             ? null
@@ -317,7 +371,7 @@ export default {
                 ? findVoiceStaffIndex(startElem?.closest('.measure') ?? startElem?.closest('.system'), props.voice)
                 : getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem);
 
-        markers.push(...createMarkers(notes, containerElem, props.color, voiceStaffIndex, props.outline));
+        markers.push(...createMarkers(splitIntoStretches(notes, props.gaps), containerElem, props.color, voiceStaffIndex, props.outline));
 
         let labelElem = null;
         const labelRef = ref(null);

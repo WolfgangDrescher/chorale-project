@@ -82,14 +82,15 @@ function textSectionsOf(item) {
 
 // A result is a section over the voice it was found in, with the sections it links in other voices, which
 // HighlightedScore draws as frames in the same color. A voice that the pattern names only at some of
-// its positions is marked at those and not in between. A result driven by word or syl is the text itself,
+// its positions is marked at those and not in between. The gaps of a result and of its sections are what a
+// repeat took that may be empty. A result driven by word or syl is the text itself,
 // a section per verse; a lyrics value on another feature links the text of its verses.
 function sectionsForItems(items) {
     const itemsByQueryId = new Map();
     for (const item of items) {
         const queryId = item.queryId ?? '';
         if (!itemsByQueryId.has(queryId)) itemsByQueryId.set(queryId, []);
-        const linkedSections = otherSectionsOf(item).filter((section) => !isSingleNote(section)).map(({ voice, startLine, endLine }) => ({ voice, startLine, endLine }));
+        const linkedSections = otherSectionsOf(item).filter((section) => !isSingleNote(section)).map(({ voice, startLine, endLine, gaps }) => ({ voice, startLine, endLine, gaps }));
         if (item.feature === 'word' || item.feature === 'syl') {
             textSectionsOf(item).forEach((section, index) => {
                 itemsByQueryId.get(queryId).push({ ...section, linkedSections: index === 0 ? linkedSections : [] });
@@ -99,6 +100,7 @@ function sectionsForItems(items) {
         itemsByQueryId.get(queryId).push({
             voice: item.voice,
             ...lineRangeOf(item),
+            gaps: item.gaps,
             linkedSections: [...linkedSections, ...textSectionsOf(item)],
         });
     }
@@ -127,9 +129,11 @@ useScorePlayerKeyboardShortcuts(() => players.value.values().next().value);
 
 // The page of the chorale, with the matches to highlight there: "4:12-15~1:12-14,4:30-31" is a
 // voice and its lines for each section, joined with "~" to the sections it links in other voices;
-// "t1:27-38" is the text of verse 1 over those lines (see pages/chorale/bach/[id].vue).
+// "4:12-18_14-16" has a gap over the lines 14 to 16; "t1:27-38" is the text of verse 1 over those
+// lines (see pages/chorale/bach/[id].vue).
 function choraleLink(choraleId, items) {
-    const text = ({ type, voice, verse, startLine, endLine }) => `${type === 'text' ? 't' + verse : voice}:${startLine}-${endLine}`;
+    const gapsText = (gaps) => (gaps ?? []).map(({ startLine, endLine }) => `_${startLine}-${endLine}`).join('');
+    const text = ({ type, voice, verse, startLine, endLine, gaps }) => `${type === 'text' ? 't' + verse : voice}:${startLine}-${endLine}${gapsText(gaps)}`;
     const sections = sectionsForItems(items).flatMap(({ items: sectionItems }) => sectionItems);
     const matches = sections.map((section) => [section, ...section.linkedSections].map(text).join('~')).join(',');
     return { path: localePath(`/chorale/bach/${choraleId}`), query: { matches } };

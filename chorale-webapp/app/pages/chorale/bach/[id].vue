@@ -60,11 +60,13 @@ if (filters.length) {
 
 // A link from the search results highlights its matches: ?matches=4:12-15~1:12-14,4:30-31 is a
 // voice and its lines for each section, joined with "~" to the sections it links in other voices,
-// which are drawn as frames; t1:27-38 is the text of verse 1 over those lines (see SearchResults.vue).
+// which are drawn as frames; 4:12-18_14-16 has a gap over the lines 14 to 16; t1:27-38 is the text
+// of verse 1 over those lines (see SearchResults.vue).
 function sectionOf(text) {
-    const [, type, number, startLine, endLine] = text.match(/^(t?)(\d+):(\d+)-(\d+)$/) ?? [];
+    const [, type, number, startLine, endLine, gapsText] = text.match(/^(t?)(\d+):(\d+)-(\d+)((?:_\d+-\d+)*)$/) ?? [];
     if (!number) return null;
-    const lines = { startLine: Number(startLine), endLine: Number(endLine) };
+    const gaps = [...gapsText.matchAll(/_(\d+)-(\d+)/g)].map(([, from, to]) => ({ startLine: Number(from), endLine: Number(to) }));
+    const lines = { startLine: Number(startLine), endLine: Number(endLine), gaps };
     return type ? { type: 'text', verse: Number(number), ...lines } : { voice: Number(number), ...lines };
 }
 const matches = String(useRoute().query.matches ?? '').split(',').flatMap((match) => {

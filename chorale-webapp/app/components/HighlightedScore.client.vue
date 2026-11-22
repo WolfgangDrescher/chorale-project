@@ -57,6 +57,9 @@ const spacingSystemForBottomLabels = computed(() => {
     return Math.max(spacingSystem, Math.ceil(labelHeightPx / (9 * scale / 100)));
 });
 
+// Two sections over the same lines with other gaps are other markers.
+const gapsKey = (section) => (section.gaps ?? []).map(({ startLine, endLine }) => `${startLine}-${endLine}`).join(',');
+
 const verovioCanvas = ref(null);
 
 const { loadScore, setScore, applyScoreFormatting, formattedScoreData } = useScoreFormatter();
@@ -372,9 +375,9 @@ onMounted(async () => {
                         <HighlightedNote v-for="noteId in noteGroup.items" :key="`${noteId}-${noteGroup.color}`" :note-id="noteId" :color="noteGroup.color" :container="scoreContainer" />
                     </template>
                     <template v-for="(sectionGroup, groupIndex) in resolvedSections" :key="groupIndex">
-                        <HighlightedSection v-for="section in sectionGroup.items" :key="`${section.startLine}-${section.endLine}-${section.voice}-${section.type}-${section.verse}-${section.label?.value}-${sectionGroup.color}-${sectionGroup.outline}-${sectionGroup.fitBoundingBox}`" :start-line="section.startLine" :end-line="section.endLine" :label="section.label" :voice="section.voice" :type="section.type" :verse="section.verse" :color="sectionGroup.color" :outline="sectionGroup.outline" :fit-bounding-box="sectionGroup.fitBoundingBox" :container="scoreContainer" />
+                        <HighlightedSection v-for="section in sectionGroup.items" :key="`${section.startLine}-${section.endLine}-${section.voice}-${section.type}-${section.verse}-${section.label?.value}-${sectionGroup.color}-${sectionGroup.outline}-${sectionGroup.fitBoundingBox}-${gapsKey(section)}`" :start-line="section.startLine" :end-line="section.endLine" :gaps="section.gaps" :label="section.label" :voice="section.voice" :type="section.type" :verse="section.verse" :color="sectionGroup.color" :outline="sectionGroup.outline" :fit-bounding-box="sectionGroup.fitBoundingBox" :container="scoreContainer" />
                         <template v-for="section in sectionGroup.items" :key="`linked-${section.startLine}-${section.endLine}-${section.voice}`">
-                            <HighlightedSection v-for="linked in section.linkedSections" :key="`${linked.startLine}-${linked.endLine}-${linked.voice}-${linked.type}-${linked.verse}-${sectionGroup.color}-${sectionGroup.fitBoundingBox}`" :start-line="linked.startLine" :end-line="linked.endLine" :voice="linked.voice" :type="linked.type" :verse="linked.verse" :color="sectionGroup.color" :outline="true" :fit-bounding-box="sectionGroup.fitBoundingBox" :container="scoreContainer" />
+                            <HighlightedSection v-for="linked in section.linkedSections" :key="`${linked.startLine}-${linked.endLine}-${linked.voice}-${linked.type}-${linked.verse}-${sectionGroup.color}-${sectionGroup.fitBoundingBox}-${gapsKey(linked)}`" :start-line="linked.startLine" :end-line="linked.endLine" :gaps="linked.gaps" :voice="linked.voice" :type="linked.type" :verse="linked.verse" :color="sectionGroup.color" :outline="true" :fit-bounding-box="sectionGroup.fitBoundingBox" :container="scoreContainer" />
                         </template>
                     </template>
                     <template v-for="(connectionGroup, groupIndex) in connections" :key="`connection-${groupIndex}`">

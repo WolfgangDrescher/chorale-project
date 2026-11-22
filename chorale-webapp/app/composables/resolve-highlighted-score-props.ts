@@ -3,6 +3,13 @@ interface NoteGroup {
     color?: string;
 }
 
+// The lines of a section its pattern does not ask for: what a repeat took that may be empty. Drawn fainter than
+// the rest of the section, hatched or, in a frame, dashed.
+interface Gap {
+    startLine: number;
+    endLine: number;
+}
+
 // A section in another voice that belongs to a section: drawn as a frame in the color of that section, so that it
 // stands apart from the sections themselves. Of type "text" it is the text of a verse instead of the notes of a voice.
 interface LinkedSection {
@@ -11,6 +18,7 @@ interface LinkedSection {
     verse?: number;
     startLine: number;
     endLine: number;
+    gaps?: Gap[];
 }
 
 // The notes of a voice over some lines, or, of type "text", the text of a verse there.
@@ -21,6 +29,7 @@ interface Section {
     label?: Label | string | null;
     voice?: number;
     verse?: number;
+    gaps?: Gap[];
     linkedSections?: LinkedSection[];
 }
 
@@ -191,7 +200,7 @@ export function useResolveHighlightedScoreProps(props: {
         }));
     });
 
-    const isValidSection = (section: Section): boolean => {
+    const isValidSection = (section: { startLine: number, endLine: number }): boolean => {
         return (
             typeof section.startLine === 'number' &&
             typeof section.endLine === 'number' &&
@@ -199,6 +208,10 @@ export function useResolveHighlightedScoreProps(props: {
             section.endLine >= section.startLine
         );
     };
+
+    function resolveGaps(section: Section | LinkedSection): Gap[] {
+        return (section.gaps ?? []).filter(isValidSection).map((gap) => ({ startLine: applyLineShift(gap.startLine), endLine: applyLineShift(gap.endLine) }));
+    }
 
     // The linked sections of a section, those of a voice only: a linked section is always in a voice of its own.
     function resolveLinkedSections(section: Section): LinkedSection[] {
@@ -210,6 +223,7 @@ export function useResolveHighlightedScoreProps(props: {
                 verse: linked.verse,
                 startLine: applyLineShift(linked.startLine),
                 endLine: applyLineShift(linked.endLine),
+                gaps: resolveGaps(linked),
             }));
     }
 
@@ -225,6 +239,7 @@ export function useResolveHighlightedScoreProps(props: {
                     type: s.type ?? 'notes',
                     voice: resolveVoice(s.voice),
                     verse: resolveVoice(s.verse),
+                    gaps: resolveGaps(s),
                     linkedSections: resolveLinkedSections(s),
                 }));
             return [
@@ -246,6 +261,7 @@ export function useResolveHighlightedScoreProps(props: {
                     type: s.type ?? 'notes',
                     voice: resolveVoice(s.voice),
                     verse: resolveVoice(s.verse),
+                    gaps: resolveGaps(s),
                     linkedSections: resolveLinkedSections(s),
                 }))
                 : [],
