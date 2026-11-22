@@ -25,6 +25,13 @@ function createDefaultScoreOptions() {
     };
 }
 
+// The results of a search do not show the modulations of their chorales.
+function createDefaultSearchScoreOptions() {
+    const options = createDefaultScoreOptions();
+    delete options.showModulations;
+    return options;
+}
+
 // The Humdrum filters the score can be shown through, by the name of the option that
 // toggles them. A filter with a higher priority is applied first, so the score is
 // transposed and its voices are extracted before the remaining spines are analyzed. The
@@ -165,7 +172,7 @@ export const useScoreOptions = defineStore('score_options', scoreOptionsStore({
 }));
 
 export const useSearchScoreOptions = defineStore('search_score_options', scoreOptionsStore({
-    createDefaults: createDefaultScoreOptions,
+    createDefaults: createDefaultSearchScoreOptions,
     humdrumFilterDefinitions: CHORALE_HUMDRUM_FILTERS,
     useView: useSearchScoreViewOptions,
 }));

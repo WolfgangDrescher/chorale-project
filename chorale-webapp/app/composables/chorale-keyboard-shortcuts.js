@@ -56,8 +56,9 @@ export function useChoraleKeyboardShortcuts({ prevRoute, nextRoute, keysTaken = 
         scoreOptions.resetZoom();
     });
 
+    // Only where the scores show their modulations.
     onShortcut('m', () => {
-        if (ignoreIfInput()) return;
+        if (ignoreIfInput() || !('showModulations' in scoreOptions.$state)) return;
         scoreOptions.showModulations = !scoreOptions.showModulations;
     });
 
