@@ -36,57 +36,61 @@ function getAccidRect(elem) {
     return rect?.width > 0 ? rect : null;
 }
 
-function createMarker(startElem, endElem, systemElem, containerElem, color, voiceStaffIndex = null, outline = false) {
-    const startAccidRect = getAccidRect(startElem);
-    endElem = getBBoxElem(endElem) || endElem;
-
-    const systemFirstMeasureStaffRect = selectBBoxElem(systemElem, '.measure .staff')?.getBoundingClientRect();
-    const systemRect = getBBoxElem(systemElem)?.getBoundingClientRect();
+// The markers of a section, one on each system it is on: a box around its notes over the staff of the voice, or
+// over all staves, filled, or as an outline a frame. Where the section goes on to the next system the box runs on
+// to the edge of the system and comes from the edge of the next, with a zig-zag there, a frame left open.
+function createMarkers(noteElems, containerElem, color, voiceStaffIndex, outline) {
     const containerRect = containerElem.getBoundingClientRect();
-    const startRect = getBBoxElem(startElem)?.getBoundingClientRect();
-    const endRect = getBBoxElem(endElem)?.getBoundingClientRect();
-
-    const voiceStaffRect = voiceStaffIndex != null ? getVoiceStaffRect(systemElem, voiceStaffIndex) : null;
-    const staffs = systemElem?.querySelectorAll('.measure .staff');
-    const firstStaffRect = voiceStaffRect ?? getBBoxElem(staffs[0])?.getBoundingClientRect();
-    const lastStaffRect = voiceStaffRect ?? getBBoxElem(staffs[staffs.length - 1])?.getBoundingClientRect();
-
     // An outline sits a little further out than a fill, so its 5px border starts at the fill's edge
     // of another marker underneath instead of leaving a white gap to it.
-    const heightExtender = outline ? 20 : 15;
-    const height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y  + heightExtender;
-
-    const xPosStart = startRect
-        ? Math.min(startRect.x, startAccidRect?.x ?? startRect.x)
-        : (systemFirstMeasureStaffRect ? systemFirstMeasureStaffRect.x: systemRect.x);
-    const xPosEnd = endRect ? endRect.right : getBBoxElem([...systemElem.querySelectorAll('.measure:not(.bounding-box)')].at(-1).querySelector('.staff:not(.bounding-box)'))?.getBoundingClientRect().right;
-
-    const widthExtender = outline ? 20 : 15;
-    const width = xPosEnd - xPosStart + widthExtender;
+    const extender = outline ? 20 : 15;
     const xOffset = 2;
 
-    return h('div', {
-        class: [
-            'absolute',
-            !outline && !startElem && 'bg-zig-zag-left',
-            !outline && !endElem && 'bg-zig-zag-right',
-            startElem && !endElem && 'rounded-tl rounded-bl',
-            !startElem && endElem && 'rounded-tr rounded-br',
-            startElem && endElem && 'rounded',
-            // A system the section carries on from or into has no edge on that side.
-            outline && 'z-30 border-[5px] border-solid',
-            outline && !startElem && 'border-l-0',
-            outline && !endElem && 'border-r-0',
-        ],
-        style: {
-            ...(outline
-                ? { borderColor: color }
-                : { backgroundColor: color, '--zig-zag-color': color }),
-            width: `${width}px`,
-            height: `${height}px`,
-            left: `${xPosStart - (widthExtender / 2) - containerRect.x + xOffset}px`,
-            top: `${firstStaffRect.y - (heightExtender / 2) - containerRect.y}px`,
-        },
+    const systems = [];
+    for (const noteElem of noteElems) {
+        const systemElem = noteElem.closest('g.system');
+        const rect = getBBoxElem(noteElem).getBoundingClientRect();
+        const left = Math.min(rect.x, getAccidRect(noteElem)?.x ?? rect.x);
+        const system = systems.at(-1);
+        if (system?.systemElem === systemElem) {
+            system.left = Math.min(system.left, left);
+            system.right = Math.max(system.right, rect.right);
+        } else {
+            systems.push({ systemElem, left, right: rect.right });
+        }
+    }
+
+    return systems.map((system, systemIndex) => {
+        const { systemElem } = system;
+        const voiceStaffRect = voiceStaffIndex != null ? getVoiceStaffRect(systemElem, voiceStaffIndex) : null;
+        const staffs = systemElem.querySelectorAll('.measure .staff');
+        const firstStaffRect = voiceStaffRect ?? getBBoxElem(staffs[0]).getBoundingClientRect();
+        const lastStaffRect = voiceStaffRect ?? getBBoxElem(staffs[staffs.length - 1]).getBoundingClientRect();
+        const top = firstStaffRect.y - (extender / 2) - containerRect.y;
+        const height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y + extender;
+
+        const openLeft = systemIndex > 0;
+        const openRight = systemIndex < systems.length - 1;
+        if (openLeft) system.left = (selectBBoxElem(systemElem, '.measure .staff') ?? getBBoxElem(systemElem)).getBoundingClientRect().x;
+        if (openRight) {
+            const lastMeasure = [...systemElem.querySelectorAll('.measure:not(.bounding-box)')].at(-1);
+            system.right = getBBoxElem(lastMeasure.querySelector('.staff:not(.bounding-box)')).getBoundingClientRect().right;
+        }
+
+        const left = system.left - (extender / 2) - containerRect.x + xOffset;
+        const place = { left: `${left}px`, top: `${top}px`, width: `${system.right - system.left + extender}px`, height: `${height}px` };
+        const corners = { borderRadius: [openLeft, openRight, openRight, openLeft].map((flat) => flat ? '0' : '0.25rem').join(' ') };
+
+        if (outline) {
+            return h('div', {
+                class: ['absolute z-30 border-[5px] border-solid', openLeft && 'border-l-0', openRight && 'border-r-0'],
+                style: { ...place, ...corners, borderColor: color },
+            });
+        }
+        return h('div', {
+            class: ['absolute', openLeft && 'bg-zig-zag-left', openRight && 'bg-zig-zag-right'],
+            style: { ...place, ...corners, backgroundColor: color, '--zig-zag-color': color },
+        });
     });
 }
 
@@ -260,9 +264,6 @@ export default {
             return () => h('div', {}, textMarkers);
         }
 
-        let startElem = null;
-        let endElem = null;
-
         if (props.fitBoundingBox && containerElem) {
             const noteElemsBySystem = new Map();
             const add = (noteElem) => {
@@ -288,15 +289,15 @@ export default {
             return `g[id^="note-${suffix}"], g[id^="rest-${suffix}"], g[id^="mrest-${suffix}"]`;
         };
 
-        for (let i = props.startLine; i <= props.endLine; i++) {
-            startElem = props.container?.querySelector(noteSelector(i, props.voice));
-            if (startElem) break;
-        }
-
-        for (let i = props.endLine; i >= props.startLine; i--) {
-            endElem = props.container?.querySelector(noteSelector(i, props.voice));
-            if (endElem) break;
-        }
+        // The first note or rest of each line of the section, of `voice` or of any voice.
+        const notesOnLines = (voice) => {
+            const notes = [];
+            for (let line = props.startLine; line <= props.endLine; line++) {
+                const elem = containerElem?.querySelector(noteSelector(line, voice));
+                if (elem) notes.push(elem);
+            }
+            return notes;
+        };
 
         // The target voice has no onset anywhere in [startLine, endLine] -- e.g. a driving
         // feature shared between two voices (hint-<pair>) changed because the OTHER voice in
@@ -304,51 +305,19 @@ export default {
         // have something there for horizontal/system positioning, but keep the highlight on
         // the correct voice's own staff (see findVoiceStaffIndex) rather than the fallback
         // voice's -- anchoring it to the wrong voice would misrepresent the match.
-        let usedFallbackVoice = false;
-        if (props.voice != null && !startElem && !endElem) {
-            for (let i = props.startLine; i <= props.endLine; i++) {
-                startElem = props.container?.querySelector(noteSelector(i, null));
-                if (startElem) break;
-            }
-            for (let i = props.endLine; i >= props.startLine; i--) {
-                endElem = props.container?.querySelector(noteSelector(i, null));
-                if (endElem) break;
-            }
-            usedFallbackVoice = Boolean(startElem || endElem);
-        }
+        let notes = notesOnLines(props.voice);
+        const usedFallbackVoice = props.voice != null && !notes.length;
+        if (usedFallbackVoice) notes = notesOnLines(null);
+        const startElem = notes[0];
+        const endElem = notes.at(-1);
 
         const voiceStaffIndex = props.voice == null
             ? null
             : usedFallbackVoice
-                ? findVoiceStaffIndex((startElem ?? endElem)?.closest('.measure') ?? (startElem ?? endElem)?.closest('.system'), props.voice)
+                ? findVoiceStaffIndex(startElem?.closest('.measure') ?? startElem?.closest('.system'), props.voice)
                 : getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem);
 
-        if (startElem && endElem && containerElem) {
-
-            const startSystem = startElem.closest('g.system');
-            const endSystem = endElem.closest('g.system');
-
-            if (startSystem === endSystem) {
-                markers.push(createMarker(startElem, endElem, startSystem, containerElem, props.color, voiceStaffIndex, props.outline));
-            } else {
-                const systemParentChildren = startSystem.parentElement.children;
-                const startIndex = [...systemParentChildren].indexOf(startSystem);
-                const endIndex = [...systemParentChildren].indexOf(endSystem);
-
-                for (let i = startIndex; i <= endIndex; i++) {
-                    const systemElem = systemParentChildren[i];
-                    markers.push(createMarker(
-                        i === startIndex ? startElem : null,
-                        i === endIndex ? endElem : null,
-                        systemElem,
-                        containerElem,
-                        props.color,
-                        voiceStaffIndex,
-                        props.outline,
-                    ));
-                }
-            }
-        }
+        markers.push(...createMarkers(notes, containerElem, props.color, voiceStaffIndex, props.outline));
 
         let labelElem = null;
         const labelRef = ref(null);
