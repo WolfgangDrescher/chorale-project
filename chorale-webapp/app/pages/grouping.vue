@@ -1,5 +1,5 @@
 <script setup>
-import { useLocalStorage } from '@vueuse/core';
+import { useClipboard, useLocalStorage } from '@vueuse/core';
 
 const { t } = useI18n();
 
@@ -109,6 +109,14 @@ function applyDemoQuery() {
     query.value = DEMO_QUERY;
 }
 
+const groupingLink = useQueryLink('grouping');
+const { copy: copyToClipboard, copied: shareLinkCopied } = useClipboard();
+
+function copyShareLink() {
+    const path = router.resolve(groupingLink(query.value)).href;
+    copyToClipboard(new URL(path, window.location.origin).href);
+}
+
 const hasGroups = computed(() => !!result.value?.groups?.length);
 
 const tab = ref('statistics');
@@ -138,6 +146,14 @@ watch([tab, result], () => {
                 <UFormField :label="$t('groupQuery')">
                     <template #hint>
                         <div class="flex gap-1">
+                            <UButton
+                                color="neutral"
+                                variant="ghost"
+                                size="sm"
+                                :icon="shareLinkCopied ? 'lucide:check' : 'lucide:share'"
+                                :label="shareLinkCopied ? $t('shareQueryCopied') : $t('shareQuery')"
+                                @click="copyShareLink"
+                            />
                             <UTooltip :text="$t('formatQueryInvalid')" :disabled="parsedQuery !== undefined">
                                 <span>
                                     <UButton
