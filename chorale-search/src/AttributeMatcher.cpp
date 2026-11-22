@@ -912,7 +912,7 @@ namespace {
 
 // A pattern read from JSON has been checked already, with the path to the value in the message; one built in
 // code has not, and matching relies on it.
-void checkValues(const PositionKey& positionKey, const MatcherOptions& options) {
+void validateValues(const PositionKey& positionKey, const MatcherOptions& options) {
     const std::string& key = positionKey.rawKey;
     for (const PatternValue& value : positionKey.values) {
         if (value.isPositionReference()) {
@@ -964,7 +964,7 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
             if (isOtherVoiceKey(rawKey)) {
                 const auto [voiceReference, key] = splitOtherVoiceKey(rawKey);
                 PositionKey otherVoiceKey{findPatternKey(key), values};
-                checkValues(otherVoiceKey, m_options);
+                validateValues(otherVoiceKey, m_options);
                 for (PatternValue& value : otherVoiceKey.values) normalizePatternValue(otherVoiceKey, value);
                 auto group = std::find_if(patternPosition.begin(), patternPosition.end(),
                                           [&](const PositionKey& positionKey) { return positionKey.otherVoice == voiceReference; });
@@ -978,7 +978,7 @@ AttributeMatcher::AttributeMatcher(std::string drivingFeature, std::vector<Attri
             }
             hasReferences = hasReferences || hasPositionReference(values);
             PositionKey& positionKey = patternPosition.emplace_back(PositionKey{findPatternKey(rawKey), values});
-            checkValues(positionKey, m_options);
+            validateValues(positionKey, m_options);
             for (PatternValue& value : positionKey.values) normalizePatternValue(positionKey, value);
             if (positionKey.readsLyrics()) m_readsLyrics = true;
         }

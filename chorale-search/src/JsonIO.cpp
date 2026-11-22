@@ -57,7 +57,7 @@ std::optional<ComparisonOperator> parseComparisonOperator(const std::string& spe
 
 // A value that names another voice ("@2", "@below") instead of stating one. Only the keys whose value
 // can be read off the other voice's note take one, and the name has to be one of the known spellings.
-void checkVoiceReference(const std::string& key, const std::string& text, const std::string& context) {
+void validateVoiceReference(const std::string& key, const std::string& text, const std::string& context) {
     if (!supportsVoiceReference(key)) {
         throw std::invalid_argument(context + ": '" + key + "' cannot be held against another voice with '" + text +
                                      "', only kern, kern.pitch and duration can");
@@ -103,7 +103,7 @@ PatternValue comparisonFromJson(const nlohmann::json& v, const std::string& key,
                                      "hint-<pair>, hint-<voice>, hint-*4 and hint-@pair, and their .number can");
     }
     if (PatternValue(text).isVoiceReference()) {
-        checkVoiceReference(key, text, context);
+        validateVoiceReference(key, text, context);
         return PatternValue(*comparisonOperator, text);
     }
     // Checked against the whole pattern, see patternFromJson.
@@ -136,7 +136,7 @@ std::vector<PatternValue> attributeValueFromJson(const nlohmann::json& v, const 
 
     for (const PatternValue& value : values) {
         if (value.isVoiceReference()) {
-            checkVoiceReference(key, value.text, context);
+            validateVoiceReference(key, value.text, context);
             continue;
         }
         if (value.hasComparisonOperator()) continue; // already checked above
@@ -267,8 +267,8 @@ std::string simultaneousAlignmentFromJson(const nlohmann::json& j, const std::st
 // hint-@pair is the pair a query over voice pairs searches, so only such a query has it, and a position names that pair
 // once only: hint-@pair and one of the pairs of `pairSet` would be the same key for that pair, and one of the two
 // would not be checked. Once negated and once not is two keys.
-void checkPairSearchedKeys(const std::vector<AttributeMap>& pattern, const std::string& pairSet,
-                           const std::string& context) {
+void validatePairSearchedKeys(const std::vector<AttributeMap>& pattern, const std::string& pairSet,
+                              const std::string& context) {
     const std::vector<std::string> pairs = pairSet.empty() ? std::vector<std::string>{} : expandHintPairKey(pairSet);
     for (std::size_t position = 0; position < pattern.size(); ++position) {
         const std::string where = "'pattern[" + std::to_string(position) + "]' in " + context;
@@ -372,7 +372,7 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
             throw std::invalid_argument("'everyPosition' in " + context + ", applied to " + e.what());
         }
     }
-    checkPairSearchedKeys(target.pattern, pairSet, context);
+    validatePairSearchedKeys(target.pattern, pairSet, context);
 
     if (j.contains("mintStartAtPreviousToken")) {
         if (!j["mintStartAtPreviousToken"].is_boolean()) {
