@@ -608,6 +608,25 @@ TEST_CASE(result_to_json_lists_the_linked_sections_only_when_there_are_some) {
     CHECK_EQ(linked.at("endPosition").get<std::string>(), std::string("5+1/2"));
 }
 
+TEST_CASE(result_to_json_lists_the_gaps_only_when_there_are_some) {
+    Result r;
+    r.startLineNumber = 25;
+    r.endLineNumber = 30;
+    NoteSection section;
+    section.voice = 1;
+    section.startLineNumber = 25;
+    section.endLineNumber = 30;
+    r.linkedSections = {section};
+    CHECK(!resultToJson(r).contains("gaps"));
+    CHECK(!resultToJson(r).at("linkedSections")[0].contains("gaps"));
+
+    r.gaps = {{26, 27}, {29, 29}};
+    r.linkedSections[0].gaps = {{26, 29}};
+    const json j = resultToJson(r);
+    CHECK_EQ(j.at("gaps"), json::parse(R"([{"startLine":26,"endLine":27},{"startLine":29,"endLine":29}])"));
+    CHECK_EQ(j.at("linkedSections")[0].at("gaps"), json::parse(R"([{"startLine":26,"endLine":29}])"));
+}
+
 TEST_CASE(query_from_json_accepts_boolean_attribute_value) {
     Query q = queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"fermata":true}]})"));
     CHECK_EQ(q.pattern[0].keys["fermata"], (std::vector<choralesearch::PatternValue>{"true"}));
@@ -1413,6 +1432,8 @@ TEST_CASE(query_from_json_reads_a_sub_pattern_that_repeats) {
         if (level <= 16) CHECK_NOTHROW(queryFromJson(query));
         else CHECK_THROWS(queryFromJson(query));
     }
+    // A number of times beyond any voice is no error.
+    CHECK_NOTHROW(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"repeat":9223372036854775808,"subPattern":[{"kern":"c"},{"kern":"d"}]}]})")));
 }
 
 TEST_CASE(query_from_json_writes_a_repeat_back_as_it_reads_it) {

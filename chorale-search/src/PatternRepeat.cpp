@@ -77,6 +77,11 @@ std::optional<hum::HumNum> longestDuration(const PatternRepeat& repeat) {
     return longest;
 }
 
+bool mayBeEmpty(const PatternRepeat& repeat) {
+    const auto shortest = shortestDuration(repeat);
+    return repeat.min == 0 && !(shortest && *shortest > 0);
+}
+
 bool hasRepeatWithoutFixedCount(const std::vector<PatternPosition>& pattern) {
     return std::any_of(pattern.begin(), pattern.end(), [](const PatternPosition& position) {
         return position.repeat && (position.repeat->max != position.repeat->min || hasRepeatWithoutFixedCount(position.subPattern));
@@ -84,17 +89,13 @@ bool hasRepeatWithoutFixedCount(const std::vector<PatternPosition>& pattern) {
 }
 
 std::size_t minimumOnsets(const std::vector<PatternPosition>& pattern) {
+    constexpr std::size_t most = std::numeric_limits<std::size_t>::max();
     std::size_t onsets = 0;
     for (const PatternPosition& position : pattern) {
         const std::size_t once = position.subPattern.empty() ? 1 : minimumOnsets(position.subPattern);
-        if (!position.repeat) {
-            onsets += once;
-            continue;
-        }
-        // A run that has to last takes an onset.
-        const auto shortest = shortestDuration(*position.repeat);
-        const std::size_t times = position.repeat->min == 0 && shortest && *shortest > 0 ? 1 : position.repeat->min;
-        onsets += times * once;
+        const std::size_t times = !position.repeat ? 1 : mayBeEmpty(*position.repeat) ? 0 : std::max<std::size_t>(position.repeat->min, 1);
+        const std::size_t run = once != 0 && times > most / once ? most : times * once;
+        onsets = run > most - onsets ? most : onsets + run;
     }
     return onsets;
 }

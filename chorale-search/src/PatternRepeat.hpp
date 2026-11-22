@@ -10,8 +10,11 @@
 
 namespace choralesearch {
 
-// The fewest onsets `pattern` matches, each repeat as rarely as it may.
+// The fewest onsets `pattern` matches, each repeat as rarely as it may; at most the largest size_t, which no voice reaches.
 std::size_t minimumOnsets(const std::vector<PatternPosition>& pattern);
+
+// Whether the repeat may take no onset: a gap, where a run that has to last takes one.
+bool mayBeEmpty(const PatternRepeat& repeat);
 
 // Whether a repeat of `pattern` may take more or fewer onsets: one without a fixed number of times.
 bool hasRepeatWithoutFixedCount(const std::vector<PatternPosition>& pattern);

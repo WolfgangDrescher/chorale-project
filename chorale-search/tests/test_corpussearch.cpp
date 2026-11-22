@@ -1822,3 +1822,74 @@ TEST_CASE(skipped_overlapping_matches_are_those_inside_a_match_the_groups_line_u
     REQUIRE(found.size() == 1u);
     CHECK_EQ(found[0].startPosition, std::string("1"));
 }
+
+// What a repeat that may be empty took is a gap of the match, and of the section of a group.
+TEST_CASE(a_match_and_the_sections_of_its_groups_report_their_gaps) {
+    // Four voices in unison: c d e f g.
+    std::istringstream score("**kern\t**kern\t**kern\t**kern\n4c\t4c\t4c\t4c\n4d\t4d\t4d\t4d\n4e\t4e\t4e\t4e\n4f\t4f\t4f\t4f\n"
+                             "4g\t4g\t4g\t4g\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(score, "chor000");
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    const auto note = [](const char* pitch) { return PatternPosition{.keys = {{"kern", {pitch}}}}; };
+    PatternPosition gap;
+    gap.repeat = choralesearch::PatternRepeat{.min = 0};
+    PatternPosition run;
+    run.repeat = choralesearch::PatternRepeat{.min = 1};
+    Query query;
+    query.feature = "kern";
+    query.voices = "soprano";
+    // The first gap takes d and e, the second nothing.
+    query.pattern = {note("c"), gap, note("f"), gap, note("g")};
+    SimultaneousGroup bass;
+    bass.feature = "kern";
+    bass.voices = "bass";
+    bass.pattern = {note("c"), gap, note("g")};
+    bass.simultaneousAlignment = "start-end";
+    query.simultaneousWith = {bass};
+    auto found = search.runOne(chorale, query);
+    REQUIRE(found.size() == 1u);
+    // Gaps have lines only: those of the notes the query took, as all voices sing the same.
+    const auto& took = found[0].positionOnsets;
+    const std::vector<choralesearch::LineRange> matchGaps{{took[1].line, took[1].endLine}};
+    // The bass gap takes the f too.
+    const std::vector<choralesearch::LineRange> groupGaps{{took[1].line, took[2].line}};
+    CHECK(found[0].gaps == matchGaps);
+    for (const NoteSection& section : found[0].linkedSections) {
+        if (section.voice == 1) CHECK(section.gaps == groupGaps);
+        if (section.voice == 4) CHECK(section.gaps == matchGaps);
+    }
+
+    // A run the pattern asks for is no gap.
+    query.pattern = {note("c"), run, note("g")};
+    found = search.runOne(chorale, query);
+    REQUIRE(found.size() == 1u);
+    CHECK(found[0].gaps.empty());
+    // A gap in a subPattern is one too.
+    PatternPosition toF;
+    toF.repeat = choralesearch::PatternRepeat{.min = 1, .max = 1};
+    toF.subPattern = {gap, note("f")};
+    query.pattern = {note("c"), toF, note("g")};
+    found = search.runOne(chorale, query);
+    REQUIRE(found.size() == 1u);
+    CHECK(found[0].gaps == matchGaps);
+}
+
+TEST_CASE(each_position_of_a_sub_pattern_links_the_voices_of_its_own_keys) {
+    std::istringstream score("**kern\t**kern\t**kern\t**kern\n4c\t4c\t4c\t4c\n4d\t4d\t4d\t4d\n4e\t4e\t4e\t4e\n*-\t*-\t*-\t*-\n");
+    HumdrumChorale chorale(score, "chor000");
+    CorpusSearch search(FIXTURE_CHORALE("chor029"));
+    PatternPosition twoPairs;
+    twoPairs.repeat = choralesearch::PatternRepeat{.min = 1, .max = 1};
+    twoPairs.subPattern = {PatternPosition{.keys = {{"hint-12", {"*"}}}}, PatternPosition{.keys = {{"hint-13", {"*"}}}}};
+    Query query;
+    query.feature = "kern";
+    query.voices = "soprano";
+    query.pattern = {PatternPosition{.keys = {{"kern", {"c"}}}}, twoPairs};
+    const auto found = search.runOne(chorale, query);
+    REQUIRE(found.size() == 1u);
+    // hint-12 on the d, hint-13 on the e.
+    for (const NoteSection& section : found[0].linkedSections) {
+        if (section.feature == "hint-12") CHECK_EQ(section.startPosition, std::string("1"));
+        if (section.feature == "hint-13") CHECK_EQ(section.startPosition, std::string("2"));
+    }
+}

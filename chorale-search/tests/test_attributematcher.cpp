@@ -3822,6 +3822,18 @@ TEST_CASE(matches_inside_the_match_before_are_left_out_when_overlapping_matches_
             .findAll(chor001, 1);
     REQUIRE(steps.size() > 1u);
     for (std::size_t i = 1; i < steps.size(); ++i) CHECK(steps[i].startPosition > steps[i - 1].endPosition);
+
+    // A wildcard that may take no onset says nothing about where the match begins: the two steps down that end on
+    // beat 8 1/2 begin on beat 7, the note before them.
+    PatternPosition optionalWildcard{.keys = {{"mint", {"*"}}}};
+    optionalWildcard.repeat = PatternRepeat{.min = 0, .max = 1};
+    const auto shifted =
+        AttributeMatcher("mint", {optionalWildcard, stepDown, stepDown}, MatcherOptions{.mintStartAtPreviousToken = true}).findAll(chor001, 1);
+    const auto endingOnBeat8AndAHalf = [&](hum::HumNum start) {
+        return std::any_of(shifted.begin(), shifted.end(), [&](const auto& m) { return m.startPosition == start && m.endPosition == hum::HumNum(17, 2); });
+    };
+    CHECK(endingOnBeat8AndAHalf(7));
+    CHECK(!endingOnBeat8AndAHalf(8));
 }
 
 TEST_CASE(repeat_goes_on_to_where_the_match_has_to_end) {

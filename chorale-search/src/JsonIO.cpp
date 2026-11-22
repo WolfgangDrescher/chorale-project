@@ -771,6 +771,16 @@ std::vector<Query> queryArrayFromJson(const nlohmann::json& j) {
     return queries;
 }
 
+namespace {
+
+nlohmann::json gapsToJson(const std::vector<LineRange>& gaps) {
+    nlohmann::json j = nlohmann::json::array();
+    for (const LineRange& gap : gaps) j.push_back({{"startLine", gap.startLineNumber}, {"endLine", gap.endLineNumber}});
+    return j;
+}
+
+} // namespace
+
 nlohmann::json resultToJson(const Result& r) {
     nlohmann::json j;
     j["chorale"] = r.choraleId;
@@ -780,6 +790,7 @@ nlohmann::json resultToJson(const Result& r) {
     j["endPosition"] = r.endPosition;
     j["startLine"] = r.startLineNumber;
     j["endLine"] = r.endLineNumber;
+    if (!r.gaps.empty()) j["gaps"] = gapsToJson(r.gaps);
     if (!r.linkedSections.empty()) {
         j["linkedSections"] = nlohmann::json::array();
         for (const NoteSection& section : r.linkedSections) {
@@ -791,6 +802,7 @@ nlohmann::json resultToJson(const Result& r) {
                 {"startPosition", section.startPosition},
                 {"endPosition", section.endPosition},
             });
+            if (!section.gaps.empty()) j["linkedSections"].back()["gaps"] = gapsToJson(section.gaps);
         }
     }
     if (r.queryId) j["queryId"] = *r.queryId;

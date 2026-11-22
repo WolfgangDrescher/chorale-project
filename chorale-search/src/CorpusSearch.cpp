@@ -14,6 +14,7 @@
 #include "HumdrumChorale.hpp"
 #include "HumdrumUtils.hpp"
 #include "PatternKeys.hpp"
+#include "PatternRepeat.hpp"
 #include "VoiceMap.hpp"
 #include "VoiceReference.hpp"
 
@@ -295,10 +296,32 @@ std::vector<std::size_t> voicesSpannedByMatch(const AttributeMatch& attributeMat
     return {attributeMatch.voice};
 }
 
+// The stretches of a match its pattern does not ask for: the onsets a repeat took that may be empty, or one around
+// it in a subPattern.
+std::vector<LineRange> findGaps(const AttributeMatch& match, const std::vector<PatternPosition>& pattern) {
+    std::vector<LineRange> gaps;
+    std::optional<std::size_t> lastGapOnset;
+    for (const RepeatedOnset& onset : match.repeatedOnsets) {
+        const std::vector<PatternPosition>* positions = &pattern;
+        bool inGap = false;
+        for (std::size_t index : onset.path) {
+            const PatternPosition& written = (*positions)[index];
+            inGap = inGap || (written.repeat && mayBeEmpty(*written.repeat));
+            positions = &written.subPattern;
+        }
+        if (!inGap) continue;
+        if (lastGapOnset && *lastGapOnset + 1 == onset.onsetIndex) gaps.back().endLineNumber = onset.endLine;
+        else gaps.push_back({.startLineNumber = onset.line, .endLineNumber = onset.endLine});
+        lastGapOnset = onset.onsetIndex;
+    }
+    return gaps;
+}
+
 // The sections of notes a match is made of, by the feature and the pattern it was found with: the voices it spans,
 // except those in `coveredVoices`, which another match covers, and at each position the voice of a hint-<voice> key,
 // both voices of a hint-<pair> key, the voices of the matching pairs of a set ("hint-1*"), the voices forming the
 // figures of an fb key, with the bass they are figures above, and the voices a key of another voice ("@1") names.
+// A section over the whole match has the gaps of the match.
 std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, const AttributeMatch& attributeMatch,
                                              const std::string& feature, const std::vector<PatternPosition>& pattern,
                                              bool hintReduceCompound,
@@ -309,7 +332,7 @@ std::vector<NoteSection> buildLinkedSections(const HumdrumChorale& chorale, cons
         if (std::find(coveredVoices.begin(), coveredVoices.end(), voice) != coveredVoices.end()) continue;
         sections.push_back({feature, voice, humNumToString(attributeMatch.startPosition),
                             humNumToString(attributeMatch.endPosition), attributeMatch.startLineNumber,
-                            attributeMatch.endLineNumber});
+                            attributeMatch.endLineNumber, findGaps(attributeMatch, pattern)});
     }
     // The voices the keys of a position name, at that position only: at each onset of a position that repeats.
     for (const auto& [onset, keys] : checkedOnsets(attributeMatch, pattern)) {
@@ -447,6 +470,7 @@ Results CorpusSearch::runOne(const HumdrumChorale& chorale, const Query& query) 
             r.endPosition = humNumToString(m.endPosition);
             r.startLineNumber = m.startLineNumber;
             r.endLineNumber = m.endLineNumber;
+            r.gaps = findGaps(m, query.pattern);
             if (readsLyrics) r.verses = verses.list();
 
             // The sections of every aligned match of each group, by the feature and pattern of the group, noting the

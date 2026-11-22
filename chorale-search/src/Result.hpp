@@ -28,7 +28,16 @@ struct RepeatedOnset {
     std::vector<std::size_t> path;
     std::size_t onsetIndex; // among the onsets the search walks, to tell neighbours apart
     std::size_t line;
+    std::size_t endLine; // of its last note, as a word or a syllable may have several
     hum::HumNum position;
+};
+
+// The lines of a stretch of notes, from the first to the last.
+struct LineRange {
+    std::size_t startLineNumber = 0;
+    std::size_t endLineNumber = 0;
+
+    bool operator==(const LineRange&) const = default;
 };
 
 // A stretch of the notes of one voice that a result is made of, from one note to another or a single note. A line
@@ -41,10 +50,12 @@ struct NoteSection {
     std::string endPosition;         // same, for the last matched position without the duration of that slice
     std::size_t startLineNumber = 0; // 1-indexed line in the compiled Humdrum file; 0 = not set
     std::size_t endLineNumber = 0;   // same, for the last matched line number
+    // The stretches in between that the pattern does not ask for: what a repeat took that may be empty.
+    std::vector<LineRange> gaps;
 
     bool operator==(const NoteSection& other) const {
         return feature == other.feature && voice == other.voice && startLineNumber == other.startLineNumber &&
-               endLineNumber == other.endLineNumber;
+               endLineNumber == other.endLineNumber && gaps == other.gaps;
     }
     bool operator<(const NoteSection& other) const {
         if (startLineNumber != other.startLineNumber) return startLineNumber < other.startLineNumber;

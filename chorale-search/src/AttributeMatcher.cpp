@@ -1476,13 +1476,17 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
     // word or syllable, which is matched with all its notes.
     bool shiftStartToPreviousToken = false;
     if (m_options.mintStartAtPreviousToken && !isDrivenByLyrics()) {
-        // The first onset of a subPattern is that of its first position.
+        // The position sure to match the first onset, down into a subPattern; none where it may take no onset.
         const CompiledPosition* firstPosition = &m_pattern[0];
-        while (!firstPosition->subPattern.empty()) firstPosition = &firstPosition->subPattern[0];
-        const PositionKeys& first = firstPosition->keys;
-        bool firstPositionIsExplicitWildcard = std::any_of(first.begin(), first.end(), [&](const PositionKey& positionKey) {
-            return positionKey.rawKey == kMintKey && isWildcard(positionKey.values);
-        });
+        while (firstPosition && firstPosition->repeat) {
+            if (mayBeEmpty(*firstPosition->repeat)) firstPosition = nullptr;
+            else if (!firstPosition->subPattern.empty()) firstPosition = &firstPosition->subPattern[0];
+            else break;
+        }
+        const bool firstPositionIsExplicitWildcard =
+            firstPosition && std::any_of(firstPosition->keys.begin(), firstPosition->keys.end(), [&](const PositionKey& positionKey) {
+                return positionKey.rawKey == kMintKey && isWildcard(positionKey.values);
+            });
         shiftStartToPreviousToken = !firstPositionIsExplicitWildcard;
     }
     hum::HTp walkedKernSpine = chorale.spine(kKernKey, voice);
@@ -1520,6 +1524,7 @@ std::vector<AttributeMatch> AttributeMatcher::walkPattern(const HumdrumChorale& 
             repeatedOnsets.push_back({.path = position->path,
                                       .onsetIndex = index,
                                       .line = static_cast<std::size_t>(onset.token->getLineNumber()),
+                                      .endLine = static_cast<std::size_t>(onset.lastToken->getLineNumber()),
                                       .position = onset.token->getDurationFromStart()});
         }
 
