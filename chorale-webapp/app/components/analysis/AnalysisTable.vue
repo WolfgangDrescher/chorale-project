@@ -13,15 +13,7 @@ const props = defineProps({
 const { t } = useI18n();
 const format = inject('analysisFormat');
 
-function groupsOf(parent) {
-    const groups = (parent.groups ?? []).map((group) => ({ ...group, share: group.matchCount / parent.matchCount }));
-    if (parent.omittedMatchCount) {
-        groups.push({ other: true, matchCount: parent.omittedMatchCount, share: parent.omittedMatchCount / parent.matchCount });
-    }
-    return groups;
-}
-
-const rows = computed(() => groupsOf(props.analysis));
+const rows = computed(() => analysisGroupsOf(props.analysis));
 // Whether a row opens, which leaves room for a chevron in the rows beside it that don't.
 const indented = computed(() => rows.value.some((row) => row.groups?.length || row.members?.length));
 
@@ -84,32 +76,15 @@ function openMatches(path, member = null) {
                         />
                         <tr v-if="expanded.has(index)" class="border-b border-default">
                             <td colspan="5" class="pb-3">
-                                <div class="ml-5 border-l-2 border-primary/40 pl-4">
-                                    <table class="w-full table-fixed text-sm">
-                                        <AnalysisColumns />
-                                        <thead>
-                                            <tr class="border-b border-default text-left text-xs text-muted">
-                                                <th class="py-1.5 pr-4 font-medium">{{ labels[1] || t('analysisGroup') }}</th>
-                                                <th class="py-1.5 pr-4 text-right font-medium">{{ t('analysisMatches') }}</th>
-                                                <th class="py-1.5 pr-4 font-medium">{{ t('analysisShareOf', { label: format.label(row.label) }) }}</th>
-                                                <th class="py-1.5 pr-4 text-right font-medium">{{ t('analysisChorales') }}</th>
-                                                <th class="py-1.5 font-medium"><span class="sr-only">{{ t('query') }}</span></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <AnalysisGroupRow
-                                                v-for="(group, groupIndex) in groupsOf(row)"
-                                                :key="groupIndex"
-                                                :group="group"
-                                                :indent="groupsOf(row).some((group) => group.members?.length)"
-                                                nested
-                                                :shows-matches="!!groupQuery"
-                                                @query="openQuery"
-                                                @matches="(member) => openMatches([row.values, group.values], member)"
-                                            />
-                                        </tbody>
-                                    </table>
-                                </div>
+                                <AnalysisSubgroups
+                                    :parent="row"
+                                    :path="[row.values]"
+                                    :level="1"
+                                    :labels="labels"
+                                    :shows-matches="!!groupQuery"
+                                    @query="openQuery"
+                                    @matches="openMatches"
+                                />
                             </td>
                         </tr>
                     </template>
