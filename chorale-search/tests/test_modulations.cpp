@@ -82,7 +82,7 @@ TEST_CASE(starting_key_is_inserted_where_the_source_has_none) {
 
 TEST_MAIN()
 
-TEST_CASE(key_left_open_is_written_as_the_unknown_key_of_humdrum) {
+TEST_CASE(undefined_key_is_written_as_the_undefined_key_of_humdrum) {
     hum::HumdrumFile infile;
     REQUIRE(infile.readString(lines({"**kern", "*k[]", "*C:", "=1", "4c", "4d", "*-"})));
     applyModulations(infile, "test", {Modulation{.pos = "1/2", .measure = 1, .beat = hum::HumNum(2), .key = "?"}});

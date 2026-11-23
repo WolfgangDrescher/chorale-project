@@ -31,7 +31,7 @@ const labelingItems = computed(() => [
 
 const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
-// "D", "f dor", or as a degree of the starting key: "V", "ii", "♭III"; "?" for a key left open.
+// "D", "f dor", or as a degree of the starting key: "V", "ii", "♭III"; "?" for an undefined key.
 function labelOf(modulation) {
     const { key, mode, keyDeg } = modulation;
     if (key === '?') return key;
@@ -44,7 +44,7 @@ function labelOf(modulation) {
     return isChurchMode(mode) ? `${label} ${mode.slice(0, 3)}` : label;
 }
 
-// The key the score starts in, unless it is left open.
+// The key the score starts in, unless it is undefined.
 const start = computed(() => (props.modulations[0]?.key === '?' ? null : props.modulations[0]));
 const startSignature = computed(() => start.value?.signature ?? 0);
 const homeSignature = computed(() => (coloring.value === 'relative' ? startSignature.value : 0));

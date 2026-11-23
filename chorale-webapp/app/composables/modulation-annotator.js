@@ -2,7 +2,7 @@ import { onKeyStroke, useDebounceFn, useTimeoutFn } from '@vueuse/core';
 
 const REPOSITORY_URL = 'https://github.com/WolfgangDrescher/chorale-project';
 
-// A key as the annotations write it ("G", "e", "B-", "g:dor"), or "?" for one left open.
+// A key as the annotations write it ("G", "e", "B-", "g:dor"), or "?" for an undefined one.
 const KEY_PATTERN = /^(\?|[A-Ga-g][#-]*(:(ion|dor|phr|lyd|mix|aeo|loc))?)$/;
 const MODE_LABELS = { dorian: 'dor', phrygian: 'phr', lydian: 'lyd', mixolydian: 'mix', locrian: 'loc' };
 

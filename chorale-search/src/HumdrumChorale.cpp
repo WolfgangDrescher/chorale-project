@@ -67,11 +67,11 @@ void HumdrumChorale::prepare(bool withComputedSpines) {
                 if (token->getTrack() != kernTrack) continue;
                 if (std::optional<KeyContext> designated = keyContextFromDesignation(*token)) {
                     if (beforeFirstNote) starting = designated;
-                    // A score that starts with its key left open has no degrees.
+                    // A score that starts with an undefined key has no degrees.
                     if (starting) designated->keyDeg = keyScaleDegree(designated->key, starting->key, starting->mode);
                     current = designated;
                 } else if (token->isUndefinedKey()) {
-                    // As humlib's deg has it, a key left open has no degrees.
+                    // As humlib's deg has it, an undefined key has no degrees.
                     current.reset();
                 }
                 break;

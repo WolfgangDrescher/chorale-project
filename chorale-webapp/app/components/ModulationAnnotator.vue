@@ -19,7 +19,7 @@ const KEY_GROUPS = [
     [
         { keys: ['enter'], action: 'annotatorMark' },
         { keys: ['G', 'e', 'B-'], action: 'annotatorSetKey' },
-        { keys: ['?'], action: 'annotatorLeaveKeyOpen' },
+        { keys: ['?'], action: 'annotatorLeaveKeyUndefined' },
         { modifiers: ['shift'], keys: ['arrowleft', 'arrowright'], action: 'annotatorMoveEntry' },
         { keys: ['backspace'], action: 'annotatorDeleteEntry' },
         { keys: ['tab'], action: 'annotatorNextEntry' },

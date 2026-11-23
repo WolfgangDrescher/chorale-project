@@ -227,9 +227,9 @@ TEST_CASE(collect_info_reads_the_key_changes_with_the_line_they_take_effect_on) 
     CHECK_EQ(changes[2].signature, -1);
 }
 
-TEST_CASE(collect_info_reads_a_key_left_open) {
+TEST_CASE(collect_info_reads_an_undefined_key) {
     std::istringstream score("**kern\n*G:\n4g\n*?:\n4a\n*D:\n4d\n*-\n");
-    const std::vector<choralesearch::KeyChange> changes = HumdrumChorale(score, "open", false).collectInfo().keyChanges;
+    const std::vector<choralesearch::KeyChange> changes = HumdrumChorale(score, "undefined", false).collectInfo().keyChanges;
     REQUIRE(changes.size() == 3u);
     CHECK_EQ(changes[1].line, 5);
     CHECK_EQ(changes[1].keyContext.key, std::string("?"));
@@ -377,17 +377,17 @@ TEST_CASE(key_deg_is_reckoned_from_the_key_of_the_first_note) {
     CHECK_EQ(keyDegs, (std::vector<std::string>{"1", "5"}));
 }
 
-TEST_CASE(key_context_is_null_where_the_key_is_left_open) {
+TEST_CASE(key_context_is_null_where_the_key_is_undefined) {
     std::istringstream score("**kern\n*G:\n4g\n*?:\n4a\n*D:\n4d\n*-\n");
-    HumdrumChorale chorale(score, "open", false);
+    HumdrumChorale chorale(score, "undefined", false);
     CHECK(chorale.keyContextAtLine(5) == nullptr);
     REQUIRE(chorale.keyContextAtLine(7));
     CHECK_EQ(chorale.keyContextAtLine(7)->keyDeg, std::string("5"));
 }
 
-TEST_CASE(a_score_that_starts_with_its_key_left_open_has_no_degrees) {
+TEST_CASE(a_score_that_starts_with_an_undefined_key_has_no_degrees) {
     std::istringstream score("**kern\n*?:\n4g\n*D:\n4d\n*-\n");
-    HumdrumChorale chorale(score, "open", false);
+    HumdrumChorale chorale(score, "undefined", false);
     const std::vector<choralesearch::KeyChange> changes = chorale.collectInfo().keyChanges;
     REQUIRE(changes.size() == 2u);
     CHECK_EQ(changes[0].keyContext.key, std::string("?"));

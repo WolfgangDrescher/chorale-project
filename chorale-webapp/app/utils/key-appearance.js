@@ -19,7 +19,7 @@ const COLORS_BY_SIGNATURE = [
 export const isMinorKey = (key) => key === key.toLowerCase();
 export const isChurchMode = (mode) => !['major', 'minor'].includes(mode);
 
-// Major solid, minor light with a bar of its color, church modes hatched, a key left open or one
+// Major solid, minor light with a bar of its color, church modes hatched, an undefined key or one
 // without a signature gray.
 export function keyAppearance({ key, mode, signature }, homeSignature = 0) {
     if (key === '?' || signature === undefined) return { class: 'bg-accented text-muted', style: {} };

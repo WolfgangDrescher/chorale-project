@@ -211,7 +211,7 @@ annotatorJumpByPhrase: Zum Anfang oder Ende der Phrase
 annotatorJumpToEitherEnd: Zum Anfang oder Ende
 annotatorMark: Stelle markieren
 annotatorSetKey: Tonart setzen
-annotatorLeaveKeyOpen: Tonart offen lassen
+annotatorLeaveKeyUndefined: Tonart offen lassen
 annotatorMoveEntry: Eintrag verschieben
 annotatorDeleteEntry: Eintrag löschen
 annotatorNextEntry: Nächster Eintrag
