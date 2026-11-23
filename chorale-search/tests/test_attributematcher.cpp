@@ -1908,6 +1908,16 @@ TEST_CASE(matcher_key_is_matched_as_the_score_writes_it) {
     CHECK_EQ(notesMatching(chorale, {{"!key", {"G"}}}), (Notes{"4e", "4f", "4b-"}));
 }
 
+TEST_CASE(matcher_key_finds_an_undefined_key_which_has_no_mode_and_no_degree) {
+    std::istringstream score("**kern\n*G:\n4g\n*?:\n4a\n*D:\n4d\n*-\n");
+    HumdrumChorale chorale(score, "undefined", false);
+    using Notes = std::vector<std::string>;
+    CHECK_EQ(notesMatching(chorale, {{"key", {"?"}}}), (Notes{"4a"}));
+    CHECK_EQ(notesMatching(chorale, {{"!key", {"G"}}}), (Notes{"4a", "4d"}));
+    CHECK_EQ(notesMatching(chorale, {{"!mode", {"minor"}}}), (Notes{"4g", "4d"}));
+    CHECK_EQ(notesMatching(chorale, {{"!keyDeg", {"5"}}}), (Notes{"4g"}));
+}
+
 TEST_CASE(matcher_key_deg_is_the_degree_of_the_key_in_the_key_of_the_first_note) {
     HumdrumChorale chorale = choraleInFourKeys();
     using Notes = std::vector<std::string>;

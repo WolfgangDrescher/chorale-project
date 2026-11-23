@@ -34,7 +34,7 @@ bool isValidKeyDegValue(const std::string& v) {
 
 bool isValidKeyValue(const std::string& v) {
     static const std::regex re(R"(^[a-gA-G][#-]*$)");
-    return std::regex_match(v, re);
+    return v == kUndefinedKey || std::regex_match(v, re);
 }
 
 bool isValidModeValue(const std::string& v) {

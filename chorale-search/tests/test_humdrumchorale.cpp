@@ -377,10 +377,13 @@ TEST_CASE(key_deg_is_reckoned_from_the_key_of_the_first_note) {
     CHECK_EQ(keyDegs, (std::vector<std::string>{"1", "5"}));
 }
 
-TEST_CASE(key_context_is_null_where_the_key_is_undefined) {
+TEST_CASE(key_context_is_the_undefined_key_where_the_key_is_undefined) {
     std::istringstream score("**kern\n*G:\n4g\n*?:\n4a\n*D:\n4d\n*-\n");
     HumdrumChorale chorale(score, "undefined", false);
-    CHECK(chorale.keyContextAtLine(5) == nullptr);
+    REQUIRE(chorale.keyContextAtLine(5));
+    CHECK_EQ(chorale.keyContextAtLine(5)->key, std::string("?"));
+    CHECK_EQ(chorale.keyContextAtLine(5)->mode, std::string(""));
+    CHECK_EQ(chorale.keyContextAtLine(5)->keyDeg, std::string(""));
     REQUIRE(chorale.keyContextAtLine(7));
     CHECK_EQ(chorale.keyContextAtLine(7)->keyDeg, std::string("5"));
 }

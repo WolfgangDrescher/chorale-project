@@ -76,10 +76,10 @@ const modePatternSchema = {
     ...valueOrListSchema(modeValueSchema),
 };
 
-const keyValueSchema = { type: 'string', pattern: '^([a-gA-G][#-]*|\\*)$' };
+const keyValueSchema = { type: 'string', pattern: '^([a-gA-G][#-]*|\\?|\\*)$' };
 
 const keyPatternSchema = {
-    description: 'The local key as the score writes it: "E-" is E-flat major, "f#" is F-sharp minor. An OR-list of keys or a single one.',
+    description: 'The local key as the score writes it: "E-" is E-flat major, "f#" is F-sharp minor, "?" an undefined key. An OR-list of keys or a single one.',
     ...valueOrListSchema(keyValueSchema),
 };
 

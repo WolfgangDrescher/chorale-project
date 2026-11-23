@@ -71,8 +71,7 @@ void HumdrumChorale::prepare(bool withComputedSpines) {
                     if (starting) designated->keyDeg = keyScaleDegree(designated->key, starting->key, starting->mode);
                     current = designated;
                 } else if (token->isUndefinedKey()) {
-                    // As humlib's deg has it, an undefined key has no degrees.
-                    current.reset();
+                    current = KeyContext{.key = kUndefinedKey};
                 }
                 break;
             }
@@ -162,7 +161,7 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
         if (const std::optional<KeyContext> key = keyContextFromDesignation(*token)) {
             pendingKeyChange = KeyChange{.keyContext = *key, .signature = keySignature(key->key, key->mode)};
         } else if (token->isUndefinedKey()) {
-            pendingKeyChange = KeyChange{.keyContext = {.key = "?"}};
+            pendingKeyChange = KeyChange{.keyContext = {.key = kUndefinedKey}};
         }
         if (token->isTimeSignature()) {
             const std::string meter = token->substr(2);
@@ -183,10 +182,10 @@ ChoraleInfo HumdrumChorale::collectInfo() const {
 
     info.duration = file.getScoreDuration().getFloat();
 
-    const bool startsInKey = !info.keyChanges.empty() && info.keyChanges.front().keyContext.key != "?";
+    const bool startsInKey = !info.keyChanges.empty() && info.keyChanges.front().keyContext.key != kUndefinedKey;
     for (KeyChange& change : info.keyChanges) {
         const KeyContext& first = info.keyChanges.front().keyContext;
-        if (startsInKey && change.keyContext.key != "?") {
+        if (startsInKey && change.keyContext.key != kUndefinedKey) {
             change.keyContext.keyDeg = keyScaleDegree(change.keyContext.key, first.key, first.mode);
         }
     }

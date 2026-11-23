@@ -491,12 +491,22 @@ bool phraseInList(const std::vector<PatternValue>& allowed, const PhraseRoles& r
     return false;
 }
 
+// The key, the mode or the degree of the key at a line. nullopt for none, as where the key is undefined.
+std::optional<std::string> keyContextValue(const HumdrumChorale& chorale, int lineNumber, PatternKeyId id) {
+    const KeyContext* context = chorale.keyContextAtLine(lineNumber);
+    if (!context) return std::nullopt;
+    std::string value;
+    if (id == PatternKeyId::Mode) value = context->mode;
+    else if (id == PatternKeyId::Key) value = context->key;
+    else value = context->keyDeg;
+    if (value.empty()) return std::nullopt;
+    return value;
+}
+
 // mode and key literally, keyDeg as a deg value.
-bool keyContextInList(PatternKeyId id, const std::vector<PatternValue>& allowed, const KeyContext& context) {
+bool keyContextInList(PatternKeyId id, const std::vector<PatternValue>& allowed, const std::string& actual) {
     return std::any_of(allowed.begin(), allowed.end(), [&](const PatternValue& value) {
-        if (id == PatternKeyId::Mode) return value.text == context.mode;
-        if (id == PatternKeyId::Key) return value.text == context.key;
-        return degValueMatches(value.text, context.keyDeg);
+        return id == PatternKeyId::KeyDeg ? degValueMatches(value.text, actual) : value.text == actual;
     });
 }
 
@@ -1116,9 +1126,9 @@ std::optional<AttributeMatcher::KeyValue> AttributeMatcher::valueOfKey(const Hum
         return KeyValue{note->hasFermata() ? "true" : "false", note};
     }
     if (id == PatternKeyId::Mode || id == PatternKeyId::Key || id == PatternKeyId::KeyDeg) {
-        const KeyContext* context = chorale.keyContextAtLine(lineNumber);
-        if (!context) return std::nullopt;
-        return KeyValue{id == PatternKeyId::Mode ? context->mode : id == PatternKeyId::Key ? context->key : context->keyDeg};
+        std::optional<std::string> value = keyContextValue(chorale, lineNumber, id);
+        if (!value) return std::nullopt;
+        return KeyValue{std::move(*value)};
     }
     // An ornament was skipped in front of this onset, so the spine's own token states the interval out of that
     // ornament rather than out of the note the pattern is stepping off -- see buildOnsets().
@@ -1246,9 +1256,9 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         if (!noteTok || !lastNoteTok) return std::nullopt;
         matched = phraseInList(allowed, notePhraseRoles(noteTok, lastNoteTok));
     } else if (positionKey.is(PatternKeyId::Mode) || positionKey.is(PatternKeyId::Key) || positionKey.is(PatternKeyId::KeyDeg)) {
-        const KeyContext* context = chorale.keyContextAtLine(lineNumber);
-        if (!context) return std::nullopt;
-        matched = keyContextInList(positionKey.patternKey->id, allowed, *context);
+        const std::optional<std::string> value = keyContextValue(chorale, lineNumber, positionKey.patternKey->id);
+        if (!value) return std::nullopt;
+        matched = keyContextInList(positionKey.patternKey->id, allowed, *value);
     } else if (positionKey.is(PatternKeyId::Attack) || positionKey.is(PatternKeyId::Sustain)) {
         const std::optional<NoteState> state = noteStateOnLine(chorale, voice, tok);
         if (!state) return std::nullopt;

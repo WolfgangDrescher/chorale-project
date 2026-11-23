@@ -5,9 +5,12 @@
 
 namespace choralesearch {
 
+// The key of a passage whose key is undefined, *?:. It has neither a mode nor a degree.
+inline const std::string kUndefinedKey = "?";
+
 // The key a passage is in, as its key designation states it.
 struct KeyContext {
-    // "G", "e", "B-"
+    // "G", "e", "B-", or kUndefinedKey
     std::string key;
     // As normalizeModeName() spells it.
     std::string mode;

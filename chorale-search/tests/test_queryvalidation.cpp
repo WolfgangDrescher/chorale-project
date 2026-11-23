@@ -117,6 +117,8 @@ TEST_CASE(is_valid_pattern_value_knows_the_modes_keys_and_key_degrees) {
     CHECK(isValidPatternValue("key", "G"));
     CHECK(isValidPatternValue("key", "f#"));
     CHECK(isValidPatternValue("!key", "B-"));
+    CHECK(isValidPatternValue("key", "?"));
+    CHECK(!isValidPatternValue("key", "X"));
     CHECK(!isValidPatternValue("key", "H"));
     CHECK(!isValidPatternValue("key", "G major"));
     CHECK(isValidPatternValue("keyDeg", "5"));
