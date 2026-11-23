@@ -3,6 +3,9 @@ const props = defineProps({
     // The result of an analysis, or one of the variants it states (see /docs/grouping).
     analysis: { type: Object, required: true },
     labels: { type: Array, default: () => [] },
+    // The group query it is of, run again for the matches of a group no query finds; and the variant shown.
+    groupQuery: { type: Object, default: null },
+    variant: { type: String, default: '' },
 });
 
 const { t } = useI18n();
@@ -41,6 +44,15 @@ function openQuery(query) {
     activeQuery.value = formatQuery(query);
     drawerOpen.value = true;
 }
+
+const matchesDrawerOpen = ref(false);
+const activeGroup = ref({ path: [], member: null });
+
+// `path` holds the values of the group at each level, `member` those of one of its members.
+function openMatches(path, member = null) {
+    activeGroup.value = { path, member };
+    matchesDrawerOpen.value = true;
+}
 </script>
 
 <template>
@@ -63,8 +75,10 @@ function openQuery(query) {
                             :expandable="!!row.groups?.length"
                             :expanded="expanded.has(index)"
                             :indent="indented"
+                            :shows-matches="!!groupQuery"
                             @toggle="toggle(index)"
                             @query="openQuery"
+                            @matches="(member) => openMatches([row.values], member)"
                         />
                         <tr v-if="expanded.has(index)" class="border-b border-default">
                             <td colspan="5" class="pb-3">
@@ -87,7 +101,9 @@ function openQuery(query) {
                                                 :group="group"
                                                 :indent="groupsOf(row).some((group) => group.members?.length)"
                                                 nested
+                                                :shows-matches="!!groupQuery"
                                                 @query="openQuery"
+                                                @matches="(member) => openMatches([row.values, group.values], member)"
                                             />
                                         </tbody>
                                     </table>
@@ -123,5 +139,13 @@ function openQuery(query) {
             />
         </p>
         <QueryDrawer v-model:open="drawerOpen" :query="activeQuery" sort-by="density" />
+        <AnalysisGroupMatchesDrawer
+            v-if="groupQuery"
+            v-model:open="matchesDrawerOpen"
+            :group-query="groupQuery"
+            :variant="variant"
+            :path="activeGroup.path"
+            :member="activeGroup.member"
+        />
     </div>
 </template>

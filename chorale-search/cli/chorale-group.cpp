@@ -41,6 +41,8 @@ void printUsage(const char* argv0) {
         "                          docs, /docs/grouping\n"
         "    --query-file FILE.json\n"
         "                          the group query from a file, or '-' for stdin\n"
+        "    --matches             list the matches of every group and member that no query\n"
+        "                          finds, grouped by chorale as chorale-search does\n"
         "    --verify              run the query of every group and fail when it finds another\n"
         "                          number of matches than the group counts\n"
         "    --progress            write the progress of the search to stderr, one JSON object\n"
@@ -69,6 +71,7 @@ int main(int argc, char** argv) {
     bool haveQueryString = false;
     bool verify = false;
     bool progress = false;
+    bool withMatches = false;
 
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
@@ -80,6 +83,7 @@ int main(int argc, char** argv) {
             if (arg == "--query-file") { queryFile = next("--query-file"); }
             else if (arg == "--query") { queryString = next("--query"); haveQueryString = true; }
             else if (arg == "--verify") { verify = true; }
+            else if (arg == "--matches") { withMatches = true; }
             else if (arg == "--progress") { progress = true; }
             else if (arg == "--help" || arg == "-h") { printUsage(argv[0]); return 0; }
             else {
@@ -147,10 +151,12 @@ int main(int argc, char** argv) {
                 }
                 if (!mismatches.empty()) return kExitVerificationError;
             }
-            if (variant.empty()) output = choralesearch::groupToJson(root);
-            else output["variants"][variant] = choralesearch::groupToJson(root);
+            if (variant.empty()) output = choralesearch::groupToJson(root, withMatches);
+            else output["variants"][variant] = choralesearch::groupToJson(root, withMatches);
         }
         output["groupBy"] = j["groupBy"];
+        // To be run again, with --matches for instance.
+        output["groupQuery"] = j;
         std::cout << output.dump(1, '\t') << "\n";
     } catch (const nlohmann::json::exception& e) {
         std::cerr << "Error: invalid JSON: " << e.what() << "\n";

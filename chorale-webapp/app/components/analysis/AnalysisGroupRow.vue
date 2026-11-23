@@ -6,9 +6,12 @@ const props = defineProps({
     nested: { type: Boolean, default: false },
     // Whether the label leaves room for the chevron of the rows beside it that open.
     indent: { type: Boolean, default: false },
+    // Whether a group or member that no query finds can show its matches instead.
+    showsMatches: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['toggle', 'query']);
+// `matches` names a member by its values, or none for the group itself.
+const emit = defineEmits(['toggle', 'query', 'matches']);
 
 const { t } = useI18n();
 const format = inject('analysisFormat');
@@ -100,6 +103,16 @@ function caption(example) {
                     @click="emit('query', group.query)"
                 />
                 <UButton
+                    v-else-if="showsMatches"
+                    icon="lucide:search"
+                    color="neutral"
+                    variant="soft"
+                    size="xs"
+                    :aria-label="t('showGroupMatches', { label: group.label })"
+                    :title="t('showGroupMatches', { label: group.label })"
+                    @click="emit('matches')"
+                />
+                <UButton
                     v-else
                     icon="lucide:circle-slash"
                     color="neutral"
@@ -185,6 +198,16 @@ function caption(example) {
                                     :aria-label="t('showGroupQuery', { label: member.label })"
                                     :title="t('showGroupQuery', { label: member.label })"
                                     @click="emit('query', member.query)"
+                                />
+                                <UButton
+                                    v-else-if="showsMatches"
+                                    icon="lucide:search"
+                                    color="neutral"
+                                    variant="soft"
+                                    size="xs"
+                                    :aria-label="t('showGroupMatches', { label: member.label })"
+                                    :title="t('showGroupMatches', { label: member.label })"
+                                    @click="emit('matches', member.values)"
                                 />
                             </td>
                         </tr>

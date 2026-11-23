@@ -189,7 +189,7 @@ GroupQuery groupQueryFromJson(const nlohmann::json& j) {
 }
 
 // The keys are those the webapp reads.
-nlohmann::json groupToJson(const Group& group) {
+nlohmann::json groupToJson(const Group& group, bool withMatches) {
     nlohmann::json j;
     if (!group.values.empty()) {
         j["values"] = group.values;
@@ -198,6 +198,7 @@ nlohmann::json groupToJson(const Group& group) {
     j["matchCount"] = group.matchCount;
     j["choraleCount"] = group.choraleCount;
     j["query"] = group.query ? queryToJson(*group.query) : nlohmann::json(nullptr);
+    if (withMatches && !group.matches.empty()) j["matches"] = resultsGroupedByChoraleToJson(group.matches);
     if (!group.members.empty()) {
         // The queries of the members together find the matches of the group.
         nlohmann::json members = nlohmann::json::array();
@@ -209,6 +210,7 @@ nlohmann::json groupToJson(const Group& group) {
                                  {"matchCount", member.matchCount},
                                  {"choraleCount", member.choraleCount},
                                  {"query", query}});
+            if (withMatches && !member.matches.empty()) members.back()["matches"] = resultsGroupedByChoraleToJson(member.matches);
             queries.push_back(query);
         }
         j["members"] = std::move(members);
@@ -230,7 +232,7 @@ nlohmann::json groupToJson(const Group& group) {
     }
     if (!group.groups.empty() || group.omittedMatchCount) {
         nlohmann::json groups = nlohmann::json::array();
-        for (const Group& groupBelow : group.groups) groups.push_back(groupToJson(groupBelow));
+        for (const Group& groupBelow : group.groups) groups.push_back(groupToJson(groupBelow, withMatches));
         j["groups"] = std::move(groups);
         j["omittedMatchCount"] = group.omittedMatchCount;
     }

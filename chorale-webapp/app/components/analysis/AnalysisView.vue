@@ -88,7 +88,15 @@ async function showMore() {
             <p v-if="!analysisHasGroups" class="text-sm text-muted">{{ t('noResults') }}</p>
             <template v-else>
                 <AnalysisBarChart v-if="view === 'bars'" :key="`bars-${variant}`" :result="result" :analysis="analysis" @more="showMore" />
-                <AnalysisTable ref="table" :key="`table-${variant}`" v-model:show-all="showAll" :analysis="analysis" :labels="labels" />
+                <AnalysisTable
+                    ref="table"
+                    :key="`table-${variant}`"
+                    v-model:show-all="showAll"
+                    :analysis="analysis"
+                    :labels="labels"
+                    :group-query="result.groupQuery"
+                    :variant="variant"
+                />
             </template>
         </template>
     </div>

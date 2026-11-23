@@ -153,7 +153,7 @@ bool anyReadGroupsSeveralValues(const std::vector<FeatureRead>& reads) {
 
 MatchReading readMatch(const FoundMatch& match, const GroupQuery& groupQuery, const std::set<std::size_t>& voicesReadInOwnRhythm) {
     MatchReading reading;
-    reading.choraleId = match.result.choraleId;
+    reading.result = match.result;
     for (const GroupingLevel& level : groupQuery.levels) {
         LevelValues values = valuesOfReads(level.reads, match, false);
         reading.writtenValuesByLevel.push_back(anyReadGroupsSeveralValues(level.reads) ? valuesOfReads(level.reads, match, true) : values);
@@ -235,7 +235,7 @@ std::map<LevelValues, Matches> matchesByValues(const Matches& matches, ValuesOf 
 
 std::size_t choraleCountOf(const Matches& matches) {
     std::set<std::string> choraleIds;
-    for (const MatchReading* match : matches) choraleIds.insert(match->choraleId);
+    for (const MatchReading* match : matches) choraleIds.insert(match->result.choraleId);
     return choraleIds.size();
 }
 
@@ -250,6 +250,16 @@ std::vector<const Matches*> mostFrequentFirst(const std::map<LevelValues, Matche
     std::vector<const Matches*> order;
     for (const auto& [matches, choraleCount] : ranked) order.push_back(matches);
     return order;
+}
+
+// As the search lists them: all of one query, which needs no id.
+Results resultsOf(const Matches& matches) {
+    Results results;
+    for (const MatchReading* match : matches) {
+        results.push_back(match->result);
+        results.back().queryId.reset();
+    }
+    return results;
 }
 
 bool answerWithTheSameNotes(const Matches& matches) {
@@ -290,6 +300,7 @@ void addMembers(Group& group, const GroupQuery& groupQuery, const Matches& match
         const LevelValues& values = member->front()->writtenValuesByLevel[level - 1];
         group.members.push_back({values, labelOf(ownLevel.reads, values, {}), member->size(), choraleCountOf(*member),
                                  queryOfMember(groupQuery, *member, level)});
+        if (!group.members.back().query) group.members.back().matches = resultsOf(*member);
     }
     const bool readsCategories = std::any_of(ownLevel.reads.begin(), ownLevel.reads.end(),
                                              [](const FeatureRead& read) { return !read.categories.empty(); });
@@ -352,6 +363,9 @@ Group buildGroup(const GroupQuery& groupQuery, const Matches& matches, std::size
         group.label = labelOf(ownLevel.reads, group.values, first.notes);
         group.query = queryOfGroup(groupQuery, matches, level);
         if (anyReadGroupsSeveralValues(ownLevel.reads)) addMembers(group, groupQuery, matches, level);
+        const bool everyMemberAsked = !group.members.empty() && std::all_of(group.members.begin(), group.members.end(),
+                                                                            [](const GroupMember& member) { return member.query.has_value(); });
+        if (!group.query && !everyMemberAsked) group.matches = resultsOf(matches);
     }
     if (level < groupQuery.levels.size()) addGroupsBelow(group, groupQuery, matches, level);
     return group;

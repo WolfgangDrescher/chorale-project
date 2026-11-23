@@ -51,7 +51,7 @@ struct FoundMatch {
 
 // A match as the group query read it: what it is grouped by.
 struct MatchReading {
-    std::string choraleId;
+    Result result;
     std::vector<LevelValues> valuesByLevel;        // what the reads of each level found, in their categories
     std::vector<LevelValues> writtenValuesByLevel; // the same as written, for the members
     MatchNotes notes;

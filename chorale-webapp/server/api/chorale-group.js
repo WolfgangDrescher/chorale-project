@@ -13,19 +13,22 @@ const EXIT_CODE_ERRORS = {
 };
 
 // Takes a group query (see /docs/grouping) and answers with its tree of groups, also as a
-// stream of progress events (see respondWithStream). ?verify=true checks the query of every group.
+// stream of progress events (see respondWithStream). ?verify=true checks the query of every group,
+// ?matches=true lists the matches of every group and member that no query finds.
 export default defineEventHandler(async (event) => {
     setResponseHeader(event, 'Content-Type', 'application/json');
 
     try {
         const body = await parseRequestBody(event);
         const verify = getQuery(event).verify === 'true';
+        const withMatches = getQuery(event).matches === 'true';
         const group = ({ onEvent, signal } = {}) => {
             const args = [
                 CORPUS_DIR,
                 '--query', JSON.stringify(body),
             ];
             if (verify) args.push('--verify');
+            if (withMatches) args.push('--matches');
             if (onEvent) args.push('--progress');
 
             return runCliTool({

@@ -195,7 +195,7 @@ TEST_CASE(a_position_that_repeats_is_read_by_no_read_and_asked_for_as_it_is) {
     })")));
 }
 
-TEST_CASE(a_repeat_of_varying_length_or_skipped_overlaps_leave_the_groups_without_a_query) {
+TEST_CASE(a_repeat_of_varying_length_or_skipped_overlaps_leave_the_groups_with_their_matches_instead_of_a_query) {
     CorpusSearch search(FIXTURES_DIR);
     for (const char* query : {
              R"({ "feature": "deg", "voices": "soprano", "pattern": [{ "deg": "1" }, { "repeat": "*" }, { "fermata": true }] })",
@@ -203,6 +203,15 @@ TEST_CASE(a_repeat_of_varying_length_or_skipped_overlaps_leave_the_groups_withou
         const Group root = choralesearch::groupMatchesInCorpus(search, choralesearch::groupQueryFromJson(nlohmann::json::parse(
             std::string(R"({ "query": )") + query + R"(, "groupBy": [{ "reads": [{ "feature": "deg", "positions": [0] }] }] })")));
         REQUIRE(!root.groups.empty());
-        for (const Group& group : root.groups) CHECK(!group.query.has_value());
+        for (const Group& group : root.groups) {
+            CHECK(!group.query.has_value());
+            CHECK_EQ(group.matches.size(), group.matchCount);
+        }
+        // Listed only where asked for, grouped by chorale.
+        CHECK(!choralesearch::groupToJson(root)["groups"][0].contains("matches"));
+        const nlohmann::json withMatches = choralesearch::groupToJson(root, true);
+        std::size_t listed = 0;
+        for (const auto& [chorale, matches] : withMatches["groups"][0]["matches"].items()) listed += matches.size();
+        CHECK_EQ(listed, root.groups[0].matchCount);
     }
 }

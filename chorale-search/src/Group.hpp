@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Query.hpp"
+#include "Result.hpp"
 
 namespace choralesearch {
 
@@ -31,6 +32,7 @@ struct GroupMember {
     std::size_t matchCount = 0;
     std::size_t choraleCount = 0;
     std::optional<Query> query;
+    Results matches; // where no query finds them
 };
 
 // The matches that share the values of every level down to this one.
@@ -41,6 +43,7 @@ struct Group {
     std::size_t choraleCount = 0;
     std::vector<GroupMember> members; // where it stands for several values
     std::optional<Query> query;       // finds exactly these matches, where it can be asked for
+    Results matches;                  // the matches themselves where no query finds them
     std::vector<Group> groups;
     std::size_t omittedMatchCount = 0; // of the groups the next level leaves out
     std::vector<GroupExample> examples;
