@@ -9,6 +9,8 @@ const props = defineProps({
     // The colors of the stacked bar, by the label of the group: { perfect: primary-600 }.
     colors: { type: Object, default: () => ({}) },
     labels: { type: Array, default: () => [] },
+    // Whether the table ends with all its matches and their query, unless the page shows them already.
+    showsTotal: { type: Boolean, default: true },
 });
 
 const { t } = useI18n();
@@ -96,6 +98,7 @@ async function showMore() {
                     :labels="labels"
                     :group-query="result.groupQuery"
                     :variant="variant"
+                    :shows-total="showsTotal"
                 />
             </template>
         </template>

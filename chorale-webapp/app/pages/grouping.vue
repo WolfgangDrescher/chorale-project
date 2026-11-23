@@ -122,7 +122,7 @@ const hasGroups = computed(() => !!result.value?.groups?.length);
 const tab = ref('statistics');
 const tabItems = computed(() => [
     { label: t('groupingStatistics'), icon: 'lucide:chart-bar-decreasing', value: 'statistics' },
-    { label: t('groupingMatches'), icon: 'lucide:search', value: 'matches' },
+    { label: t('groupingMatches'), icon: 'lucide:search', value: 'matches', badge: { label: result.value?.matchCount, size: 'md' } },
 ]);
 
 // Searched only once its tab is opened, for the query of the result shown.
@@ -245,7 +245,7 @@ watch([tab, result], () => {
                     {{ $t('groupingDuration', { duration: formatDuration(durationMs) }) }}
                 </p>
                 <Suspense>
-                    <AnalysisView :result="result" />
+                    <AnalysisView :result="result" :shows-total="false" />
                 </Suspense>
             </div>
             <SearchResults v-if="tab === 'matches'" :search="matchesSearch" />

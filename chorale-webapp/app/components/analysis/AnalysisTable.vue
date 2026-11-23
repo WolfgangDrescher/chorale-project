@@ -6,6 +6,8 @@ const props = defineProps({
     // The group query it is of, run again for the matches of a group no query finds; and the variant shown.
     groupQuery: { type: Object, default: null },
     variant: { type: String, default: '' },
+    // Whether the table ends with all its matches and their query, unless the page shows them already.
+    showsTotal: { type: Boolean, default: true },
 });
 
 const { t } = useI18n();
@@ -127,7 +129,7 @@ function openMatches(path, member = null) {
                     </tr>
                 </tfoot>
         </table>
-        <p class="mt-2 flex items-center gap-2 text-sm text-muted">
+        <p v-if="showsTotal" class="mt-2 flex items-center gap-2 text-sm text-muted">
             {{ t('analysisTotal', { matches: analysis.matchCount, count: analysis.choraleCount }) }}
             <UButton
                 icon="lucide:search"
