@@ -100,7 +100,7 @@ inline std::pair<std::string, std::string> splitOtherVoiceKey(const std::string&
 }
 // The key without its negation: "!deg" as "deg", "@1:!deg" as "@1:deg".
 std::string unnegatedKey(const std::string& rawKey);
-// The keys another voice can be checked for: kern, kern.pitch, deg, duration, fermata, attack and sustain.
+// The keys another voice can be checked for: kern, kern.pitch, deg, duration, fermata, metweight, attack and sustain.
 bool isOtherVoicePatternKey(const PatternKeyLookup& lookup);
 
 // Every key: the driving features first.

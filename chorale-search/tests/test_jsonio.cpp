@@ -42,6 +42,8 @@ TEST_CASE(query_from_json_rejects_another_voice_it_cannot_check) {
     CHECK_THROWS(parse(R"({"@1": {"mint": "+2"}})"));
     CHECK_THROWS(parse(R"({"@1:deg": "1"})"));
     CHECK_NOTHROW(parse(R"({"@1": {"kern.pitch": {"operator": "lt", "value": "c"}, "fermata": true}})"));
+    CHECK_NOTHROW(parse(R"({"@1": {"metweight": ["s", "hs"], "attack": true}})"));
+    CHECK_THROWS(parse(R"({"@1": {"metweight": "x"}})"));
     CHECK_THROWS(parse(R"({"@1": {"deg": "9"}})"));
     CHECK_THROWS(parse(R"({"@1": {"duration": "@2"}})"));
 }

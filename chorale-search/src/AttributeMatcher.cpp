@@ -807,6 +807,11 @@ std::optional<bool> otherVoiceKeyMatches(const HumdrumChorale& chorale, std::siz
         const std::optional<NoteState> state = noteStateOnLine(chorale, voice, lineToken);
         if (!state) return std::nullopt;
         matched = noteStateInList(positionKey, *state);
+    } else if (positionKey.is(PatternKeyId::Metweight)) {
+        // Only a note it begins on the line has a weight there.
+        hum::HTp weight = tokenBesideOnLine(lineToken, chorale.spine(kMetweightKey, voice), false);
+        if (!weight || weight->isNull()) return std::nullopt;
+        matched = isWildcard(allowed) || inList(allowed, std::string(*weight));
     } else if (positionKey.is(PatternKeyId::Deg)) {
         hum::HTp degree = tokenBesideOnLine(lineToken, chorale.spine(kDegKey, voice), true);
         if (!degree) return std::nullopt;

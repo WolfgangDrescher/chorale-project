@@ -161,7 +161,7 @@ void addOtherVoiceKeys(AttributeMap& pos, const std::string& voiceReference, con
     for (auto it = keys.begin(); it != keys.end(); ++it) {
         const std::string& rawKey = it.key();
         if (!isOtherVoicePatternKey(findPatternKey(rawKey))) {
-            throw std::invalid_argument(context + " has the key '" + rawKey + "', another voice is checked for kern, kern.pitch, deg, duration, fermata, attack and sustain");
+            throw std::invalid_argument(context + " has the key '" + rawKey + "', another voice is checked for kern, kern.pitch, deg, duration, fermata, metweight, attack and sustain");
         }
         const std::string where = context + "[" + rawKey + "]'";
         std::vector<PatternValue> values = attributeValueFromJson(it.value(), rawKey, where);

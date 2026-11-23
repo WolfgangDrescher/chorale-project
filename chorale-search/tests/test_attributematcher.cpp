@@ -74,6 +74,10 @@ TEST_CASE(matcher_checks_another_voice_at_a_position) {
     CHECK(count({{"@1:fermata", {"true"}}}) > 0);
     // The bass is one of the voices below.
     CHECK(count({{"@anyBelow:deg", {"1"}}}) >= count({{"@1:deg", {"1"}}}));
+    // Where both begin a note, the bass has the weight of the soprano; where it holds one, none.
+    CHECK_EQ(count({{"@1:metweight", {"s"}}, {"@1:attack", {"true"}}}), count({{"metweight", {"s"}}, {"@1:attack", {"true"}}}));
+    CHECK(count({{"@1:metweight", {"s"}}}) > 0);
+    CHECK_EQ(count({{"@1:metweight", {"*"}}, {"@1:sustain", {"true"}}}), std::size_t{0});
     // The bass begins a note, holds one or rests, one of the three.
     CHECK_EQ(count({{"@1:attack", {"true"}}}) + count({{"@1:sustain", {"true"}}}) +
                  count({{"@1:attack", {"false"}}, {"@1:sustain", {"false"}}}),

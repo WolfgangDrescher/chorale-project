@@ -369,7 +369,7 @@ bool isOtherVoicePatternKey(const PatternKeyLookup& lookup) {
     const PatternKeyId id = lookup.patternKey->id;
     if (lookup.patternKeyPart) return id == PatternKeyId::Kern && lookup.partName() == "pitch";
     return id == PatternKeyId::Kern || id == PatternKeyId::Deg || id == PatternKeyId::Duration || id == PatternKeyId::Fermata ||
-           id == PatternKeyId::Attack || id == PatternKeyId::Sustain;
+           id == PatternKeyId::Attack || id == PatternKeyId::Sustain || id == PatternKeyId::Metweight;
 }
 
 PatternKeyLookup findPatternKey(const std::string& rawKey) {

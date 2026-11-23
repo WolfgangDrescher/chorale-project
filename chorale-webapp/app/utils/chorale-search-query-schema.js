@@ -158,14 +158,14 @@ const positionValueSchema = {
 };
 
 const voiceReferenceKeyPattern = '^@([1-4]|below|above|anyBelow|allBelow|anyAbove|allAbove|anyOther|allOther)$';
-const otherVoiceKeyPattern = '^!?(kern(\\.pitch)?|deg|duration|fermata|attack|sustain)$';
+const otherVoiceKeyPattern = '^!?(kern(\\.pitch)?|deg|duration|fermata|metweight|attack|sustain)$';
 
 // "@1": { "deg": "5" }: what another voice sounds at this position.
 const otherVoiceSchema = {
     type: 'object',
     minProperties: 1,
     additionalProperties: false,
-    description: 'Another voice at this position: the note it sounds there, also one it holds. It is checked for kern, kern.pitch, deg, duration (the whole note), fermata, attack (the voice begins a note here) and sustain (the voice is still holding a note it began earlier), all for the same voice.',
+    description: 'Another voice at this position: the note it sounds there, also one it holds. It is checked for kern, kern.pitch, deg, duration (the whole note), fermata, metweight (where the voice begins a note), attack (the voice begins a note here) and sustain (the voice is still holding a note it began earlier), all for the same voice.',
     patternProperties: { [otherVoiceKeyPattern]: positionValueSchema },
     propertyNames: { pattern: otherVoiceKeyPattern },
 };
