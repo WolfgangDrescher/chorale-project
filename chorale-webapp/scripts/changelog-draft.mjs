@@ -272,13 +272,17 @@ Rules:
 - lastCommit: '${lastCommit}' and commitCount: ${commitCount}, exactly as given.
 - changes: what visitors of the website notice, in English, from their point of view and without developer jargon.
   Merge commits that together make up one feature into one change and list all their hashes under commits.
-  Leave out commits nobody notices (refactoring, build, dependencies).
-- type: feature (new), improvement (an existing feature got better) or fix (a bug was fixed).
+  Leave out commits nobody notices (refactoring, build, dependencies) and small details few notice.
+  Rather fewer changes: also merge small changes of one area, e.g. two fixes of keyboard shortcuts.
+- text: one or two short sentences in precise words that name what the visitor sees or does.
+  No circular wording like "repeat with \`repeat\`". Give an example of new query syntax, e.g. \`"@1": { "deg": "5" }\`.
+- type: feature (new), improvement (an existing feature got better) or fix (a bug was fixed), also when the commit does not say "Fix".
 - commits: hashes in single quotes, e.g. ['114e9dc', '0a893bd'], or YAML reads 1733249 as a number.
 - github (optional): issues or pull requests in single quotes, '#12' in this repository or 'owner/repo#12' in another one, e.g. ['#2', 'rism-digital/verovio#4515'] for a bug fixed in Verovio.
   Take the references given with the commits of a change. If a pull request closes an issue, reference only the issue, not both.
-- to (optional): the path of the page that shows the change, e.g. /chorale, /search, /chorale-analysis, /lessons, /docs.
-- Below the front matter a short Markdown paragraph may introduce a larger new feature. Otherwise leave it empty.
+- to (optional): the path of the page that shows the change, e.g. /chorale, /search, /chorale-analysis, /lessons, /docs,
+  only for a new page, a new docs page or something fundamentally new on a page.
+- Below the front matter a short Markdown paragraph may introduce a larger new feature without repeating the description. Otherwise leave it empty.
 - No em dashes (U+2014).
 ${example ? `\nThe last entry as an example:\n\n${example.trim()}\n` : ''}
 The commits since the last entry (hash, date, subject, body, changed files):
