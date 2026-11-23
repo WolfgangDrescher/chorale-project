@@ -109,7 +109,7 @@ export function useDiminutionAnalysis(choraleId, shownIds) {
             endLine: $resolution,
             gaps: [{ startLine: $preparation, endLine: $suspension - 1 }, { startLine: $resolution, endLine: $resolution }],
         }));
-        return [{ color: highlightColorsByName.blue, items }];
+        return [{ color: highlightColorsByName.blue, noteheads: true, items }];
     });
 
     return { notes, sections, legend };

@@ -64,9 +64,10 @@ function gapStyle(color) {
 
 // The markers of a section, one for each of its stretches on each system. A stretch the pattern asks for is a box
 // around its notes over the staff of the voice, or over all staves: filled, or as an outline a frame. A gap fills
-// what lies between: hatched, or in a frame as dashed lines. What stands at the end of a system runs on to its
-// edge and what stands at its start comes from it, with a zig-zag there, a frame left open.
-function createMarkers(stretches, containerElem, color, voiceStaffIndex, outline) {
+// what lies between: hatched, or in a frame as dashed lines. With `noteheads` all of them on a system span its
+// noteheads only, from the highest to the lowest. What stands at the end of a system runs on to its edge and what
+// stands at its start comes from it, with a zig-zag there, a frame left open.
+function createMarkers(stretches, containerElem, color, voiceStaffIndex, outline, noteheads) {
     const containerRect = containerElem.getBoundingClientRect();
     // An outline sits a little further out than a fill, so its 5px border starts at the fill's edge
     // of another marker underneath instead of leaving a white gap to it.
@@ -75,9 +76,10 @@ function createMarkers(stretches, containerElem, color, voiceStaffIndex, outline
 
     const systems = [];
     stretches.forEach((stretch, index) => {
-        for (const { elem: noteElem } of stretch.notes) {
+        for (const { elem: noteElem, headElem } of stretch.notes) {
             const systemElem = noteElem.closest('g.system');
-            if (systems.at(-1)?.systemElem !== systemElem) systems.push({ systemElem, parts: [] });
+            if (systems.at(-1)?.systemElem !== systemElem) systems.push({ systemElem, parts: [], noteheadRects: [] });
+            systems.at(-1).noteheadRects.push((headElem.querySelector('.notehead') ?? headElem).getBoundingClientRect());
             const rect = getBBoxElem(noteElem).getBoundingClientRect();
             const left = Math.min(rect.x, getAccidRect(noteElem)?.x ?? rect.x);
             const part = systems.at(-1).parts.at(-1);
@@ -91,13 +93,23 @@ function createMarkers(stretches, containerElem, color, voiceStaffIndex, outline
     });
 
     const markers = [];
-    systems.forEach(({ systemElem, parts }, systemIndex) => {
-        const voiceStaffRect = voiceStaffIndex != null ? getVoiceStaffRect(systemElem, voiceStaffIndex) : null;
-        const staffs = systemElem.querySelectorAll('.measure .staff');
-        const firstStaffRect = voiceStaffRect ?? getBBoxElem(staffs[0]).getBoundingClientRect();
-        const lastStaffRect = voiceStaffRect ?? getBBoxElem(staffs[staffs.length - 1]).getBoundingClientRect();
-        const top = firstStaffRect.y - (extender / 2) - containerRect.y;
-        const height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y + extender;
+    systems.forEach(({ systemElem, parts, noteheadRects }, systemIndex) => {
+        let top;
+        let height;
+        if (noteheads) {
+            const noteheadTop = Math.min(...noteheadRects.map((rect) => rect.top));
+            const noteheadBottom = Math.max(...noteheadRects.map((rect) => rect.bottom));
+            const padding = noteheadRects[0].height / 2;
+            top = noteheadTop - padding - containerRect.y;
+            height = noteheadBottom - noteheadTop + 2 * padding;
+        } else {
+            const voiceStaffRect = voiceStaffIndex != null ? getVoiceStaffRect(systemElem, voiceStaffIndex) : null;
+            const staffs = systemElem.querySelectorAll('.measure .staff');
+            const firstStaffRect = voiceStaffRect ?? getBBoxElem(staffs[0]).getBoundingClientRect();
+            const lastStaffRect = voiceStaffRect ?? getBBoxElem(staffs[staffs.length - 1]).getBoundingClientRect();
+            top = firstStaffRect.y - (extender / 2) - containerRect.y;
+            height = lastStaffRect.y + lastStaffRect.height - firstStaffRect.y + extender;
+        }
 
         const comesFromBefore = systemIndex > 0;
         const goesOn = systemIndex < systems.length - 1;
@@ -298,6 +310,8 @@ export default {
         // Fits the frame to the notes of the section (those of `voice`, or of every voice) instead of
         // spanning the staves they are on: one frame per system, around exactly those notes.
         fitBoundingBox: Boolean,
+        // Spans only the noteheads of the section instead of the staff of its voice.
+        noteheads: Boolean,
         // "notes": the notes of `voice` on the lines; "text": the text of `verse` there.
         type: {
             type: String,
@@ -386,7 +400,7 @@ export default {
                 ? findVoiceStaffIndex(startElem?.closest('.measure') ?? startElem?.closest('.system'), voice)
                 : getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem);
 
-        markers.push(...createMarkers(splitIntoStretches(notes, props.gaps), containerElem, props.color, voiceStaffIndex, props.outline));
+        markers.push(...createMarkers(splitIntoStretches(notes, props.gaps), containerElem, props.color, voiceStaffIndex, props.outline, props.noteheads));
 
         let labelElem = null;
         const labelRef = ref(null);

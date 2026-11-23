@@ -42,6 +42,8 @@ interface SectionGroup {
     outline?: boolean;
     // Drawn around exactly the notes of the section instead of whole staves.
     fitBoundingBox?: boolean;
+    // Drawn over the noteheads of the section only instead of the staff of its voice.
+    noteheads?: boolean;
 }
 
 interface Line {
