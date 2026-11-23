@@ -8,6 +8,7 @@ const props = defineProps({
     indent: { type: Boolean, default: false },
     // Whether a group or member that no query finds can show its matches instead.
     showsMatches: { type: Boolean, default: false },
+    level: { type: Number, default: 0 },
 });
 
 // `matches` names a member by its values, or none for the group itself.
@@ -18,6 +19,7 @@ const format = inject('analysisFormat');
 const showExamples = ref(false);
 const showMembers = ref(false);
 const label = computed(() => format.label(props.group.label));
+const degreeVoice = computed(() => format.degreeVoice(props.level, props.group.label));
 const lineColor = computed(() => (props.nested ? 'border-neutral-100 dark:border-neutral-900' : 'border-default'));
 
 const VOICE_NAMES = { 1: 'voiceBass', 2: 'voiceTenor', 3: 'voiceAlto', 4: 'voiceSoprano' };
@@ -52,7 +54,9 @@ function caption(example) {
                 size="md"
                 class="px-0 py-0 font-mono text-default"
                 @click="emit('toggle')"
-            />
+            >
+                <Deg v-if="degreeVoice" :v="group.label" :bass="degreeVoice.bass" :upper="degreeVoice.upper" />
+            </UButton>
             <UButton
                 v-else-if="group.members?.length"
                 :label="label"
@@ -63,10 +67,13 @@ function caption(example) {
                 size="md"
                 class="px-0 py-0 font-mono text-default"
                 @click="showMembers = !showMembers"
-            />
+            >
+                <Deg v-if="degreeVoice" :v="group.label" :bass="degreeVoice.bass" :upper="degreeVoice.upper" />
+            </UButton>
             <span v-else class="inline-flex items-center gap-1.5 font-mono">
                 <span v-if="indent" class="size-5 shrink-0" />
-                {{ label }}
+                <Deg v-if="degreeVoice" :v="group.label" :bass="degreeVoice.bass" :upper="degreeVoice.upper" />
+                <template v-else>{{ label }}</template>
             </span>
         </td>
         <td class="py-1.5 pr-4 text-right tabular-nums">{{ group.matchCount }}</td>

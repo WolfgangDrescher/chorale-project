@@ -55,7 +55,7 @@ function openMatches(path, member = null) {
                 <AnalysisColumns />
                 <thead>
                     <tr class="border-b border-default text-left text-muted">
-                        <th class="py-2 pr-4 font-medium">{{ labels[0] || t('analysisGroup') }}</th>
+                        <th class="py-2 pr-4 font-medium">{{ labels[0] || format.levelTitle(0) }}</th>
                         <th class="py-2 pr-4 text-right font-medium">{{ t('analysisMatches') }}</th>
                         <th class="py-2 pr-4 font-medium">{{ t('analysisShare') }}</th>
                         <th class="py-2 pr-4 text-right font-medium">{{ t('analysisChorales') }}</th>

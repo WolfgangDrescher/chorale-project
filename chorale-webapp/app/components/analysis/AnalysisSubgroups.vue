@@ -34,7 +34,7 @@ function toggle(index) {
             <AnalysisColumns />
             <thead>
                 <tr class="border-b border-default text-left text-xs text-muted">
-                    <th class="py-1.5 pr-4 font-medium">{{ labels[level] || t('analysisGroup') }}</th>
+                    <th class="py-1.5 pr-4 font-medium">{{ labels[level] || format.levelTitle(level) }}</th>
                     <th class="py-1.5 pr-4 text-right font-medium">{{ t('analysisMatches') }}</th>
                     <th class="py-1.5 pr-4 font-medium">{{ t('analysisShareOf', { label: format.label(parent.label) }) }}</th>
                     <th class="py-1.5 pr-4 text-right font-medium">{{ t('analysisChorales') }}</th>
@@ -48,6 +48,7 @@ function toggle(index) {
                         :expandable="!!row.groups?.length"
                         :expanded="expanded.has(index)"
                         :indent="indented"
+                        :level="level"
                         nested
                         :shows-matches="showsMatches"
                         @toggle="toggle(index)"
