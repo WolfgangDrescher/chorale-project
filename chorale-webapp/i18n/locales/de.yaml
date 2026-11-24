@@ -232,7 +232,7 @@ clearDiminutionAnnotationsConfirmation: Alle Annotationen löschen?
 clearDiminutionAnnotationsAction: Löschen
 annotateDiminutionsHint: "Ein Klick auf einen Farbkreis wählt die Diminution, die annotiert wird. Ein Klick auf eine Note nimmt sie in diese Diminution auf oder wieder heraus. Ein Vorhalt entsteht aus drei Klicks in einer Stimme: Vorbereitung, Dissonanz und Auflösung. Ein Klick auf seine Dissonanz löscht ihn wieder. Eine gehaltene Dissonanz wird auf der Höhe ihres Notenkopfs unter oder über der Note einer anderen Stimme angeklickt."
 diminution:
-    consonantLeap: Sprung in einen konsonanten Akkordbestandteil
+    consonantLeap: Sprung oder Schritt in einen konsonanten Akkordbestandteil
     suspension: Vorhalt (syncopatio)
     neighborNote: Wechselnote (nota cambiata)
     passingNote: Unbetonter Durchgang (transitus regularis)
