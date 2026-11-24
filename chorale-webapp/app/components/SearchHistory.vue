@@ -215,11 +215,13 @@ onKeyStroke(['Delete', 'Backspace'], whileBrowsingEntries((event) => {
             <UEmpty v-else icon="lucide:history" :title="t('searchHistoryEmpty')" />
         </template>
         <template v-if="entries.length" #footer>
-            <div v-if="confirmingClear" class="flex flex-wrap items-center gap-2">
-                <span class="text-sm">{{ t('searchHistoryClearConfirmation') }}</span>
-                <UButton color="error" size="sm" :label="t('searchHistoryClear')" @click="confirmClear" />
-                <UButton color="neutral" variant="subtle" size="sm" :label="t('cancel')" @click="confirmingClear = false" />
-            </div>
+            <ConfirmationPrompt
+                v-if="confirmingClear"
+                :question="t('searchHistoryClearConfirmation')"
+                :action="t('searchHistoryClear')"
+                @confirm="confirmClear"
+                @cancel="confirmingClear = false"
+            />
             <UButton v-else color="neutral" variant="link" size="sm" :label="t('searchHistoryClear')" class="px-0" @click="confirmingClear = true" />
         </template>
     </UModal>
