@@ -22,6 +22,11 @@ function findVoiceStaffIndex(scopeElem, voice) {
     return null;
 }
 
+// Whether a note shares its staff with another voice, as in the piano setting of satb2gs.
+function sharesStaff(noteElem) {
+    return (noteElem?.closest('.staff')?.querySelectorAll('.layer:not(.bounding-box)').length ?? 0) > 1;
+}
+
 function getVoiceStaffRect(systemElem, voiceStaffIndex) {
     const staffsInFirstMeasure = systemElem?.querySelector('.measure')?.querySelectorAll('.staff');
     return getBBoxElem(staffsInFirstMeasure?.[voiceStaffIndex])?.getBoundingClientRect();
@@ -400,7 +405,9 @@ export default {
                 ? findVoiceStaffIndex(startElem?.closest('.measure') ?? startElem?.closest('.system'), voice)
                 : getStaffIndexInMeasure(startElem) ?? getStaffIndexInMeasure(endElem);
 
-        markers.push(...createMarkers(splitIntoStretches(notes, props.gaps), containerElem, props.color, voiceStaffIndex, props.outline, props.noteheads));
+        // A staff of two voices only tells them apart by their noteheads.
+        const noteheads = props.noteheads || (voice != null && !usedFallbackVoice && sharesStaff(startElem));
+        markers.push(...createMarkers(splitIntoStretches(notes, props.gaps), containerElem, props.color, voiceStaffIndex, props.outline, noteheads));
 
         let labelElem = null;
         const labelRef = ref(null);
