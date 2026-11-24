@@ -7,6 +7,8 @@ defineOptions({ inheritAttrs: false });
 
 const props = defineProps({
     player: { type: Object, required: true },
+    // Whether the sonority at the position is marked and kept in view. The position moves all the same.
+    showsPosition: { type: Boolean, default: true },
 });
 
 // The last line one of the sounding notes or rests was attacked on.
@@ -23,13 +25,13 @@ onBeforeUnmount(() => props.player.disconnect());
         <HighlightedScore
             v-bind="$attrs"
             :clickable-notes="true"
-            :scroll-to-line="line ?? undefined"
+            :scroll-to-line="(showsPosition && line) || undefined"
             @score-loaded="({ callVerovioMethod }) => player.connect(callVerovioMethod)"
             @note-click="({ id }) => player.goTo(id)"
         >
             <template #markers="{ container }">
                 <HighlightedSection
-                    v-if="line"
+                    v-if="showsPosition && line"
                     :key="`${line}-${player.isPlaying}`"
                     :start-line="line"
                     :end-line="line"
