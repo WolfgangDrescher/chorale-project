@@ -19,8 +19,9 @@ const annotating = defineModel('annotating', { type: Boolean, default: false });
 
 const { t } = useI18n();
 
+// Annotating shows what is annotated, so that it is clear what a click changes.
 const sourceItems = computed(() => [
-    { label: t('diminutionsFound'), value: 'found' },
+    { label: t('diminutionsFound'), value: 'found', disabled: annotating.value },
     { label: t('diminutionsAnnotated'), value: 'annotated' },
 ]);
 
@@ -77,7 +78,14 @@ const annotateIcon = computed(() => ({
                 </li>
             </ul>
             <div class="flex w-full shrink-0 items-center justify-end gap-2 sm:w-100">
-                <UTabs v-if="annotated && !annotating" v-model="source" :items="sourceItems" :content="false" size="xs" />
+                <UTabs
+                    v-if="annotated || annotating"
+                    :model-value="annotating ? 'annotated' : source"
+                    :items="sourceItems"
+                    :content="false"
+                    size="xs"
+                    @update:model-value="source = $event"
+                />
                 <UTooltip :text="annotator.error ?? undefined" :disabled="!annotating || annotator.status !== 'failed'">
                     <UButton
                         size="xs"
