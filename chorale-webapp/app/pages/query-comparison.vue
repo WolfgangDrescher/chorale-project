@@ -24,9 +24,30 @@ const {
 // Each editor hands its query to the other one: the base to start a draft from, the draft to
 // become the base of the next one.
 const editors = [
-    { label: 'queryComparisonBase', query: baseQuery, side: base, other: draftQuery, handOver: 'queryComparisonUseAsDraft', handOverIcon: 'lucide:arrow-right' },
-    { label: 'queryComparisonDraft', query: draftQuery, side: draft, other: baseQuery, handOver: 'queryComparisonUseAsBase', handOverIcon: 'lucide:arrow-left' },
+    { label: 'queryComparisonBase', query: baseQuery, side: base, other: draftQuery, handOver: 'queryComparisonUseAsDraft', handOverConfirmation: 'queryComparisonUseAsDraftConfirmation', handOverIcon: 'lucide:arrow-right' },
+    { label: 'queryComparisonDraft', query: draftQuery, side: draft, other: baseQuery, handOver: 'queryComparisonUseAsBase', handOverConfirmation: 'queryComparisonUseAsBaseConfirmation', handOverIcon: 'lucide:arrow-left' },
 ];
+
+// What replaces a query is asked about first, in place of the buttons that do it, unless nothing would be lost.
+const confirming = ref(null);
+
+function replaceQueries(replacements, confirmation, then = () => {}) {
+    const run = () => {
+        replacements.forEach(([query, value]) => (query.value = value));
+        then();
+    };
+    if (replacements.every(([query, value]) => !query.value.trim() || query.value === value)) run();
+    else confirming.value = { ...confirmation, run };
+}
+
+function confirm() {
+    confirming.value.run();
+    confirming.value = null;
+}
+
+function handOver(editor) {
+    replaceQueries([[editor.other, editor.query.value]], { at: editor.label, question: t(editor.handOverConfirmation), action: t(editor.handOver) });
+}
 
 function format(query) {
     try {
@@ -39,9 +60,13 @@ function format(query) {
 const diminutionItems = computed(() => DIMINUTIONS.map(({ id, queries }) => ({
     label: t(`diminution.${id}`),
     onSelect: () => {
-        baseQuery.value = formatQuery(queries);
-        draftQuery.value = baseQuery.value;
-        expectedDiminution.value = isAnnotated(id) ? id : 'none';
+        const formatted = formatQuery(queries);
+        const name = t(`diminution.${id}`);
+        replaceQueries([[baseQuery, formatted], [draftQuery, formatted]], {
+            at: 'load',
+            question: t('queryComparisonLoadDiminutionConfirmation', { name }),
+            action: t('queryComparisonLoadDiminutionAction'),
+        }, () => (expectedDiminution.value = isAnnotated(id) ? id : 'none'));
     },
 })));
 
@@ -179,10 +204,17 @@ function highlightGroups(chorale) {
                 <div class="grid gap-4 lg:grid-cols-2">
                     <UFormField v-for="editor in editors" :key="editor.label" :label="$t(editor.label)">
                         <template #hint>
-                            <div class="flex gap-1">
+                            <ConfirmationPrompt
+                                v-if="confirming?.at === editor.label"
+                                :question="confirming.question"
+                                :action="confirming.action"
+                                @confirm="confirm"
+                                @cancel="confirming = null"
+                            />
+                            <div v-else class="flex gap-1">
                                 <UButton color="neutral" variant="ghost" size="sm" icon="lucide:wand-sparkles" :label="$t('formatQuery')" @click="format(editor.query)" />
                                 <UTooltip :text="$t(editor.handOver)">
-                                    <UButton color="neutral" variant="ghost" size="sm" :icon="editor.handOverIcon" :aria-label="$t(editor.handOver)" @click="editor.other.value = editor.query.value" />
+                                    <UButton color="neutral" variant="ghost" size="sm" :icon="editor.handOverIcon" :aria-label="$t(editor.handOver)" @click="handOver(editor)" />
                                 </UTooltip>
                             </div>
                         </template>
@@ -201,7 +233,14 @@ function highlightGroups(chorale) {
                         </UAlert>
                     </UFormField>
                 </div>
-                <div class="flex flex-wrap gap-2">
+                <ConfirmationPrompt
+                    v-if="confirming?.at === 'load'"
+                    :question="confirming.question"
+                    :action="confirming.action"
+                    @confirm="confirm"
+                    @cancel="confirming = null"
+                />
+                <div v-else class="flex flex-wrap gap-2">
                     <UButton type="submit" :loading="pending" :trailing="true">{{ $t('queryComparisonSubmit') }}</UButton>
                     <UDropdownMenu :items="diminutionItems">
                         <UButton color="neutral" variant="subtle" icon="lucide:folder-open" trailing-icon="lucide:chevron-down" :label="$t('queryComparisonLoadDiminution')" />

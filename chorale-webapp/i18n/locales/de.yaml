@@ -38,7 +38,11 @@ queryComparisonDraft: Entwurf
 queryComparisonSubmit: Vergleichen
 queryComparisonUseAsDraft: Als Entwurf übernehmen
 queryComparisonUseAsBase: Als Basis übernehmen
+queryComparisonUseAsDraftConfirmation: Den Entwurf durch die Basis ersetzen?
+queryComparisonUseAsBaseConfirmation: Die Basis durch den Entwurf ersetzen?
 queryComparisonLoadDiminution: Diminution laden
+queryComparisonLoadDiminutionConfirmation: "Basis und Entwurf durch die Queries von {name} ersetzen?"
+queryComparisonLoadDiminutionAction: Ersetzen
 queryComparisonView: Vergleich
 queryComparisonUnitNote: Benannte Positionen
 queryComparisonUnitMatch: Treffer
