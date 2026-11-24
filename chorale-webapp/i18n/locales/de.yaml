@@ -55,9 +55,10 @@ queryComparisonSortDeviations: Falsche
 queryComparisonSortLost: Verlorene
 queryComparisonSortAdded: Neue
 queryComparisonOnlyChanges: Nur Choräle mit Unterschieden
-queryComparisonExpected: Erwartet
-queryComparisonNoExpected: Keine Erwartung, alle Choräle
+queryComparisonNoExpected: Keine Erwartung
 queryComparisonExpectation: Erwartung
+queryComparisonExpectationHelpLabel: Was die Erwartung bewirkt
+queryComparisonExpectationHelp: "Vergleicht beide Queries mit den von Hand annotierten Noten einer Diminution, nur in den annotierten Chorälen und Note für Note. Eine Note mit schwarzem Ring liegt falsch: Die Query findet sie, obwohl sie nicht annotiert ist, oder sie fehlt, obwohl sie annotiert ist. Die Zählung zeigt für Basis und Entwurf, wie viele Noten richtig, zu viel und fehlend sind."
 queryComparisonWrong: falsch
 queryComparisonWrongTotal: falsch
 queryComparisonCorrect: richtig

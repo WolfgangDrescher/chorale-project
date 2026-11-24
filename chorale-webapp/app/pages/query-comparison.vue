@@ -245,11 +245,6 @@ function highlightGroups(chorale) {
                     <UDropdownMenu :items="diminutionItems">
                         <UButton color="neutral" variant="subtle" icon="lucide:folder-open" trailing-icon="lucide:chevron-down" :label="$t('queryComparisonLoadDiminution')" />
                     </UDropdownMenu>
-                    <ClientOnly>
-                        <UFormField :label="$t('queryComparisonExpected')" orientation="horizontal" class="ml-auto items-center gap-2">
-                            <USelect v-model="expectedDiminution" :items="expectedItems" class="w-80" />
-                        </UFormField>
-                    </ClientOnly>
                 </div>
             </UForm>
         </UCard>
@@ -259,40 +254,57 @@ function highlightGroups(chorale) {
                 <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full" :style="{ backgroundColor: CHANGE_COLORS.lost }" />{{ totals.lost }} {{ $t('queryComparisonLost') }}</span>
                 <span class="flex items-center gap-1.5"><span class="size-2.5 rounded-full" :style="{ backgroundColor: CHANGE_COLORS.added }" />{{ totals.added }} {{ $t('queryComparisonAdded') }}</span>
                 <span class="text-dimmed">{{ totals.unchanged }} {{ $t('queryComparisonUnchanged') }}</span>
-                <UPopover v-if="hasExpectation" mode="hover" :open-delay="100">
-                    <button type="button" class="ml-4 flex items-center gap-2 rounded-lg ring ring-inset ring-default px-3 py-1.5 text-default">
-                        <span class="flex items-center gap-1.5 text-muted">
-                            <span class="size-2.5 rounded-full border-2" :style="{ borderColor: DEVIATION_COLOR }" />
-                            {{ $t('queryComparisonExpectation') }}
-                        </span>
-                        <UBadge v-for="side in accuracySides" :key="side.label" color="neutral" variant="soft" class="rounded-full px-2.5">
-                            {{ side.label }} <span class="tabular-nums" :class="side.wrong && 'font-semibold'">{{ side.wrong }}</span> {{ $t('queryComparisonWrong') }}
-                        </UBadge>
-                    </button>
-                    <template #content>
-                        <div class="p-3 text-sm">
-                            <table class="tabular-nums">
-                                <thead>
-                                    <tr class="text-muted">
-                                        <th />
-                                        <th v-for="side in accuracySides" :key="side.label" class="px-3 font-normal text-right">{{ side.label }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="row in accuracyRows" :key="row.key">
-                                        <td class="pr-3 text-muted">{{ row.label }}</td>
-                                        <td v-for="side in accuracySides" :key="side.label" class="px-3 text-right">{{ side[row.key] }}</td>
-                                    </tr>
-                                    <tr class="border-t border-default font-semibold">
-                                        <td class="pr-3 pt-1">{{ $t('queryComparisonWrongTotal') }}</td>
-                                        <td v-for="side in accuracySides" :key="side.label" class="px-3 pt-1 text-right">{{ side.wrong }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <p class="mt-2 max-w-64 text-dimmed">{{ $t('queryComparisonExpectedNotes', { notes: expectedNoteCount, n: expectedChorales.size }, expectedChorales.size) }}</p>
-                        </div>
-                    </template>
-                </UPopover>
+                <div class="ml-4 flex flex-wrap items-center gap-2 rounded-lg ring ring-inset ring-default px-3 py-1.5 text-default">
+                    <span class="flex items-center gap-1.5 text-muted">
+                        <span class="size-2.5 rounded-full border-2" :style="{ borderColor: DEVIATION_COLOR }" />
+                        {{ $t('queryComparisonExpectation') }}
+                    </span>
+                    <USelect
+                        v-model="expectedDiminution"
+                        :items="expectedItems"
+                        size="xs"
+                        class="w-36"
+                        :content="{ align: 'start' }"
+                        :ui="{ content: 'w-auto min-w-(--reka-select-trigger-width)' }"
+                        :aria-label="$t('queryComparisonExpectation')"
+                    />
+                    <UPopover v-if="hasExpectation" mode="hover" :open-delay="100">
+                        <button type="button" class="flex items-center gap-2">
+                            <UBadge v-for="side in accuracySides" :key="side.label" color="neutral" variant="soft" class="rounded-full px-2.5">
+                                {{ side.label }} <span class="tabular-nums" :class="side.wrong && 'font-semibold'">{{ side.wrong }}</span> {{ $t('queryComparisonWrong') }}
+                            </UBadge>
+                        </button>
+                        <template #content>
+                            <div class="p-3 text-sm">
+                                <table class="tabular-nums">
+                                    <thead>
+                                        <tr class="text-muted">
+                                            <th />
+                                            <th v-for="side in accuracySides" :key="side.label" class="px-3 font-normal text-right">{{ side.label }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="row in accuracyRows" :key="row.key">
+                                            <td class="pr-3 text-muted">{{ row.label }}</td>
+                                            <td v-for="side in accuracySides" :key="side.label" class="px-3 text-right">{{ side[row.key] }}</td>
+                                        </tr>
+                                        <tr class="border-t border-default font-semibold">
+                                            <td class="pr-3 pt-1">{{ $t('queryComparisonWrongTotal') }}</td>
+                                            <td v-for="side in accuracySides" :key="side.label" class="px-3 pt-1 text-right">{{ side.wrong }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <p class="mt-2 max-w-64 text-dimmed">{{ $t('queryComparisonExpectedNotes', { notes: expectedNoteCount, n: expectedChorales.size }, expectedChorales.size) }}</p>
+                            </div>
+                        </template>
+                    </UPopover>
+                    <UPopover mode="hover" :open-delay="100">
+                        <UButton color="neutral" variant="ghost" size="xs" icon="lucide:info" :aria-label="$t('queryComparisonExpectationHelpLabel')" />
+                        <template #content>
+                            <p class="max-w-80 p-3 text-sm">{{ $t('queryComparisonExpectationHelp') }}</p>
+                        </template>
+                    </UPopover>
+                </div>
             </div>
             <div class="flex flex-wrap items-center justify-between gap-4 my-4">
                 <div class="flex flex-wrap items-center gap-3">
