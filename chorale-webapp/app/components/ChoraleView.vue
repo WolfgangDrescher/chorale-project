@@ -72,6 +72,7 @@ watch(() => player.isPlaying, (playing) => {
 });
 
 function annotateDiminution({ line, voice, held }) {
+    if (!scoreOptions.showDiminutions || !scoreOptions.diminutions.includes(diminutionAnnotator.current)) return;
     diminutionAnnotator.click({ line: line - lineShiftOf(scoreOptions.humdrumFilters), voice, held });
 }
 

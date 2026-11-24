@@ -32,6 +32,14 @@ const replacingActions = computed(() => [
 ]);
 const confirming = ref(null);
 
+// Only a diminution that is shown can be annotated, so choosing a hidden one shows it.
+const isChosen = (diminution) => annotating.value && diminution.shown && props.annotator.current === diminution.id;
+
+function choose(diminution) {
+    if (!diminution.shown) emit('toggle', diminution.id);
+    props.annotator.current = diminution.id;
+}
+
 watch(annotating, () => {
     confirming.value = null;
 });
@@ -63,12 +71,12 @@ const annotateIcon = computed(() => ({
                                     :class="annotating ? 'cursor-pointer' : 'pointer-events-none'"
                                     :style="{
                                         backgroundColor: highlightColorsByName[diminution.color],
-                                        boxShadow: annotating && annotator.current === diminution.id ? '0 0 0 2px var(--ui-bg), 0 0 0 4px var(--ui-primary)' : undefined,
+                                        boxShadow: isChosen(diminution) ? '0 0 0 2px var(--ui-bg), 0 0 0 4px var(--ui-primary)' : undefined,
                                     }"
                                     :tabindex="annotating ? 0 : -1"
                                     :aria-label="$t('annotateDiminution', { name: $t(`diminution.${diminution.id}`) })"
-                                    :aria-pressed="annotating && annotator.current === diminution.id"
-                                    @click.stop.prevent="annotator.current = diminution.id"
+                                    :aria-pressed="isChosen(diminution)"
+                                    @click.stop.prevent="choose(diminution)"
                                 />
                                 <span>{{ $t(`diminution.${diminution.id}`) }}</span>
                                 <span class="min-w-[2ch] text-dimmed tabular-nums">{{ diminution.count }}</span>
