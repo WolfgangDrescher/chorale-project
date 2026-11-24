@@ -38,7 +38,11 @@ let editor = null;
 watch(modelValue, (newValue) => {
     if (!editor) return;
     if (newValue !== editor.getValue()) {
-        editor.setValue(newValue ?? '');
+        // As an edit rather than setValue, which would clear the undo stack: a query loaded or handed
+        // over can be undone like typing.
+        editor.pushUndoStop();
+        editor.executeEdits('modelValue', [{ range: editor.getModel().getFullModelRange(), text: newValue ?? '' }]);
+        editor.pushUndoStop();
     }
 });
 
