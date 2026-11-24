@@ -146,7 +146,7 @@ const showsPlayhead = computed(() => props.player.isPlaying || props.player.soun
                 color="neutral"
                 :variant="annotating ? 'soft' : 'ghost'"
                 icon="lucide:pencil"
-                :label="$t(annotating ? 'annotateDone' : 'annotate')"
+                :label="$t(annotating ? 'annotateDone' : 'annotateKeys')"
                 :aria-pressed="annotating"
                 @click="annotating = !annotating; $event.currentTarget.blur()"
             />

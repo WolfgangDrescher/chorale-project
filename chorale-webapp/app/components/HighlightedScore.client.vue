@@ -23,13 +23,16 @@ const props = withDefaults(defineProps<{
     scrollToLine?: Number,
     // Shows the notes and rests as clickable, for a noteClick that does something.
     clickableNotes?: Boolean,
+    // Also a click where a voice holds a note, beside a note another voice attacks, as a noteClick.
+    clickableHeldNotes?: Boolean,
 }>(), {
     baseFilters: () => BASE_FILTERS,
 });
 
 const emit = defineEmits<{
     // A click on (or near) a note or a rest: its element id, and the line and voice read off it.
-    noteClick: [note: { id: string, line: number, voice: number }],
+    // Where the voice holds the note, the line is that of the other note and `held` is true.
+    noteClick: [note: { id: string, line: number, voice: number, held?: boolean }],
     // Whenever the score is loaded into Verovio, also again with other filters: the function that
     // calls a method of the toolkit it is loaded into, e.g. to render it to MIDI.
     scoreLoaded: [event: { callVerovioMethod: (method: string, ...args: unknown[]) => Promise<unknown> }],
@@ -246,8 +249,48 @@ function onClick(event: MouseEvent) {
     if (stickySystemStartContainsPoint(event.clientX, event.clientY)) return;
     const note = noteAtPoint(event.clientX, event.clientY);
     const parsed = note && lineAndVoiceOf(note.id);
-    if (!parsed) return;
-    emit('noteClick', { id: note.id, line: parsed.line, voice: voiceInScore(voiceOfField(scoreContainer.value, parsed.voice), props.filters) });
+    if (parsed) {
+        emit('noteClick', { id: note.id, line: parsed.line, voice: voiceInScore(voiceOfField(scoreContainer.value, parsed.voice), props.filters) });
+        return;
+    }
+    const held = props.clickableHeldNotes ? heldNoteAtPoint(event.clientX, event.clientY) : null;
+    if (held) emit('noteClick', { ...held, voice: voiceInScore(held.voice, props.filters), held: true });
+}
+
+// The note a voice holds at the height of a click, on the line of the note another voice attacks
+// right above or below it in the same system.
+function heldNoteAtPoint(x: number, y: number) {
+    const container = scoreContainer.value;
+    const system = Array.from(container?.querySelectorAll('g.system') ?? []).find((elem) => {
+        const rect = elem.getBoundingClientRect();
+        return rect.top <= y && y <= rect.bottom;
+    });
+    if (!container || !system) return null;
+    let line: number | null = null;
+    let nearestDx = NOTE_CLICK_PADDING;
+    for (const note of system.querySelectorAll('g.note:not(.bounding-box)')) {
+        const rect = (note.querySelector('.notehead') ?? note).getBoundingClientRect();
+        const dx = Math.max(rect.left - x, 0, x - rect.right);
+        if (dx <= nearestDx) {
+            line = lineAndVoiceOf(note.id)?.line ?? line;
+            nearestDx = dx;
+        }
+    }
+    if (line === null) return null;
+    let nearest = null;
+    let nearestDy = NOTE_CLICK_PADDING;
+    for (let voice = 1; voice <= 4; voice++) {
+        const field = fieldOfVoice(container, voice);
+        const sounding = soundingNoteElem(container, line, field);
+        if (!sounding || lineAndVoiceOf(sounding.id)?.line === line || !system.contains(sounding)) continue;
+        const rect = (sounding.querySelector('.notehead') ?? sounding).getBoundingClientRect();
+        const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+        if (dy <= nearestDy) {
+            nearest = { id: sounding.id, line, voice };
+            nearestDy = dy;
+        }
+    }
+    return nearest;
 }
 
 // In the horizontal view, the note of the line is scrolled to once it nears the right edge or is

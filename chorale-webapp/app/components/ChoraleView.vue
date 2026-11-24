@@ -50,7 +50,30 @@ const annotator = useModulationAnnotator(chorale.value.choraleId, player, annota
 
 useChoraleKeyboardShortcuts({ prevRoute: () => props.prevRoute, nextRoute: () => props.nextRoute, keysTaken: annotating });
 
-const { notes: diminutionNotes, sections: diminutionSections, legend: diminutionLegend } = useDiminutionAnalysis(chorale.value.choraleId, () => (scoreOptions.showDiminutions ? scoreOptions.diminutions : []));
+// The diminutions as the queries find them or as annotated by hand, and annotated with clicks on the notes.
+const diminutionSource = ref('found');
+const annotatingDiminutions = ref(false);
+const {
+    notes: diminutionNotes,
+    sections: diminutionSections,
+    legend: diminutionLegend,
+    annotator: diminutionAnnotator,
+    annotateFound: annotateFoundDiminutions,
+} = useDiminutionAnalysis(chorale.value.choraleId, () => (scoreOptions.showDiminutions ? scoreOptions.diminutions : []), { source: diminutionSource, annotating: annotatingDiminutions });
+const hasAnnotatedDiminutions = computed(() => chorale.value.choraleId in DIMINUTION_ANNOTATIONS);
+
+// A click to annotate goes to its note without showing it there, which would follow every click, until the music plays.
+const playedWhileAnnotating = ref(false);
+watch(annotatingDiminutions, () => {
+    playedWhileAnnotating.value = false;
+});
+watch(() => player.isPlaying, (playing) => {
+    if (playing) playedWhileAnnotating.value = true;
+});
+
+function annotateDiminution({ line, voice, held }) {
+    diminutionAnnotator.click({ line: line - lineShiftOf(scoreOptions.humdrumFilters), voice, held });
+}
 
 const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHORALE_PAGE_VEROVIO_OPTIONS }));
 </script>
@@ -106,7 +129,16 @@ const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHOR
             </div>
         </div>
 
-        <DiminutionLegend v-if="scoreOptions.showDiminutions" :legend="diminutionLegend" @toggle="scoreOptions.toggleDiminution" />
+        <DiminutionLegend
+            v-if="scoreOptions.showDiminutions || annotatingDiminutions"
+            v-model:source="diminutionSource"
+            v-model:annotating="annotatingDiminutions"
+            :legend="diminutionLegend"
+            :annotator="diminutionAnnotator"
+            :annotated="hasAnnotatedDiminutions"
+            @toggle="scoreOptions.toggleDiminution"
+            @annotate-found="annotateFoundDiminutions"
+        />
 
         <PlayableHighlightedScore
             :player="player"
@@ -119,6 +151,9 @@ const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHOR
             :notes="diminutionNotes"
             :lines="annotator.active ? annotator.markers : (scoreOptions.showModulations ? modulationLines : undefined)"
             :scroll-to-first-section="matches.length > 0"
+            :shows-position="!annotatingDiminutions || playedWhileAnnotating"
+            :clickable-held-notes="annotatingDiminutions"
+            @note-click="annotateDiminution"
         />
 
         <ModulationAnnotator v-if="annotator.active" :annotator="annotator" />

@@ -220,6 +220,17 @@ hideModulations: Modulationen ausblenden
 showLyrics: Liedtext anzeigen
 showDiminutions: Diminutionsanalyse anzeigen
 diminutions: Diminutionen des Gerüstsatzes
+diminutionsFound: Berechnet
+diminutionsAnnotated: Annotiert
+annotateDiminution: "{name} annotieren"
+annotateDiminutions: Diminutionen annotieren
+annotateFoundDiminutions: Berechnete übernehmen
+clearDiminutionAnnotations: Alle löschen
+annotateFoundDiminutionsConfirmation: Alle Annotationen durch die berechneten ersetzen?
+annotateFoundDiminutionsAction: Ersetzen
+clearDiminutionAnnotationsConfirmation: Alle Annotationen löschen?
+clearDiminutionAnnotationsAction: Löschen
+annotateDiminutionsHint: "Ein Klick auf einen Farbkreis wählt die Diminution, die annotiert wird. Ein Klick auf eine Note nimmt sie in diese Diminution auf oder wieder heraus. Ein Vorhalt entsteht aus drei Klicks in einer Stimme: Vorbereitung, Dissonanz und Auflösung. Ein Klick auf seine Dissonanz löscht ihn wieder. Eine gehaltene Dissonanz wird auf der Höhe ihres Notenkopfs unter oder über der Note einer anderen Stimme angeklickt."
 diminution:
     consonantLeap: Sprung in einen konsonanten Akkordbestandteil
     suspension: Vorhalt (syncopatio)
@@ -240,7 +251,7 @@ keyColorsCantusFirmus: C.f.
 keyColorsMajor: Dur
 keyColorsMinor: Moll
 keyColorsChurchMode: Kirchentonart
-annotate: Annotieren
+annotateKeys: Tonarten annotieren
 annotateDone: Fertig
 modulationsUnpublished: Die Timeline zeigt den veröffentlichten Stand. Änderungen erscheinen erst, wenn sie eingepflegt sind.
 annotatorKeys: Tasten

@@ -11,6 +11,8 @@ const props = defineProps({
     showsPosition: { type: Boolean, default: true },
 });
 
+const emit = defineEmits(['noteClick']);
+
 // The last line one of the sounding notes or rests was attacked on.
 const line = computed(() => Math.max(0, ...props.player.soundingIds.map((id) => lineAndVoiceOf(id)?.line ?? 0)) || null);
 
@@ -27,7 +29,7 @@ onBeforeUnmount(() => props.player.disconnect());
             :clickable-notes="true"
             :scroll-to-line="(showsPosition && line) || undefined"
             @score-loaded="({ callVerovioMethod }) => player.connect(callVerovioMethod)"
-            @note-click="({ id }) => player.goTo(id)"
+            @note-click="(note) => { player.goTo(note.id); emit('noteClick', note); }"
         >
             <template #markers="{ container }">
                 <HighlightedSection
