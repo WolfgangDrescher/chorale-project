@@ -247,7 +247,7 @@ function onClick(event: MouseEvent) {
     const note = noteAtPoint(event.clientX, event.clientY);
     const parsed = note && lineAndVoiceOf(note.id);
     if (!parsed) return;
-    emit('noteClick', { id: note.id, ...parsed });
+    emit('noteClick', { id: note.id, line: parsed.line, voice: voiceInScore(voiceOfField(scoreContainer.value, parsed.voice), props.filters) });
 }
 
 // In the horizontal view, the note of the line is scrolled to once it nears the right edge or is

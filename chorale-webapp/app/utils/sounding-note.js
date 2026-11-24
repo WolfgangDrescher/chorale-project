@@ -26,9 +26,20 @@ export function soundingNoteElem(container, line, voice) {
     return held;
 }
 
+// The fields of the four voices in the drawn score, in order, or fewer where they are not four.
+function voiceFields(container) {
+    const elems = container?.querySelectorAll('g[id^="note-L"], g[id^="rest-L"], g[id^="mrest-L"]') ?? [];
+    return [...new Set(Array.from(elems, (elem) => lineAndVoiceOf(elem.id).voice))].sort((a, b) => a - b);
+}
+
 // The field of a voice in the drawn score, where a filter has added spines between the four voices.
 export function fieldOfVoice(container, voice) {
-    const elems = container?.querySelectorAll('g[id^="note-L"], g[id^="rest-L"], g[id^="mrest-L"]') ?? [];
-    const fields = [...new Set(Array.from(elems, (elem) => lineAndVoiceOf(elem.id).voice))].sort((a, b) => a - b);
+    const fields = voiceFields(container);
     return fields.length === 4 ? fields[voice - 1] : voice;
+}
+
+// The voice of a field of the drawn score, see fieldOfVoice.
+export function voiceOfField(container, field) {
+    const fields = voiceFields(container);
+    return fields.length === 4 && fields.includes(field) ? fields.indexOf(field) + 1 : field;
 }
