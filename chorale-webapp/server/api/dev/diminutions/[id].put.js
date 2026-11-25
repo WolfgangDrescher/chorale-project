@@ -14,18 +14,6 @@ function isAnnotation(annotation) {
     return VOICES.includes(voice) && Object.values(positionsByRole).length > 0 && Object.values(positionsByRole).every((position) => POSITION.test(position));
 }
 
-// The file as it is written by hand: a chorale, its diminutions, an annotation on each line.
-function format(annotations) {
-    const chorales = Object.keys(annotations).sort().map((choraleId) => {
-        const diminutions = Object.entries(annotations[choraleId]).map(([id, entries]) => {
-            if (!entries.length) return `        "${id}": []`;
-            return `        "${id}": [\n${entries.map((entry) => `            ${JSON.stringify(entry).replaceAll('","', '", "').replaceAll('":"', '": "')}`).join(',\n')}\n        ]`;
-        });
-        return `    "${choraleId}": {\n${diminutions.join(',\n')}\n    }`;
-    });
-    return `{\n${chorales.join(',\n')}\n}\n`;
-}
-
 // Saves { diminutions: { "consonantLeap": [...], ... } } of a chorale.
 export default defineEventHandler(async (event) => {
     if (!import.meta.dev) throw createError({ statusCode: 404, statusMessage: 'Page Not Found' });
@@ -41,6 +29,6 @@ export default defineEventHandler(async (event) => {
 
     const annotations = JSON.parse(await readFile(DIMINUTIONS_FILE, 'utf8'));
     annotations[id] = diminutions;
-    await writeFile(DIMINUTIONS_FILE, format(annotations));
+    await writeFile(DIMINUTIONS_FILE, formatDiminutionAnnotations(annotations));
     return { saved: true };
 });

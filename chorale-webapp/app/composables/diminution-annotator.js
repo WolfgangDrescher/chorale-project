@@ -43,7 +43,7 @@ export function useDiminutionAnnotator(choraleId, { needed, active, saves = fals
         status: null,
         error: null,
         saves,
-        json: computed(() => `{\n    "${choraleId}": ${JSON.stringify(annotations.value, null, 4).replaceAll('\n', '\n    ')}\n}\n`),
+        json: computed(() => formatDiminutionAnnotations({ [choraleId]: annotations.value })),
         issueUrl: computed(() => `${REPOSITORY_URL}/issues/new?${new URLSearchParams({ title: `Diminutions of ${choraleId}`, body: `\`\`\`json\n${annotator.json}\`\`\`` })}`),
         click,
         replace,
