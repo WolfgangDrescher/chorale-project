@@ -2,8 +2,8 @@ import { onKeyStroke } from '@vueuse/core';
 
 function ignoreIfInput() {
     const el = document.activeElement;
-    // A slider takes the arrow keys itself.
-    return el && (['input', 'textarea'].includes(el.tagName.toLowerCase()) || el.isContentEditable || !!el.closest('[role="slider"]'));
+    // A slider takes the arrow keys itself. The editor of a query takes its input in a plain div.
+    return el && (['input', 'textarea'].includes(el.tagName.toLowerCase()) || el.isContentEditable || !!el.closest('[role="slider"], .monaco-editor'));
 }
 
 // A key held with Cmd, Ctrl or Alt is a shortcut of the browser, like Cmd+R.
