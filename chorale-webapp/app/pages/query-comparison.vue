@@ -77,6 +77,7 @@ const expectedItems = computed(() => [
 
 const metadata = useChoraleMetadata();
 const scoreOptions = useSearchScoreOptions();
+useChoraleKeyboardShortcuts({ scoreOptions });
 
 // The fill of a mark tells the change. A border marks a note the query judged is wrong about:
 // one it finds but is not expected, or one expected that it does not find.
