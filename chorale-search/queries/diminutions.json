@@ -85,10 +85,22 @@
     "anticipation": [
         {
             "feature": "kern",
+            "hintReduceCompound": true,
             "pattern": [
                 { "kern": "*" },
-                { "as": "$note", "!mint": "P1", "metweight": "u" },
-                { "mint": "P1" }
+                {
+                    "as": "$note",
+                    "!mint": "P1",
+                    "!kern": "r",
+                    "metweight": "u",
+                    "!duration": { "operator": "gt", "value": "8" }
+                },
+                { "repeat": "?", "mint": "2", "metweight": "u" },
+                {
+                    "kern.pitch": "$note",
+                    "!hint-1": ["2", "7", "4"],
+                    "attack": true
+                }
             ]
         }
     ],
