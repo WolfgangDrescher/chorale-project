@@ -4,6 +4,8 @@ const props = defineProps({
     v: { type: [String, Number, Array], required: true },
     // Keeps the figures in the order of v, the upper ones first, instead of sorting them with the highest at the top.
     literal: Boolean,
+    // One or two figures at the size of three instead of larger, e.g. in a column of a table.
+    uniform: Boolean,
 });
 
 // The glyphs of SMuFL that Verovio draws a figured bass with, and the text they are copied as.
@@ -31,7 +33,7 @@ const figures = computed(() => {
 </script>
 
 <template>
-    <span class="figured-bass" :class="figures.length > 1 && ['stacked', figures.length === 2 && 'pair']">
+    <span class="figured-bass" :class="[figures.length > 1 && ['stacked', figures.length === 2 && 'pair'], uniform && 'uniform']">
         <template v-for="(figure, index) in figures" :key="index">
             <template v-if="index">{{ ' ' }}</template>
             <span class="figure" :data-glyphs="figure.glyphs">{{ figure.text }}</span>
@@ -72,6 +74,11 @@ const figures = computed(() => {
 /* Two figures fit into a line of text at a larger size. */
 .pair {
     font-size: 1.05em;
+}
+
+/* The size of three figures for any number. */
+.figured-bass.uniform {
+    font-size: 0.9em;
 }
 
 /* As high as a figure, whatever font a sign of the copied text falls back to. */
