@@ -249,8 +249,8 @@ struct Query {
     // voice's very first onset (there is no note in front of it to decorate).
     bool metweightSkipUnclassified = false;
 
-    // The chords of the regola that regolaChordTone chooses from, by their tags: "core", "!affect". See
-    // allowedRegolaChords() for which a list allows. Empty: the core.
+    // The chords of the regola that regolaChordTone and regolaChord choose from, by their tags: "core", "!affect".
+    // See allowedRegolaChords() for which a list allows. Empty: the core.
     std::vector<std::string> regolaTags;
 
     // When set, a match that begins on an onset of the match before it in the same voice is left out, so a

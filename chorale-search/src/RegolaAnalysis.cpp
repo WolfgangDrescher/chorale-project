@@ -200,4 +200,11 @@ std::optional<bool> RegolaAnalysis::isChordTone(const HumdrumChorale& chorale, s
     return belongsToChord(*sound->chord, noteDegree(note, sound->ground.key), sound->ground);
 }
 
+std::optional<bool> RegolaAnalysis::isRegolaChord(const HumdrumChorale& chorale, int lineNumber) const {
+    const Sound* sound = soundAtLine(lineNumber);
+    if (!sound) return std::nullopt;
+    const std::vector<Degree> notes = upperNotes(chorale, lineNumber, sound->ground.key);
+    return std::all_of(notes.begin(), notes.end(), [&](const Degree& note) { return belongsToChord(*sound->chord, note, sound->ground); });
+}
+
 } // namespace choralesearch

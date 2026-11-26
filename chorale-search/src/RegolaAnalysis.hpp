@@ -43,6 +43,10 @@ public:
     // nullopt for the bass, a rest, or a line without a chord.
     std::optional<bool> isChordTone(const HumdrumChorale& chorale, std::size_t voice, int lineNumber) const;
 
+    // Whether every note the voices above the bass sound on `lineNumber` is a chord tone of its chord.
+    // nullopt on a line without a chord, the bass resting included.
+    std::optional<bool> isRegolaChord(const HumdrumChorale& chorale, int lineNumber) const;
+
     // A scale degree: its number and its semitones above the key.
     struct Degree {
         int number = 1;

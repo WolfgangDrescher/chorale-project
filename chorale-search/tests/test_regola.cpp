@@ -105,6 +105,19 @@ const char* const kKeyChangeInTheMeasure =
     "==\t==\t==\t==\n"
     "*-\t*-\t*-\t*-\n";
 
+// C major. The fourth c of the soprano over the bass G, resolved to b.
+const char* const kSuspension =
+    "**kern\t**kern\t**kern\t**kern\n"
+    "*C:\t*C:\t*C:\t*C:\n"
+    "*M4/4\t*M4/4\t*M4/4\t*M4/4\n"
+    "*met(c)\t*met(c)\t*met(c)\t*met(c)\n"
+    "=1\t=1\t=1\t=1\n"
+    "4G\t4d\t4g\t4cc\n"
+    "4G\t4d\t4g\t4b\n"
+    "2C\t2c\t2g\t2cc\n"
+    "==\t==\t==\t==\n"
+    "*-\t*-\t*-\t*-\n";
+
 // C major. The same 4 2 over F twice: the bass goes down to E, then up to G.
 const char* const kThirdInversion =
     "**kern\t**kern\t**kern\t**kern\n"
@@ -433,6 +446,21 @@ TEST_CASE(regola_finds_its_own_chords_in_the_rule_up_and_down_in_major_and_minor
     }
 }
 
+TEST_CASE(regola_chord_holds_at_every_position_of_the_rule_and_at_none_of_its_rests) {
+    const HumdrumChorale chorale = readScore(kRegolaDellOttava);
+    const auto& analysis = chorale.regolaAnalysis({});
+    std::size_t notes = 0;
+    for (hum::HTp token = chorale.spine("kern", 1)->getNextToken(); token; token = token->getNextToken()) {
+        if (!token->isData() || token->isNull()) continue;
+        const std::optional<bool> expected = token->isRest() ? std::nullopt : std::optional<bool>(true);
+        CHECK_EQ(analysis.isRegolaChord(chorale, token->getLineNumber()), expected);
+        notes += token->isRest() ? 0 : 1;
+    }
+    // Every note of every voice, and none of their rests.
+    const auto matches = AttributeMatcher("kern", {PatternPosition{.keys = {{"regolaChord", {"true"}}}}});
+    for (std::size_t voice = 1; voice <= 4; ++voice) CHECK_EQ(matches.findAll(chorale, voice).size(), notes);
+}
+
 TEST_CASE(regola_judges_a_note_against_the_chord_over_the_bass_of_its_line) {
     const HumdrumChorale chorale = readScore(kSteps);
     REQUIRE(chordOnNote(chorale, 1) != nullptr);
@@ -523,6 +551,28 @@ TEST_CASE(regola_measures_the_notes_after_a_change_of_key_in_the_new_key) {
     const HumdrumChorale chorale = readScore(kKeyChangeInTheMeasure);
     // The sixth chord on the second degree of C, its sixth the leading tone b.
     CHECK_EQ(isChordTone(chorale, kAlto, 1), std::optional<bool>(true));
+}
+
+TEST_CASE(regola_chord_holds_where_every_note_above_the_bass_is_a_tone_of_the_chord) {
+    const HumdrumChorale chorale = readScore(kSteps);
+    const auto& analysis = chorale.regolaAnalysis({});
+    const auto isRegolaChordOn = [&](std::size_t bassNote) {
+        return analysis.isRegolaChord(chorale, nthNote(chorale, 1, bassNote)->getLineNumber());
+    };
+    CHECK_EQ(isRegolaChordOn(0), std::optional<bool>(true));
+    // The c of the tenor on beat 2 is none; over the E of the bass after it no chord explains a note.
+    CHECK_EQ(isRegolaChordOn(1), std::optional<bool>(false));
+    CHECK(!isRegolaChordOn(2));
+    CHECK(!isRegolaChordOn(3));
+}
+
+TEST_CASE(regola_chord_takes_the_suspended_fourth_as_a_tone_of_its_chord) {
+    const HumdrumChorale chorale = readScore(kSuspension);
+    const int suspensionLine = nthNote(chorale, 1, 0)->getLineNumber();
+    CHECK_EQ(chorale.regolaAnalysis({}).isRegolaChord(chorale, suspensionLine), std::optional<bool>(false));
+    const auto& withSuspensions = chorale.regolaAnalysis({"core", "suspension"});
+    CHECK_EQ(withSuspensions.isRegolaChord(chorale, suspensionLine), std::optional<bool>(true));
+    CHECK_EQ(withSuspensions.isChordTone(chorale, 4, suspensionLine), std::optional<bool>(true));
 }
 
 TEST_CASE(regola_chord_tone_key_judges_the_notes_with_the_chords_of_the_tags) {

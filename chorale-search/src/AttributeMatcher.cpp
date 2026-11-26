@@ -1273,6 +1273,12 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         const std::optional<bool> chordTone = chorale.regolaAnalysis(m_options.regolaTags).isChordTone(chorale, voice, lineNumber);
         if (!chordTone) return std::nullopt;
         matched = inList(allowed, *chordTone ? "true" : "false");
+    } else if (positionKey.is(PatternKeyId::RegolaChord)) {
+        hum::HTp note = lookupToken(chorale, voice, lineNumber, kKernKey);
+        if (note && note->isRest()) return std::nullopt; // a rest of the voice searched is no position of a chord
+        const std::optional<bool> regolaChord = chorale.regolaAnalysis(m_options.regolaTags).isRegolaChord(chorale, lineNumber);
+        if (!regolaChord) return std::nullopt;
+        matched = inList(allowed, *regolaChord ? "true" : "false");
     } else {
         if (!positionKey.patternKey) return std::nullopt; // a key the table does not know
         std::optional<KeyValue> value = valueOfKey(chorale, voice, onset, positionKey.patternKey->id, key);

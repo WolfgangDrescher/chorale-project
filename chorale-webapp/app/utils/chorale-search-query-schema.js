@@ -137,6 +137,11 @@ const regolaChordTonePatternSchema = {
     description: 'Whether the note a voice above the bass sounds at this position, begun there or held, is a chord tone of the chord the rule of the octave gives the bass sounding with it, in the quality the local key gives it. With fb as the driving feature every line is a position, a held note included. Neither true nor false holds for the bass, a rest, or a line no chord of regolaTags fits.',
 };
 
+const regolaChordPatternSchema = {
+    type: 'boolean',
+    description: 'Whether every note the voices above the bass sound at this position, a held one included, is a chord tone of the chord the rule of the octave gives the bass there. Read on the line of the onset, whatever voice and feature the query searches. Neither true nor false holds on a line no chord of regolaTags fits, where the bass rests, or at a rest of the voice searched.',
+};
+
 // The tags of the chords in chorale-search/src/RegolaChords.cpp.
 const regolaTagNames = [
     'core', 'extended', 'enriched', 'affect', 'suspension', 'double-suspension', 'semitonium-modi', 'quinta-syncopata',
@@ -145,7 +150,7 @@ const regolaTagNames = [
 
 // The keys a position can check, negated or not, and the parts of their values: "mint", "!mint.direction", "hint-14.number".
 const positionKeyPattern =
-    '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|attack|sustain|regolaChordTone|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
+    '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|attack|sustain|regolaChordTone|regolaChord|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
 
 // The direction of a melodic interval; a unison has none.
 const directionValueSchema = {
@@ -203,6 +208,8 @@ const positionFeaturesSchema = {
         '!mint.direction': directionPatternSchema,
         regolaChordTone: regolaChordTonePatternSchema,
         '!regolaChordTone': regolaChordTonePatternSchema,
+        regolaChord: regolaChordPatternSchema,
+        '!regolaChord': regolaChordPatternSchema,
     },
     patternProperties: {
         [positionKeyPattern]: {
@@ -395,7 +402,7 @@ export const searchRequestFieldSchemas = {
         minItems: 1,
         items: { type: 'string', enum: [...regolaTagNames, ...regolaTagNames.map((tag) => `!${tag}`)] },
         default: ['core', 'leap'],
-        description: 'The chords of the rule of the octave that regolaChordTone chooses from: a chord with one of the tags and none of those negated with "!", any chord without a negated tag where no tag is positive. Without it the core.',
+        description: 'The chords of the rule of the octave that regolaChordTone and regolaChord choose from: a chord with one of the tags and none of those negated with "!", any chord without a negated tag where no tag is positive. Without it the core.',
         suggestSortText: '6.95',
     },
     simultaneousAlignment: {

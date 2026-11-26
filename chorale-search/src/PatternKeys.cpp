@@ -330,6 +330,12 @@ std::vector<PatternKey> buildPatternKeys() {
             .valueSpec = {.isValidValue = isValidBooleanValue},
         },
         {
+            .id = Id::RegolaChord,
+            .name = kRegolaChordKey,
+            .everyOnset = true,
+            .valueSpec = {.isValidValue = isValidBooleanValue},
+        },
+        {
             .id = Id::HintVoice,
             .name = "hint-<voice>",
             .coversQueryKey = isHintRelativeKey,
