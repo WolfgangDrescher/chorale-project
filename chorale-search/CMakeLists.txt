@@ -46,6 +46,7 @@ add_library(chorale_query STATIC
     src/Intervals.cpp
     src/PositionReference.cpp
     src/PatternRepeat.cpp
+    src/RegolaChords.cpp
 )
 target_include_directories(chorale_query PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -178,6 +179,11 @@ if(BUILD_TESTS)
     target_include_directories(test_corpussearch PRIVATE tests)
     target_link_libraries(test_corpussearch PRIVATE chorale_core)
     add_test(NAME corpussearch COMMAND test_corpussearch)
+
+    add_executable(test_regola tests/test_regola.cpp)
+    target_include_directories(test_regola PRIVATE tests)
+    target_link_libraries(test_regola PRIVATE chorale_query)
+    add_test(NAME regola COMMAND test_regola)
 
     add_executable(test_diminutions tests/test_diminutions.cpp)
     target_include_directories(test_diminutions PRIVATE tests)
