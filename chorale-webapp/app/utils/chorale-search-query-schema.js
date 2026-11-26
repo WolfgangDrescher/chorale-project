@@ -1,3 +1,5 @@
+import { REGOLA_TAGS } from './regola-chords.js';
+
 // One comparison, an entry of a pattern value list like any string: the score's value is
 // compared with `value` instead of matched against it. A list is an OR, so a range ("at least
 // an eighth and at most a quarter") is written as the negation of both ends instead.
@@ -141,12 +143,6 @@ const regolaChordPatternSchema = {
     type: 'boolean',
     description: 'Whether every note the voices above the bass sound at this position, a held one included, is a chord tone of the chord the rule of the octave gives the bass there. Read on the line of the onset, whatever voice and feature the query searches. Neither true nor false holds on a line no chord of regolaTags fits, where the bass rests, or at a rest of the voice searched.',
 };
-
-// The tags of the chords in chorale-search/src/RegolaChords.cpp.
-const regolaTagNames = [
-    'core', 'extended', 'enriched', 'affect', 'suspension', 'double-suspension', 'semitonium-modi', 'quinta-syncopata',
-    'major-sixth', 'passing', 'leap',
-];
 
 // The keys a position can check, negated or not, and the parts of their values: "mint", "!mint.direction", "hint-14.number".
 const positionKeyPattern =
@@ -400,7 +396,7 @@ export const searchRequestFieldSchemas = {
     regolaTags: {
         type: 'array',
         minItems: 1,
-        items: { type: 'string', enum: [...regolaTagNames, ...regolaTagNames.map((tag) => `!${tag}`)] },
+        items: { type: 'string', enum: [...REGOLA_TAGS, ...REGOLA_TAGS.map((tag) => `!${tag}`)] },
         default: ['core', 'leap'],
         description: 'The chords of the rule of the octave that regolaChordTone and regolaChord choose from: a chord with one of the tags and none of those negated with "!", any chord without a negated tag where no tag is positive. Without it the core.',
         suggestSortText: '6.95',
