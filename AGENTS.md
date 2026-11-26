@@ -100,6 +100,9 @@ the modulations or the generator change, and commit the result.
 * Name a chorale with `:chorale{id="chor005"}`, scale degrees with
   `:deg{v="4 5 1" bass}` and figured bass with `:fb{v="6 4 2"}`. The components
   are in `app/components/content/`.
+* Set terms of music theory in another language than the text in italics in
+  prose: *quinta syncopata*, *semitonium modi*, *passus duriusculus*. Keys,
+  tags and values stay in code: `semitonium-modi`.
 * A changelog entry (`content/changelog/<date>.md`) is drafted with
   `node chorale-webapp/scripts/changelog-draft.mjs` and describes what a visitor
   notices, not the commits.
