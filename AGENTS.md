@@ -100,6 +100,9 @@ the modulations or the generator change, and commit the result.
 * Name a chorale with `:chorale{id="chor005"}`, scale degrees with
   `:deg{v="4 5 1" bass}` and figured bass with `:fb{v="6 4 2"}`. The components
   are in `app/components/content/`.
+* Show measures of a chorale with `:score-example{chorale-id="chor001"
+  measures="2"}`, a score of its own with **kern in the `kern` property of the
+  YAML block of `::score-example`.
 * Set terms of music theory in another language than the text in italics in
   prose: *quinta syncopata*, *semitonium modi*, *passus duriusculus*. Keys,
   tags and values stay in code: `semitonium-modi`.
