@@ -132,9 +132,20 @@ const melismaPatternSchema = {
     ...valueOrListSchema(melismaValueSchema),
 };
 
+const regolaChordTonePatternSchema = {
+    type: 'boolean',
+    description: 'Whether the note a voice above the bass sounds at this position, begun there or held, is a chord tone of the chord the rule of the octave gives the bass sounding with it, in the quality the local key gives it. With fb as the driving feature every line is a position, a held note included. Neither true nor false holds for the bass, a rest, or a line no chord of regolaTags fits.',
+};
+
+// The tags of the chords in chorale-search/src/RegolaChords.cpp.
+const regolaTagNames = [
+    'core', 'extended', 'enriched', 'affect', 'suspension', 'double-suspension', 'semitonium-modi', 'quinta-syncopata',
+    'major-sixth', 'passing', 'leap',
+];
+
 // The keys a position can check, negated or not, and the parts of their values: "mint", "!mint.direction", "hint-14.number".
 const positionKeyPattern =
-    '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|attack|sustain|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
+    '^!?(kern(?:\\.pitch)?|deg|mint(?:\\.(?:direction|number|interval))?|fb(?:\\.numbers)?|metweight|duration|fermata|phrase|attack|sustain|regolaChordTone|mode|key|keyDeg|word|syl|sylpos|melisma|hint-(?:[1-4*][1-4*]|[1-4]|@pair)(?:\\.number)?)$';
 
 // The direction of a melodic interval; a unison has none.
 const directionValueSchema = {
@@ -190,6 +201,8 @@ const positionFeaturesSchema = {
         '!melisma': melismaPatternSchema,
         'mint.direction': directionPatternSchema,
         '!mint.direction': directionPatternSchema,
+        regolaChordTone: regolaChordTonePatternSchema,
+        '!regolaChordTone': regolaChordTonePatternSchema,
     },
     patternProperties: {
         [positionKeyPattern]: {
@@ -376,6 +389,14 @@ export const searchRequestFieldSchemas = {
         default: true,
         description: 'Treats an onset on a metrically unclassified position ("metweight": "u") as an ornament rather than a note of its own: the pattern never sees it, its duration falls to the note it decorates, and the next note\'s "mint" is measured across it. Lets one pattern spelling out a plain skeleton find the diminished readings of it too.',
         suggestSortText: '6.9',
+    },
+    regolaTags: {
+        type: 'array',
+        minItems: 1,
+        items: { type: 'string', enum: [...regolaTagNames, ...regolaTagNames.map((tag) => `!${tag}`)] },
+        default: ['core', 'leap'],
+        description: 'The chords of the rule of the octave that regolaChordTone chooses from: a chord with one of the tags and none of those negated with "!", any chord without a negated tag where no tag is positive. Without it the core.',
+        suggestSortText: '6.95',
     },
     simultaneousAlignment: {
         type: 'string',

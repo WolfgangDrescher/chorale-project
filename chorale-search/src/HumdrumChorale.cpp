@@ -204,6 +204,12 @@ const KeyContext* HumdrumChorale::keyContextAtLine(int lineNumber) const {
     return context ? &*context : nullptr;
 }
 
+const RegolaAnalysis& HumdrumChorale::regolaAnalysis(const std::vector<std::string>& tags) const {
+    const auto known = m_regolaAnalysesByTags.find(tags);
+    if (known != m_regolaAnalysesByTags.end()) return known->second;
+    return m_regolaAnalysesByTags.emplace(tags, RegolaAnalysis(*this, tags)).first->second;
+}
+
 hum::HTp HumdrumChorale::tokenAtLine(const std::string& feature, std::size_t voice, int lineNumber) const {
     hum::HTp token = fieldAtLine(feature, voice, lineNumber);
     return token && !token->isNull() ? token : nullptr;

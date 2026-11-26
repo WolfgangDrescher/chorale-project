@@ -136,6 +136,7 @@ struct MatcherOptions {
     bool durationAllowMergedNotes = false;
     bool metweightSkipUnclassified = false;
     bool skipOverlappingMatches = false;
+    std::vector<std::string> regolaTags;
 };
 
 // An additional pattern that must have a match starting at the exact same musical position
@@ -159,6 +160,7 @@ struct SimultaneousGroup {
     std::optional<bool> durationAllowSplitNotes;
     std::optional<bool> durationAllowMergedNotes;
     std::optional<bool> metweightSkipUnclassified;
+    std::optional<std::vector<std::string>> regolaTags;
     std::optional<std::string> simultaneousAlignment;
 };
 
@@ -247,6 +249,10 @@ struct Query {
     // voice's very first onset (there is no note in front of it to decorate).
     bool metweightSkipUnclassified = false;
 
+    // The chords of the regola that regolaChordTone chooses from, by their tags: "core", "!affect". See
+    // allowedRegolaChords() for which a list allows. Empty: the core.
+    std::vector<std::string> regolaTags;
+
     // When set, a match that begins on an onset of the match before it in the same voice is left out, so a
     // sequence that repeats as often as it goes is found once and not again from each of its onsets.
     bool skipOverlappingMatches = false;
@@ -323,6 +329,7 @@ inline nlohmann::json simultaneousGroupToJson(const SimultaneousGroup& g) {
     if (g.durationAllowSplitNotes) j["durationAllowSplitNotes"] = *g.durationAllowSplitNotes;
     if (g.durationAllowMergedNotes) j["durationAllowMergedNotes"] = *g.durationAllowMergedNotes;
     if (g.metweightSkipUnclassified) j["metweightSkipUnclassified"] = *g.metweightSkipUnclassified;
+    if (g.regolaTags) j["regolaTags"] = *g.regolaTags;
     if (g.simultaneousAlignment) j["simultaneousAlignment"] = *g.simultaneousAlignment;
     return j;
 }
@@ -348,6 +355,7 @@ inline nlohmann::json queryToJson(const Query& q) {
     if (q.durationAllowMergedNotes) j["durationAllowMergedNotes"] = true;
     if (q.metweightSkipUnclassified) j["metweightSkipUnclassified"] = true;
     if (q.skipOverlappingMatches) j["skipOverlappingMatches"] = true;
+    if (!q.regolaTags.empty()) j["regolaTags"] = q.regolaTags;
     if (q.simultaneousAlignment != "start") j["simultaneousAlignment"] = q.simultaneousAlignment;
 
     if (!q.simultaneousWith.empty()) {

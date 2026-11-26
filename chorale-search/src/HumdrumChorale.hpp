@@ -9,6 +9,7 @@
 #include "ChoraleInfo.hpp"
 #include "ChoraleLyrics.hpp"
 #include "KeyContext.hpp"
+#include "RegolaAnalysis.hpp"
 #include "humlib.h"
 
 namespace choralesearch {
@@ -57,6 +58,9 @@ public:
     // reckoned from the key of the first note.
     const KeyContext* keyContextAtLine(int lineNumber) const;
 
+    // The regola with the chords of `tags`, worked out once for each list of tags.
+    const RegolaAnalysis& regolaAnalysis(const std::vector<std::string>& tags) const;
+
 private:
     // What both constructors do once the file is parsed: add the computed spines, then note
     // down which spine answers to which feature name.
@@ -70,6 +74,7 @@ private:
     std::map<std::string, std::vector<hum::HTp>> m_spinesByFeature;
     std::vector<std::optional<KeyContext>> m_keyContextByLine;
     ChoraleLyrics m_lyrics;
+    mutable std::map<std::vector<std::string>, RegolaAnalysis> m_regolaAnalysesByTags;
 };
 
 } // namespace choralesearch

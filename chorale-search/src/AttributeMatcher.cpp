@@ -7,6 +7,7 @@
 #include "PatternRepeat.hpp"
 #include "PositionReference.hpp"
 #include "QueryValidation.hpp"
+#include "RegolaAnalysis.hpp"
 #include "ValueScanner.hpp"
 #include "VoiceReference.hpp"
 
@@ -1268,6 +1269,10 @@ std::optional<bool> AttributeMatcher::matchKey(const HumdrumChorale& chorale, st
         const std::optional<NoteState> state = noteStateOnLine(chorale, voice, tok);
         if (!state) return std::nullopt;
         matched = noteStateInList(positionKey, *state);
+    } else if (positionKey.is(PatternKeyId::RegolaChordTone)) {
+        const std::optional<bool> chordTone = chorale.regolaAnalysis(m_options.regolaTags).isChordTone(chorale, voice, lineNumber);
+        if (!chordTone) return std::nullopt;
+        matched = inList(allowed, *chordTone ? "true" : "false");
     } else {
         if (!positionKey.patternKey) return std::nullopt; // a key the table does not know
         std::optional<KeyValue> value = valueOfKey(chorale, voice, onset, positionKey.patternKey->id, key);

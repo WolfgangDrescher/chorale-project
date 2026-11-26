@@ -258,6 +258,32 @@ TEST_CASE(query_from_json_defaults_metweight_skip_unclassified_to_false) {
     CHECK(!q.metweightSkipUnclassified);
 }
 
+TEST_CASE(query_from_json_reads_regola_tags_and_writes_them_back) {
+    const json written = json::parse(
+        R"({"feature":"kern","voices":"234","pattern":[{"regolaChordTone":"false"}],"regolaTags":["core","leap","!enriched"]})");
+    Query q = queryFromJson(written);
+    CHECK(q.regolaTags == (std::vector<std::string>{"core", "leap", "!enriched"}));
+    CHECK_EQ(choralesearch::queryToJson(q)["regolaTags"], written["regolaTags"]);
+    CHECK(!choralesearch::queryToJson(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"*"}]})"))).contains("regolaTags"));
+}
+
+TEST_CASE(query_from_json_rejects_regola_tags_no_chord_has_and_an_empty_list) {
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"*"}],"regolaTags":["green"]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"*"}],"regolaTags":[]})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"kern":"*"}],"regolaTags":"core"})")));
+    CHECK_THROWS(queryFromJson(json::parse(R"({"feature":"kern","pattern":[{"regolaChordTone":"yes"}]})")));
+}
+
+TEST_CASE(query_from_json_reads_simultaneous_with_group_regola_tags_override) {
+    Query q = queryFromJson(json::parse(R"({
+        "feature":"kern",
+        "pattern":[{"kern":"G"}],
+        "simultaneousWith":[{"feature":"kern","pattern":[{"regolaChordTone":"true"}],"regolaTags":["extended"]}]
+    })"));
+    REQUIRE(q.simultaneousWith.size() == 1u);
+    CHECK(q.simultaneousWith[0].regolaTags == std::optional<std::vector<std::string>>({"extended"}));
+}
+
 TEST_CASE(query_from_json_reads_simultaneous_with_group_metweight_skip_unclassified_override) {
     Query q = queryFromJson(json::parse(R"({
         "feature":"kern",

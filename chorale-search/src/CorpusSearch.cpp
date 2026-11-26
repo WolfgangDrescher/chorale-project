@@ -36,6 +36,7 @@ MatcherOptions matcherOptions(const Query& query) {
         .durationAllowMergedNotes = query.durationAllowMergedNotes,
         .metweightSkipUnclassified = query.metweightSkipUnclassified,
         .skipOverlappingMatches = query.skipOverlappingMatches,
+        .regolaTags = query.regolaTags,
     };
 }
 
@@ -52,6 +53,7 @@ MatcherOptions matcherOptions(const Query& query, const SimultaneousGroup& group
         .durationAllowSplitNotes = group.durationAllowSplitNotes.value_or(query.durationAllowSplitNotes),
         .durationAllowMergedNotes = group.durationAllowMergedNotes.value_or(query.durationAllowMergedNotes),
         .metweightSkipUnclassified = group.metweightSkipUnclassified.value_or(query.metweightSkipUnclassified),
+        .regolaTags = group.regolaTags.value_or(query.regolaTags),
     };
 }
 

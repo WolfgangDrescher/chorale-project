@@ -16,7 +16,7 @@ namespace {
 const std::vector<std::string> kSharedRequestFieldNames = {
     "feature", "voices", "pattern", "everyPosition", "mintStartAtPreviousToken", "mintAllowIntervalComplementation",
     "fbCompareExactChord", "kernIgnoreOctave", "hintReduceCompound", "durationAllowSplitNotes",
-    "durationAllowMergedNotes", "metweightSkipUnclassified", "simultaneousAlignment",
+    "durationAllowMergedNotes", "metweightSkipUnclassified", "regolaTags", "simultaneousAlignment",
 };
 
 std::vector<std::string> buildDrivingFeatureNames() {

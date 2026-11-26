@@ -3,6 +3,7 @@
 #include "PatternRepeat.hpp"
 #include "PositionReference.hpp"
 #include "QueryValidation.hpp"
+#include "RegolaChords.hpp"
 #include "VoiceMap.hpp"
 #include "VoiceReference.hpp"
 
@@ -283,6 +284,21 @@ void applyEveryPosition(std::vector<PatternPosition>& pattern, const AttributeMa
     for (PatternPosition& position : pattern) addMissingKeys(position.keys, everyPosition);
 }
 
+// The tags of "regolaTags", each a tag of a chord. An empty list would leave it open whether it means all
+// chords or the default.
+std::vector<std::string> regolaTagsFromJson(const nlohmann::json& j, const std::string& context) {
+    const std::string where = "'regolaTags' in " + context;
+    if (!j.is_array() || j.empty()) throw std::invalid_argument(where + " must be a non-empty array of tags");
+    std::vector<std::string> tags;
+    for (const nlohmann::json& entry : j) {
+        if (!entry.is_string() || !isValidRegolaTag(entry.get<std::string>())) {
+            throw std::invalid_argument(where + " has '" + entry.dump() + "', which is no tag of a chord");
+        }
+        tags.push_back(entry.get<std::string>());
+    }
+    return tags;
+}
+
 // The diatonic numbers "mintAllowIntervalComplementation" opts in: a single value or an array
 // of them, each either a string ("5") or a plain JSON number (5), since writing an interval
 // size as a number is the obvious thing to reach for and stringifying it here costs nothing.
@@ -502,6 +518,8 @@ void parseSearchRequestFields(const nlohmann::json& j, T& target, const std::str
         }
         target.metweightSkipUnclassified = j["metweightSkipUnclassified"].get<bool>();
     }
+
+    if (j.contains("regolaTags")) target.regolaTags = regolaTagsFromJson(j["regolaTags"], context);
 
     // A word or a syllable is matched with all its notes, so these options would do nothing.
     if (isLyricsDrivingFeature(target.feature)) {

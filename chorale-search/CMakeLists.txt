@@ -76,6 +76,7 @@ add_library(chorale_core STATIC
     src/ChoraleLyrics.cpp
     src/KeyContext.cpp
     src/AttributeMatcher.cpp
+    src/RegolaAnalysis.cpp
     src/CorpusSearch.cpp
     src/SplitScoreIntoVoices.cpp
     src/ScoreImport.cpp
@@ -182,7 +183,7 @@ if(BUILD_TESTS)
 
     add_executable(test_regola tests/test_regola.cpp)
     target_include_directories(test_regola PRIVATE tests)
-    target_link_libraries(test_regola PRIVATE chorale_query)
+    target_link_libraries(test_regola PRIVATE chorale_core)
     add_test(NAME regola COMMAND test_regola)
 
     add_executable(test_diminutions tests/test_diminutions.cpp)
