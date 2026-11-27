@@ -30,6 +30,13 @@ const scoreOptions = props.scoreOptions ?? useScoreOptions();
 
 const showOnlyActive = ref(false);
 
+// The command under the pointer, if it is cut off: only then its tooltip shows it in full.
+const truncatedCommand = ref(null);
+function measureTruncation(event, command) {
+    const element = event.currentTarget;
+    truncatedCommand.value = element.scrollWidth > element.clientWidth ? command : null;
+}
+
 // The submenus of the filters with a value, by the name of their option: the values to choose
 // from (null for the default), how the chosen value is named in the item of the filter, and the
 // name of the parameter that stands for the value in the command.
@@ -272,8 +279,8 @@ const groups = computed(() => {
                 </template>
                 <template #item-trailing="{ item }">
                     <span v-if="item.color" class="size-4 shrink-0 rounded-full" :style="{ backgroundColor: item.color }" />
-                    <UTooltip v-if="item.cmd" :text="item.cmd" :ui="{ content: 'h-auto max-w-sm', text: 'whitespace-normal font-mono text-xs' }">
-                        <div class="max-w-24 sm:max-w-48 truncate font-mono text-[0.55rem] text-gray-500" :class="{ 'translate-y-1': !item.children?.length }">{{ item.cmd }}</div>
+                    <UTooltip v-if="item.cmd" :text="item.cmd" :disabled="truncatedCommand !== item.cmd" :ui="{ content: 'h-auto max-w-sm', text: 'whitespace-normal font-mono text-xs' }">
+                        <div class="max-w-24 sm:max-w-48 truncate font-mono text-[0.55rem] text-gray-500" :class="{ 'translate-y-1': !item.children?.length }" @pointerenter="measureTruncation($event, item.cmd)">{{ item.cmd }}</div>
                     </UTooltip>
                     <template v-if="item.kbd">
                         <UKbd v-for="kbd in Array.isArray(item.kbd) ? item.kbd : [item.kbd]" :key="kbd" :value="kbd" size="sm" class="font-mono translate-y-0.5" />
