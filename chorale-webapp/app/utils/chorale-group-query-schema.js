@@ -23,7 +23,7 @@ const readFeatureDescriptions = {
     ...Object.fromEntries(Object.entries(hintPairVoices).map(([pair, voices]) => [`${pair}.number`, `The number of the interval between ${voices}.`])),
 };
 
-const mintReadFeatures = ['mint', 'mint.direction', 'mint.number', 'mint.interval'];
+const notesOfVoiceReadFeatures = ['mint', 'mint.direction', 'mint.number', 'mint.interval', 'deg'];
 
 const readFeatureSchema = {
     type: 'string',
@@ -60,7 +60,7 @@ const readSchema = {
         },
         notesOfVoice: {
             type: 'string',
-            description: 'Read every note this voice attacks across the match instead, in its own rhythm: a single voice, such as "bass". Only with mint or a part of it, and not with positions.',
+            description: 'Read every note this voice attacks across the match instead, in its own rhythm: a single voice, such as "bass". Only with mint, a part of it, or deg, and not with positions.',
         },
         voice: {
             type: 'string',
@@ -72,7 +72,7 @@ const readSchema = {
         },
         mintAllowIntervalComplementation: {
             type: 'boolean',
-            description: 'An interval counts as its complement: "-P5" is "+P4". Only with notesOfVoice.',
+            description: 'An interval counts as its complement: "-P5" is "+P4". Only with notesOfVoice and mint.',
         },
         categories: categoriesSchema,
     },
@@ -81,7 +81,7 @@ const readSchema = {
             if: { required: ['notesOfVoice'] },
             then: {
                 properties: {
-                    feature: { enum: mintReadFeatures, description: 'notesOfVoice reads the feature mint or a part of it.' },
+                    feature: { enum: notesOfVoiceReadFeatures, description: 'notesOfVoice reads the feature mint, a part of it, or deg.' },
                     positions: { not: {}, description: 'notesOfVoice takes no positions.' },
                 },
             },

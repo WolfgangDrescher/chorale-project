@@ -68,10 +68,11 @@ bool repeatsPitch(const HumdrumChorale& chorale, std::size_t voice, std::size_t 
     return hum::Convert::kernToBase40(std::string(*previous)) == hum::Convert::kernToBase40(std::string(*current));
 }
 
-// The intervals of the other voice across the match; kHeldNoteValue where it holds a note into it.
-// As written, an interval is not replaced by its complement.
-std::vector<std::string> intervalsInOwnRhythm(const FeatureRead& read, const FoundMatch& match, bool asWritten) {
-    std::vector<std::string> intervals;
+// The intervals or scale degrees of the other voice across the match; kHeldNoteValue where it holds a
+// note into it. As written, an interval is not replaced by its complement.
+std::vector<std::string> notesInOwnRhythm(const FeatureRead& read, const FoundMatch& match, bool asWritten) {
+    const bool readsIntervals = read.feature == "mint"; // the interval into the first note lies before the match
+    std::vector<std::string> values;
     bool attacksFirstNote = false;
     bool attacksLastNote = false;
     for (const auto& onset : onsetsSeenBySearch(match.chorale, read.feature, *read.notesOfVoice, match.query)) {
@@ -80,19 +81,23 @@ std::vector<std::string> intervalsInOwnRhythm(const FeatureRead& read, const Fou
         if (line > match.lastLine()) break;
         if (line == match.firstLine()) {
             attacksFirstNote = true;
-            if (match.firstLine() != match.lastLine()) continue;
+            if (readsIntervals && match.firstLine() != match.lastLine()) continue;
         }
-        std::string interval = onset.mint ? *onset.mint : std::string(*onset.token);
+        std::string value = onset.mint ? *onset.mint : std::string(*onset.token);
         if (read.mintAllowIntervalComplementation && !asWritten) {
-            interval = intervalIgnoringOctave(interval);
-            if (interval.empty()) continue; // a repeated note
+            value = intervalIgnoringOctave(value);
+            if (value.empty()) continue; // a repeated note
         }
         attacksLastNote = line == match.lastLine();
-        intervals.push_back(std::move(interval));
+        values.push_back(std::move(value));
     }
-    if (!attacksFirstNote) intervals.insert(intervals.begin(), kHeldNoteValue);
-    if (!attacksLastNote) intervals.push_back(kHeldNoteValue);
-    return intervals;
+    if (!attacksFirstNote && !readsIntervals) {
+        hum::HTp held = match.chorale.soundingTokenAtLine(read.feature, *read.notesOfVoice, static_cast<int>(match.firstLine()));
+        values.insert(values.begin(), held ? std::string(*held) : "");
+    }
+    if (!attacksFirstNote) values.insert(values.begin(), kHeldNoteValue);
+    if (!attacksLastNote) values.push_back(kHeldNoteValue);
+    return values;
 }
 
 // The interval into the note on `line` as the search measured it, across the ornaments it skipped.
@@ -143,7 +148,7 @@ std::vector<std::string> withoutHeldNotes(std::vector<std::string> values) {
 std::vector<std::string> valuesOf(const FeatureRead& read, const FoundMatch& match, bool asWritten) {
     std::vector<std::string> values;
     if (read.notesOfVoice) {
-        values = intervalsInOwnRhythm(read, match, asWritten);
+        values = notesInOwnRhythm(read, match, asWritten);
         if (!asWritten) values = withoutHeldNotes(values);
     } else {
         for (std::size_t position : positionsStartingANote(read, match.notes)) values.push_back(valueAt(read, match, position));

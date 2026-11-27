@@ -41,9 +41,11 @@ TEST_CASE(a_group_query_rejects_what_it_cannot_read) {
         "groupBy": [{"reads": [{"feature": "deg", "positions": [1]}]}]})"));
     CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
         "groupBy": [{"reads": [{"feature": "deg"}], "sort": "matches"}]})"));
-    // Another voice is read in its own rhythm only, as intervals.
-    CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
+    // Another voice is read in its own rhythm only by intervals or scale degrees.
+    CHECK_NOTHROW(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
         "groupBy": [{"reads": [{"feature": "deg", "notesOfVoice": "bass"}]}]})"));
+    CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
+        "groupBy": [{"reads": [{"feature": "metweight", "notesOfVoice": "bass"}]}]})"));
     CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
         "groupBy": [{"reads": [{"feature": "mint", "notesOfVoice": "bass", "positions": [0]}]}]})"));
     // Another voice at the positions, by its scale degree only.
@@ -56,6 +58,8 @@ TEST_CASE(a_group_query_rejects_what_it_cannot_read) {
     // The complement of an interval only in the rhythm of another voice.
     CHECK_THROWS(parse(R"({"query": {"feature": "mint", "voices": "soprano", "pattern": [{"mint": "*"}]},
         "groupBy": [{"reads": [{"feature": "mint", "mintAllowIntervalComplementation": true}]}]})"));
+    CHECK_THROWS(parse(R"({"query": {"feature": "mint", "voices": "soprano", "pattern": [{"mint": "*"}]},
+        "groupBy": [{"reads": [{"feature": "deg", "notesOfVoice": "bass", "mintAllowIntervalComplementation": true}]}]})"));
     CHECK_THROWS(parse(R"({"query": {"feature": "deg", "pattern": [{"deg": "1"}]},
         "groupBy": [{"reads": [{"feature": "deg"}]}], "examples": {"maxCount": -1}})"));
 }

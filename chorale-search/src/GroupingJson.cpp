@@ -102,7 +102,9 @@ FeatureRead featureReadFromJson(const nlohmann::json& j, const std::vector<Patte
         const std::vector<std::size_t> voices =
             j["notesOfVoice"].is_string() ? resolveVoices(j["notesOfVoice"].get<std::string>()) : std::vector<std::size_t>{};
         if (voices.size() != 1) throw std::invalid_argument(where + " must name a single voice");
-        if (read.feature != "mint" || !read.positions.empty()) throw std::invalid_argument(where + " reads the feature mint, and takes no 'positions'");
+        if ((read.feature != "mint" && read.feature != "deg") || !read.positions.empty()) {
+            throw std::invalid_argument(where + " reads the feature mint or deg, and takes no 'positions'");
+        }
         read.notesOfVoice = voices.front();
     }
     if (j.contains("voice")) {
@@ -114,8 +116,8 @@ FeatureRead featureReadFromJson(const nlohmann::json& j, const std::vector<Patte
     }
     read.ignoreQuality = booleanFromJson(j, "ignoreQuality", context);
     read.mintAllowIntervalComplementation = booleanFromJson(j, "mintAllowIntervalComplementation", context);
-    if (read.mintAllowIntervalComplementation && !read.notesOfVoice) {
-        throw std::invalid_argument(fieldLocation("mintAllowIntervalComplementation", context) + " needs 'notesOfVoice'");
+    if (read.mintAllowIntervalComplementation && (!read.notesOfVoice || read.feature != "mint")) {
+        throw std::invalid_argument(fieldLocation("mintAllowIntervalComplementation", context) + " needs 'notesOfVoice' and the feature mint");
     }
     if (j.contains("categories")) read.categories = categoriesFromJson(j["categories"], fieldLocation("categories", context));
     return read;

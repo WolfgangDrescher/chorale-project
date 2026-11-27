@@ -36,7 +36,7 @@ private:
     std::size_t queryPositionOf(std::size_t position) const;
     void askForNotesAtPositions();
     void askForOneNotePerPosition();
-    void askForNotesOfVoice(const FeatureRead& read, const std::vector<std::string>& intervals);
+    void askForNotesOfVoice(const FeatureRead& read, const std::vector<std::string>& values);
     void askForPatternPositions(const FeatureRead& read, const std::vector<std::string>& values);
 };
 

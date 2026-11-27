@@ -1,6 +1,7 @@
 #include "test_framework.hpp"
 
 #include <algorithm>
+#include <iterator>
 #include <set>
 #include <stdexcept>
 
@@ -247,6 +248,31 @@ TEST_CASE(another_voice_is_read_by_the_scale_degree_it_sounds_at_each_position) 
         for (const std::string& degree : group.values[0]) CHECK(!degree.empty());
         CHECK(group.query);
     }
+    CHECK(choralesearch::verifyGroupMatchQueries(search, root).empty());
+}
+
+TEST_CASE(another_voice_is_read_by_the_scale_degree_of_each_of_its_notes) {
+    const GroupQuery groupQuery = choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
+        "query": {
+            "feature": "kern",
+            "voices": "soprano",
+            "pattern": [{ "mint": "-M2" }, { "mint": "*", "fermata": true }]
+        },
+        "groupBy": [{ "reads": [{ "feature": "deg", "notesOfVoice": "bass" }] }]
+    })"));
+    CorpusSearch search(FIXTURES_DIR);
+    const Group root = choralesearch::groupMatchesInCorpus(search, groupQuery);
+    const auto label = [](const Group& group) { return group.label; };
+    std::set<std::string> labels;
+    std::transform(root.groups.begin(), root.groups.end(), std::inserter(labels, labels.end()), label);
+    // The bass moves on while the soprano holds: chor001, measure 6.
+    CHECK(labels.count("4 5 1") == 1u);
+    // A note the bass holds into the match keeps its degree, and is a member of the group of the note struck.
+    const auto heldNote = std::find_if(root.groups.begin(), root.groups.end(), [](const Group& group) {
+        return std::any_of(group.members.begin(), group.members.end(), [](const auto& member) { return member.label.rfind("\u203F", 0) == 0; });
+    });
+    REQUIRE(heldNote != root.groups.end());
+    CHECK(heldNote->label.find("\u203F") == std::string::npos);
     CHECK(choralesearch::verifyGroupMatchQueries(search, root).empty());
 }
 

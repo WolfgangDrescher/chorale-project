@@ -80,18 +80,18 @@ void GroupMatchQueryBuilder::askForOneNotePerPosition() {
     }
 }
 
-// The intervals of the other voice, as a simultaneous group spanning the match. A note held into
+// The notes of the other voice, as a simultaneous group spanning the match. A note held into
 // the match or into its last note has no onset the group could begin or end with.
-void GroupMatchQueryBuilder::askForNotesOfVoice(const FeatureRead& read, const std::vector<std::string>& intervals) {
-    if (std::find(intervals.begin(), intervals.end(), kHeldNoteValue) != intervals.end()) {
+void GroupMatchQueryBuilder::askForNotesOfVoice(const FeatureRead& read, const std::vector<std::string>& values) {
+    if (std::find(values.begin(), values.end(), kHeldNoteValue) != values.end()) {
         m_askable = false;
         return;
     }
     SimultaneousGroup voiceLine;
     voiceLine.feature = read.feature;
     voiceLine.voices = std::to_string(*read.notesOfVoice);
-    voiceLine.pattern.push_back({.keys = {{read.feature, {PatternValue("*")}}}});
-    for (const std::string& interval : intervals) voiceLine.pattern.push_back({.keys = {{read.key(), {PatternValue(interval)}}}});
+    if (read.feature == "mint") voiceLine.pattern.push_back({.keys = {{read.feature, {PatternValue("*")}}}});
+    for (const std::string& value : values) voiceLine.pattern.push_back({.keys = {{read.key(), {PatternValue(value)}}}});
     voiceLine.simultaneousAlignment = "start-end";
     m_query.simultaneousWith.push_back(std::move(voiceLine));
 }

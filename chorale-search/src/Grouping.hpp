@@ -11,8 +11,8 @@
 
 namespace choralesearch {
 
-// What a read of notesOfVoice lists first where the voice holds a note into the match, and last
-// where it holds one into the last note of the match. It does not tell groups apart: the members
+// What a read of notesOfVoice lists first where the voice holds a note into the match (before its
+// scale degree), and last where it holds one into the last note of the match. It does not tell groups apart: the members
 // of a group show where its voice holds, as a tie.
 inline const std::string kHeldNoteValue = "held";
 

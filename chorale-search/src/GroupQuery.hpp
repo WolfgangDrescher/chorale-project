@@ -38,7 +38,7 @@ struct FeatureRead {
 
     // The positions of the pattern it is read at, from 0; empty for all.
     std::vector<std::size_t> positions;
-    // Instead the intervals this voice (1 = bass) sings across the match, in its own rhythm.
+    // Instead the intervals or scale degrees of this voice (1 = bass) across the match, in its own rhythm.
     std::optional<std::size_t> notesOfVoice;
     // The scale degree this voice sounds at each position, instead of the voice searched.
     std::optional<std::size_t> voice;
