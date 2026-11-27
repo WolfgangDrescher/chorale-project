@@ -58,7 +58,7 @@ queryComparisonOnlyChanges: Nur Choräle mit Unterschieden
 queryComparisonNoExpected: Keine Erwartung
 queryComparisonExpectation: Erwartung
 queryComparisonExpectationHelpLabel: Was die Erwartung bewirkt
-queryComparisonExpectationHelp: "Vergleicht beide Queries mit den von Hand annotierten Noten einer Diminution, nur in den annotierten Chorälen und Note für Note. Eine Note mit schwarzem Ring liegt falsch: Die Query findet sie, obwohl sie nicht annotiert ist, oder sie fehlt, obwohl sie annotiert ist. Die Zählung zeigt für Basis und Entwurf, wie viele Noten richtig, zu viel und fehlend sind."
+queryComparisonExpectationHelp: "Vergleicht beide Queries mit den von Hand annotierten Noten einer Diminution, nur in den annotierten Chorälen und Note für Note. Eine Note mit schwarzem Ring liegt falsch: Die Query findet sie, obwohl sie nicht annotiert ist, oder sie fehlt, obwohl sie annotiert ist. Eine unsicher annotierte Note mit Fragezeichen zählt weder als richtig noch als falsch. Die Zählung zeigt für Basis und Entwurf, wie viele Noten richtig, zu viel und fehlend sind."
 queryComparisonWrong: falsch
 queryComparisonWrongTotal: falsch
 queryComparisonCorrect: richtig
@@ -235,7 +235,7 @@ annotateFoundDiminutionsConfirmation: Alle Annotationen durch die berechneten er
 annotateFoundDiminutionsAction: Ersetzen
 clearDiminutionAnnotationsConfirmation: Alle Annotationen löschen?
 clearDiminutionAnnotationsAction: Löschen
-annotateDiminutionsHint: "Ein Klick auf einen Farbkreis zeigt die Diminution an und wählt sie zum Annotieren. Ein Klick auf eine Note nimmt sie in diese Diminution auf oder wieder heraus. Ein Vorhalt entsteht aus drei Klicks in einer Stimme: Vorbereitung, Dissonanz und Auflösung. Ein Klick auf seine Dissonanz löscht ihn wieder. Eine gehaltene Dissonanz wird auf der Höhe ihres Notenkopfs unter oder über der Note einer anderen Stimme angeklickt."
+annotateDiminutionsHint: "Ein Klick auf einen Farbkreis zeigt die Diminution an und wählt sie zum Annotieren. Ein Klick auf eine Note nimmt sie auf oder heraus, ein {alt}-Klick nimmt sie mit Fragezeichen als unsicher auf oder wechselt zwischen sicher und unsicher. Ein Vorhalt entsteht aus drei Klicks in einer Stimme: Vorbereitung, Dissonanz, Auflösung; ein {alt}-Klick als dritter legt ihn unsicher an. Hat eine gehaltene Dissonanz keinen eigenen Notenkopf, dort klicken, wo er stünde: auf ihrer Tonhöhe, wo eine andere Stimme mit ihr einsetzt."
 diminution:
     consonantLeap: Sprung oder Schritt in einen konsonanten Akkordbestandteil
     suspension: Vorhalt (syncopatio)

@@ -4,8 +4,8 @@
 // ("as": "$note").
 //
 // With expected notes (see useExpectedDiminutions) only their chorales are compared, note by
-// note: each note says whether it is expected, and the expected notes neither query finds are
-// `missing`.
+// note: each note says whether it is expected and whether uncertain, and the expected notes
+// neither query finds are `missing`.
 export function useQueryComparison(baseQuery, draftQuery, expectedChorales) {
     const pending = ref(false);
     const preferredUnit = ref('note');
@@ -90,7 +90,7 @@ export function useQueryComparison(baseQuery, draftQuery, expectedChorales) {
             .map(({ choraleId, baseUnits, draftUnits, expectedUnits }) => {
                 const select = (units, keep) => [...units]
                     .filter(([key]) => keep(key))
-                    .map(([key, found]) => (expectedUnits ? { ...found, expected: expectedUnits.has(key) } : found));
+                    .map(([key, found]) => (expectedUnits ? { ...found, expected: expectedUnits.has(key), uncertain: !!expectedUnits.get(key)?.uncertain } : found));
                 return {
                     choraleId,
                     unchanged: select(baseUnits, (key) => draftUnits.has(key)),
@@ -105,10 +105,10 @@ export function useQueryComparison(baseQuery, draftQuery, expectedChorales) {
     const totals = computed(() => ({ unchanged: total('unchanged'), lost: total('lost'), added: total('added') }));
 
     // How a query does against the expected notes, by the changes that hold what it finds and
-    // what it does not: true positives, false positives and false negatives.
+    // what it does not: true positives, false positives and false negatives. An uncertain note is none of them.
     function accuracy(found, notFound) {
         const count = (changes, expected) => chorales.value.reduce(
-            (sum, chorale) => sum + changes.flatMap((change) => chorale[change]).filter((note) => note.expected === expected).length,
+            (sum, chorale) => sum + changes.flatMap((change) => chorale[change]).filter((note) => !note.uncertain && note.expected === expected).length,
             0,
         );
         return { truePositives: count(found, true), falsePositives: count(found, false), falseNegatives: count(notFound, true) };

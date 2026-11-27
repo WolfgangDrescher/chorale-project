@@ -34,7 +34,8 @@ using choralesearch::Result;
 // scores of the submodule. An annotation is a note where it is attacked, as "measure/beat" and voice:
 // ["3/2+1/2", "alto"]. Or it is a figure, its voice and where each of its notes sounds, by role:
 // {"voice": "tenor", "preparation": "3/4", "suspension": "4/1", "resolution": "4/1+1/2"}. A match is a figure of
-// the notes of its named positions.
+// the notes of its named positions. An uncertain annotation, ["3/2", "alto", "?"] or a figure with
+// "uncertain": true, may be found or not.
 
 namespace {
 
@@ -103,6 +104,11 @@ std::string describe(const std::set<Figure>& figures, const std::vector<LinePosi
     return text;
 }
 
+bool isUncertain(const nlohmann::json& annotation) {
+    if (annotation.is_object()) return annotation.value("uncertain", false);
+    return annotation.size() > 2 && annotation.at(2) == "?";
+}
+
 } // namespace
 
 TEST_CASE(the_queries_find_the_annotated_diminutions_and_no_others) {
@@ -131,18 +137,19 @@ TEST_CASE(the_queries_find_the_annotated_diminutions_and_no_others) {
             const std::string where = choraleId + " " + diminution + ": ";
             bool ofFigures = false;
             std::set<Figure> annotated;
+            std::set<Figure> uncertain;
             for (const auto& annotation : annotationsOfDiminution) {
                 if (annotation.is_object()) {
                     ofFigures = true;
                     std::vector<int> lines;
                     for (const auto& [role, position] : annotation.items()) {
-                        if (role == "voice") continue;
+                        if (role == "voice" || role == "uncertain") continue;
                         const int line = lineOfPosition(position.get<std::string>(), positions);
                         CHECK_EQ(where + position.get<std::string>() + (line ? "" : " is no position of the chorale"), where + position.get<std::string>());
                         lines.push_back(line);
                     }
                     std::sort(lines.begin(), lines.end());
-                    annotated.insert({lines, choralesearch::resolveVoices(annotation.at("voice").get<std::string>()).front()});
+                    (isUncertain(annotation) ? uncertain : annotated).insert({lines, choralesearch::resolveVoices(annotation.at("voice").get<std::string>()).front()});
                     continue;
                 }
                 const std::string position = annotation.at(0).get<std::string>();
@@ -151,9 +158,12 @@ TEST_CASE(the_queries_find_the_annotated_diminutions_and_no_others) {
                 const int line = lineOfPosition(position, positions);
                 const std::string problem = !line ? " is no position of the chorale" : attackLineAt(chorale, voice, line) != line ? " is no attack" : "";
                 CHECK_EQ(where + position + " " + voiceName + problem, where + position + " " + voiceName);
-                annotated.insert({{line}, voice});
+                (isUncertain(annotation) ? uncertain : annotated).insert({{line}, voice});
             }
-            const std::set<Figure>& found = ofFigures ? foundFigures[diminution] : foundNotes[diminution];
+            std::set<Figure> found;
+            const std::set<Figure>& foundOfDiminution = ofFigures ? foundFigures[diminution] : foundNotes[diminution];
+            std::set_difference(foundOfDiminution.begin(), foundOfDiminution.end(), uncertain.begin(), uncertain.end(),
+                                std::inserter(found, found.end()));
             std::set<Figure> notAnnotated, notFound;
             std::set_difference(found.begin(), found.end(), annotated.begin(), annotated.end(),
                                 std::inserter(notAnnotated, notAnnotated.end()));

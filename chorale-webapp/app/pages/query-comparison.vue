@@ -106,7 +106,7 @@ const viewItems = computed(() => [
 ]);
 const judged = computed(() => (view.value === 'base' ? 'base' : 'draft'));
 
-const deviates = (change, note) => FINDS[judged.value][change] !== note.expected;
+const deviates = (change, note) => !note.uncertain && FINDS[judged.value][change] !== note.expected;
 const deviationCount = (chorale) => CHANGES.flatMap((change) => chorale[change].filter((note) => deviates(change, note))).length;
 
 // In the view of a query, the changes it finds, and those it does not where it misses an expected note.
@@ -180,16 +180,28 @@ useScorePlayerKeyboardShortcuts(() => players.value.values().next().value);
 const noteId = ({ voice, line }) => `L${line}F${voice}`;
 
 // The units of a chorale as the groups a score marks: sections for matches, notes for notes,
-// which with expected notes are a group for each change, with and without a border.
+// which with expected notes are a group for each change: right, wrong with a border, or
+// uncertain with a question mark.
+const MARKS_BY_JUDGEMENT = {
+    right: {},
+    wrong: { borderColor: DEVIATION_COLOR },
+    uncertain: { chips: [{ icon: 'lucide:question-mark', color: UNCERTAIN_COLOR, angle: 45 }] },
+};
+
+function judgementOf(change, note) {
+    if (note.uncertain) return 'uncertain';
+    return deviates(change, note) ? 'wrong' : 'right';
+}
+
 function highlightGroups(chorale) {
     const shown = (change) => chorale[change].filter((found) => isShown(change, found));
     if (unit.value === 'match') return { sections: CHANGES.map((change) => ({ color: fillColor(change), items: shown(change) })) };
     if (!hasExpectation.value) return { notes: CHANGES.map((change) => ({ color: fillColor(change), items: shown(change).map(noteId) })) };
     return {
-        notes: CHANGES.flatMap((change) => [false, true].map((deviating) => ({
+        notes: CHANGES.flatMap((change) => Object.entries(MARKS_BY_JUDGEMENT).map(([judgement, marks]) => ({
             color: fillColor(change),
-            borderColor: deviating ? DEVIATION_COLOR : undefined,
-            items: shown(change).filter((note) => deviates(change, note) === deviating).map(noteId),
+            ...marks,
+            items: shown(change).filter((note) => judgementOf(change, note) === judgement).map(noteId),
         }))),
     };
 }

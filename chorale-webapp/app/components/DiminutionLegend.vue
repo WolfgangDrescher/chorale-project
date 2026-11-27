@@ -1,6 +1,7 @@
 <script setup>
 // The diminutions of the analysis layer of a chorale, as returned by the legend of
-// useDiminutionAnalysis: color, name and number of figures, each shown or hidden with its checkbox.
+// useDiminutionAnalysis: color, name and number of figures, the uncertain ones apart, each shown or hidden
+// with its checkbox.
 // With an annotator, they can be shown as annotated by hand instead and annotated. The controls have a
 // width of their own, so annotating does not change where the labels break.
 const props = defineProps({
@@ -18,6 +19,8 @@ const source = defineModel('source', { type: String, default: 'found' });
 const annotating = defineModel('annotating', { type: Boolean, default: false });
 
 const { t } = useI18n();
+const { macOS } = useKbd();
+const altKeyName = computed(() => (macOS.value ? 'Option' : 'Alt'));
 
 // Annotating shows what is annotated, so that it is clear what a click changes.
 const sourceItems = computed(() => [
@@ -79,7 +82,7 @@ const annotateIcon = computed(() => ({
                                     @click.stop.prevent="choose(diminution)"
                                 />
                                 <span>{{ $t(`diminution.${diminution.id}`) }}</span>
-                                <span class="min-w-[2ch] text-dimmed tabular-nums">{{ diminution.count }}</span>
+                                <span class="min-w-[2ch] text-dimmed tabular-nums">{{ diminution.count }}<template v-if="diminution.uncertainCount"> + {{ diminution.uncertainCount }}?</template></span>
                             </span>
                         </template>
                     </UCheckbox>
@@ -117,7 +120,7 @@ const annotateIcon = computed(() => ({
             </div>
         </div>
         <div v-if="annotating" class="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
-            <p class="max-w-prose text-xs text-muted">{{ $t('annotateDiminutionsHint') }}</p>
+            <p class="max-w-prose text-xs text-muted">{{ $t('annotateDiminutionsHint', { alt: altKeyName }) }}</p>
             <ConfirmationPrompt
                 v-if="confirming"
                 :question="confirming.confirmation"

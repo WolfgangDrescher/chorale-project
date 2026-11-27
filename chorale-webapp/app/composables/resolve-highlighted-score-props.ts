@@ -3,6 +3,9 @@ interface NoteGroup {
     color?: string;
     // A border around the circle of each note.
     borderColor?: string;
+    // Chips with an icon such as "lucide:question-mark" or a text on the edge of the circle of each note, at an
+    // angle in degrees clockwise from the top.
+    chips?: { icon?: string, text?: string, color: string, angle: number }[];
 }
 
 // The lines of a section its pattern does not ask for: what a repeat took that may be empty. Drawn fainter than

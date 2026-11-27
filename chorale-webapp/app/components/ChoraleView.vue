@@ -71,9 +71,9 @@ watch(() => player.isPlaying, (playing) => {
     if (playing) playedWhileAnnotating.value = true;
 });
 
-function annotateDiminution({ line, voice, held }) {
+function annotateDiminution({ line, voice, held, altKey }) {
     if (!scoreOptions.showDiminutions || !scoreOptions.diminutions.includes(diminutionAnnotator.current)) return;
-    diminutionAnnotator.click({ line: line - lineShiftOf(scoreOptions.humdrumFilters), voice, held });
+    diminutionAnnotator.click({ line: line - lineShiftOf(scoreOptions.humdrumFilters), voice, held, uncertain: altKey });
 }
 
 const verovioOptions = computed(() => ({ ...scoreOptions.verovioOptions, ...CHORALE_PAGE_VEROVIO_OPTIONS }));

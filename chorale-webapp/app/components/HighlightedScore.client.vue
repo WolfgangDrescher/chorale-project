@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     // A click on (or near) a note or a rest: its element id, and the line and voice read off it.
     // Where the voice holds the note, the line is that of the other note and `held` is true.
-    noteClick: [note: { id: string, line: number, voice: number, held?: boolean }],
+    noteClick: [note: { id: string, line: number, voice: number, held?: boolean, altKey: boolean }],
     // Whenever the score is loaded into Verovio, also again with other filters: the function that
     // calls a method of the toolkit it is loaded into, e.g. to render it to MIDI.
     scoreLoaded: [event: { callVerovioMethod: (method: string, ...args: unknown[]) => Promise<unknown> }],
@@ -250,11 +250,11 @@ function onClick(event: MouseEvent) {
     const note = noteAtPoint(event.clientX, event.clientY);
     const parsed = note && lineAndVoiceOf(note.id);
     if (parsed) {
-        emit('noteClick', { id: note.id, line: parsed.line, voice: voiceInScore(voiceOfField(scoreContainer.value, parsed.voice), props.filters) });
+        emit('noteClick', { id: note.id, line: parsed.line, voice: voiceInScore(voiceOfField(scoreContainer.value, parsed.voice), props.filters), altKey: event.altKey });
         return;
     }
     const held = props.clickableHeldNotes ? heldNoteAtPoint(event.clientX, event.clientY) : null;
-    if (held) emit('noteClick', { ...held, voice: voiceInScore(held.voice, props.filters), held: true });
+    if (held) emit('noteClick', { ...held, voice: voiceInScore(held.voice, props.filters), held: true, altKey: event.altKey });
 }
 
 // The note a voice holds at the height of a click, on the line of the note another voice attacks
@@ -440,6 +440,15 @@ onMounted(async () => {
             </div>
             <div ref="scoreContainer" class="verovio-canvas-container">
                 <VerovioCanvas v-if="verovioCanvasAttrs.data" ref="verovioCanvas" v-bind="{ ...$attrs, ...verovioCanvasAttrs }" @score-is-ready="onScoreIsReady" @score-loaded="emit('scoreLoaded', $event)" />
+            </div>
+            <div class="pointer-events-none absolute h-full top-0 left-0 overflow-x-clip" :class="!horizontal && 'w-full'" :key="`chips-${scoreKey}`" :style="markerContainerStyle">
+                <template v-if="scoreContainer">
+                    <template v-for="(noteGroup, groupIndex) in resolvedNotes" :key="groupIndex">
+                        <template v-if="noteGroup.chips?.length">
+                            <HighlightedNote v-for="noteId in noteGroup.items" :key="`${noteId}-${JSON.stringify(noteGroup.chips)}`" :note-id="noteId" color="transparent" :chips="noteGroup.chips" :container="scoreContainer" />
+                        </template>
+                    </template>
+                </template>
             </div>
         </div>
     </div>
