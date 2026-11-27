@@ -272,7 +272,9 @@ const groups = computed(() => {
                 </template>
                 <template #item-trailing="{ item }">
                     <span v-if="item.color" class="size-4 shrink-0 rounded-full" :style="{ backgroundColor: item.color }" />
-                    <div v-if="item.cmd" class="font-mono text-[0.55rem] text-gray-500" :class="{ 'translate-y-1': !item.children?.length }">{{ item.cmd }}</div>
+                    <UTooltip v-if="item.cmd" :text="item.cmd" :ui="{ content: 'h-auto max-w-sm', text: 'whitespace-normal font-mono text-xs' }">
+                        <div class="max-w-24 sm:max-w-48 truncate font-mono text-[0.55rem] text-gray-500" :class="{ 'translate-y-1': !item.children?.length }">{{ item.cmd }}</div>
+                    </UTooltip>
                     <template v-if="item.kbd">
                         <UKbd v-for="kbd in Array.isArray(item.kbd) ? item.kbd : [item.kbd]" :key="kbd" :value="kbd" size="sm" class="font-mono translate-y-0.5" />
                     </template>
