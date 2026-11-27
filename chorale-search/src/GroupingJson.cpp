@@ -9,6 +9,7 @@
 #include "Grouping.hpp"
 #include "HintPairs.hpp"
 #include "JsonIO.hpp"
+#include "PatternKeys.hpp"
 #include "VoiceMap.hpp"
 
 namespace choralesearch {
@@ -84,12 +85,16 @@ FeatureRead featureReadFromJson(const nlohmann::json& j, const std::vector<Patte
     rejectUnknownKeys(j, {"feature", "positions", "notesOfVoice", "voice", "ignoreQuality", "mintAllowIntervalComplementation", "categories"}, context);
     FeatureRead read;
     if (!j.contains("feature") || !j["feature"].is_string()) throw std::invalid_argument(fieldLocation("feature", context) + " must be a string");
-    read.feature = j["feature"].get<std::string>();
+    const std::string key = j["feature"].get<std::string>();
+    const PatternKeyLookup lookup = findPatternKey(key);
+    read.feature = lookup.baseKey;
+    read.part = lookup.partName();
     const bool knownFeature = read.feature == "deg" || read.feature == "mint" || read.feature == "metweight" ||
                               read.feature == "duration" || isHintPairFeature(read.feature);
-    if (!knownFeature) {
-        throw std::invalid_argument(fieldLocation("feature", context) + " must be deg, mint, metweight, duration or a hint pair, got '" +
-                                    read.feature + "'");
+    const bool knownPart = lookup.patternKeyPart || key.find('.') == std::string::npos; // of these, only mint and the hint pairs have parts
+    if (!knownFeature || !knownPart || lookup.negated) {
+        throw std::invalid_argument(fieldLocation("feature", context) + " must be deg, mint, metweight, duration or a hint pair, " +
+                                    "or a part of mint or of a hint pair such as mint.direction, got '" + key + "'");
     }
     if (j.contains("positions")) read.positions = positionsFromJson(j["positions"], pattern, fieldLocation("positions", context));
     if (j.contains("notesOfVoice")) {

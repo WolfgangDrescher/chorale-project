@@ -33,6 +33,8 @@ struct Categories {
 struct FeatureRead {
     // deg, mint, metweight, duration or a hint pair such as hint-14.
     std::string feature;
+    // A part of its value: direction, number or interval of mint, number of a hint pair; empty for all.
+    std::string part;
 
     // The positions of the pattern it is read at, from 0; empty for all.
     std::vector<std::size_t> positions;
@@ -45,6 +47,9 @@ struct FeatureRead {
     bool mintAllowIntervalComplementation = false; // "-P5" counts as "+P4", only with notesOfVoice
 
     Categories categories;
+
+    // The key a query checks it with: "mint.direction".
+    std::string key() const { return part.empty() ? feature : feature + "." + part; }
 
     // Whether its groups stand for several values, listed as members: the values of a category,
     // an interval and its complement, or the notes of a voice with and without a held note.

@@ -10,7 +10,9 @@
 #include "GroupingExamples.hpp"
 #include "HintPairs.hpp"
 #include "HumdrumChorale.hpp"
+#include "Intervals.hpp"
 #include "JsonIO.hpp"
+#include "PatternKeys.hpp"
 #include "Segmentation.hpp"
 
 namespace choralesearch {
@@ -117,6 +119,20 @@ std::string valueAt(const FeatureRead& read, const FoundMatch& match, std::size_
     return token ? std::string(*token) : "";
 }
 
+// The part of a value that `read` names: "+M2" as "+" for mint.direction; empty where it has none.
+std::string partOfValue(const FeatureRead& read, const std::string& value) {
+    if (read.part.empty()) return value;
+    if (read.feature == "mint") {
+        const std::optional<IntervalParts> interval = parseMintValue(value);
+        if (!interval || interval->number.empty()) return "";
+        if (read.part == "direction") return interval->direction.empty() ? kNoDirection : interval->direction;
+        if (read.part == "number") return interval->number;
+        return interval->quality + interval->number;
+    }
+    const std::optional<FbValue> interval = parseFbValue(value); // the number of a hint pair
+    return interval ? interval->figure : "";
+}
+
 std::vector<std::string> withoutHeldNotes(std::vector<std::string> values) {
     values.erase(std::remove(values.begin(), values.end(), kHeldNoteValue), values.end());
     return values;
@@ -136,7 +152,8 @@ std::vector<std::string> valuesOf(const FeatureRead& read, const FoundMatch& mat
         if (value.empty() || value == kHeldNoteValue) continue; // a held note has no value
         if (isHintPairFeature(read.feature) && match.query.hintReduceCompound) value = reduceHintInterval(value);
         if (read.ignoreQuality && (read.feature == "mint" || isHintPairFeature(read.feature))) value = withoutQuality(value);
-        if (!read.categories.empty() && !asWritten) value = read.categories.categoryNameFor(value);
+        value = partOfValue(read, value);
+        if (!read.categories.empty() && !asWritten && !value.empty()) value = read.categories.categoryNameFor(value);
     }
     return values;
 }

@@ -77,6 +77,29 @@ TEST_CASE(intervals_are_read_without_their_quality_where_asked) {
     CHECK(choralesearch::verifyGroupMatchQueries(search, root).empty());
 }
 
+TEST_CASE(a_part_of_an_interval_is_read_on_its_own) {
+    const GroupQuery groupQuery = choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
+        "query": {
+            "feature": "mint",
+            "voices": "soprano",
+            "pattern": [{ "mint": "*" }, { "mint": "*", "fermata": true }]
+        },
+        "groupBy": [
+            { "reads": [{ "feature": "mint.direction", "positions": [1] }] },
+            { "reads": [{ "feature": "hint-14.number", "positions": [1] }] }
+        ]
+    })"));
+    CorpusSearch search(FIXTURES_DIR);
+    const Group root = choralesearch::groupMatchesInCorpus(search, groupQuery);
+    REQUIRE(root.groups.size() >= 2u);
+    const std::set<std::string> directions = {"+", "-", "none"};
+    for (const Group& group : root.groups) {
+        CHECK(directions.count(group.values[0][0]) == 1u);
+        for (const Group& groupBelow : group.groups) CHECK(groupBelow.values[0][0].find_first_not_of("0123456789") == std::string::npos);
+    }
+    CHECK(choralesearch::verifyGroupMatchQueries(search, root).empty());
+}
+
 TEST_CASE(a_variant_reads_every_interval_of_the_group_query_without_its_quality) {
     const GroupQuery groupQuery = choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
         "query": {

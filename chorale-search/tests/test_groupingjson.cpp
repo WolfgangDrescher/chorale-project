@@ -60,6 +60,24 @@ TEST_CASE(a_group_query_rejects_what_it_cannot_read) {
         "groupBy": [{"reads": [{"feature": "deg"}]}], "examples": {"maxCount": -1}})"));
 }
 
+TEST_CASE(a_read_names_a_part_of_mint_or_of_a_hint_pair) {
+    const auto parse = [](const char* feature) {
+        return choralesearch::groupQueryFromJson(nlohmann::json::parse(std::string(R"({
+            "query": { "feature": "mint", "voices": "soprano", "pattern": [{ "mint": "*" }] },
+            "groupBy": [{ "reads": [{ "feature": ")") + feature + "\" }] }]}"));
+    };
+    const GroupQuery groupQuery = parse("mint.direction");
+    const auto& read = groupQuery.levels[0].reads[0];
+    CHECK_EQ(read.feature, std::string("mint"));
+    CHECK_EQ(read.key(), std::string("mint.direction"));
+    CHECK_NOTHROW(parse("mint.number"));
+    CHECK_NOTHROW(parse("mint.interval"));
+    CHECK_NOTHROW(parse("hint-14.number"));
+    CHECK_THROWS(parse("mint.pitch"));
+    CHECK_THROWS(parse("deg.number"));
+    CHECK_THROWS(parse("!mint"));
+}
+
 TEST_CASE(a_variant_is_an_object_of_the_keys_it_knows) {
     CHECK_THROWS(choralesearch::groupQueryFromJson(nlohmann::json::parse(R"({
         "query": { "feature": "mint", "voices": "soprano", "pattern": [{ "mint": "*" }] },

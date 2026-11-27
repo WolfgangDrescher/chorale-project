@@ -2,22 +2,34 @@ import { patternPositionSchema, searchQueryDefinitions, searchRequestFieldSchema
 
 // Schema of a group query for the editor, following GroupingJson.cpp.
 
+const hintPairVoices = {
+    'hint-12': 'bass and tenor',
+    'hint-13': 'bass and alto',
+    'hint-14': 'bass and soprano',
+    'hint-23': 'tenor and alto',
+    'hint-24': 'tenor and soprano',
+    'hint-34': 'alto and soprano',
+};
+
+const readFeatureDescriptions = {
+    'deg': 'The scale degree in the local key.',
+    'mint': 'The melodic interval into the note.',
+    'mint.direction': 'The direction of the melodic interval: +, - or none for a unison.',
+    'mint.number': 'The number of the melodic interval, without direction and quality.',
+    'mint.interval': 'The melodic interval without its direction.',
+    'metweight': 'The metric weight of the note.',
+    'duration': 'The duration of the note.',
+    ...Object.fromEntries(Object.entries(hintPairVoices).map(([pair, voices]) => [pair, `The interval between ${voices}.`])),
+    ...Object.fromEntries(Object.entries(hintPairVoices).map(([pair, voices]) => [`${pair}.number`, `The number of the interval between ${voices}.`])),
+};
+
+const mintReadFeatures = ['mint', 'mint.direction', 'mint.number', 'mint.interval'];
+
 const readFeatureSchema = {
     type: 'string',
-    enum: ['deg', 'mint', 'metweight', 'duration', 'hint-12', 'hint-13', 'hint-14', 'hint-23', 'hint-24', 'hint-34'],
-    enumDescriptions: [
-        'The scale degree in the local key.',
-        'The melodic interval into the note.',
-        'The metric weight of the note.',
-        'The duration of the note.',
-        'The interval between bass and tenor.',
-        'The interval between bass and alto.',
-        'The interval between bass and soprano.',
-        'The interval between tenor and alto.',
-        'The interval between tenor and soprano.',
-        'The interval between alto and soprano.',
-    ],
-    description: 'What is read: deg, mint, metweight, duration or a voice pair such as hint-14.',
+    enum: Object.keys(readFeatureDescriptions),
+    enumDescriptions: Object.values(readFeatureDescriptions),
+    description: 'What is read: deg, mint, metweight, duration or a voice pair such as hint-14, or a part of mint or of a voice pair such as mint.direction.',
 };
 
 const countSchema = (description) => ({ type: 'integer', minimum: 0, description });
@@ -48,7 +60,7 @@ const readSchema = {
         },
         notesOfVoice: {
             type: 'string',
-            description: 'Read every note this voice attacks across the match instead, in its own rhythm: a single voice, such as "bass". Only with mint, and not with positions.',
+            description: 'Read every note this voice attacks across the match instead, in its own rhythm: a single voice, such as "bass". Only with mint or a part of it, and not with positions.',
         },
         voice: {
             type: 'string',
@@ -69,7 +81,7 @@ const readSchema = {
             if: { required: ['notesOfVoice'] },
             then: {
                 properties: {
-                    feature: { const: 'mint', description: 'notesOfVoice reads the feature mint.' },
+                    feature: { enum: mintReadFeatures, description: 'notesOfVoice reads the feature mint or a part of it.' },
                     positions: { not: {}, description: 'notesOfVoice takes no positions.' },
                 },
             },

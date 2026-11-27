@@ -91,7 +91,7 @@ void GroupMatchQueryBuilder::askForNotesOfVoice(const FeatureRead& read, const s
     voiceLine.feature = read.feature;
     voiceLine.voices = std::to_string(*read.notesOfVoice);
     voiceLine.pattern.push_back({.keys = {{read.feature, {PatternValue("*")}}}});
-    for (const std::string& interval : intervals) voiceLine.pattern.push_back({.keys = {{read.feature, {PatternValue(interval)}}}});
+    for (const std::string& interval : intervals) voiceLine.pattern.push_back({.keys = {{read.key(), {PatternValue(interval)}}}});
     voiceLine.simultaneousAlignment = "start-end";
     m_query.simultaneousWith.push_back(std::move(voiceLine));
 }
@@ -109,7 +109,7 @@ void GroupMatchQueryBuilder::askForPatternPositions(const FeatureRead& read, con
         if (values[i].empty()) {
             m_askable = false; // a held note
         } else {
-            const std::string key = read.voice ? otherVoiceKey("@" + std::to_string(*read.voice), read.feature) : read.feature;
+            const std::string key = read.voice ? otherVoiceKey("@" + std::to_string(*read.voice), read.key()) : read.key();
             m_query.pattern[queryPositionOf(positions[i])].keys[key] = {PatternValue(values[i])};
         }
     }
