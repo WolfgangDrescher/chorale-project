@@ -79,7 +79,7 @@ the modulations or the generator change, and commit the result.
   `chorale-webapp/content/docs/`.
 * A key of a group query: `src/GroupQuery.hpp`, `src/GroupingJson.cpp`, the
   tests, `chorale-webapp/app/utils/chorale-group-query-schema.js` and
-  `chorale-webapp/content/docs/10.grouping.md`.
+  `chorale-webapp/content/docs/11.grouping.md`.
 * A new analysis: a JSON file in `chorale-webapp/analyses/` (see its README),
   named by a lesson in its front matter. `make analyses` runs it with
   `--verify`.
