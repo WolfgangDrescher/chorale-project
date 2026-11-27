@@ -286,6 +286,7 @@ resetAll: Alles zurücksetzen
 showOnlyActiveFilters: Nur aktive Filter anzeigen
 showMeter: Schläge anzeigen
 satb2gs: Klaviersatz anzeigen
+oldClefs: Alte Schlüssel anzeigen
 intervallsatz: Intervallsatz anzeigen
 extendedFiguredbass: Generalbassbezifferung anzeigen
 bassScaleDegree: Bassstufen anzeigen

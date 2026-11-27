@@ -10,6 +10,7 @@ function createDefaultScoreOptions() {
     return {
         showMeter: false,
         satb2gs: false,
+        oldClefs: false,
         intervallsatz: false,
         extendedFiguredbass: false,
         bassScaleDegree: false,
@@ -41,6 +42,10 @@ export const CHORALE_HUMDRUM_FILTERS = {
     transposeKey: { command: (state) => `transpose -k ${state.transposeKey}`, priority: 3 },
     showMeter: { command: 'meter -f' },
     satb2gs: { command: 'satb2gs', priority: 1 },
+    oldClefs: {
+        command: 'shed -s 2 -e "s/^clef.*/clefC4/I" | shed -s 3 -e "s/^clef.*/clefC3/I" | shed -s 4 -e "s/^clef.*/clefC1/I"',
+        priority: 4,
+    },
     intervallsatz: { command: 'fb -icatm', priority: -1 },
     extendedFiguredbass: { command: 'fb -acon3' },
     bassScaleDegree: { command: 'deg --circle -k 1' },
