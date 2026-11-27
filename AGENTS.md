@@ -97,9 +97,10 @@ the modulations or the generator change, and commit the result.
   into `de.learn.yaml`, not into the components.
 * Wrap the prose of every Markdown file (content, READMEs, this file) at 80
   characters. Tables, code blocks and front matter stay unwrapped.
-* Name a chorale with `:chorale{id="chor005"}`, scale degrees with
-  `:deg{v="4 5 1" bass}` and figured bass with `:fb{v="6 4 2"}`. The components
-  are in `app/components/content/`.
+* Name a chorale with `:chorale{id="chor005"}` and figured bass with
+  `:fb{v="6 4 2"}`. Write scale degrees with `:deg`, in the bass as
+  `:deg{v="4 5 1" bass}`, in the soprano as `:deg{v="3 2 1" upper}`. The
+  components are in `app/components/content/`.
 * Show measures of a chorale with `:score-example{chorale-id="chor001"
   measures="2"}`, a score of its own with **kern in the `kern` property of the
   YAML block of `::score-example`.
