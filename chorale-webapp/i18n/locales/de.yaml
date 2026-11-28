@@ -58,13 +58,13 @@ queryComparisonOnlyChanges: Nur Choräle mit Unterschieden
 queryComparisonNoExpected: Keine Erwartung
 queryComparisonExpectation: Erwartung
 queryComparisonExpectationHelpLabel: Was die Erwartung bewirkt
-queryComparisonExpectationHelp: "Vergleicht beide Queries mit den von Hand annotierten Noten einer Diminution, nur in den annotierten Chorälen und Note für Note. Eine Note mit schwarzem Ring liegt falsch: Die Query findet sie, obwohl sie nicht annotiert ist, oder sie fehlt, obwohl sie annotiert ist. Eine unsicher annotierte Note mit Fragezeichen zählt weder als richtig noch als falsch. Die Zählung zeigt für Basis und Entwurf, wie viele Noten richtig, zu viel und fehlend sind."
+queryComparisonExpectationHelp: "Vergleicht beide Queries mit den von Hand annotierten Noten einer Diminution, nur in den annotierten Chorälen und Note für Note. Eine neue oder verlorene Note trägt {right}, wenn sie richtig ist. Jede falsche Note trägt {wrong}: Die Query findet sie, obwohl sie nicht annotiert ist, oder sie fehlt, obwohl sie annotiert ist. Eine unsicher annotierte Note mit {uncertain} zählt weder als richtig noch als falsch. Die Zählung zeigt für Basis und Entwurf, wie viele Noten richtig, zu viel und fehlend sind."
 queryComparisonWrong: falsch
 queryComparisonWrongTotal: falsch
 queryComparisonCorrect: richtig
 queryComparisonSurplus: zu viel gefunden
 queryComparisonMissing: erwartet, aber fehlt
-queryComparisonExpectedNotes: "Erwartet sind {notes} annotierte Noten in {n} Choral. Falsche Noten tragen in der Partitur einen Ring. | Erwartet sind {notes} annotierte Noten in {n} Chorälen. Falsche Noten tragen in der Partitur einen Ring."
+queryComparisonExpectedNotes: "Erwartet sind {notes} annotierte Noten in {n} Choral. Falsche Noten tragen in der Partitur {wrong}. | Erwartet sind {notes} annotierte Noten in {n} Chorälen. Falsche Noten tragen in der Partitur {wrong}."
 queryComparisonNoChanges: Keine Unterschiede.
 formatQueryInvalid: Der Query ist kein gültiges JSON.
 shareQuery: Teilen

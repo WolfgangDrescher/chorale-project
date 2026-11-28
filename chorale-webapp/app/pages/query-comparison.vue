@@ -79,15 +79,16 @@ const metadata = useChoraleMetadata();
 const scoreOptions = useSearchScoreOptions();
 useChoraleKeyboardShortcuts({ scoreOptions });
 
-// The fill of a mark tells the change. A border marks a note the query judged is wrong about:
-// one it finds but is not expected, or one expected that it does not find.
+// The fill of a mark tells the change. A chip tells whether the query judged is right about a
+// note, or wrong: it finds one that is not expected, or misses one that is.
 const CHANGE_COLORS = {
     unchanged: 'rgb(100 116 139 / 0.3)',
     lost: highlightColorsByName.red,
     added: highlightColorsByName.green,
     missing: 'transparent',
 };
-const DEVIATION_COLOR = 'rgb(30 41 59)';
+const RIGHT_COLOR = 'rgb(22 163 74)';
+const WRONG_COLOR = 'rgb(220 38 38)';
 // A score scrolls to the first mark of its first group, so the changes come first.
 const CHANGES = ['lost', 'added', 'unchanged', 'missing'];
 // The changes that hold what each query finds.
@@ -180,27 +181,32 @@ useScorePlayerKeyboardShortcuts(() => players.value.values().next().value);
 const noteId = ({ voice, line }) => `L${line}F${voice}`;
 
 // The units of a chorale as the groups a score marks: sections for matches, notes for notes,
-// which with expected notes are a group for each change: right, wrong with a border, or
-// uncertain with a question mark.
-const MARKS_BY_JUDGEMENT = {
-    right: {},
-    wrong: { borderColor: DEVIATION_COLOR },
-    uncertain: { chips: [{ icon: 'lucide:question-mark', color: UNCERTAIN_COLOR, angle: 45 }] },
+// which with expected notes are a group for each change and judgement, told apart by a chip.
+const CHIPS_BY_JUDGEMENT = {
+    right: { icon: 'lucide:check', color: RIGHT_COLOR },
+    wrong: { icon: 'lucide:x', color: WRONG_COLOR },
+    uncertain: { icon: 'lucide:question-mark', color: UNCERTAIN_COLOR },
 };
+
+// The chips in the text that explains them, the size of a letter.
+const INLINE_CHIP_SIZE = 14;
 
 function judgementOf(change, note) {
     if (note.uncertain) return 'uncertain';
     return deviates(change, note) ? 'wrong' : 'right';
 }
 
+// A note both queries judge alike has a chip only where they are wrong about it.
+const hasChip = (change, judgement) => judgement !== 'right' || change === 'lost' || change === 'added';
+
 function highlightGroups(chorale) {
     const shown = (change) => chorale[change].filter((found) => isShown(change, found));
     if (unit.value === 'match') return { sections: CHANGES.map((change) => ({ color: fillColor(change), items: shown(change) })) };
     if (!hasExpectation.value) return { notes: CHANGES.map((change) => ({ color: fillColor(change), items: shown(change).map(noteId) })) };
     return {
-        notes: CHANGES.flatMap((change) => Object.entries(MARKS_BY_JUDGEMENT).map(([judgement, marks]) => ({
+        notes: CHANGES.flatMap((change) => Object.entries(CHIPS_BY_JUDGEMENT).map(([judgement, chip]) => ({
             color: fillColor(change),
-            ...marks,
+            chips: hasChip(change, judgement) ? [{ ...chip, angle: 45 }] : [],
             items: shown(change).filter((note) => judgementOf(change, note) === judgement).map(noteId),
         }))),
     };
@@ -269,7 +275,7 @@ function highlightGroups(chorale) {
                 <span class="text-dimmed">{{ totals.unchanged }} {{ $t('queryComparisonUnchanged') }}</span>
                 <div class="ml-4 flex flex-wrap items-center gap-2 rounded-lg ring ring-inset ring-default px-3 py-1.5 text-default">
                     <span class="flex items-center gap-1.5 text-muted">
-                        <span class="size-2.5 rounded-full border-2" :style="{ borderColor: DEVIATION_COLOR }" />
+                        <NoteChip v-bind="CHIPS_BY_JUDGEMENT.wrong" :size="INLINE_CHIP_SIZE" />
                         {{ $t('queryComparisonExpectation') }}
                     </span>
                     <USelect
@@ -307,14 +313,22 @@ function highlightGroups(chorale) {
                                         </tr>
                                     </tbody>
                                 </table>
-                                <p class="mt-2 max-w-64 text-dimmed">{{ $t('queryComparisonExpectedNotes', { notes: expectedNoteCount, n: expectedChorales.size }, expectedChorales.size) }}</p>
+                                <i18n-t keypath="queryComparisonExpectedNotes" :plural="expectedChorales.size" tag="p" class="mt-2 max-w-64 text-dimmed" scope="global">
+                                    <template #notes>{{ expectedNoteCount }}</template>
+                                    <template #n>{{ expectedChorales.size }}</template>
+                                    <template #wrong><NoteChip v-bind="CHIPS_BY_JUDGEMENT.wrong" :size="INLINE_CHIP_SIZE" class="align-middle" /></template>
+                                </i18n-t>
                             </div>
                         </template>
                     </UPopover>
                     <UPopover mode="hover" :open-delay="100">
                         <UButton color="neutral" variant="ghost" size="xs" icon="lucide:info" :aria-label="$t('queryComparisonExpectationHelpLabel')" />
                         <template #content>
-                            <p class="max-w-80 p-3 text-sm">{{ $t('queryComparisonExpectationHelp') }}</p>
+                            <i18n-t keypath="queryComparisonExpectationHelp" tag="p" class="max-w-80 p-3 text-sm" scope="global">
+                                <template v-for="(chip, judgement) in CHIPS_BY_JUDGEMENT" :key="judgement" #[judgement]>
+                                    <NoteChip v-bind="chip" :size="INLINE_CHIP_SIZE" class="align-middle" />
+                                </template>
+                            </i18n-t>
                         </template>
                     </UPopover>
                 </div>
